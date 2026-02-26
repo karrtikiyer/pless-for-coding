@@ -1,0 +1,14 @@
+- We would like calculate some metrics for the results present in the folder results, it contains results for specific models on MBPP dataset
+- We have generate 10 samples each using two p-less samplers for 257 problems
+- we could like to calculate pass@k and cover@t metrics for these results
+- pass@k should be calculated using the openAi-Eval package
+- definition of cover@t is:
+    - how many problems had solutions which had at least k accuract responses (that passes the test cases and produces correct expect result as per MBPP)
+    - this cover@t has two variants: t solutions be distinct v/s t solutions need not be distinct
+    - distinctness is calculated using AST fingerprint
+- This could be flexible to do this calculation not only for MBPP but say later on we might have results on another dataset
+- The k and t values of pass@k and cover@t shall be configurable
+- Use UV for any python runs or installing python packages
+- Use proper folder structure to document results
+- The results should be JSON with appropriate fields.
+- Do not write custom algorithm or code unless standard packages are not available and it is warranted.
