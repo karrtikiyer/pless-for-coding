@@ -7,7 +7,13 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 
-from bench.eval.plots import plot_aggregate_lines, plot_correctness_vs_diversity, load_metrics
+from bench.eval.plots import (
+    plot_aggregate_lines,
+    plot_aggregate_lines_faceted,
+    plot_correctness_vs_diversity,
+    load_metrics,
+    _build_style_map,
+)
 
 
 def _make_metrics(model: str, method: str) -> dict:
@@ -38,6 +44,13 @@ def _sample_metrics_list():
     ]
 
 
+def _multi_model_metrics_list():
+    """4 models × 6 methods = 24 configs."""
+    models = ["CodeLlama-7B", "Codestral-22B", "Qwen2.5-Coder-7B", "Qwen3-Coder-30B"]
+    methods = ["greedy", "temp_0.2", "temp_0.7", "top_p_0.95", "p_less", "p_less_norm"]
+    return [_make_metrics(m, method) for m in models for method in methods]
+
+
 def test_load_metrics(tmp_path):
     data = _make_metrics("test/model", "pless")
     p = tmp_path / "m.json"
@@ -57,5 +70,49 @@ def test_plot_aggregate_lines(tmp_path):
 def test_plot_correctness_vs_diversity(tmp_path):
     out = tmp_path / "bubble.png"
     plot_correctness_vs_diversity(_sample_metrics_list(), out)
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def test_plot_aggregate_lines_with_dataset_name(tmp_path):
+    out = tmp_path / "lines_he.png"
+    plot_aggregate_lines(_sample_metrics_list(), out, dataset_name="HumanEval")
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def test_plot_correctness_vs_diversity_with_dataset_name(tmp_path):
+    out = tmp_path / "bubble_he.png"
+    plot_correctness_vs_diversity(_sample_metrics_list(), out, dataset_name="HumanEval")
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def test_build_style_map_multi_model():
+    metrics = _multi_model_metrics_list()
+    style_map = _build_style_map(metrics)
+    assert len(style_map) == 24
+    # Each model should get a distinct colour
+    colors_by_model = {}
+    for (model, _method), style in style_map.items():
+        colors_by_model.setdefault(model, set()).add(style["color"])
+    # Within a model, all entries share the same colour
+    for model, colors in colors_by_model.items():
+        assert len(colors) == 1, f"Expected 1 color for {model}, got {colors}"
+    # Across models, colours are distinct
+    all_colors = {c for cs in colors_by_model.values() for c in cs}
+    assert len(all_colors) == 4
+
+
+def test_plot_aggregate_lines_24_configs(tmp_path):
+    out = tmp_path / "lines_all.png"
+    plot_aggregate_lines(_multi_model_metrics_list(), out, dataset_name="HumanEval")
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def test_plot_aggregate_lines_faceted(tmp_path):
+    out = tmp_path / "lines_faceted.png"
+    plot_aggregate_lines_faceted(_multi_model_metrics_list(), out, dataset_name="HumanEval")
     assert out.exists()
     assert out.stat().st_size > 0
