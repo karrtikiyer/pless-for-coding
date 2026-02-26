@@ -11,6 +11,8 @@ dependencies = [
     "tqdm",
     "accelerate",
     "hf-transfer>=0.1.9",
+    "numpy",
+    "human-eval",
 ]
 
 [[tool.uv.index]]
@@ -20,3 +22,4 @@ explicit = true
 
 [tool.uv.sources]
 torch = { index = "pytorch-cu124" }
+
