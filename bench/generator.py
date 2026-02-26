@@ -28,12 +28,16 @@ def generate_samples_standard(
 ) -> list[str]:
     """Generate samples using standard model.generate() with temperature sampling."""
     input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
+    attention_mask = torch.ones_like(input_ids)
+    pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
     prompt_len = input_ids.shape[1]
     samples = []
     for _ in range(n_samples):
         with torch.no_grad():
             output = model.generate(
                 input_ids,
+                attention_mask=attention_mask,
+                pad_token_id=pad_token_id,
                 max_new_tokens=max_new_tokens,
                 do_sample=True,
                 temperature=temperature,
