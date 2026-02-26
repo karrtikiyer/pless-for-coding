@@ -18,6 +18,33 @@ def load_model_and_tokenizer(model_id: str):
     return model, tokenizer
 
 
+def generate_samples_standard(
+    model,
+    tokenizer,
+    prompt_text: str,
+    n_samples: int,
+    max_new_tokens: int,
+    temperature: float,
+) -> list[str]:
+    """Generate samples using standard model.generate() with temperature sampling."""
+    input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
+    prompt_len = input_ids.shape[1]
+    samples = []
+    for _ in range(n_samples):
+        with torch.no_grad():
+            output = model.generate(
+                input_ids,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=temperature,
+                top_k=0,
+                top_p=1.0,
+            )
+        generated = output[0, prompt_len:]
+        samples.append(tokenizer.decode(generated, skip_special_tokens=True))
+    return samples
+
+
 def _clone_past_key_values(past_key_values):
     """Deep-clone a KV cache (DynamicCache or tuple of tensors)."""
     return copy.deepcopy(past_key_values)
