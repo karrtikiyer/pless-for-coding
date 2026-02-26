@@ -13,7 +13,7 @@ Benchmark the **pless** and **pless-norm** hyperparameter-free sampling methods 
 ```bash
 git clone https://github.com/karrtikiyer/pless-for-coding.git
 cd pless-for-coding
-git submodule update --init   # pulls p-less/ sampler code
+git submodule update --init   # clones p-less/ sampler (github.com/ryttry/p-less-sampling)
 uv sync                       # installs all dependencies with CUDA torch
 ```
 
