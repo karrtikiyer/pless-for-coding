@@ -1,5 +1,14 @@
+import re
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
+
+_CODE_FENCE_RE = re.compile(r"^```\w*\n(.*?)```\s*$", re.DOTALL)
+
+
+def strip_code_fences(code: str) -> str:
+    """Strip markdown code fences if present."""
+    m = _CODE_FENCE_RE.match(code.strip())
+    return m.group(1) if m else code
 
 
 def _build_program_mbpp(sample_code: str, test_list: list[str]) -> str:
@@ -30,6 +39,7 @@ def evaluate_task(record: dict, dataset: str, timeout: float = 5.0) -> dict:
     pass_results = []
 
     for sample in samples:
+        sample = strip_code_fences(sample)
         if dataset == "mbpp":
             program = _build_program_mbpp(sample, record["test_list"])
         elif dataset == "humaneval":

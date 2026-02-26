@@ -6,6 +6,7 @@ from bench.eval.executor import (
     check_sample,
     evaluate_task,
     evaluate_all,
+    strip_code_fences,
 )
 
 
@@ -24,6 +25,49 @@ def test_check_sample_failing():
 def test_check_sample_syntax_error():
     code = "def add(a b): return a + b"
     assert check_sample("", code) is False
+
+
+# --- strip_code_fences ---
+
+def test_strip_code_fences_python():
+    code = "```python\ndef f(x): return x + 1\n```"
+    assert strip_code_fences(code) == "def f(x): return x + 1\n"
+
+
+def test_strip_code_fences_no_language():
+    code = "```\ndef f(x): return x + 1\n```"
+    assert strip_code_fences(code) == "def f(x): return x + 1\n"
+
+
+def test_strip_code_fences_no_fences():
+    code = "def f(x): return x + 1"
+    assert strip_code_fences(code) == "def f(x): return x + 1"
+
+
+def test_strip_code_fences_with_whitespace():
+    code = "  ```python\ndef f(x): return x + 1\n```  "
+    assert strip_code_fences(code) == "def f(x): return x + 1\n"
+
+
+def test_strip_code_fences_multiline():
+    code = "```python\ndef f(x):\n    if x > 0:\n        return x\n    return -x\n```"
+    expected = "def f(x):\n    if x > 0:\n        return x\n    return -x\n"
+    assert strip_code_fences(code) == expected
+
+
+def test_evaluate_task_with_code_fences():
+    """Samples wrapped in code fences should still be evaluated correctly."""
+    record = {
+        "task_id": 1,
+        "samples": [
+            "```python\ndef add(a, b): return a + b\n```",
+            "```python\ndef add(a, b): return a - b\n```",
+        ],
+        "test_list": ["assert add(1, 2) == 3"],
+    }
+    result = evaluate_task(record, "mbpp")
+    assert result["num_correct"] == 1
+    assert result["pass_results"] == [True, False]
 
 
 def test_check_sample_timeout():

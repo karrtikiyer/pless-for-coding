@@ -1,6 +1,7 @@
 import numpy as np
 from human_eval.evaluation import estimate_pass_at_k
 
+from bench.eval.executor import strip_code_fences
 from bench.eval.fingerprint import ast_fingerprint
 
 
@@ -65,7 +66,7 @@ def add_distinct_counts(task_results: list[dict], records: list[dict]) -> None:
         fingerprints = set()
         for sample, passed in zip(samples, pass_results):
             if passed:
-                fp = ast_fingerprint(sample)
+                fp = ast_fingerprint(strip_code_fences(sample))
                 if fp is not None:
                     fingerprints.add(fp)
 
