@@ -5,7 +5,7 @@ from datasets import load_dataset
 from tqdm import tqdm
 
 from bench.checkpointing import append_result, get_output_path, load_completed_ids
-from bench.generator import generate_samples, load_model_and_tokenizer
+from bench.generator import generate_samples, generate_samples_standard, load_model_and_tokenizer
 from bench.prompts import format_prompt_base, format_prompt_instruct, is_instruct_model
 from bench.sampler_bridge import SAMPLERS
 
@@ -13,7 +13,7 @@ from bench.sampler_bridge import SAMPLERS
 def parse_args():
     parser = argparse.ArgumentParser(description="Benchmark pless samplers on MBPP")
     parser.add_argument("--model", required=True, help="HuggingFace model ID")
-    parser.add_argument("--method", required=True, choices=list(SAMPLERS.keys()), help="Sampling method")
+    parser.add_argument("--method", required=True, choices=list(SAMPLERS.keys()) + ["temp"], help="Sampling method")
     parser.add_argument("--n-samples", type=int, default=10, help="Number of samples per problem")
     parser.add_argument("--max-new-tokens", type=int, default=512, help="Max new tokens per sample")
     parser.add_argument("--results-dir", default="results", help="Output directory")
@@ -45,7 +45,8 @@ def main():
     print(f"Loading model: {args.model}")
     model, tokenizer = load_model_and_tokenizer(args.model)
 
-    sampler_fn = SAMPLERS[args.method]
+    if args.method != "temp":
+        sampler_fn = SAMPLERS[args.method]
     instruct = is_instruct_model(args.model)
 
     # Filter to remaining problems
@@ -62,15 +63,25 @@ def main():
             else:
                 prompt_text, code_prefix = format_prompt_base(task)
 
-            raw_samples = generate_samples(
-                model=model,
-                tokenizer=tokenizer,
-                prompt_text=prompt_text,
-                sampler_fn=sampler_fn,
-                n_samples=args.n_samples,
-                max_new_tokens=args.max_new_tokens,
-                temperature=args.temperature,
-            )
+            if args.method == "temp":
+                raw_samples = generate_samples_standard(
+                    model=model,
+                    tokenizer=tokenizer,
+                    prompt_text=prompt_text,
+                    n_samples=args.n_samples,
+                    max_new_tokens=args.max_new_tokens,
+                    temperature=args.temperature,
+                )
+            else:
+                raw_samples = generate_samples(
+                    model=model,
+                    tokenizer=tokenizer,
+                    prompt_text=prompt_text,
+                    sampler_fn=sampler_fn,
+                    n_samples=args.n_samples,
+                    max_new_tokens=args.max_new_tokens,
+                    temperature=args.temperature,
+                )
 
             # Prepend the code prefix so each sample is complete, executable code
             samples = [code_prefix + s for s in raw_samples]

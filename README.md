@@ -1,6 +1,6 @@
 # Pless Samplers — Code Generation Benchmarks
 
-Benchmark the **pless** and **pless-norm** hyperparameter-free sampling methods on MBPP and HumanEval code generation benchmarks using Qwen2.5 7B models.
+Benchmark the **pless** and **pless-norm** hyperparameter-free sampling methods on MBPP and HumanEval code generation benchmarks. Reproduces comparisons from ["A Thorough Examination of Decoding Methods in the Era of LLMs"](https://arxiv.org/abs/2402.06925) across multiple model families.
 
 ## Requirements
 
@@ -17,39 +17,52 @@ git submodule update --init   # pulls p-less/ sampler code
 uv sync                       # installs all dependencies with CUDA torch
 ```
 
+## Supported Models
+
+| Model | Type | HuggingFace ID |
+|-------|------|----------------|
+| Qwen2.5-7B | Base | `Qwen/Qwen2.5-7B` |
+| Qwen2.5-Coder-7B-Instruct | Instruct | `Qwen/Qwen2.5-Coder-7B-Instruct` |
+| Llama-2-7B | Base | `meta-llama/Llama-2-7b-hf` |
+| Llama-2-7B-Chat | Chat | `meta-llama/Llama-2-7b-chat-hf` |
+| Qwen-7B | Base | `Qwen/Qwen-7B` |
+| Qwen-7B-Chat | Chat | `Qwen/Qwen-7B-Chat` |
+
+Chat/instruct models are auto-detected by model name (contains "chat", "instruct", or "coder") and use `tokenizer.apply_chat_template()` for prompt formatting.
+
 ## Download Models
 
-Download the models into the `models/` directory:
+Download models into `models/` or use HuggingFace model IDs directly (downloads to cache on first run):
 
 ```bash
-# Base model
+# Local download
 huggingface-cli download Qwen/Qwen2.5-7B --local-dir models/qwen257b
 
-# Instruct model
-huggingface-cli download Qwen/Qwen2.5-Coder-7B-Instruct --local-dir models/Qwen2.5-Coder-7B-Instruct
-```
-
-Or use HuggingFace model IDs directly (downloads to cache on first run):
-
-```bash
-uv run python -m bench.runner --model Qwen/Qwen2.5-7B --method pless
+# Or use HF IDs directly
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless
 ```
 
 ## Benchmarks
 
 ### MBPP (Sanitized)
 
-257 problems from the MBPP sanitized test split. 10 samples per problem.
+257 problems from the MBPP sanitized test split. 10 samples per problem. Three sampling methods:
+
+| Method | Description |
+|--------|-------------|
+| `temp` | Vanilla temperature sampling via `model.generate()` |
+| `pless` | Hyperparameter-free pless sampler |
+| `pless_norm` | Normalized pless sampler |
 
 ```bash
 # Single run
-uv run python -m bench --model models/qwen257b --method pless
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method temp --temperature 0.7
 
-# All 4 combinations (2 models x 2 methods)
-uv run python -m bench --model models/qwen257b --method pless
-uv run python -m bench --model models/qwen257b --method pless_norm
-uv run python -m bench --model models/Qwen2.5-Coder-7B-Instruct --method pless
-uv run python -m bench --model models/Qwen2.5-Coder-7B-Instruct --method pless_norm
+# All 4 configs for a model
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method temp --temperature 0.7
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method temp --temperature 1.0
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless --temperature 1.0
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless_norm --temperature 1.0
 ```
 
 ### HumanEval
@@ -83,7 +96,7 @@ The orchestration script loads the model once and runs all 14 (method, temperatu
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--model` | (required) | HuggingFace model ID or local path |
-| `--method` | (required) | `pless` or `pless_norm` |
+| `--method` | (required) | `pless`, `pless_norm`, or `temp` |
 | `--n-samples` | 10 | Number of samples per problem |
 | `--max-new-tokens` | 512 | Max tokens per sample |
 | `--temperature` | 1.0 | Temperature applied to logits before softmax |
@@ -93,7 +106,7 @@ The orchestration script loads the model once and runs all 14 (method, temperatu
 
 ### HumanEval (`python -m bench.humaneval`)
 
-Same flags as MBPP, plus `--method` also accepts `temp` for vanilla temperature sampling via `model.generate()`.
+Same flags as MBPP. All three methods (`pless`, `pless_norm`, `temp`) are supported.
 
 ### Orchestration (`run_humaneval.py`)
 
@@ -109,8 +122,14 @@ Same flags as MBPP, plus `--method` also accepts `temp` for vanilla temperature 
 ## Quick Smoke Tests
 
 ```bash
-# MBPP
-uv run python -m bench --model models/qwen257b --method pless --n-samples 2 --max-new-tokens 50 --max-problems 3
+# MBPP — pless sampler
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless --n-samples 2 --max-new-tokens 50 --max-problems 3
+
+# MBPP — temp baseline
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method temp --n-samples 2 --max-new-tokens 50 --max-problems 3
+
+# MBPP — Qwen-7B (verifies trust_remote_code)
+uv run python -m bench --model Qwen/Qwen-7B --method pless --n-samples 2 --max-new-tokens 50 --max-problems 3
 
 # HumanEval (single config)
 uv run python -m bench.humaneval --model models/qwen257b --method pless --temperature 1.0 --n-samples 2 --max-new-tokens 50 --max-problems 3
@@ -180,10 +199,10 @@ pless-for-coding/
 │   └── p_less_samplers.py
 ├── bench/                      # Benchmarking package
 │   ├── sampler_bridge.py       # Imports pless samplers via sys.path
-│   ├── generator.py            # Token-by-token generation + standard model.generate()
+│   ├── generator.py            # Token-by-token generation + standard model.generate() (trust_remote_code enabled)
 │   ├── checkpointing.py        # JSONL streaming writes + resume logic
 │   ├── prompts.py              # MBPP prompt formatting (base vs instruct)
-│   ├── runner.py               # MBPP CLI entry point
+│   ├── runner.py               # MBPP CLI entry point (temp, pless, pless_norm methods)
 │   └── humaneval/              # HumanEval benchmark
 │       ├── prompts.py          # HumanEval prompt formatting (base vs instruct)
 │       └── runner.py           # HumanEval CLI entry point + run_benchmark()

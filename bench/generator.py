@@ -6,13 +6,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 def load_model_and_tokenizer(model_id: str):
     """Load model in bfloat16 with SDPA attention and its tokenizer."""
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         dtype=torch.bfloat16,
         device_map="auto",
         attn_implementation="sdpa",
         use_cache=True,
+        trust_remote_code=True,
     )
     model.eval()
     return model, tokenizer
