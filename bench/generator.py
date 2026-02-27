@@ -1,5 +1,3 @@
-import copy
-
 import torch
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -39,6 +37,11 @@ def load_model_and_tokenizer(model_id: str):
         trust_remote_code=True,
     )
     model.eval()
+    # torch.compile for faster inference; skip for old Qwen-7B (custom code issues).
+    # suppress_errors=True falls back to eager if compilation fails (e.g. missing headers).
+    if model_id != "Qwen/Qwen-7B":
+        torch._dynamo.config.suppress_errors = True
+        model = torch.compile(model, mode="reduce-overhead")
     return model, tokenizer
 
 
@@ -50,32 +53,54 @@ def generate_samples_standard(
     max_new_tokens: int,
     temperature: float,
 ) -> list[str]:
-    """Generate samples using standard model.generate() with temperature sampling."""
+    """Generate samples using standard model.generate() with batched generation."""
     input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
     attention_mask = torch.ones_like(input_ids)
     pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
     prompt_len = input_ids.shape[1]
+    with torch.no_grad():
+        output = model.generate(
+            input_ids,
+            attention_mask=attention_mask,
+            pad_token_id=pad_token_id,
+            max_new_tokens=max_new_tokens,
+            do_sample=True,
+            temperature=temperature,
+            top_k=0,
+            top_p=1.0,
+            num_return_sequences=n_samples,
+        )
     samples = []
-    for _ in range(n_samples):
-        with torch.no_grad():
-            output = model.generate(
-                input_ids,
-                attention_mask=attention_mask,
-                pad_token_id=pad_token_id,
-                max_new_tokens=max_new_tokens,
-                do_sample=True,
-                temperature=temperature,
-                top_k=0,
-                top_p=1.0,
-            )
-        generated = output[0, prompt_len:]
+    for i in range(n_samples):
+        generated = output[i, prompt_len:]
         samples.append(tokenizer.decode(generated, skip_special_tokens=True))
     return samples
 
 
-def _clone_past_key_values(past_key_values):
-    """Deep-clone a KV cache (DynamicCache or tuple of tensors)."""
-    return copy.deepcopy(past_key_values)
+def _expand_past_key_values(past_key_values, n: int):
+    """Expand a KV cache from batch_size=1 to batch_size=n.
+
+    Supports both DynamicCache objects and plain tuples of tensors.
+    """
+    from transformers.cache_utils import DynamicCache
+
+    if isinstance(past_key_values, DynamicCache):
+        expanded = DynamicCache()
+        for layer_idx in range(len(past_key_values)):
+            key = past_key_values.key_cache[layer_idx]
+            value = past_key_values.value_cache[layer_idx]
+            expanded.update(
+                key.expand(n, -1, -1, -1).contiguous(),
+                value.expand(n, -1, -1, -1).contiguous(),
+                layer_idx,
+            )
+        return expanded
+    else:
+        # Tuple of (key, value) pairs per layer
+        return tuple(
+            (k.expand(n, -1, -1, -1).contiguous(), v.expand(n, -1, -1, -1).contiguous())
+            for k, v in past_key_values
+        )
 
 
 def generate_samples(
@@ -87,56 +112,69 @@ def generate_samples(
     max_new_tokens: int,
     temperature: float,
 ) -> list[str]:
-    """Generate n_samples completions for a given prompt using the provided sampler."""
+    """Generate n_samples completions in parallel using batched decoding."""
     input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
+    eos_id = tokenizer.eos_token_id
+    N = n_samples
 
-    # Prefill: run prompt through model once to get KV cache
+    # Prefill: run prompt through model once to get KV cache (batch_size=1)
     with torch.no_grad():
         prefill_output = model(input_ids=input_ids, return_dict=True)
     prefill_kv = prefill_output.past_key_values
-    prefill_logits = prefill_output.logits
+    prefill_logits = prefill_output.logits  # (1, seq_len, vocab)
 
-    samples = []
-    for _ in range(n_samples):
-        past_key_values = _clone_past_key_values(prefill_kv)
-        generated_ids = []
+    # Expand KV cache to batch_size=N
+    past_key_values = _expand_past_key_values(prefill_kv, N)
 
-        # First token: use prefill logits
-        logits = prefill_logits[0, -1].float()
-        if temperature != 1.0:
-            logits = logits / temperature
-        probs = torch.softmax(logits, dim=-1).unsqueeze(0)
-        next_token_id = sampler_fn(probs.clone())
-        token_id = next_token_id.item()
-        generated_ids.append(token_id)
+    # First token from prefill logits — broadcast to all N samples
+    logits = prefill_logits[0, -1].float()  # (vocab,)
+    if temperature != 1.0:
+        logits = logits / temperature
+    probs = torch.softmax(logits, dim=-1).unsqueeze(0).expand(N, -1).contiguous()  # (N, vocab)
+    next_tokens = sampler_fn(probs.clone())  # (N, 1)
+    next_tokens = next_tokens.view(N)  # (N,)
 
-        if token_id == tokenizer.eos_token_id:
-            samples.append(tokenizer.decode(generated_ids, skip_special_tokens=True))
-            continue
+    # Storage for generated token ids — pad with eos_id
+    all_ids = torch.full((N, max_new_tokens), eos_id, dtype=torch.long, device=model.device)
+    all_ids[:, 0] = next_tokens
 
-        # Subsequent tokens
-        encodings = next_token_id.reshape(1, 1)
+    # Track which sequences are still generating
+    finished = next_tokens == eos_id  # (N,)
+
+    if not finished.all():
+        encodings = next_tokens.view(N, 1)  # (N, 1)
         with torch.no_grad():
-            for _ in range(max_new_tokens - 1):
+            for step in range(1, max_new_tokens):
                 output = model(
                     input_ids=encodings,
                     past_key_values=past_key_values,
                     return_dict=True,
                 )
-                logits = output.logits[0, -1].float()
+                logits = output.logits[:, -1].float()  # (N, vocab)
                 if temperature != 1.0:
                     logits = logits / temperature
-                probs = torch.softmax(logits, dim=-1).unsqueeze(0)
-                next_token_id = sampler_fn(probs.clone())
-                token_id = next_token_id.item()
-                generated_ids.append(token_id)
+                probs = torch.softmax(logits, dim=-1)  # (N, vocab)
+                next_tokens = sampler_fn(probs.clone()).view(N)  # (N,)
 
-                if token_id == tokenizer.eos_token_id:
+                # Only write tokens for unfinished sequences
+                next_tokens = torch.where(finished, torch.tensor(eos_id, device=model.device), next_tokens)
+                all_ids[:, step] = next_tokens
+
+                finished = finished | (next_tokens == eos_id)
+                if finished.all():
                     break
 
                 past_key_values = output.past_key_values
-                encodings = next_token_id.view(1, 1)
+                encodings = next_tokens.view(N, 1)
 
-        samples.append(tokenizer.decode(generated_ids, skip_special_tokens=True))
+    # Decode each sequence (strip trailing eos tokens)
+    samples = []
+    for i in range(N):
+        ids = all_ids[i]
+        # Find first eos token
+        eos_positions = (ids == eos_id).nonzero(as_tuple=True)[0]
+        if len(eos_positions) > 0:
+            ids = ids[:eos_positions[0]]
+        samples.append(tokenizer.decode(ids, skip_special_tokens=True))
 
     return samples
