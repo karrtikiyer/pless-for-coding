@@ -2,12 +2,12 @@ import re
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-_CODE_FENCE_RE = re.compile(r"^```\w*\n(.*?)```\s*$", re.DOTALL)
+_CODE_FENCE_RE = re.compile(r"```\w*\n(.*?)```", re.DOTALL)
 
 
 def strip_code_fences(code: str) -> str:
-    """Strip markdown code fences if present."""
-    m = _CODE_FENCE_RE.match(code.strip())
+    """Extract code from the first markdown code fence, if present."""
+    m = _CODE_FENCE_RE.search(code.strip())
     return m.group(1) if m else code
 
 

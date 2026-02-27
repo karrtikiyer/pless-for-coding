@@ -1,0 +1,18 @@
+Rank,Method,Source,pass@1 (%)
+1,P-Less (t=1.0) ←,Ours,23.5
+2,P-Less Norm (t=1.0) ←,Ours,23.4
+3,FSD-d,Paper,21.2
+4,Beam Search,Paper,19.4
+5,FSD,Paper,19.2
+6,Diverse Beam Search,Paper,18.4
+7,DoLa,Paper,18.4
+8,Contrastive Decoding,Paper,18.2
+9,Greedy,Paper,17.8
+10,Temperature (t=0.7) ←,Ours,17.7
+11,Contrastive Search,Paper,17.4
+12,Temperature,Paper,17.2
+13,Top-p,Paper,14.8
+14,Typical,Paper,12.0
+15,Top-k,Paper,10.2
+16,η-Sampling,Paper,9.4
+17,Mirostat,Paper,7.8
