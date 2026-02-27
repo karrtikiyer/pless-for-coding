@@ -4,10 +4,12 @@ import torch
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Stub for removed class that transformers-stream-generator tries to import.
-# Needed so old Qwen-7B remote code can load on transformers 5.x.
-if not hasattr(transformers, "DisjunctiveConstraint"):
-    transformers.DisjunctiveConstraint = type("DisjunctiveConstraint", (), {})
+# Stubs for classes removed in transformers 5.x that transformers-stream-generator
+# still tries to import. Needed so old Qwen-7B remote code can load.
+for _cls in ("DisjunctiveConstraint", "BeamSearchScorer", "PhrasalConstraint",
+             "ConstrainedBeamSearchScorer"):
+    if not hasattr(transformers, _cls):
+        setattr(transformers, _cls, type(_cls, (), {}))
 
 
 def load_model_and_tokenizer(model_id: str):
