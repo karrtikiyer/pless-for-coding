@@ -4,12 +4,25 @@ import torch
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Stubs for classes removed in transformers 5.x that transformers-stream-generator
-# still tries to import. Needed so old Qwen-7B remote code can load.
+# Monkey-patch transformers so that the outdated transformers-stream-generator
+# package (required by old Qwen-7B remote code) can import without crashing
+# on transformers 5.x where many classes were removed.
+import types as _types
+import sys as _sys
+
+# Stub top-level names
 for _cls in ("DisjunctiveConstraint", "BeamSearchScorer", "PhrasalConstraint",
              "ConstrainedBeamSearchScorer"):
     if not hasattr(transformers, _cls):
         setattr(transformers, _cls, type(_cls, (), {}))
+
+# Stub names in transformers.generation.utils
+_gen_utils = _sys.modules.get("transformers.generation.utils")
+if _gen_utils is None:
+    import transformers.generation.utils as _gen_utils
+for _name in ("GenerateOutput", "SampleOutput"):
+    if not hasattr(_gen_utils, _name):
+        setattr(_gen_utils, _name, type(_name, (), {}))
 
 
 def load_model_and_tokenizer(model_id: str):
