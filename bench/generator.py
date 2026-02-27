@@ -32,7 +32,7 @@ def load_model_and_tokenizer(model_id: str):
     attn_impl = "eager" if model_id == "Qwen/Qwen-7B" else "sdpa"
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        dtype=torch.bfloat16,
+        torch_dtype=torch.bfloat16,
         device_map="auto",
         attn_implementation=attn_impl,
         use_cache=True,
