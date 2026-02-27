@@ -28,11 +28,13 @@ for _name in ("GenerateOutput", "SampleOutput"):
 def load_model_and_tokenizer(model_id: str):
     """Load model in bfloat16 with SDPA attention and its tokenizer."""
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    # Old Qwen-7B uses custom attention that doesn't support SDPA.
+    attn_impl = "eager" if model_id == "Qwen/Qwen-7B" else "sdpa"
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         dtype=torch.bfloat16,
         device_map="auto",
-        attn_implementation="sdpa",
+        attn_implementation=attn_impl,
         use_cache=True,
         trust_remote_code=True,
     )
