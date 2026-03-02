@@ -1,6 +1,6 @@
 # MBPP: P-Less vs Paper Decoding Methods (Llama-2-7B)
 
-Comparison of p-less sampling against 14 decoding methods from "A Thorough Examination of Decoding Methods in the Era of LLMs" (arXiv:2402.06925).
+Comparison of p-less sampling against decoding methods from "A Thorough Examination of Decoding Methods in the Era of LLMs" (arXiv:2402.06925).
 
 ## pass@1 Comparison
 
@@ -8,16 +8,16 @@ Comparison of p-less sampling against 14 decoding methods from "A Thorough Exami
 
 | Rank | Method | Source | pass@1 (%) |
 | ---: | ------ | ------ | ---------: |
-| 1 | P-Less (t=1.0) **←** | Ours | 23.5 |
-| 2 | P-Less Norm (t=1.0) **←** | Ours | 23.4 |
+| 1 | P-Less Norm (t=1.0) **←** | Ours | 28.6 |
+| 2 | P-Less (t=1.0) **←** | Ours | 28.5 |
 | 3 | FSD-d | Paper | 21.2 |
-| 4 | Beam Search | Paper | 19.4 |
-| 5 | FSD | Paper | 19.2 |
-| 6 | Diverse Beam Search | Paper | 18.4 |
-| 7 | DoLa | Paper | 18.4 |
-| 8 | Contrastive Decoding | Paper | 18.2 |
-| 9 | Greedy | Paper | 17.8 |
-| 10 | Temperature (t=0.7) **←** | Ours | 17.7 |
+| 4 | Temperature (t=0.7) **←** | Ours | 20.2 |
+| 5 | Beam Search | Paper | 19.4 |
+| 6 | FSD | Paper | 19.2 |
+| 7 | Diverse Beam Search | Paper | 18.4 |
+| 8 | DoLa | Paper | 18.4 |
+| 9 | Contrastive Decoding | Paper | 18.2 |
+| 10 | Greedy | Paper | 17.8 |
 | 11 | Contrastive Search | Paper | 17.4 |
 | 12 | Temperature | Paper | 17.2 |
 | 13 | Top-p | Paper | 14.8 |
@@ -55,9 +55,9 @@ Comparison of p-less sampling against 14 decoding methods from "A Thorough Exami
 
 | Method | pass@1 | pass@3 | pass@5 | pass@10 | cover@0.1 | cover@0.1 (dist) | cover@0.3 | cover@0.3 (dist) | cover@0.5 | cover@0.5 (dist) | cover@0.7 | cover@0.7 (dist) |
 | --- | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: |
-| P-Less Norm (t=1.0) | 23.4 | 37.6 | 42.8 | 48.2 | 48.2 | 48.2 | 36.2 | 30.0 | 24.1 | 14.4 | 14.4 | 3.5 |
-| P-Less (t=1.0) | 23.5 | 38.7 | 44.7 | 50.6 | 50.6 | 50.6 | 36.6 | 31.9 | 24.1 | 13.6 | 14.4 | 5.8 |
-| Temperature (t=0.7) | 17.7 | 33.7 | 41.1 | 49.8 | 49.8 | 49.8 | 29.2 | 28.0 | 16.7 | 12.8 | 7.0 | 2.7 |
+| P-Less Norm (t=1.0) | 28.6 | 41.9 | 46.5 | 51.4 | 51.4 | 48.2 | 39.7 | 30.0 | 31.5 | 14.4 | 21.0 | 3.5 |
+| P-Less (t=1.0) | 28.5 | 42.0 | 47.2 | 52.1 | 52.1 | 50.6 | 38.5 | 31.9 | 30.0 | 14.0 | 20.6 | 5.8 |
+| Temperature (t=0.7) | 20.2 | 36.2 | 43.5 | 52.1 | 52.1 | 49.8 | 31.1 | 28.0 | 19.5 | 13.2 | 10.1 | 3.1 |
 
 *pass@k as %; cover@t = % of tasks where ≥t fraction of samples are correct; (dist) = distinct correct samples only.*
 
@@ -75,11 +75,11 @@ Comparison of p-less sampling against 14 decoding methods from "A Thorough Exami
 
 ### Llama-2-7B (base)
 
-- **P-Less (t=1.0)**: rank 1/17
-- **P-Less Norm (t=1.0)**: rank 2/17
-- **Temperature (t=0.7)**: rank 10/17
-- P-Less vs paper's Temperature sampling: 6.3pp above (23.5% vs 17.2%)
-- Our temp_0.7 vs paper's Temperature: 17.7% vs 17.2% (Δ=+0.5pp — sanity check for setup alignment)
+- **P-Less (t=1.0)**: rank 2/17
+- **P-Less Norm (t=1.0)**: rank 1/17
+- **Temperature (t=0.7)**: rank 4/17
+- P-Less vs paper's Temperature sampling: 11.3pp above (28.5% vs 17.2%)
+- Our temp_0.7 vs paper's Temperature: 20.2% vs 17.2% (Δ=+3.0pp — sanity check for setup alignment)
 
 ### Llama-2-7B-Chat
 

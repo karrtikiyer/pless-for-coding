@@ -73,13 +73,18 @@ _MODEL_SHORT = {
 }
 
 
-def load_our_metrics(results_dir: Path) -> dict[str, list[dict]]:
+def load_our_metrics(
+    results_dir: Path,
+    model_key_map: dict[str, str] | None = None,
+) -> dict[str, list[dict]]:
     """Load computed metrics JSON files, grouped by model key.
 
     Returns dict mapping paper model key → list of metrics dicts.
     """
+    if model_key_map is None:
+        model_key_map = _MODEL_KEY_MAP
     metrics_by_model: dict[str, list[dict]] = {}
-    for dir_name, model_key in _MODEL_KEY_MAP.items():
+    for dir_name, model_key in model_key_map.items():
         metrics_dir = results_dir / dir_name / "metrics"
         if not metrics_dir.exists():
             continue
@@ -95,11 +100,14 @@ def load_our_metrics(results_dir: Path) -> dict[str, list[dict]]:
 def build_comparison_rows(
     paper_results: dict[str, float],
     our_metrics: list[dict],
+    our_method_names: dict[str, str] | None = None,
 ) -> list[dict]:
     """Build a sorted list of rows for the comparison table.
 
     Each row: {method, source, pass_at_1}
     """
+    if our_method_names is None:
+        our_method_names = _OUR_METHOD_NAMES
     rows = []
 
     # Paper methods
@@ -108,7 +116,7 @@ def build_comparison_rows(
 
     # Our methods
     for m in our_metrics:
-        method_name = _OUR_METHOD_NAMES.get(m["method"], m["method"])
+        method_name = our_method_names.get(m["method"], m["method"])
         pass_at_1 = m["pass_at_k"].get("1")
         if pass_at_1 is not None:
             rows.append({
@@ -144,8 +152,14 @@ def format_comparison_table(rows: list[dict], model_display: str) -> str:
     return "\n".join(lines)
 
 
-def format_extended_metrics_table(our_metrics: list[dict], model_display: str) -> str:
+def format_extended_metrics_table(
+    our_metrics: list[dict],
+    model_display: str,
+    our_method_names: dict[str, str] | None = None,
+) -> str:
     """Render our pass@k and cover@t metrics as a markdown table."""
+    if our_method_names is None:
+        our_method_names = _OUR_METHOD_NAMES
     if not our_metrics:
         return ""
 
@@ -169,7 +183,7 @@ def format_extended_metrics_table(our_metrics: list[dict], model_display: str) -
     ]
 
     for m in our_metrics:
-        method_name = _OUR_METHOD_NAMES.get(m["method"], m["method"])
+        method_name = our_method_names.get(m["method"], m["method"])
         row = [method_name]
         for k in k_values:
             val = m["pass_at_k"].get(str(k))
@@ -190,17 +204,23 @@ def format_extended_metrics_table(our_metrics: list[dict], model_display: str) -
 def generate_analysis(
     rows_by_model: dict[str, list[dict]],
     our_metrics_by_model: dict[str, list[dict]],
+    model_short: dict[str, str] | None = None,
+    our_method_names: dict[str, str] | None = None,
 ) -> str:
     """Generate the analysis section of the report."""
+    if model_short is None:
+        model_short = _MODEL_SHORT
+    if our_method_names is None:
+        our_method_names = _OUR_METHOD_NAMES
     parts = ["## Analysis\n"]
 
     for model_key, rows in rows_by_model.items():
-        display = _MODEL_SHORT.get(model_key, model_key)
+        display = model_short.get(model_key, model_key)
         parts.append(f"### {display}\n")
 
         total_methods = len(rows)
 
-        for name in _OUR_METHOD_NAMES.values():
+        for name in our_method_names.values():
             r = rank_of(rows, name)
             if r is not None:
                 parts.append(f"- **{name}**: rank {r}/{total_methods}")
@@ -245,36 +265,46 @@ def generate_analysis(
 def generate_report(
     our_metrics_by_model: dict[str, list[dict]],
     paper_results: dict[str, dict[str, float]] = PAPER_RESULTS,
+    title: str = "MBPP: P-Less vs Paper Decoding Methods (Llama-2-7B)",
+    description: str = (
+        "Comparison of p-less sampling against decoding methods from "
+        '"A Thorough Examination of Decoding Methods in the Era of LLMs" '
+        "(arXiv:2402.06925)."
+    ),
+    model_short: dict[str, str] | None = None,
+    our_method_names: dict[str, str] | None = None,
 ) -> str:
     """Generate the full markdown comparison report."""
+    if model_short is None:
+        model_short = _MODEL_SHORT
+    if our_method_names is None:
+        our_method_names = _OUR_METHOD_NAMES
     sections = [
-        "# MBPP: P-Less vs Paper Decoding Methods (Llama-2-7B)\n",
-        "Comparison of p-less sampling against 14 decoding methods from "
-        '"A Thorough Examination of Decoding Methods in the Era of LLMs" '
-        "(arXiv:2402.06925).\n",
+        f"# {title}\n",
+        f"{description}\n",
         "## pass@1 Comparison\n",
     ]
 
     rows_by_model: dict[str, list[dict]] = {}
 
     for model_key in paper_results:
-        display = _MODEL_SHORT.get(model_key, model_key)
+        display = model_short.get(model_key, model_key)
         our_metrics = our_metrics_by_model.get(model_key, [])
-        rows = build_comparison_rows(paper_results[model_key], our_metrics)
+        rows = build_comparison_rows(paper_results[model_key], our_metrics, our_method_names)
         rows_by_model[model_key] = rows
         sections.append(format_comparison_table(rows, display))
         sections.append("")
 
     sections.append("\n## Extended Metrics (Our Methods Only)\n")
     for model_key in paper_results:
-        display = _MODEL_SHORT.get(model_key, model_key)
+        display = model_short.get(model_key, model_key)
         our_metrics = our_metrics_by_model.get(model_key, [])
-        table = format_extended_metrics_table(our_metrics, display)
+        table = format_extended_metrics_table(our_metrics, display, our_method_names)
         if table:
             sections.append(table)
             sections.append("")
 
-    sections.append(generate_analysis(rows_by_model, our_metrics_by_model))
+    sections.append(generate_analysis(rows_by_model, our_metrics_by_model, model_short, our_method_names))
 
     return "\n".join(sections)
 
@@ -283,11 +313,16 @@ def plot_comparison(
     our_metrics_by_model: dict[str, list[dict]],
     output_path: Path,
     paper_results: dict[str, dict[str, float]] = PAPER_RESULTS,
+    model_short: dict[str, str] | None = None,
+    suptitle: str = "MBPP pass@1: P-Less vs Paper Decoding Methods",
 ) -> None:
     """Bar chart: pass@1 for all methods, our methods highlighted."""
     import matplotlib.pyplot as plt
     import numpy as np
     from matplotlib.patches import Patch
+
+    if model_short is None:
+        model_short = _MODEL_SHORT
 
     models = list(paper_results.keys())
     n_models = len(models)
@@ -313,7 +348,7 @@ def plot_comparison(
         ax.set_yticklabels(methods, fontsize=8)
         ax.invert_yaxis()
         ax.set_xlabel("pass@1 (%)")
-        ax.set_title(_MODEL_SHORT.get(model_key, model_key), fontsize=11)
+        ax.set_title(model_short.get(model_key, model_key), fontsize=11)
         ax.grid(axis="x", alpha=0.3)
 
         # Add value labels
@@ -330,7 +365,7 @@ def plot_comparison(
     ]
     axes[0, -1].legend(handles=legend_elements, loc="lower right", fontsize=9)
 
-    fig.suptitle("MBPP pass@1: P-Less vs Paper Decoding Methods", fontsize=13)
+    fig.suptitle(suptitle, fontsize=13)
     fig.tight_layout()
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -341,12 +376,17 @@ def plot_comparison(
 def plot_metrics_overview(
     our_metrics_by_model: dict[str, list[dict]],
     output_path: Path,
+    model_short: dict[str, str] | None = None,
+    suptitle: str = "MBPP: Metrics Overview (Llama-2-7B)",
 ) -> None:
     """Faceted line plot: one row per model, columns for pass@k / cover@t / cover@t (distinct).
 
     Matches the style of plots.py:plot_aggregate_lines but faceted by model.
     """
     import matplotlib.pyplot as plt
+
+    if model_short is None:
+        model_short = _MODEL_SHORT
 
     # Flatten and group
     models = list(our_metrics_by_model.keys())
@@ -376,7 +416,7 @@ def plot_metrics_overview(
     legend_handles: dict[str, object] = {}
 
     for row, model_key in enumerate(models):
-        display = _MODEL_SHORT.get(model_key, model_key)
+        display = model_short.get(model_key, model_key)
         metrics_list = our_metrics_by_model[model_key]
 
         for m in metrics_list:
@@ -441,7 +481,7 @@ def plot_metrics_overview(
         legend_handles.values(), legend_handles.keys(),
         loc="lower center", ncol=len(legend_handles), fontsize=9, frameon=True,
     )
-    fig.suptitle("MBPP: Metrics Overview (Llama-2-7B)", fontsize=13)
+    fig.suptitle(suptitle, fontsize=13)
     fig.tight_layout(rect=[0, 0.04, 1, 0.97])
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

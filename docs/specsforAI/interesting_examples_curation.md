@@ -1,0 +1,8 @@
+- we are interested in analysing sample results from the folder results/pless_human_eval_results/full_precision folder
+- for all the outputs across all the different models we want to find interesting problems from human evals dataset where:
+    - p-less or p-less-norm worked very well (pass@k or cover@k or something else) very good as compared to other results. Feel free to come up with your own criteria but explain the rationale.
+    - vice-versa where p-less or p-less-norm performed very poorly as compared to other methods.
+    - also look at some interesting insights on pless vs other methods based on length of the code
+    - or based on diversity
+- Also think what are the key insights and outcomes we can present out of this analysis.
+- how many samples should we look out of 164.

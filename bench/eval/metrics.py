@@ -2,7 +2,7 @@ import numpy as np
 from human_eval.evaluation import estimate_pass_at_k
 
 from bench.eval.executor import strip_code_fences
-from bench.eval.fingerprint import ast_fingerprint
+from bench.eval.fingerprint import ast_fingerprint, pairwise_diversity
 
 
 def compute_pass_at_k(
@@ -71,3 +71,50 @@ def add_distinct_counts(task_results: list[dict], records: list[dict]) -> None:
                     fingerprints.add(fp)
 
         result["num_distinct_correct"] = len(fingerprints)
+
+
+def add_structural_diversity(
+    task_results: list[dict],
+    records: list[dict],
+    cluster_threshold: float = 0.8,
+) -> None:
+    """Add pairwise AST edit distance metrics to each task result.
+
+    Adds `mean_pairwise_distance` and `num_ast_clusters` to each task result dict.
+    """
+    record_by_id = {r["task_id"]: r for r in records}
+
+    for result in task_results:
+        record = record_by_id[result["task_id"]]
+        samples = record["samples"]
+        pass_results = result["pass_results"]
+
+        correct_codes = [
+            strip_code_fences(sample)
+            for sample, passed in zip(samples, pass_results)
+            if passed
+        ]
+
+        if len(correct_codes) < 2:
+            result["mean_pairwise_distance"] = 0.0
+            result["num_ast_clusters"] = len(correct_codes)
+            continue
+
+        diversity = pairwise_diversity(correct_codes, cluster_threshold)
+        result["mean_pairwise_distance"] = diversity["mean_distance"]
+        result["num_ast_clusters"] = diversity["num_clusters"]
+
+
+def compute_structural_diversity(task_results: list[dict]) -> float:
+    """Compute aggregate structural diversity: mean of per-task mean_pairwise_distance.
+
+    Only considers tasks with >=2 correct solutions.
+    """
+    distances = [
+        r["mean_pairwise_distance"]
+        for r in task_results
+        if r.get("num_correct", 0) >= 2 and "mean_pairwise_distance" in r
+    ]
+    if not distances:
+        return 0.0
+    return round(sum(distances) / len(distances), 4)

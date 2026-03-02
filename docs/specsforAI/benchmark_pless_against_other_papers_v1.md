@@ -1,0 +1,12 @@
+- consider the paper https://arxiv.org/html/2402.06925v3
+- Look at the tables and results of different decoding methods on MBPP dataset on QWEN models. This is present in table 26 of this paper.
+- we have results of MBPP on pless and temperature 0.7
+- calculate variosn pass@k and cover@t which we have done earlier for other models. use the same configuration. 
+- Also ensure that we parse the code properly if needed to remove any leading or tailing text which might appear unnecessarily before calculating the metrics.
+- Let us analyse our results against this paper's results
+- our results are in folder results/Qwen--Qwen-7B 
+- always ground the comparison to source
+- outputs are: mardown report with side by side comparison
+- visualisations
+- use the same methodology which we used to do analysis and reports for llama class of models which is present in the folder results/paper_comparison
+- place results of this analysis in a seperate folder and do not overwrite it.

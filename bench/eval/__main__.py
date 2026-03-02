@@ -6,7 +6,13 @@ from pathlib import Path
 
 from bench.eval.executor import evaluate_all
 from bench.eval.loader import load_results
-from bench.eval.metrics import add_distinct_counts, compute_cover_at_t, compute_pass_at_k
+from bench.eval.metrics import (
+    add_distinct_counts,
+    add_structural_diversity,
+    compute_cover_at_t,
+    compute_pass_at_k,
+    compute_structural_diversity,
+)
 
 
 def parse_args():
@@ -83,6 +89,10 @@ def main():
     print("Computing AST fingerprints...")
     add_distinct_counts(task_results, records)
 
+    # Structural diversity via pairwise AST edit distance
+    print("Computing structural diversity (pairwise AST edit distance)...")
+    add_structural_diversity(task_results, records)
+
     # Metadata
     meta = infer_metadata(args.results_file, records[0])
     num_samples_per_task = len(records[0]["samples"]) if records else 0
@@ -92,6 +102,8 @@ def main():
     cover_at_t, cover_at_t_distinct = compute_cover_at_t(
         task_results, t_values, num_samples_per_task
     )
+
+    structural_diversity = compute_structural_diversity(task_results)
 
     output = {
         "model": meta["model"],
@@ -103,6 +115,7 @@ def main():
         "pass_at_k": pass_at_k,
         "cover_at_t": cover_at_t,
         "cover_at_t_distinct": cover_at_t_distinct,
+        "structural_diversity": structural_diversity,
         "per_task": task_results,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
@@ -120,6 +133,7 @@ def main():
     print(f"  pass@k: {pass_at_k}")
     print(f"  cover@t: {cover_at_t}")
     print(f"  cover@t (distinct): {cover_at_t_distinct}")
+    print(f"  structural_diversity: {structural_diversity}")
 
 
 if __name__ == "__main__":

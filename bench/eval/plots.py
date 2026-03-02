@@ -362,6 +362,96 @@ def plot_correctness_vs_diversity(
     plt.close(fig)
 
 
+def plot_structural_diversity_bars(
+    metrics_list: list[dict],
+    output_path: Path,
+    dataset_name: str = "MBPP",
+) -> None:
+    """Grouped bar chart of structural diversity per model×method."""
+    # Group by model
+    models_order = list(dict.fromkeys(m["model"] for m in metrics_list))
+    methods_order = list(dict.fromkeys(m["method"] for m in metrics_list))
+
+    fig, ax = plt.subplots(figsize=(max(8, len(models_order) * 2.5), 5))
+
+    bar_width = 0.8 / max(len(methods_order), 1)
+    x = np.arange(len(models_order))
+
+    for i, method in enumerate(methods_order):
+        values = []
+        for model in models_order:
+            match = [m for m in metrics_list if m["model"] == model and m["method"] == method]
+            if match and "structural_diversity" in match[0]:
+                values.append(match[0]["structural_diversity"])
+            else:
+                values.append(0.0)
+
+        color = _METHOD_COLORS.get(method, "#333333")
+        offset = (i - len(methods_order) / 2 + 0.5) * bar_width
+        ax.bar(x + offset, values, bar_width * 0.9, label=method, color=color, alpha=0.85)
+
+    ax.set_xlabel("Model")
+    ax.set_ylabel("Structural Diversity\n(mean pairwise AST edit distance)")
+    ax.set_title(f"{dataset_name}: Structural Diversity by Model & Method")
+    ax.set_xticks(x)
+    short_models = [m.split("/")[-1] if "/" in m else m for m in models_order]
+    ax.set_xticklabels(short_models, rotation=20, ha="right", fontsize=8)
+    ax.set_ylim(0, 1.0)
+    ax.legend(fontsize=8)
+    ax.grid(axis="y", alpha=0.3)
+    fig.tight_layout()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+
+def plot_pairwise_distance_distributions(
+    metrics_list: list[dict],
+    output_path: Path,
+    dataset_name: str = "MBPP",
+) -> None:
+    """Box plot of per-task mean_pairwise_distance distributions, one box per model×method."""
+    fig, ax = plt.subplots(figsize=(max(8, len(metrics_list) * 1.5), 5))
+
+    labels = []
+    data = []
+    colors = []
+
+    for m in metrics_list:
+        distances = [
+            t["mean_pairwise_distance"]
+            for t in m.get("per_task", [])
+            if t.get("num_correct", 0) >= 2 and "mean_pairwise_distance" in t
+        ]
+        if not distances:
+            continue
+        short_model = m["model"].split("/")[-1] if "/" in m["model"] else m["model"]
+        labels.append(f"{short_model}\n({m['method']})")
+        data.append(distances)
+        colors.append(_METHOD_COLORS.get(m["method"], "#333333"))
+
+    if not data:
+        plt.close(fig)
+        return
+
+    bp = ax.boxplot(data, patch_artist=True, widths=0.6)
+    for patch, color in zip(bp["boxes"], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.6)
+
+    ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=7)
+    ax.set_ylabel("Per-Task Mean Pairwise AST Edit Distance")
+    ax.set_title(f"{dataset_name}: Distribution of Structural Diversity Across Tasks")
+    ax.set_ylim(0, 1.0)
+    ax.grid(axis="y", alpha=0.3)
+    fig.tight_layout()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate metric visualizations from JSON files"
@@ -418,6 +508,19 @@ def main():
         metrics_list, out / "correctness_vs_diversity.png", dataset_name=args.dataset,
     )
     print(f"Saved {out / 'correctness_vs_diversity.png'}")
+
+    # Structural diversity plots (only if data includes the new metrics)
+    has_diversity = any("structural_diversity" in m for m in metrics_list)
+    if has_diversity:
+        plot_structural_diversity_bars(
+            metrics_list, out / "structural_diversity_bars.png", dataset_name=args.dataset,
+        )
+        print(f"Saved {out / 'structural_diversity_bars.png'}")
+
+        plot_pairwise_distance_distributions(
+            metrics_list, out / "pairwise_distance_distributions.png", dataset_name=args.dataset,
+        )
+        print(f"Saved {out / 'pairwise_distance_distributions.png'}")
 
 
 if __name__ == "__main__":

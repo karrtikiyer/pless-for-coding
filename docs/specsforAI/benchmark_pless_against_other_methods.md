@@ -1,0 +1,9 @@
+- consider the paper https://arxiv.org/html/2402.06925v3
+- Look at the tables and results of different decoding methods on MBPP dataset on LLAMA class of models
+- we have results of MBPP on pless and temperature 0.7
+- calculate variosn pass@k and cover@t which we have done earlier for other models. use the same configuration.
+- Let us analyse our results against this paper's results
+- our results are in folder results/meta-llama--Llama-2-7b-hf and results/meta-llama--Llama-2-7b-chat-hf
+- always ground the comparison to source
+- outputs are: mardown report with side by side comparison
+- visualisations

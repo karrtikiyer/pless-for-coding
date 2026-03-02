@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -9,6 +11,55 @@ def strip_code_fences(code: str) -> str:
     """Extract code from the first markdown code fence, if present."""
     m = _CODE_FENCE_RE.search(code.strip())
     return m.group(1) if m else code
+
+
+def _trim_to_compilable(code: str) -> str | None:
+    """Return the longest line-prefix of *code* that compiles, or None."""
+    try:
+        compile(code, "<sample>", "exec")
+        return code
+    except SyntaxError:
+        pass
+
+    lines = code.split("\n")
+    for end in range(len(lines) - 1, 0, -1):
+        candidate = "\n".join(lines[:end])
+        try:
+            compile(candidate, "<sample>", "exec")
+            return candidate
+        except SyntaxError:
+            continue
+    return None
+
+
+def extract_python_code(code: str) -> str:
+    """Extract Python code, removing trailing non-Python garbage.
+
+    Base models (e.g. Qwen-7B) often continue generating past the Python
+    solution, appending Java, JavaScript, HTML, markdown, or repeated
+    patterns.
+
+    Strategy:
+      1. Try trimming the raw code first (handles base-model output where the
+         function is plain text followed by garbage).
+      2. Fall back to stripping code fences and trimming (handles
+         instruct-model output wrapped in ```python ... ```).
+      3. Return the original if nothing compiles.
+    """
+    # Strategy 1: trim raw code directly
+    result = _trim_to_compilable(code)
+    if result is not None:
+        return result
+
+    # Strategy 2: strip code fences first, then trim
+    stripped = strip_code_fences(code)
+    if stripped != code:
+        result = _trim_to_compilable(stripped)
+        if result is not None:
+            return result
+
+    # Nothing compiled — return original and let execution handle it
+    return code
 
 
 def _build_program_mbpp(sample_code: str, test_list: list[str]) -> str:
@@ -39,7 +90,7 @@ def evaluate_task(record: dict, dataset: str, timeout: float = 5.0) -> dict:
     pass_results = []
 
     for sample in samples:
-        sample = strip_code_fences(sample)
+        sample = extract_python_code(sample)
         if dataset == "mbpp":
             program = _build_program_mbpp(sample, record["test_list"])
         elif dataset == "humaneval":
