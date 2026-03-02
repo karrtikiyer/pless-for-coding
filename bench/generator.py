@@ -39,7 +39,7 @@ def load_model_and_tokenizer(model_id: str):
     model.eval()
     # torch.compile for faster inference; skip for old Qwen-7B (custom code issues).
     # suppress_errors=True falls back to eager if compilation fails (e.g. missing headers).
-    if model_id != "Qwen/Qwen-7B":
+    if model_id not in ("Qwen/Qwen-7B", "mistralai/Codestral-22B-v0.1"):
         torch._dynamo.config.suppress_errors = True
         model = torch.compile(model, mode="reduce-overhead")
     return model, tokenizer
@@ -86,21 +86,29 @@ def _expand_past_key_values(past_key_values, n: int):
 
     if isinstance(past_key_values, DynamicCache):
         expanded = DynamicCache()
-        for layer_idx in range(len(past_key_values)):
-            key = past_key_values.key_cache[layer_idx]
-            value = past_key_values.value_cache[layer_idx]
-            expanded.update(
-                key.expand(n, -1, -1, -1).contiguous(),
-                value.expand(n, -1, -1, -1).contiguous(),
-                layer_idx,
-            )
+        if hasattr(past_key_values, 'key_cache'):
+            # transformers <5: list attributes
+            for i in range(len(past_key_values)):
+                expanded.update(
+                    past_key_values.key_cache[i].expand(n, -1, -1, -1).contiguous(),
+                    past_key_values.value_cache[i].expand(n, -1, -1, -1).contiguous(),
+                    i,
+                )
+        else:
+            # transformers 5.x: DynamicLayer objects with .keys/.values
+            for i, layer in enumerate(past_key_values.layers):
+                expanded.update(
+                    layer.keys.expand(n, -1, -1, -1).contiguous(),
+                    layer.values.expand(n, -1, -1, -1).contiguous(),
+                    i,
+                )
         return expanded
-    else:
-        # Tuple of (key, value) pairs per layer
-        return tuple(
-            (k.expand(n, -1, -1, -1).contiguous(), v.expand(n, -1, -1, -1).contiguous())
-            for k, v in past_key_values
-        )
+
+    # Plain tuple of (key, value) pairs per layer
+    return tuple(
+        (k.expand(n, -1, -1, -1).contiguous(), v.expand(n, -1, -1, -1).contiguous())
+        for k, v in past_key_values
+    )
 
 
 def generate_samples(
