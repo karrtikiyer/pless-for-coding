@@ -37,11 +37,8 @@ def load_model_and_tokenizer(model_id: str):
         trust_remote_code=True,
     )
     model.eval()
-    # torch.compile for faster inference; skip for old Qwen-7B (custom code issues).
-    # suppress_errors=True falls back to eager if compilation fails (e.g. missing headers).
-    if model_id not in ("Qwen/Qwen-7B", "mistralai/Codestral-22B-v0.1"):
-        torch._dynamo.config.suppress_errors = True
-        model = torch.compile(model, mode="reduce-overhead")
+    # torch.compile disabled: reduce-overhead mode conflicts with transformers 5.x
+    # DynamicCache (CUDAGraph overwrites KV cache tensors). Re-enable when fixed upstream.
     return model, tokenizer
 
 
