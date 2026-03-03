@@ -1,0 +1,3146 @@
+{
+  "model": "codellama/CodeLlama-7b-hf",
+  "method": "pless_norm",
+  "temperature": 1.5,
+  "dataset": "humaneval",
+  "num_tasks": 164,
+  "num_samples_per_task": 10,
+  "pass_at_k": {
+    "1": 0.029268292682926834,
+    "3": 0.08297764227642276,
+    "5": 0.13058943089430894,
+    "10": 0.22560975609756098
+  },
+  "cover_at_t": {
+    "0.1": 22.5609756097561,
+    "0.3": 0.6097560975609756,
+    "0.5": 0.0,
+    "0.7": 0.0
+  },
+  "cover_at_t_distinct": {
+    "0.1": 9.75609756097561,
+    "0.3": 0.0,
+    "0.5": 0.0,
+    "0.7": 0.0
+  },
+  "structural_diversity": 0.1045,
+  "per_task": [
+    {
+      "task_id": "HumanEval/0",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/1",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/10",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/100",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/101",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/102",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/103",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/104",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/105",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/106",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/107",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/108",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/109",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/11",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/110",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/111",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/112",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/113",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/114",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/115",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/116",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/117",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/118",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/119",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/12",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/120",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/121",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/122",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/123",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/124",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/125",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/126",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/127",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/128",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/129",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/13",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/130",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/131",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/132",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/133",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/134",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/135",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/136",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/137",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/138",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/139",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/14",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/140",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/141",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/142",
+      "num_correct": 2,
+      "pass_results": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/143",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/144",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/145",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/146",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/147",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/148",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/149",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/15",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/150",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/151",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/152",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/153",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/154",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/155",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/156",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/157",
+      "num_correct": 2,
+      "pass_results": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/158",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/159",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/16",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/160",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/161",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/162",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/163",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/17",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/18",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/19",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/2",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/20",
+      "num_correct": 2,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/21",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/22",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/23",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/24",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/25",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/26",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/27",
+      "num_correct": 2,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/28",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/29",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/3",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/30",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/31",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/32",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/33",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/34",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/35",
+      "num_correct": 3,
+      "pass_results": [
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/36",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/37",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/38",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/39",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/4",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/40",
+      "num_correct": 2,
+      "pass_results": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 2,
+      "mean_pairwise_distance": 0.4872,
+      "num_ast_clusters": 2
+    },
+    {
+      "task_id": "HumanEval/41",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/42",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/43",
+      "num_correct": 2,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/44",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/45",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/46",
+      "num_correct": 2,
+      "pass_results": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/47",
+      "num_correct": 2,
+      "pass_results": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 2,
+      "mean_pairwise_distance": 0.5579,
+      "num_ast_clusters": 2
+    },
+    {
+      "task_id": "HumanEval/48",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/49",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/5",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/50",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/51",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/52",
+      "num_correct": 1,
+      "pass_results": [
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/53",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/54",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/55",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/56",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/57",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/58",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/59",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/6",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/60",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/61",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/62",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/63",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/64",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/65",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/66",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/67",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/68",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/69",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/7",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/70",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/71",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/72",
+      "num_correct": 2,
+      "pass_results": [
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/73",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/74",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/75",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/76",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/77",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/78",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/79",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/8",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/80",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/81",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/82",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/83",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/84",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/85",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/86",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/87",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/88",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/89",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/9",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/90",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/91",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/92",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/93",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/94",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/95",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/96",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/97",
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1
+    },
+    {
+      "task_id": "HumanEval/98",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    },
+    {
+      "task_id": "HumanEval/99",
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0
+    }
+  ],
+  "timestamp": "2026-03-03T10:35:35.417146+00:00"
+}

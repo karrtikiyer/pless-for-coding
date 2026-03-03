@@ -5,12 +5,34 @@ import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 _CODE_FENCE_RE = re.compile(r"```\w*\n(.*?)```", re.DOTALL)
+_CHECK_OR_MAIN_RE = re.compile(
+    r"^(def check\(|if __name__\s*==)", re.MULTILINE,
+)
 
 
 def strip_code_fences(code: str) -> str:
     """Extract code from the first markdown code fence, if present."""
     m = _CODE_FENCE_RE.search(code.strip())
     return m.group(1) if m else code
+
+
+def _strip_check_and_main(code: str) -> str:
+    """Remove model-generated ``def check(...)`` and ``if __name__`` blocks.
+
+    Models (especially Qwen) sometimes generate their own test harness after
+    the solution.  When the evaluation pipeline appends the canonical HumanEval
+    test, the model's ``if __name__ == '__main__': check(...)`` block runs
+    first (because ``python -c`` sets ``__name__`` to ``'__main__'``), and any
+    incorrect assertion in the model's check causes a false negative.
+
+    This function removes such blocks by finding the first top-level
+    ``def check(`` or ``if __name__`` line and truncating the code there.
+    """
+    m = _CHECK_OR_MAIN_RE.search(code)
+    if m is None:
+        return code
+    # Truncate at the start of the match, strip trailing whitespace
+    return code[: m.start()].rstrip()
 
 
 def _trim_to_compilable(code: str) -> str | None:
@@ -45,18 +67,22 @@ def extract_python_code(code: str) -> str:
       2. Fall back to stripping code fences and trimming (handles
          instruct-model output wrapped in ```python ... ```).
       3. Return the original if nothing compiles.
+
+    As a final step, strip any model-generated ``def check()`` or
+    ``if __name__`` blocks that would interfere with the canonical test
+    harness appended by the evaluation pipeline.
     """
     # Strategy 1: trim raw code directly
     result = _trim_to_compilable(code)
     if result is not None:
-        return result
+        return _strip_check_and_main(result)
 
     # Strategy 2: strip code fences first, then trim
     stripped = strip_code_fences(code)
     if stripped != code:
         result = _trim_to_compilable(stripped)
         if result is not None:
-            return result
+            return _strip_check_and_main(result)
 
     # Nothing compiled — return original and let execution handle it
     return code

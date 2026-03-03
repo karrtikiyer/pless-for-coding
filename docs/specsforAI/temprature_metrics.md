@@ -1,0 +1,10 @@
+- consider what we did earlier based on the spec of accuracy_metrics.md file in the same directory
+- we have also done work on AST distance metric for diversity so get that context as well
+- now we have results of p-less at different tempratures present in this folder results/p_less_human_eval_results/temprature_results
+- We want to analyse these results keeping the above context in mind across the different model results present in this folder
+- consider the fact that while calculating metrics like pass@k and cover@t might get impacted due to parsing issues, so ensure the code is getting extracted properly.
+- ensure that one parsing logic which works with one model does not break another model's results.
+- once we have metrics in JSON like we have earlier, store them in a seperate folder
+- based on these JSON results create a CSV and markdown report
+- Also generate appropriate visualisations for the same as we have done earlier, you can check what we have done earlier in the folder results/figures.
+- Ask if something is unclear or it seems inappropriate or amgibuous.

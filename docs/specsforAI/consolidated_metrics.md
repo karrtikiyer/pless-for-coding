@@ -1,0 +1,22 @@
+- consider the results in the folder results from two datasets human_eval & mbpp
+- ignore the analysis sub_folder in the any of the directories under results
+- consider only json files avaiable as execution results and samples generated using different decoders
+- do not rely on the ""passed": true" in the JSONL files 
+- do not rely on precomputed "pass@1" & "pass@10" or any other metrics in the JSONL files
+- Only consider the samples generated for the problem as input
+- Ensure the parsing across all the models works well before computing metrics. 
+- We are okay to write specific parsing logic if needed, not necessary that it has to generalised
+- We want to calculate:
+    - pass@k using OpenAI human eval standard library
+    - cover@t for both distinct and non distinct
+    - code diversity metrics
+- Open questions: 
+    - for cover@t distinct which AST metric do we use (binary) or AST edit distance
+    - what could be other code diversity metrics which could be useful and interesting
+- The intent is to answer:
+    - How does pless perform as compared to other decoding methods in terms of accuracy and diversity?
+    - are there generic trends or model specific trends?
+    - can pless at higher temprature gaurantee more accuracy(pass@k) plus more diversity?
+    - Between pless and pless-norm what is the behaviour across models or types of models (small vs big) or base vs instruct tuned?
+- The overall objective being:
+    - can pless provide a unique advantage when it comes to coding tasks or data tasks?
