@@ -8,9 +8,9 @@ from bench.eval.__main__ import infer_output_path, main as cli_main
 
 
 def test_infer_output_path():
-    p = Path("results/Qwen--Qwen2.5-7B/pless_t1.0.jsonl")
+    p = Path("results/pless_mbpp_results/Qwen--Qwen2.5-7B/pless_t1.0.jsonl")
     out = infer_output_path(p)
-    assert out == Path("results/Qwen--Qwen2.5-7B/metrics/pless_t1.0_metrics.json")
+    assert out == Path("results/pless_mbpp_results/Qwen--Qwen2.5-7B/metrics/pless_t1.0_metrics.json")
 
 
 def test_full_pipeline_mbpp(tmp_path, monkeypatch):

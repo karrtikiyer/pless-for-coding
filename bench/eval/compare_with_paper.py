@@ -494,17 +494,17 @@ def parse_args():
         description="Compare p-less MBPP results against decoding methods from the paper"
     )
     parser.add_argument(
-        "--results-dir", type=Path, default=Path("results"),
+        "--results-dir", type=Path, default=Path("results/pless_mbpp_results"),
         help="Parent directory containing model result subdirectories",
     )
     parser.add_argument(
         "--output", type=Path,
-        default=Path("results/paper_comparison/comparison_report.md"),
+        default=Path("results/pless_mbpp_results/analysis/llama_paper_comparison/comparison_report.md"),
         help="Output markdown report path",
     )
     parser.add_argument(
         "--figures-dir", type=Path,
-        default=Path("results/paper_comparison/figures"),
+        default=Path("results/pless_mbpp_results/analysis/llama_paper_comparison/figures"),
         help="Directory for generated plots",
     )
     return parser.parse_args()

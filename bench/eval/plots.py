@@ -461,8 +461,8 @@ def parse_args():
         help="Paths to metrics JSON files",
     )
     parser.add_argument(
-        "--output-dir", type=Path, default=Path("results/figures"),
-        help="Output directory for figures (default: results/figures/)",
+        "--output-dir", type=Path, default=Path("results/pless_mbpp_results/analysis/figures"),
+        help="Output directory for figures (default: results/pless_mbpp_results/analysis/figures/)",
     )
     parser.add_argument(
         "--dataset", type=str, default="MBPP",
