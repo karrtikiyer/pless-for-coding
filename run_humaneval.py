@@ -31,6 +31,9 @@ def main():
     parser.add_argument("--results-dir", default="results", help="Output directory")
     parser.add_argument("--no-resume", action="store_true", help="Start fresh for all configs")
     parser.add_argument("--max-problems", type=int, default=None, help="Limit number of problems (for testing)")
+    parser.add_argument("--no-stop", action="store_true", help="Disable stop sequences (for debugging)")
+    parser.add_argument("--task-ids", nargs="+", default=None,
+                        help="Only run specific task IDs (e.g., HumanEval/74 HumanEval/59)")
     args = parser.parse_args()
 
     print(f"Loading model: {args.model}")
@@ -49,6 +52,8 @@ def main():
             results_dir=args.results_dir,
             no_resume=args.no_resume,
             max_problems=args.max_problems,
+            no_stop=args.no_stop,
+            task_ids=args.task_ids,
         )
 
     print("\nAll configs complete!")

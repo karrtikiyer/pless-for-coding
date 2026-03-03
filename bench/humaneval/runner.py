@@ -6,7 +6,12 @@ from tqdm import tqdm
 
 from bench.checkpointing import append_result, get_output_path, load_completed_ids
 from bench.generator import generate_samples, generate_samples_standard, load_model_and_tokenizer
-from bench.humaneval.prompts import format_prompt_base, format_prompt_instruct, is_instruct_model
+from bench.humaneval.prompts import (
+    HUMANEVAL_STOP_SEQUENCES,
+    format_prompt_base,
+    format_prompt_instruct,
+    is_instruct_model,
+)
 from bench.sampler_bridge import SAMPLERS
 
 METHODS = list(SAMPLERS.keys()) + ["temp"]
@@ -22,6 +27,9 @@ def parse_args():
     parser.add_argument("--temperature", type=float, default=1.0, help="Temperature for sampling")
     parser.add_argument("--no-resume", action="store_true", help="Start fresh, delete existing results")
     parser.add_argument("--max-problems", type=int, default=None, help="Limit number of problems (for testing)")
+    parser.add_argument("--no-stop", action="store_true", help="Disable stop sequences (for debugging)")
+    parser.add_argument("--task-ids", nargs="+", default=None,
+                        help="Only run specific task IDs (e.g., HumanEval/74 HumanEval/59)")
     return parser.parse_args()
 
 
@@ -36,6 +44,8 @@ def run_benchmark(
     results_dir: str = "results",
     no_resume: bool = False,
     max_problems: int = None,
+    no_stop: bool = False,
+    task_ids: list[str] | None = None,
 ):
     """Run HumanEval benchmark for a single (method, temperature) config.
 
@@ -55,7 +65,14 @@ def run_benchmark(
 
     instruct = is_instruct_model(model_id)
 
+    # Stop sequences for base models only (instruct models are constrained by chat template)
+    stop_strings = None
+    if not instruct and not no_stop:
+        stop_strings = HUMANEVAL_STOP_SEQUENCES
+
     remaining = [task for task in dataset if task["task_id"] not in completed_ids]
+    if task_ids is not None:
+        remaining = [task for task in remaining if task["task_id"] in task_ids]
     if max_problems is not None:
         remaining = remaining[:max_problems]
     print(f"  Problems remaining: {len(remaining)} / {len(dataset)}")
@@ -78,6 +95,7 @@ def run_benchmark(
                     n_samples=n_samples,
                     max_new_tokens=max_new_tokens,
                     temperature=temperature,
+                    stop_strings=stop_strings,
                 )
             else:
                 raw_samples = generate_samples(
@@ -88,6 +106,7 @@ def run_benchmark(
                     n_samples=n_samples,
                     max_new_tokens=max_new_tokens,
                     temperature=temperature,
+                    stop_strings=stop_strings,
                 )
 
             samples = [code_prefix + s for s in raw_samples]
@@ -130,6 +149,8 @@ def main():
         results_dir=args.results_dir,
         no_resume=args.no_resume,
         max_problems=args.max_problems,
+        no_stop=args.no_stop,
+        task_ids=args.task_ids,
     )
 
 

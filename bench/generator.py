@@ -42,6 +42,16 @@ def load_model_and_tokenizer(model_id: str):
     return model, tokenizer
 
 
+def _truncate_at_stop(text: str, stop_strings: list[str]) -> str:
+    """Truncate text at the first occurrence of any stop string."""
+    earliest = len(text)
+    for stop in stop_strings:
+        idx = text.find(stop)
+        if idx != -1 and idx < earliest:
+            earliest = idx
+    return text[:earliest]
+
+
 def generate_samples_standard(
     model,
     tokenizer,
@@ -49,12 +59,20 @@ def generate_samples_standard(
     n_samples: int,
     max_new_tokens: int,
     temperature: float,
+    stop_strings: list[str] | None = None,
 ) -> list[str]:
     """Generate samples using standard model.generate() with batched generation."""
     input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
     attention_mask = torch.ones_like(input_ids)
     pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
     prompt_len = input_ids.shape[1]
+
+    # Try native stop_strings support (transformers 5.x+)
+    kwargs = {}
+    if stop_strings:
+        kwargs["stop_strings"] = stop_strings
+        kwargs["tokenizer"] = tokenizer
+
     with torch.no_grad():
         output = model.generate(
             input_ids,
@@ -66,11 +84,16 @@ def generate_samples_standard(
             top_k=0,
             top_p=1.0,
             num_return_sequences=n_samples,
+            **kwargs,
         )
     samples = []
     for i in range(n_samples):
         generated = output[i, prompt_len:]
-        samples.append(tokenizer.decode(generated, skip_special_tokens=True))
+        text = tokenizer.decode(generated, skip_special_tokens=True)
+        # Post-generation truncation as safety net
+        if stop_strings:
+            text = _truncate_at_stop(text, stop_strings)
+        samples.append(text)
     return samples
 
 
@@ -116,6 +139,7 @@ def generate_samples(
     n_samples: int,
     max_new_tokens: int,
     temperature: float,
+    stop_strings: list[str] | None = None,
 ) -> list[str]:
     """Generate n_samples completions in parallel using batched decoding."""
     input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
@@ -146,6 +170,19 @@ def generate_samples(
     # Track which sequences are still generating
     finished = next_tokens == eos_id  # (N,)
 
+    # Rolling text buffers for stop sequence detection
+    text_buffers = [""] * N if stop_strings else None
+
+    if stop_strings and not finished.all():
+        # Decode first token into buffers and check for stops
+        for i in range(N):
+            if not finished[i]:
+                text_buffers[i] = tokenizer.decode(all_ids[i, :1], skip_special_tokens=True)
+                for stop in stop_strings:
+                    if stop in text_buffers[i]:
+                        finished[i] = True
+                        break
+
     if not finished.all():
         encodings = next_tokens.view(N, 1)  # (N, 1)
         with torch.no_grad():
@@ -166,6 +203,20 @@ def generate_samples(
                 all_ids[:, step] = next_tokens
 
                 finished = finished | (next_tokens == eos_id)
+
+                # Check stop sequences in rolling text buffers
+                if stop_strings:
+                    for i in range(N):
+                        if not finished[i]:
+                            # Decode accumulated tokens to get accurate text
+                            text_buffers[i] = tokenizer.decode(
+                                all_ids[i, :step + 1], skip_special_tokens=True
+                            )
+                            for stop in stop_strings:
+                                if stop in text_buffers[i]:
+                                    finished[i] = True
+                                    break
+
                 if finished.all():
                     break
 
@@ -180,6 +231,10 @@ def generate_samples(
         eos_positions = (ids == eos_id).nonzero(as_tuple=True)[0]
         if len(eos_positions) > 0:
             ids = ids[:eos_positions[0]]
-        samples.append(tokenizer.decode(ids, skip_special_tokens=True))
+        text = tokenizer.decode(ids, skip_special_tokens=True)
+        # Post-generation truncation as safety net
+        if stop_strings:
+            text = _truncate_at_stop(text, stop_strings)
+        samples.append(text)
 
     return samples

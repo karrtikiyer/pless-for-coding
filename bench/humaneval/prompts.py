@@ -1,3 +1,9 @@
+# Standard HumanEval stop sequences (from Codex/HumanEval paper)
+# These prevent base models from generating past the target function.
+# Trailing spaces/parens avoid false positives on substrings like def_ or class_name.
+HUMANEVAL_STOP_SEQUENCES = ["\nclass ", "\ndef ", "\n#", "\nif ", "\nprint("]
+
+
 def is_instruct_model(model_id: str) -> bool:
     """Check if a model ID indicates an instruct/chat model."""
     lower = model_id.lower()

@@ -6,7 +6,11 @@ from tqdm import tqdm
 
 from bench.checkpointing import append_result, get_output_path, load_completed_ids
 from bench.generator import generate_samples, generate_samples_standard, load_model_and_tokenizer
+from bench.humaneval.prompts import HUMANEVAL_STOP_SEQUENCES
 from bench.prompts import format_prompt_base, format_prompt_instruct, is_instruct_model
+
+# MBPP uses standalone functions (same stop sequences as HumanEval)
+MBPP_STOP_SEQUENCES = HUMANEVAL_STOP_SEQUENCES
 from bench.sampler_bridge import SAMPLERS
 
 
@@ -20,6 +24,7 @@ def parse_args():
     parser.add_argument("--temperature", type=float, default=1.0, help="Temperature for logits")
     parser.add_argument("--no-resume", action="store_true", help="Start fresh, delete existing results")
     parser.add_argument("--max-problems", type=int, default=None, help="Limit number of problems (for testing)")
+    parser.add_argument("--no-stop", action="store_true", help="Disable stop sequences (for debugging)")
     return parser.parse_args()
 
 
@@ -49,6 +54,11 @@ def main():
         sampler_fn = SAMPLERS[args.method]
     instruct = is_instruct_model(args.model)
 
+    # Stop sequences for base models only
+    stop_strings = None
+    if not instruct and not args.no_stop:
+        stop_strings = MBPP_STOP_SEQUENCES
+
     # Filter to remaining problems
     remaining = [task for task in dataset if task["task_id"] not in completed_ids]
     if args.max_problems is not None:
@@ -71,6 +81,7 @@ def main():
                     n_samples=args.n_samples,
                     max_new_tokens=args.max_new_tokens,
                     temperature=args.temperature,
+                    stop_strings=stop_strings,
                 )
             else:
                 raw_samples = generate_samples(
@@ -81,6 +92,7 @@ def main():
                     n_samples=args.n_samples,
                     max_new_tokens=args.max_new_tokens,
                     temperature=args.temperature,
+                    stop_strings=stop_strings,
                 )
 
             # Prepend the code prefix so each sample is complete, executable code
