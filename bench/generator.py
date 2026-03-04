@@ -88,8 +88,8 @@ def generate_samples_standard(
         )
     samples = []
     for i in range(n_samples):
-        generated = output[i, prompt_len:]
-        text = tokenizer.decode(generated, skip_special_tokens=True)
+        full_text = tokenizer.decode(output[i], skip_special_tokens=True)
+        text = full_text[len(prompt_text):]
         # Post-generation truncation as safety net
         if stop_strings:
             text = _truncate_at_stop(text, stop_strings)
@@ -231,7 +231,9 @@ def generate_samples(
         eos_positions = (ids == eos_id).nonzero(as_tuple=True)[0]
         if len(eos_positions) > 0:
             ids = ids[:eos_positions[0]]
-        text = tokenizer.decode(ids, skip_special_tokens=True)
+        full_ids = torch.cat([input_ids[0], ids])
+        full_text = tokenizer.decode(full_ids, skip_special_tokens=True)
+        text = full_text[len(prompt_text):]
         # Post-generation truncation as safety net
         if stop_strings:
             text = _truncate_at_stop(text, stop_strings)
