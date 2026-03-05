@@ -86,10 +86,13 @@ def generate_samples_standard(
             num_return_sequences=n_samples,
             **kwargs,
         )
+    decoded_prompt = tokenizer.decode(
+        output[0, :prompt_len], skip_special_tokens=True
+    )
     samples = []
     for i in range(n_samples):
         full_text = tokenizer.decode(output[i], skip_special_tokens=True)
-        text = full_text[len(prompt_text):]
+        text = full_text[len(decoded_prompt):]
         # Post-generation truncation as safety net
         if stop_strings:
             text = _truncate_at_stop(text, stop_strings)
@@ -224,6 +227,7 @@ def generate_samples(
                 encodings = next_tokens.view(N, 1)
 
     # Decode each sequence (strip trailing eos tokens)
+    decoded_prompt = tokenizer.decode(input_ids[0], skip_special_tokens=True)
     samples = []
     for i in range(N):
         ids = all_ids[i]
@@ -233,7 +237,7 @@ def generate_samples(
             ids = ids[:eos_positions[0]]
         full_ids = torch.cat([input_ids[0], ids])
         full_text = tokenizer.decode(full_ids, skip_special_tokens=True)
-        text = full_text[len(prompt_text):]
+        text = full_text[len(decoded_prompt):]
         # Post-generation truncation as safety net
         if stop_strings:
             text = _truncate_at_stop(text, stop_strings)
