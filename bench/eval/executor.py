@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import textwrap
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 _CODE_FENCE_RE = re.compile(r"```\w*\n(.*?)```", re.DOTALL)
@@ -81,6 +82,20 @@ def extract_python_code(code: str) -> str:
     stripped = strip_code_fences(code)
     if stripped != code:
         result = _trim_to_compilable(stripped)
+        if result is not None:
+            return _strip_check_and_main(result)
+        # Also try dedenting the stripped code
+        dedented = textwrap.dedent(stripped)
+        if dedented != stripped:
+            result = _trim_to_compilable(dedented)
+            if result is not None:
+                return _strip_check_and_main(result)
+
+    # Strategy 3: dedent and retry (some models, e.g. CodeLlama-Instruct,
+    # generate top-level code with leading indentation)
+    dedented = textwrap.dedent(code)
+    if dedented != code:
+        result = _trim_to_compilable(dedented)
         if result is not None:
             return _strip_check_and_main(result)
 
