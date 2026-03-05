@@ -25,6 +25,8 @@ def parse_args():
     parser.add_argument("--no-resume", action="store_true", help="Start fresh, delete existing results")
     parser.add_argument("--max-problems", type=int, default=None, help="Limit number of problems (for testing)")
     parser.add_argument("--no-stop", action="store_true", help="Disable stop sequences (for debugging)")
+    parser.add_argument("--mbpp-config", choices=["sanitized", "full"], default="sanitized",
+                        help="MBPP dataset config: 'sanitized' (257 problems) or 'full' (500 problems)")
     return parser.parse_args()
 
 
@@ -44,7 +46,12 @@ def main():
         print(f"Resuming: {len(completed_ids)} problems already completed")
 
     # Load dataset
-    dataset = load_dataset("google-research-datasets/mbpp", "sanitized", split="test")
+    dataset = load_dataset("google-research-datasets/mbpp", args.mbpp_config, split="test")
+
+    # Normalize column names: full config uses 'text' instead of 'prompt',
+    # 'test_setup_code' instead of 'test_imports'
+    if args.mbpp_config == "full":
+        dataset = dataset.map(lambda task: {"prompt": task["text"]})
 
     # Load model
     print(f"Loading model: {args.model}")
@@ -108,6 +115,8 @@ def main():
                 "test_list": task["test_list"],
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
+            if task.get("test_setup_code"):
+                record["test_setup_code"] = task["test_setup_code"]
             append_result(out_path, record)
             tqdm.write(f"Completed task_id={task_id}")
 

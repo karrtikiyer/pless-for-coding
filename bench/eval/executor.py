@@ -88,8 +88,13 @@ def extract_python_code(code: str) -> str:
     return code
 
 
-def _build_program_mbpp(sample_code: str, test_list: list[str]) -> str:
-    return sample_code + "\n" + "\n".join(test_list)
+def _build_program_mbpp(sample_code: str, test_list: list[str], test_setup_code: str = "") -> str:
+    parts = []
+    if test_setup_code:
+        parts.append(test_setup_code)
+    parts.append(sample_code)
+    parts.append("\n".join(test_list))
+    return "\n".join(parts)
 
 
 def _build_program_humaneval(sample_code: str, test: str, entry_point: str) -> str:
@@ -118,7 +123,9 @@ def evaluate_task(record: dict, dataset: str, timeout: float = 5.0) -> dict:
     for sample in samples:
         sample = extract_python_code(sample)
         if dataset == "mbpp":
-            program = _build_program_mbpp(sample, record["test_list"])
+            program = _build_program_mbpp(
+                sample, record["test_list"], record.get("test_setup_code", "")
+            )
         elif dataset == "humaneval":
             program = _build_program_humaneval(
                 sample, record["test"], record["entry_point"]
