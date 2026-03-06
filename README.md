@@ -19,14 +19,18 @@ uv sync                       # installs all dependencies with CUDA torch
 
 ## Supported Models
 
-| Model | Type | HuggingFace ID |
-|-------|------|----------------|
-| Qwen2.5-7B | Base | `Qwen/Qwen2.5-7B` |
-| Qwen2.5-Coder-7B-Instruct | Instruct | `Qwen/Qwen2.5-Coder-7B-Instruct` |
-| Llama-2-7B | Base | `meta-llama/Llama-2-7b-hf` |
-| Llama-2-7B-Chat | Chat | `meta-llama/Llama-2-7b-chat-hf` |
-| Qwen-7B | Base | `Qwen/Qwen-7B` |
-| Qwen-7B-Chat | Chat | `Qwen/Qwen-7B-Chat` |
+| Model | Type | HuggingFace ID | Benchmarks |
+|-------|------|----------------|------------|
+| Codestral-22B | Base | `mistralai/Codestral-22B-v0.1` | HumanEval, MBPP |
+| Qwen2.5-Coder-7B | Base | `Qwen/Qwen2.5-Coder-7B` | HumanEval |
+| Qwen2.5-Coder-7B-Instruct | Instruct | `Qwen/Qwen2.5-Coder-7B-Instruct` | HumanEval, MBPP |
+| Qwen3-Coder-30B-A3B-Instruct | Instruct | `Qwen/Qwen3-Coder-30B-A3B-Instruct` | HumanEval |
+| CodeLlama-7B | Base | `codellama/CodeLlama-7b-hf` | HumanEval |
+| CodeLlama-7B-Instruct | Instruct | `codellama/CodeLlama-7b-Instruct-hf` | HumanEval |
+| Qwen2.5-7B | Base | `Qwen/Qwen2.5-7B` | MBPP |
+| Llama-2-7B | Base | `meta-llama/Llama-2-7b-hf` | MBPP |
+| Llama-2-7B-Chat | Chat | `meta-llama/Llama-2-7b-chat-hf` | MBPP |
+| Qwen-7B | Base | `Qwen/Qwen-7B` | MBPP |
 
 Chat/instruct models are auto-detected by model name (contains "chat", "instruct", or "coder") and use `tokenizer.apply_chat_template()` for prompt formatting.
 
@@ -44,9 +48,9 @@ uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless
 
 ## Benchmarks
 
-### MBPP (Sanitized)
+### MBPP
 
-257 problems from the MBPP sanitized test split. 10 samples per problem. Three sampling methods:
+257 problems (sanitized split) or 500 problems (full split). 10 samples per problem. Three sampling methods:
 
 | Method | Description |
 |--------|-------------|
@@ -63,6 +67,9 @@ uv run python -m bench --model meta-llama/Llama-2-7b-hf --method temp --temperat
 uv run python -m bench --model meta-llama/Llama-2-7b-hf --method temp --temperature 1.0
 uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless --temperature 1.0
 uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless_norm --temperature 1.0
+
+# Full MBPP (500 problems)
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless --mbpp-config full
 ```
 
 ### HumanEval
@@ -102,6 +109,8 @@ The orchestration script loads the model once and runs all 14 (method, temperatu
 | `--temperature` | 1.0 | Temperature applied to logits before softmax |
 | `--max-problems` | all | Limit number of problems (for testing) |
 | `--no-resume` | false | Start fresh, delete existing results |
+| `--no-stop` | false | Disable stop sequences (for debugging) |
+| `--mbpp-config` | `sanitized` | `sanitized` (257 problems) or `full` (500 problems) |
 | `--results-dir` | `results/` | Output directory |
 
 ### HumanEval (`python -m bench.humaneval`)
@@ -199,13 +208,17 @@ pless-for-coding/
 │   └── p_less_samplers.py
 ├── bench/                      # Benchmarking package
 │   ├── sampler_bridge.py       # Imports pless samplers via sys.path
-│   ├── generator.py            # Token-by-token generation + standard model.generate() (trust_remote_code enabled)
+│   ├── generator.py            # Token-by-token generation + standard model.generate()
 │   ├── checkpointing.py        # JSONL streaming writes + resume logic
 │   ├── prompts.py              # MBPP prompt formatting (base vs instruct)
 │   ├── runner.py               # MBPP CLI entry point (temp, pless, pless_norm methods)
+│   ├── eval/                   # Evaluation pipeline
+│   │   ├── executor.py         # Code extraction, sandboxed execution, pass@k
+│   │   └── consolidated_eval.py # Batch evaluation across all result files
 │   └── humaneval/              # HumanEval benchmark
 │       ├── prompts.py          # HumanEval prompt formatting (base vs instruct)
 │       └── runner.py           # HumanEval CLI entry point + run_benchmark()
+├── compare_pass_at_k.py        # Compare pass@k between pipelines
 ├── models/                     # Local model weights (gitignored)
-└── results/                    # Output JSONL files (gitignored)
+└── results/                    # Benchmark results (JSONL + analysis)
 ```

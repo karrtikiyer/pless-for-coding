@@ -209,8 +209,8 @@ __marimo__/
 # macOS
 .DS_Store
 
-# Benchmark results
-# results/
+# Benchmark result archives (keep raw JSONL, skip zips)
+results/**/*.zip
 
 # Model weights
 models/
