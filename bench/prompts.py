@@ -51,10 +51,21 @@ def format_prompt_instruct(task: dict, tokenizer) -> tuple[str, str]:
         {"role": "system", "content": "You are a helpful coding assistant. Write clean, correct Python code."},
         {"role": "user", "content": user_msg},
     ]
-    # Tokenize directly so special tokens (<|im_start|>, <|im_end|>) are encoded
-    # correctly rather than being split into subwords by a separate encode() call.
-    input_ids = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True)
-    return input_ids, ""
+    # Most tokenizers handle special tokens correctly when encoding the
+    # template string, so default to the text path (preserves BOS behaviour).
+    # Old Qwen tokenizers are the exception: <|im_start|>/<|im_end|> get
+    # split into subwords by encode(), producing a garbled prompt.  For
+    # those we tokenize directly (return_dict=False gives list[int] in
+    # transformers 5.x which defaults to BatchEncoding otherwise).
+    if getattr(tokenizer, '_qwen_direct_tokenize', False):
+        prompt = tokenizer.apply_chat_template(
+            messages, tokenize=True, add_generation_prompt=True, return_dict=False,
+        )
+    else:
+        prompt = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True,
+        )
+    return prompt, ""
 
 
 def is_instruct_model(model_id: str) -> bool:

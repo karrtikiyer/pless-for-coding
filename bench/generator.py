@@ -74,6 +74,8 @@ def load_model_and_tokenizer(model_id: str):
 
     # Old Qwen tokenizers lack chat_template; set Qwen's ChatML format so
     # tokenizer.apply_chat_template() works for instruct/chat models.
+    # Also flag the tokenizer so format_prompt_instruct uses tokenize=True
+    # (old Qwen encode() splits <|im_start|>/<|im_end|> into subwords).
     if is_old_qwen and tokenizer.chat_template is None:
         tokenizer.chat_template = (
             "{% for message in messages %}"
@@ -81,6 +83,7 @@ def load_model_and_tokenizer(model_id: str):
             "{% endfor %}"
             "{% if add_generation_prompt %}<|im_start|>assistant\n{% endif %}"
         )
+        tokenizer._qwen_direct_tokenize = True
 
     return model, tokenizer
 
