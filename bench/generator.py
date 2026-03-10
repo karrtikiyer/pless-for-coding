@@ -98,14 +98,17 @@ def _truncate_at_stop(text: str, stop_strings: list[str]) -> str:
 def generate_samples_standard(
     model,
     tokenizer,
-    prompt_text: str,
+    prompt_text: str | list[int],
     n_samples: int,
     max_new_tokens: int,
     temperature: float,
     stop_strings: list[str] | None = None,
 ) -> list[str]:
     """Generate samples using standard model.generate() with batched generation."""
-    input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
+    if isinstance(prompt_text, list):
+        input_ids = torch.tensor([prompt_text], device=model.device)
+    else:
+        input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
     attention_mask = torch.ones_like(input_ids)
     pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
     prompt_len = input_ids.shape[1]
@@ -180,7 +183,7 @@ def _expand_past_key_values(past_key_values, n: int):
 def generate_samples(
     model,
     tokenizer,
-    prompt_text: str,
+    prompt_text: str | list[int],
     sampler_fn,
     n_samples: int,
     max_new_tokens: int,
@@ -188,7 +191,10 @@ def generate_samples(
     stop_strings: list[str] | None = None,
 ) -> list[str]:
     """Generate n_samples completions in parallel using batched decoding."""
-    input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
+    if isinstance(prompt_text, list):
+        input_ids = torch.tensor([prompt_text], device=model.device)
+    else:
+        input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
     eos_id = tokenizer.eos_token_id
     N = n_samples
 

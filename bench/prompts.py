@@ -51,7 +51,10 @@ def format_prompt_instruct(task: dict, tokenizer) -> tuple[str, str]:
         {"role": "system", "content": "You are a helpful coding assistant. Write clean, correct Python code."},
         {"role": "user", "content": user_msg},
     ]
-    return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True), ""
+    # Tokenize directly so special tokens (<|im_start|>, <|im_end|>) are encoded
+    # correctly rather than being split into subwords by a separate encode() call.
+    input_ids = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True)
+    return input_ids, ""
 
 
 def is_instruct_model(model_id: str) -> bool:
