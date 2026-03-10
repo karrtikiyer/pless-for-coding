@@ -199,6 +199,16 @@ def generate_samples(
     else:
         input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
     eos_id = tokenizer.eos_token_id
+    # Old Qwen tokenizers may not set eos_token_id; fall back to
+    # <|endoftext|> (151643) or <|im_end|> which Qwen uses as EOS.
+    if eos_id is None:
+        for candidate in ("<|endoftext|>", "<|im_end|>"):
+            cid = tokenizer.convert_tokens_to_ids(candidate)
+            if cid is not None and cid != tokenizer.unk_token_id:
+                eos_id = cid
+                break
+    if eos_id is None:
+        raise ValueError("Cannot determine eos_token_id for this tokenizer")
     N = n_samples
 
     # Prefill: run prompt through model once to get KV cache (batch_size=1)
