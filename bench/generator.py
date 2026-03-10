@@ -61,6 +61,16 @@ def load_model_and_tokenizer(model_id: str):
     if is_old_qwen:
         type(model)._supports_default_dynamic_cache = classmethod(lambda cls: False)
 
+    # Old Qwen tokenizers lack chat_template; set Qwen's ChatML format so
+    # tokenizer.apply_chat_template() works for instruct/chat models.
+    if is_old_qwen and tokenizer.chat_template is None:
+        tokenizer.chat_template = (
+            "{% for message in messages %}"
+            "<|im_start|>{{ message['role'] }}\n{{ message['content'] }}<|im_end|>\n"
+            "{% endfor %}"
+            "{% if add_generation_prompt %}<|im_start|>assistant\n{% endif %}"
+        )
+
     return model, tokenizer
 
 
