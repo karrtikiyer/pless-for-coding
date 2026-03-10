@@ -22,6 +22,17 @@ for _name in ("GenerateOutput", "SampleOutput"):
     if not hasattr(_gen_utils, _name):
         setattr(_gen_utils, _name, type(_name, (), {}))
 
+# Restore DynamicCache subscript access removed in transformers 5.x.
+# Qwen-7B's remote code does past_key_values[i] to access KV cache layers.
+from transformers.cache_utils import DynamicCache
+
+if not hasattr(DynamicCache, '__getitem__'):
+    def _dynamic_cache_getitem(self, i):
+        if hasattr(self, 'key_cache'):
+            return (self.key_cache[i], self.value_cache[i])
+        return (self.layers[i].keys, self.layers[i].values)
+    DynamicCache.__getitem__ = _dynamic_cache_getitem
+
 
 def load_model_and_tokenizer(model_id: str):
     """Load model in bfloat16 with SDPA attention and its tokenizer."""
