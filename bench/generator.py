@@ -28,9 +28,10 @@ from transformers.cache_utils import DynamicCache
 
 if not hasattr(DynamicCache, '__getitem__'):
     def _dynamic_cache_getitem(self, i):
-        if hasattr(self, 'key_cache'):
-            return (self.key_cache[i], self.value_cache[i])
-        return (self.layers[i].keys, self.layers[i].values)
+        layer = self.layers[i]
+        if not layer.is_initialized:
+            return None
+        return (layer.keys, layer.values)
     DynamicCache.__getitem__ = _dynamic_cache_getitem
 
 
@@ -50,6 +51,15 @@ def load_model_and_tokenizer(model_id: str):
     model.eval()
     # torch.compile disabled: reduce-overhead mode conflicts with transformers 5.x
     # DynamicCache (CUDAGraph overwrites KV cache tensors). Re-enable when fixed upstream.
+
+    # Qwen-7B's remote code manages its own tuple-of-tuples KV cache and expects
+    # past_key_values=None on the first forward pass.  transformers 5.x generate()
+    # pre-creates a DynamicCache(config=...) with uninitialised layers (keys=None),
+    # which Qwen misinterprets as a populated cache → 'NoneType' has no attr 'size'.
+    # Opting out makes generate() skip DynamicCache creation entirely.
+    if model_id == "Qwen/Qwen-7B":
+        type(model)._supports_default_dynamic_cache = classmethod(lambda cls: False)
+
     return model, tokenizer
 
 
