@@ -34,6 +34,17 @@ if not hasattr(DynamicCache, '__getitem__'):
         return (layer.keys, layer.values)
     DynamicCache.__getitem__ = _dynamic_cache_getitem
 
+# Restore get_head_mask removed in transformers 5.x.
+# Qwen-7B's remote code calls self.get_head_mask(head_mask, num_layers).
+from transformers import PreTrainedModel
+
+if not hasattr(PreTrainedModel, 'get_head_mask'):
+    def _get_head_mask(self, head_mask, num_hidden_layers, is_attention_chunked=False):
+        if head_mask is not None:
+            raise NotImplementedError("head_mask pruning is no longer supported")
+        return [None] * num_hidden_layers
+    PreTrainedModel.get_head_mask = _get_head_mask
+
 
 def load_model_and_tokenizer(model_id: str):
     """Load model in bfloat16 with SDPA attention and its tokenizer."""
