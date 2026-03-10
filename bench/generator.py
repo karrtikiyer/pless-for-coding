@@ -38,8 +38,9 @@ if not hasattr(DynamicCache, '__getitem__'):
 def load_model_and_tokenizer(model_id: str):
     """Load model in bfloat16 with SDPA attention and its tokenizer."""
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-    # Old Qwen-7B uses custom attention that doesn't support SDPA.
-    attn_impl = "eager" if model_id == "Qwen/Qwen-7B" else "sdpa"
+    # Old Qwen-7B / Qwen-7B-Chat use custom attention that doesn't support SDPA.
+    is_old_qwen = model_id.startswith("Qwen/Qwen-7B")
+    attn_impl = "eager" if is_old_qwen else "sdpa"
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         torch_dtype=torch.bfloat16,
@@ -57,7 +58,7 @@ def load_model_and_tokenizer(model_id: str):
     # pre-creates a DynamicCache(config=...) with uninitialised layers (keys=None),
     # which Qwen misinterprets as a populated cache → 'NoneType' has no attr 'size'.
     # Opting out makes generate() skip DynamicCache creation entirely.
-    if model_id == "Qwen/Qwen-7B":
+    if is_old_qwen:
         type(model)._supports_default_dynamic_cache = classmethod(lambda cls: False)
 
     return model, tokenizer
