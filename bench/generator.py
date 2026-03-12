@@ -45,6 +45,26 @@ if not hasattr(PreTrainedModel, 'get_head_mask'):
         return [None] * num_hidden_layers
     PreTrainedModel.get_head_mask = _get_head_mask
 
+# Fix transformers 5.x _initialize_weights bug for remote code models:
+# Non-persistent buffers (e.g. QWenAttention.masked_bias) don't have
+# _is_hf_initialized, causing _init_weights to be called on the parent
+# module even though its child parameters ARE correctly loaded. Qwen's
+# _init_weights then re-randomizes c_proj.weight via a named_parameters()
+# loop, corrupting 32 attention output projection weights.
+_TF5 = int(transformers.__version__.split(".")[0]) >= 5
+
+if _TF5:
+    _orig_initialize_weights = PreTrainedModel._initialize_weights
+
+    def _fixed_initialize_weights(self, module, is_remote_code=False):
+        if is_remote_code and not getattr(module, '_is_hf_initialized', False):
+            for buf in module.buffers(recurse=False):
+                if buf is not None and not getattr(buf, '_is_hf_initialized', False):
+                    buf._is_hf_initialized = True
+        return _orig_initialize_weights(self, module, is_remote_code)
+
+    PreTrainedModel._initialize_weights = _fixed_initialize_weights
+
 
 def load_model_and_tokenizer(model_id: str):
     """Load model in bfloat16 with SDPA attention and its tokenizer."""

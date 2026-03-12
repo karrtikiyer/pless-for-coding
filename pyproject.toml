@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "torch>=2.4",
-    "transformers>5",
+    "transformers>=5",
     "datasets",
     "tqdm",
     "accelerate",
@@ -18,7 +18,7 @@ dependencies = [
     "einops",
     "zss",
     "sentencepiece",
-    "transformers-stream-generator"
+    "transformers-stream-generator",
 ]
 
 [[tool.uv.index]]
@@ -27,5 +27,7 @@ url = "https://download.pytorch.org/whl/cu124"
 explicit = true
 
 [tool.uv.sources]
-torch = { index = "pytorch-cu124" }
+torch = [
+    { index = "pytorch-cu124", marker = "sys_platform != 'darwin'" },
+]
 

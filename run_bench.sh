@@ -6,6 +6,22 @@ GPU_ID="${2:-0}"
 
 export CUDA_VISIBLE_DEVICES="$GPU_ID"
 
+# Models that require transformers 4.x (incompatible with 5.x remote code)
+LEGACY_MODELS=("Qwen/Qwen-7B" "Qwen/Qwen-7B-Chat")
+
+is_legacy=false
+for m in "${LEGACY_MODELS[@]}"; do
+  [[ "$MODEL_ID" == "$m" ]] && is_legacy=true
+done
+
+if $is_legacy; then
+  echo ">>> Legacy model detected — installing transformers <5"
+  uv add 'transformers<5,>=4.37'
+else
+  echo ">>> Modern model — ensuring transformers >=5"
+  uv add 'transformers>=5'
+fi
+
 CONFIGS=(
   "temp 0.7"
   "pless 0.6"
