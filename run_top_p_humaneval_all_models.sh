@@ -29,6 +29,19 @@ done
 
 echo "=== HumanEval top_p=0.9 sweep across ${#MODELS[@]} models on GPU $GPU_ID$($DRY_RUN && echo ' (DRY RUN)') ==="
 
+# Validate CLI contract before any uv add or GPU work
+echo "Validating CLI contract with bench.humaneval runner..."
+if ! uv run python -c "
+import sys
+sys.argv = ['bench.humaneval', '--model', 'x', '--method', 'top_p', '--top-p', '0.9']
+from bench.humaneval.runner import parse_args
+parse_args()
+"; then
+  echo "ERROR: bench.humaneval runner does not accept --method top_p — check bench/humaneval/runner.py"
+  exit 1
+fi
+echo "  CLI OK"
+
 for MODEL_ID in "${MODELS[@]}"; do
   echo ""
   echo ">>> Model: $MODEL_ID"
