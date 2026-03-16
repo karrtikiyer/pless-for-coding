@@ -31,6 +31,7 @@ uv sync                       # installs all dependencies with CUDA torch
 | Llama-2-7B | Base | `meta-llama/Llama-2-7b-hf` | MBPP |
 | Llama-2-7B-Chat | Chat | `meta-llama/Llama-2-7b-chat-hf` | MBPP |
 | Qwen-7B | Base | `Qwen/Qwen-7B` | MBPP |
+| Qwen-7B-Chat | Chat | `Qwen/Qwen-7B-Chat` | MBPP |
 
 Chat/instruct models are auto-detected by model name (contains "chat", "instruct", or "coder") and use `tokenizer.apply_chat_template()` for prompt formatting.
 
@@ -62,15 +63,24 @@ uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless
 # Single run
 uv run python -m bench --model meta-llama/Llama-2-7b-hf --method temp --temperature 0.7
 
-# All 4 configs for a model
+# All 5 configs for a model
 uv run python -m bench --model meta-llama/Llama-2-7b-hf --method temp --temperature 0.7
-uv run python -m bench --model meta-llama/Llama-2-7b-hf --method temp --temperature 1.0
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless --temperature 0.6
+uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless_norm --temperature 0.6
 uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless --temperature 1.0
 uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless_norm --temperature 1.0
 
 # Full MBPP (500 problems)
 uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless --mbpp-config full
 ```
+
+**Batch runner:** Run all 5 configs for a model with a single command:
+
+```bash
+bash run_bench.sh <model_id> [gpu_id]
+```
+
+This auto-detects legacy Qwen models and switches the `transformers` version accordingly. Each config runs full MBPP (500 problems) with 10 samples.
 
 ### HumanEval
 
@@ -185,6 +195,47 @@ Results are saved as JSONL files:
 }
 ```
 
+## Evaluation
+
+After generating samples, evaluate them to compute pass@k metrics and generate comparison reports.
+
+### Compute metrics for a single results file
+
+```bash
+uv run python -m bench.eval --results-file results/pless_full_mbpp_results/meta-llama--Llama-2-7b-hf/pless_t0.6.jsonl --dataset mbpp
+```
+
+This extracts Python code from each sample, runs it against test cases in a sandbox, and computes pass@k (k=1,3,5,10) and cover@t metrics. Results are saved as a JSON file in a `metrics/` subdirectory next to the input file.
+
+**Key flags:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--results-file` | (required) | Path to JSONL results file |
+| `--dataset` | (required) | `mbpp` or `humaneval` |
+| `--k` | `1,3,5,10` | k values for pass@k |
+| `--t` | `0.1,0.3,0.5,0.7` | Fractional t values for cover@t |
+| `--timeout` | `5.0` | Per-sample execution timeout (seconds) |
+| `--workers` | `4` | Number of parallel workers |
+
+### Generate comparison reports and charts
+
+```bash
+uv run python -m bench.eval.visualize --model-family all
+```
+
+Reads metrics JSONs and generates per model family (`llama`, `codellama`, `qwen`, or `all`):
+- `comparison_report.md` — ranked pass@1 table with extended metrics
+- `{family}_full_mbpp.csv` — tabular export
+- `figures/pass_at_1_comparison.png` — horizontal bar chart
+- `figures/metrics_overview.png` — faceted line plots
+
+Output goes to `results/pless_full_mbpp_results/analysis/{family}/`.
+
+### Results
+
+Full MBPP results (500 problems, 10 samples each) for 6 models are in `results/pless_full_mbpp_results/`, with per-model JSONL files, metrics, and analysis reports.
+
 ## Checkpoint / Resume
 
 Runs save after each problem. If interrupted, re-run the same command and it skips completed problems automatically. Use `--no-resume` to start fresh.
@@ -204,6 +255,8 @@ Then merge the `results/` directories.
 pless-for-coding/
 ├── pyproject.toml              # Dependencies (torch, transformers, datasets, etc.)
 ├── run_humaneval.py            # Orchestration: all 14 HumanEval configs, model loaded once
+├── run_bench.sh                # Batch MBPP runner: all 5 configs per model
+├── debug_generation.py         # Debugging script for model generation
 ├── p-less/                     # Original pless sampler code (git submodule, do not modify)
 │   └── p_less_samplers.py
 ├── bench/                      # Benchmarking package
@@ -213,12 +266,19 @@ pless-for-coding/
 │   ├── prompts.py              # MBPP prompt formatting (base vs instruct)
 │   ├── runner.py               # MBPP CLI entry point (temp, pless, pless_norm methods)
 │   ├── eval/                   # Evaluation pipeline
-│   │   ├── executor.py         # Code extraction, sandboxed execution, pass@k
-│   │   └── consolidated_eval.py # Batch evaluation across all result files
+│   │   ├── __main__.py         # CLI: compute pass@k metrics for a results file
+│   │   ├── executor.py         # Code extraction, sandboxed execution
+│   │   ├── metrics.py          # pass@k and cover@t computation
+│   │   ├── loader.py           # JSONL results loader
+│   │   ├── fingerprint.py      # AST fingerprinting for structural diversity
+│   │   ├── plots.py            # Chart generation helpers
+│   │   ├── report.py           # Markdown report generation
+│   │   └── visualize.py        # Comparison reports and charts across model families
 │   └── humaneval/              # HumanEval benchmark
 │       ├── prompts.py          # HumanEval prompt formatting (base vs instruct)
 │       └── runner.py           # HumanEval CLI entry point + run_benchmark()
 ├── compare_pass_at_k.py        # Compare pass@k between pipelines
 ├── models/                     # Local model weights (gitignored)
 └── results/                    # Benchmark results (JSONL + analysis)
+    └── pless_full_mbpp_results/  # Full MBPP results for 6 models × 5 methods
 ```
