@@ -36,6 +36,43 @@ def _strip_check_and_main(code: str) -> str:
     return code[: m.start()].rstrip()
 
 
+def _strip_after_function(code: str) -> str:
+    """Strip 'next problem' continuations that follow the target function.
+
+    Base models often generate: def func(): ... \\n\\n\"\"\"Next problem\"\"\"\\nassert ...
+    This is valid Python, so _trim_to_compilable accepts it, but the stray
+    assert calls crash with NameError before real tests run.
+    """
+    lines = code.split('\n')
+    # Find first top-level def
+    def_idx = None
+    for i, line in enumerate(lines):
+        if line.startswith('def '):
+            def_idx = i
+            break
+    if def_idx is None:
+        return code
+
+    # Walk past the function body
+    found_body = False
+    for i in range(def_idx + 1, len(lines)):
+        stripped = lines[i].strip()
+        if not stripped:
+            continue  # skip blank lines
+        if lines[i][0] in (' ', '\t'):
+            found_body = True
+        elif found_body:
+            # Another top-level def is likely a helper function — keep it
+            # and continue scanning past its body too.
+            if lines[i].startswith('def '):
+                found_body = False
+                continue
+            # First non-def, non-indented, non-blank line after body → truncate
+            return '\n'.join(lines[:i]).rstrip()
+
+    return code
+
+
 def _trim_to_compilable(code: str) -> str | None:
     """Return the longest line-prefix of *code* that compiles, or None."""
     try:
@@ -76,20 +113,20 @@ def extract_python_code(code: str) -> str:
     # Strategy 1: trim raw code directly
     result = _trim_to_compilable(code)
     if result is not None:
-        return _strip_check_and_main(result)
+        return _strip_check_and_main(_strip_after_function(result))
 
     # Strategy 2: strip code fences first, then trim
     stripped = strip_code_fences(code)
     if stripped != code:
         result = _trim_to_compilable(stripped)
         if result is not None:
-            return _strip_check_and_main(result)
+            return _strip_check_and_main(_strip_after_function(result))
         # Also try dedenting the stripped code
         dedented = textwrap.dedent(stripped)
         if dedented != stripped:
             result = _trim_to_compilable(dedented)
             if result is not None:
-                return _strip_check_and_main(result)
+                return _strip_check_and_main(_strip_after_function(result))
 
     # Strategy 3: dedent and retry (some models, e.g. CodeLlama-Instruct,
     # generate top-level code with leading indentation)
@@ -97,7 +134,7 @@ def extract_python_code(code: str) -> str:
     if dedented != code:
         result = _trim_to_compilable(dedented)
         if result is not None:
-            return _strip_check_and_main(result)
+            return _strip_check_and_main(_strip_after_function(result))
 
     # Nothing compiled — return original and let execution handle it
     return code

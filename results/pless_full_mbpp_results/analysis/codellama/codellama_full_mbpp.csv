@@ -1,0 +1,35 @@
+Model,Rank,Method,Source,pass@1 (%)
+CodeLlama-7B (base),1,P-Less Norm (t=0.6),Ours,41.8
+CodeLlama-7B (base),2,P-Less (t=0.6),Ours,41.4
+CodeLlama-7B (base),3,P-Less Norm (t=1.0),Ours,40.2
+CodeLlama-7B (base),4,P-Less (t=1.0),Ours,40.1
+CodeLlama-7B (base),5,FSD-d,Paper,39.6
+CodeLlama-7B (base),6,FSD,Paper,37.0
+CodeLlama-7B (base),7,Contrastive Search,Paper,36.0
+CodeLlama-7B (base),8,Greedy,Paper,35.4
+CodeLlama-7B (base),9,Diverse Beam Search,Paper,35.0
+CodeLlama-7B (base),10,Temperature,Paper,35.0
+CodeLlama-7B (base),11,Beam Search,Paper,34.2
+CodeLlama-7B (base),12,Top-p,Paper,32.8
+CodeLlama-7B (base),13,Typical,Paper,31.8
+CodeLlama-7B (base),14,Temperature (t=0.7),Ours,29.8
+CodeLlama-7B (base),15,Top-k,Paper,25.4
+CodeLlama-7B (base),16,η-Sampling,Paper,23.6
+CodeLlama-7B (base),17,Mirostat,Paper,21.2
+CodeLlama-7B-Instruct,1,P-Less (t=1.0),Ours,41.6
+CodeLlama-7B-Instruct,2,Diverse Beam Search,Paper,41.6
+CodeLlama-7B-Instruct,3,P-Less Norm (t=1.0),Ours,41.4
+CodeLlama-7B-Instruct,4,P-Less (t=0.6),Ours,41.2
+CodeLlama-7B-Instruct,5,P-Less Norm (t=0.6),Ours,41.1
+CodeLlama-7B-Instruct,6,Beam Search,Paper,40.8
+CodeLlama-7B-Instruct,7,Temperature,Paper,39.0
+CodeLlama-7B-Instruct,8,Temperature (t=0.7),Ours,38.3
+CodeLlama-7B-Instruct,9,Typical,Paper,38.2
+CodeLlama-7B-Instruct,10,Top-p,Paper,37.6
+CodeLlama-7B-Instruct,11,FSD,Paper,37.2
+CodeLlama-7B-Instruct,12,Contrastive Search,Paper,37.0
+CodeLlama-7B-Instruct,13,Greedy,Paper,36.8
+CodeLlama-7B-Instruct,14,FSD-d,Paper,36.6
+CodeLlama-7B-Instruct,15,Top-k,Paper,35.6
+CodeLlama-7B-Instruct,16,η-Sampling,Paper,35.4
+CodeLlama-7B-Instruct,17,Mirostat,Paper,34.4

@@ -1,0 +1,35 @@
+Model,Rank,Method,Source,pass@1 (%)
+Qwen-7B (base),1,Beam Search,Paper,34.4
+Qwen-7B (base),2,Temperature,Paper,33.8
+Qwen-7B (base),3,FSD-d,Paper,33.6
+Qwen-7B (base),4,Diverse Beam Search,Paper,33.2
+Qwen-7B (base),5,Greedy,Paper,33.0
+Qwen-7B (base),6,FSD,Paper,33.0
+Qwen-7B (base),7,P-Less (t=0.6),Ours,31.8
+Qwen-7B (base),8,P-Less Norm (t=0.6),Ours,31.8
+Qwen-7B (base),9,P-Less Norm (t=1.0),Ours,30.8
+Qwen-7B (base),10,P-Less (t=1.0),Ours,30.5
+Qwen-7B (base),11,Contrastive Search,Paper,28.4
+Qwen-7B (base),12,Top-p,Paper,27.4
+Qwen-7B (base),13,Typical,Paper,27.0
+Qwen-7B (base),14,η-Sampling,Paper,25.8
+Qwen-7B (base),15,Temperature (t=0.7),Ours,23.3
+Qwen-7B (base),16,Top-k,Paper,19.8
+Qwen-7B (base),17,Mirostat,Paper,18.4
+Qwen-7B-Chat,1,P-Less Norm (t=1.0),Ours,34.5
+Qwen-7B-Chat,2,P-Less Norm (t=0.6),Ours,34.4
+Qwen-7B-Chat,3,P-Less (t=1.0),Ours,34.4
+Qwen-7B-Chat,4,P-Less (t=0.6),Ours,34.0
+Qwen-7B-Chat,5,Diverse Beam Search,Paper,33.6
+Qwen-7B-Chat,6,Beam Search,Paper,30.8
+Qwen-7B-Chat,7,FSD,Paper,30.8
+Qwen-7B-Chat,8,Greedy,Paper,30.4
+Qwen-7B-Chat,9,Temperature,Paper,30.0
+Qwen-7B-Chat,10,FSD-d,Paper,29.8
+Qwen-7B-Chat,11,Top-p,Paper,28.8
+Qwen-7B-Chat,12,Temperature (t=0.7),Ours,28.7
+Qwen-7B-Chat,13,Typical,Paper,27.2
+Qwen-7B-Chat,14,Top-k,Paper,26.8
+Qwen-7B-Chat,15,Contrastive Search,Paper,25.8
+Qwen-7B-Chat,16,Mirostat,Paper,25.0
+Qwen-7B-Chat,17,η-Sampling,Paper,24.2

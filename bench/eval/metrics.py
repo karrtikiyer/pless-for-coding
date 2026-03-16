@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import numpy as np
 from human_eval.evaluation import estimate_pass_at_k
 
@@ -103,6 +105,49 @@ def add_structural_diversity(
         diversity = pairwise_diversity(correct_codes, cluster_threshold)
         result["mean_pairwise_distance"] = diversity["mean_distance"]
         result["num_ast_clusters"] = diversity["num_clusters"]
+
+
+def build_metrics_output(
+    task_results: list[dict],
+    records: list[dict],
+    *,
+    model: str,
+    method: str,
+    temperature: float,
+    dataset: str,
+    k_values: list[int],
+    t_values: list[float],
+) -> dict:
+    """Aggregate all metrics into a single output dict.
+
+    Expects task_results from evaluate_all() and the original records.
+    Mutates task_results in-place (adds fingerprint/diversity fields).
+    """
+    add_distinct_counts(task_results, records)
+    add_structural_diversity(task_results, records)
+
+    num_samples_per_task = len(records[0]["samples"]) if records else 0
+
+    pass_at_k = compute_pass_at_k(task_results, k_values)
+    cover_at_t, cover_at_t_distinct = compute_cover_at_t(
+        task_results, t_values, num_samples_per_task
+    )
+    structural_diversity = compute_structural_diversity(task_results)
+
+    return {
+        "model": model,
+        "method": method,
+        "temperature": temperature,
+        "dataset": dataset,
+        "num_tasks": len(records),
+        "num_samples_per_task": num_samples_per_task,
+        "pass_at_k": pass_at_k,
+        "cover_at_t": cover_at_t,
+        "cover_at_t_distinct": cover_at_t_distinct,
+        "structural_diversity": structural_diversity,
+        "per_task": task_results,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 def compute_structural_diversity(task_results: list[dict]) -> float:

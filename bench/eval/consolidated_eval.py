@@ -27,6 +27,7 @@ from bench.eval.metrics import build_metrics_output
 
 RESULTS_ROOT = Path("results")
 MBPP_ROOT = RESULTS_ROOT / "pless_mbpp_results"
+MBPP_FULL_ROOT = RESULTS_ROOT / "pless_full_mbpp_results"
 HE_FULL_ROOT = RESULTS_ROOT / "pless_human_eval_results" / "full_precision_results"
 HE_TEMP_ROOT = RESULTS_ROOT / "pless_human_eval_results" / "temprature_results"
 
@@ -64,9 +65,10 @@ class EvalUnit:
 # ---------------------------------------------------------------------------
 
 def discover_all() -> list[EvalUnit]:
-    """Scan all 3 data locations and return a list of EvalUnit instances."""
+    """Scan all data locations and return a list of EvalUnit instances."""
     units: list[EvalUnit] = []
     units.extend(_discover_mbpp())
+    units.extend(_discover_mbpp_full())
     units.extend(_discover_he_full())
     units.extend(_discover_he_temp())
     return units
@@ -91,6 +93,37 @@ def _discover_mbpp() -> list[EvalUnit]:
 
             out_dir = (
                 MBPP_ROOT / "analysis" / "consolidated_metrics" / model_dir.name
+            )
+            units.append(EvalUnit(
+                source_path=jsonl,
+                model=model_dir.name,
+                method=method,
+                temperature=temp,
+                dataset="mbpp",
+                format="mbpp_jsonl",
+                output_dir=out_dir,
+            ))
+    return units
+
+
+def _discover_mbpp_full() -> list[EvalUnit]:
+    units = []
+    if not MBPP_FULL_ROOT.exists():
+        return units
+    for model_dir in sorted(MBPP_FULL_ROOT.iterdir()):
+        if not model_dir.is_dir() or model_dir.name in ("analysis",):
+            continue
+        for jsonl in sorted(model_dir.glob("*.jsonl")):
+            stem = jsonl.stem
+            parts = stem.rsplit("_t", 1)
+            method = parts[0] if len(parts) == 2 else stem
+            try:
+                temp = float(parts[1]) if len(parts) == 2 else 0.0
+            except ValueError:
+                temp = 0.0
+
+            out_dir = (
+                MBPP_FULL_ROOT / "analysis" / "consolidated_metrics" / model_dir.name
             )
             units.append(EvalUnit(
                 source_path=jsonl,

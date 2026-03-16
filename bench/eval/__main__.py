@@ -1,18 +1,10 @@
 import argparse
 import json
-import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 from bench.eval.executor import evaluate_all
 from bench.eval.loader import load_results
-from bench.eval.metrics import (
-    add_distinct_counts,
-    add_structural_diversity,
-    compute_cover_at_t,
-    compute_pass_at_k,
-    compute_structural_diversity,
-)
+from bench.eval.metrics import build_metrics_output
 
 
 def parse_args():
@@ -85,40 +77,20 @@ def main():
     print(f"Evaluating samples (workers={args.workers}, timeout={args.timeout}s)...")
     task_results = evaluate_all(records, args.dataset, args.timeout, args.workers)
 
-    # Fingerprint for distinct counts
-    print("Computing AST fingerprints...")
-    add_distinct_counts(task_results, records)
-
-    # Structural diversity via pairwise AST edit distance
-    print("Computing structural diversity (pairwise AST edit distance)...")
-    add_structural_diversity(task_results, records)
-
-    # Metadata
+    # Compute all metrics
+    print("Computing AST fingerprints and structural diversity...")
     meta = infer_metadata(args.results_file, records[0])
-    num_samples_per_task = len(records[0]["samples"]) if records else 0
 
-    # Metrics
-    pass_at_k = compute_pass_at_k(task_results, k_values)
-    cover_at_t, cover_at_t_distinct = compute_cover_at_t(
-        task_results, t_values, num_samples_per_task
+    output = build_metrics_output(
+        task_results,
+        records,
+        model=meta["model"],
+        method=meta["method"],
+        temperature=meta["temperature"],
+        dataset=args.dataset,
+        k_values=k_values,
+        t_values=t_values,
     )
-
-    structural_diversity = compute_structural_diversity(task_results)
-
-    output = {
-        "model": meta["model"],
-        "method": meta["method"],
-        "temperature": meta["temperature"],
-        "dataset": args.dataset,
-        "num_tasks": len(records),
-        "num_samples_per_task": num_samples_per_task,
-        "pass_at_k": pass_at_k,
-        "cover_at_t": cover_at_t,
-        "cover_at_t_distinct": cover_at_t_distinct,
-        "structural_diversity": structural_diversity,
-        "per_task": task_results,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
 
     # Write output
     output_path = args.output or infer_output_path(args.results_file)
@@ -128,12 +100,12 @@ def main():
 
     # Print summary
     print(f"\nResults written to {output_path}")
-    print(f"  Tasks: {len(records)}")
-    print(f"  Samples per task: {num_samples_per_task}")
-    print(f"  pass@k: {pass_at_k}")
-    print(f"  cover@t: {cover_at_t}")
-    print(f"  cover@t (distinct): {cover_at_t_distinct}")
-    print(f"  structural_diversity: {structural_diversity}")
+    print(f"  Tasks: {output['num_tasks']}")
+    print(f"  Samples per task: {output['num_samples_per_task']}")
+    print(f"  pass@k: {output['pass_at_k']}")
+    print(f"  cover@t: {output['cover_at_t']}")
+    print(f"  cover@t (distinct): {output['cover_at_t_distinct']}")
+    print(f"  structural_diversity: {output['structural_diversity']}")
 
 
 if __name__ == "__main__":

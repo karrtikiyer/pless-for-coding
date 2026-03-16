@@ -55,9 +55,9 @@ PAPER_RESULTS: dict[str, dict[str, float]] = {
 
 # Display names for our methods
 _OUR_METHOD_NAMES = {
-    "pless": "P-Less (t=1.0)",
-    "pless_norm": "P-Less Norm (t=1.0)",
-    "temp": "Temperature (t=0.7)",
+    "pless": "P-Less",
+    "pless_norm": "P-Less Norm",
+    "temp": "Temperature",
 }
 
 # Model directory name → paper model key
@@ -116,7 +116,9 @@ def build_comparison_rows(
 
     # Our methods
     for m in our_metrics:
-        method_name = our_method_names.get(m["method"], m["method"])
+        base_name = our_method_names.get(m["method"], m["method"])
+        temp = m.get("temperature")
+        method_name = f"{base_name} (t={temp})" if temp is not None else base_name
         pass_at_1 = m["pass_at_k"].get("1")
         if pass_at_1 is not None:
             rows.append({
@@ -183,7 +185,9 @@ def format_extended_metrics_table(
     ]
 
     for m in our_metrics:
-        method_name = our_method_names.get(m["method"], m["method"])
+        base_name = our_method_names.get(m["method"], m["method"])
+        temp = m.get("temperature")
+        method_name = f"{base_name} (t={temp})" if temp is not None else base_name
         row = [method_name]
         for k in k_values:
             val = m["pass_at_k"].get(str(k))
@@ -220,24 +224,27 @@ def generate_analysis(
 
         total_methods = len(rows)
 
-        for name in our_method_names.values():
-            r = rank_of(rows, name)
+        # Rank all our methods
+        our_rows = [r for r in rows if r["source"] == "Ours"]
+        for row in our_rows:
+            r = rank_of(rows, row["method"])
             if r is not None:
-                parts.append(f"- **{name}**: rank {r}/{total_methods}")
+                parts.append(f"- **{row['method']}**: rank {r}/{total_methods}")
 
-        # Compare pless vs paper's Temperature
-        pless_row = next((r for r in rows if r["method"] == "P-Less (t=1.0)"), None)
+        # Compare best pless vs paper's Temperature
+        pless_rows = [r for r in rows if r["source"] == "Ours" and "P-Less" in r["method"] and "Norm" not in r["method"]]
         temp_paper = next((r for r in rows if r["method"] == "Temperature" and r["source"] == "Paper"), None)
-        if pless_row and temp_paper:
-            diff = pless_row["pass_at_1"] - temp_paper["pass_at_1"]
+        if pless_rows and temp_paper:
+            best_pless = max(pless_rows, key=lambda r: r["pass_at_1"])
+            diff = best_pless["pass_at_1"] - temp_paper["pass_at_1"]
             direction = "above" if diff > 0 else "below"
             parts.append(
-                f"- P-Less vs paper's Temperature sampling: "
-                f"{abs(diff):.1f}pp {direction} ({pless_row['pass_at_1']:.1f}% vs {temp_paper['pass_at_1']:.1f}%)"
+                f"- Best P-Less vs paper's Temperature sampling: "
+                f"{abs(diff):.1f}pp {direction} ({best_pless['pass_at_1']:.1f}% vs {temp_paper['pass_at_1']:.1f}%)"
             )
 
         # Our temp vs paper's temp (sanity check)
-        temp_ours = next((r for r in rows if r["method"] == "Temperature (t=0.7)" and r["source"] == "Ours"), None)
+        temp_ours = next((r for r in rows if r["source"] == "Ours" and r["method"].startswith("Temperature")), None)
         if temp_ours and temp_paper:
             diff = temp_ours["pass_at_1"] - temp_paper["pass_at_1"]
             parts.append(
@@ -250,7 +257,7 @@ def generate_analysis(
 
     parts.append("### Limitations\n")
     parts.append(
-        "- We ran only 3 methods (pless, pless_norm, temp_0.7) vs the paper's 14. "
+        "- We ran 5 configs (pless t=0.6/1.0, pless_norm t=0.6/1.0, temp 0.7) vs the paper's methods. "
         "The comparison is partial.\n"
         "- Our `temp_0.7` serves as an anchor to validate evaluation setup similarity; "
         "exact match is not expected due to differences in prompting, generation length, "

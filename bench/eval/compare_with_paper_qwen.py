@@ -31,8 +31,8 @@ PAPER_RESULTS: dict[str, dict[str, float]] = {
         "Diverse Beam Search": 33.20,
         "Contrastive Search": 28.40,
         "FSD": 33.00,
-        "FSD-d": 33.80,
-        "Temperature": 33.00,
+        "FSD-d": 33.60,
+        "Temperature": 33.80,
         "Top-p": 27.40,
         "Top-k": 19.80,
         "η-Sampling": 25.80,
@@ -53,9 +53,9 @@ _MODEL_SHORT = {
 
 # Display names for our methods
 _OUR_METHOD_NAMES = {
-    "pless": "P-Less (t=1.0)",
-    "pless_norm": "P-Less Norm (t=1.0)",
-    "temp": "Temperature (t=0.7)",
+    "pless": "P-Less",
+    "pless_norm": "P-Less Norm",
+    "temp": "Temperature",
 }
 
 
