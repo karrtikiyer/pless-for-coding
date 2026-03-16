@@ -58,8 +58,13 @@ Public API exports from `bench/eval/__init__.py`: `check_sample`, `evaluate_task
 
 ### Root-level scripts
 - `run_bench.sh` — Runs all 5 MBPP configs for a model: `temp@0.7, pless@0.6, pless_norm@0.6, pless@1.0, pless_norm@1.0`. Auto-detects legacy Qwen models and switches transformers version.
+- `run_top_p_mbpp_all_models.sh` — Runs `top_p=0.9` sweep across all MBPP models (discovers from `results/pless_full_mbpp_results/`). Writes to default `results/`.
+- `run_top_p_humaneval_all_models.sh` — Runs `top_p=0.9` sweep across all HumanEval models (discovers from `results/pless_human_eval_results/temprature_results/`). Writes to default `results/`.
 - `compare_pass_at_k.py` — Pipeline validation: re-runs tests from scratch comparing new JSONL results against old full-precision JSON. Flags tasks with >0.3 absolute pass rate difference. Uses dynamic import of `executor.py` to avoid pulling in `zss`.
 - `debug_generation.py` — Compares float32 (CPU) vs bfloat16 (CUDA/MPS) generation for `Qwen2.5-Coder-7B-Instruct`. **Note:** designed for a separate `.venv-debug` environment, not `uv run`.
+
+### Script naming convention
+Root-level shell scripts that target a specific benchmark **must** include the benchmark name in the filename: `run_<experiment>_<benchmark>_<scope>.sh` (e.g. `run_top_p_mbpp_all_models.sh`, `run_top_p_humaneval_all_models.sh`). Scripts without a benchmark qualifier (e.g. `run_bench.sh`) are model-level entry points that accept the benchmark implicitly via arguments.
 
 ## Models
 
