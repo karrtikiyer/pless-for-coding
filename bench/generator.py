@@ -126,6 +126,7 @@ def generate_samples_standard(
     max_new_tokens: int,
     temperature: float,
     stop_strings: list[str] | None = None,
+    top_p: float = 1.0,
 ) -> list[str]:
     """Generate samples using standard model.generate() with batched generation."""
     if isinstance(prompt_text, list):
@@ -151,7 +152,7 @@ def generate_samples_standard(
             do_sample=True,
             temperature=temperature,
             top_k=0,
-            top_p=1.0,
+            top_p=top_p,
             num_return_sequences=n_samples,
             **kwargs,
         )

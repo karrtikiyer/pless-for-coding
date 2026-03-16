@@ -27,7 +27,7 @@ for dir in "$RESULTS_DIR"/*/; do
   MODELS+=("$model_id")
 done
 
-echo "=== top_p=0.9 sweep across ${#MODELS[@]} models on GPU $GPU_ID${DRY_RUN:+ (DRY RUN)} ==="
+echo "=== top_p=0.9 sweep across ${#MODELS[@]} models on GPU $GPU_ID$($DRY_RUN && echo ' (DRY RUN)') ==="
 
 for MODEL_ID in "${MODELS[@]}"; do
   echo ""

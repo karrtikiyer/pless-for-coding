@@ -14,7 +14,7 @@ from bench.humaneval.prompts import (
 )
 from bench.sampler_bridge import SAMPLERS
 
-METHODS = list(SAMPLERS.keys()) + ["temp"]
+METHODS = list(SAMPLERS.keys()) + ["temp", "top_p"]
 
 
 def parse_args():
@@ -30,7 +30,11 @@ def parse_args():
     parser.add_argument("--no-stop", action="store_true", help="Disable stop sequences (for debugging)")
     parser.add_argument("--task-ids", nargs="+", default=None,
                         help="Only run specific task IDs (e.g., HumanEval/74 HumanEval/59)")
-    return parser.parse_args()
+    parser.add_argument("--top-p", type=float, default=None, help="top_p for nucleus sampling (method=top_p)")
+    args = parser.parse_args()
+    if args.method == "top_p" and args.top_p is None:
+        parser.error("--top-p is required when --method is top_p")
+    return args
 
 
 def run_benchmark(
@@ -46,13 +50,15 @@ def run_benchmark(
     max_problems: int = None,
     no_stop: bool = False,
     task_ids: list[str] | None = None,
+    top_p: float | None = None,
 ):
     """Run HumanEval benchmark for a single (method, temperature) config.
 
     Can be called directly (from orchestration script) with an already-loaded model,
     or via the CLI main() which loads the model itself.
     """
-    out_path = get_output_path(results_dir, model_id, method, temperature, benchmark="humaneval")
+    method_key = f"top_p{top_p}" if method == "top_p" else method
+    out_path = get_output_path(results_dir, model_id, method_key, temperature, benchmark="humaneval")
 
     if no_resume and out_path.exists():
         out_path.unlink()
@@ -77,7 +83,7 @@ def run_benchmark(
         remaining = remaining[:max_problems]
     print(f"  Problems remaining: {len(remaining)} / {len(dataset)}")
 
-    sampler_fn = SAMPLERS.get(method) if method != "temp" else None
+    sampler_fn = SAMPLERS.get(method) if method not in ("temp", "top_p") else None
 
     for task in tqdm(remaining, desc=f"{method}_t{temperature}"):
         task_id = task["task_id"]
@@ -87,7 +93,7 @@ def run_benchmark(
             else:
                 prompt_text, code_prefix = format_prompt_base(task)
 
-            if method == "temp":
+            if method in ("temp", "top_p"):
                 raw_samples = generate_samples_standard(
                     model=model,
                     tokenizer=tokenizer,
@@ -96,6 +102,7 @@ def run_benchmark(
                     max_new_tokens=max_new_tokens,
                     temperature=temperature,
                     stop_strings=stop_strings,
+                    top_p=top_p if method == "top_p" else 1.0,
                 )
             else:
                 raw_samples = generate_samples(
@@ -122,6 +129,8 @@ def run_benchmark(
                 "entry_point": task["entry_point"],
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
+            if method == "top_p":
+                record["top_p"] = top_p
             append_result(out_path, record)
             tqdm.write(f"  Completed task_id={task_id}")
 
@@ -151,6 +160,7 @@ def main():
         max_problems=args.max_problems,
         no_stop=args.no_stop,
         task_ids=args.task_ids,
+        top_p=args.top_p,
     )
 
 

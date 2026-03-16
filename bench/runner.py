@@ -17,7 +17,7 @@ from bench.sampler_bridge import SAMPLERS
 def parse_args():
     parser = argparse.ArgumentParser(description="Benchmark pless samplers on MBPP")
     parser.add_argument("--model", required=True, help="HuggingFace model ID")
-    parser.add_argument("--method", required=True, choices=list(SAMPLERS.keys()) + ["temp"], help="Sampling method")
+    parser.add_argument("--method", required=True, choices=list(SAMPLERS.keys()) + ["temp", "top_p"], help="Sampling method")
     parser.add_argument("--n-samples", type=int, default=10, help="Number of samples per problem")
     parser.add_argument("--max-new-tokens", type=int, default=512, help="Max new tokens per sample")
     parser.add_argument("--results-dir", default="results", help="Output directory")
@@ -27,14 +27,19 @@ def parse_args():
     parser.add_argument("--no-stop", action="store_true", help="Disable stop sequences (for debugging)")
     parser.add_argument("--mbpp-config", choices=["sanitized", "full"], default="sanitized",
                         help="MBPP dataset config: 'sanitized' (257 problems) or 'full' (500 problems)")
-    return parser.parse_args()
+    parser.add_argument("--top-p", type=float, default=None, help="top_p for nucleus sampling (method=top_p)")
+    args = parser.parse_args()
+    if args.method == "top_p" and args.top_p is None:
+        parser.error("--top-p is required when --method is top_p")
+    return args
 
 
 def main():
     args = parse_args()
 
     # Output path
-    out_path = get_output_path(args.results_dir, args.model, args.method, args.temperature)
+    method_key = f"top_p{args.top_p}" if args.method == "top_p" else args.method
+    out_path = get_output_path(args.results_dir, args.model, method_key, args.temperature)
 
     # Handle --no-resume
     if args.no_resume and out_path.exists():
@@ -57,7 +62,7 @@ def main():
     print(f"Loading model: {args.model}")
     model, tokenizer = load_model_and_tokenizer(args.model)
 
-    if args.method != "temp":
+    if args.method not in ("temp", "top_p"):
         sampler_fn = SAMPLERS[args.method]
     instruct = is_instruct_model(args.model)
 
@@ -80,7 +85,7 @@ def main():
             else:
                 prompt_text, code_prefix = format_prompt_base(task)
 
-            if args.method == "temp":
+            if args.method in ("temp", "top_p"):
                 raw_samples = generate_samples_standard(
                     model=model,
                     tokenizer=tokenizer,
@@ -89,6 +94,7 @@ def main():
                     max_new_tokens=args.max_new_tokens,
                     temperature=args.temperature,
                     stop_strings=stop_strings,
+                    top_p=args.top_p if args.method == "top_p" else 1.0,
                 )
             else:
                 raw_samples = generate_samples(
@@ -115,6 +121,8 @@ def main():
                 "test_list": task["test_list"],
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
+            if args.method == "top_p":
+                record["top_p"] = args.top_p
             if task.get("test_setup_code"):
                 record["test_setup_code"] = task["test_setup_code"]
             append_result(out_path, record)

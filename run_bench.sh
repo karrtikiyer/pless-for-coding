@@ -28,16 +28,23 @@ CONFIGS=(
   "pless_norm 0.6"
   "pless 1.0"
   "pless_norm 1.0"
+  "top_p 0.9"
 )
 
 echo "=== Benchmark: $MODEL_ID on GPU $GPU_ID ==="
 
 for cfg in "${CONFIGS[@]}"; do
-  read -r method temp <<< "$cfg"
+  read -r method val <<< "$cfg"
   echo ""
-  echo "--- method=$method temperature=$temp ---"
-  echo "Started: $(date)"
-  uv run python -m bench --model "$MODEL_ID" --method "$method" --temperature "$temp" --mbpp-config full
+  if [ "$method" = "top_p" ]; then
+    echo "--- method=$method top_p=$val ---"
+    echo "Started: $(date)"
+    uv run python -m bench --model "$MODEL_ID" --method top_p --top-p "$val" --temperature 1.0 --mbpp-config full
+  else
+    echo "--- method=$method temperature=$val ---"
+    echo "Started: $(date)"
+    uv run python -m bench --model "$MODEL_ID" --method "$method" --temperature "$val" --mbpp-config full
+  fi
   echo "Finished: $(date)"
 done
 

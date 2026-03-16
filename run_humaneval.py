@@ -6,20 +6,21 @@ from bench.generator import load_model_and_tokenizer
 from bench.humaneval.runner import run_benchmark
 
 CONFIGS = [
-    ("temp", 0.7),
-    ("temp", 1.0),
-    ("pless", 0.7),
-    ("pless", 1.0),
-    ("pless", 1.5),
-    ("pless", 2.0),
-    ("pless", 2.5),
-    ("pless", 3.0),
-    ("pless_norm", 0.7),
-    ("pless_norm", 1.0),
-    ("pless_norm", 1.5),
-    ("pless_norm", 2.0),
-    ("pless_norm", 2.5),
-    ("pless_norm", 3.0),
+    ("temp", 0.7, None),
+    ("temp", 1.0, None),
+    ("pless", 0.7, None),
+    ("pless", 1.0, None),
+    ("pless", 1.5, None),
+    ("pless", 2.0, None),
+    ("pless", 2.5, None),
+    ("pless", 3.0, None),
+    ("pless_norm", 0.7, None),
+    ("pless_norm", 1.0, None),
+    ("pless_norm", 1.5, None),
+    ("pless_norm", 2.0, None),
+    ("pless_norm", 2.5, None),
+    ("pless_norm", 3.0, None),
+    ("top_p", 1.0, 0.9),
 ]
 
 
@@ -39,8 +40,9 @@ def main():
     print(f"Loading model: {args.model}")
     model, tokenizer = load_model_and_tokenizer(args.model)
 
-    for i, (method, temperature) in enumerate(CONFIGS, 1):
-        print(f"\n[{i}/{len(CONFIGS)}] Running {method} @ temperature={temperature}")
+    for i, (method, temperature, top_p) in enumerate(CONFIGS, 1):
+        print(f"\n[{i}/{len(CONFIGS)}] Running {method} @ temperature={temperature}" +
+              (f" top_p={top_p}" if top_p is not None else ""))
         run_benchmark(
             model=model,
             tokenizer=tokenizer,
@@ -54,6 +56,7 @@ def main():
             max_problems=args.max_problems,
             no_stop=args.no_stop,
             task_ids=args.task_ids,
+            top_p=top_p,
         )
 
     print("\nAll configs complete!")

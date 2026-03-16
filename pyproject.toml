@@ -31,3 +31,8 @@ torch = [
     { index = "pytorch-cu124", marker = "sys_platform != 'darwin'" },
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
