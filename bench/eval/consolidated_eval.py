@@ -31,6 +31,20 @@ MBPP_FULL_ROOT = RESULTS_ROOT / "pless_full_mbpp_results"
 HE_FULL_ROOT = RESULTS_ROOT / "pless_human_eval_results" / "full_precision_results"
 HE_TEMP_ROOT = RESULTS_ROOT / "pless_human_eval_results" / "temprature_results"
 
+# Maps HF-style dir names → short names used in consolidated_metrics/ subdirs.
+# Keeps naming consistent across old and new runs.
+_MODEL_SHORT_NAMES: dict[str, str] = {
+    "codellama--CodeLlama-7b-Instruct-hf": "CodeLlama-7B",
+    "mistralai--Codestral-22B-v0.1":        "Codestral-22B",
+    "Qwen--Qwen2.5-Coder-7B-Instruct":      "Qwen2.5-Coder-7B",
+    "Qwen--Qwen3-Coder-30B-A3B-Instruct":   "Qwen3-Coder-30B",
+}
+
+
+def _model_short_name(dir_name: str) -> str:
+    return _MODEL_SHORT_NAMES.get(dir_name, dir_name)
+
+
 K_VALUES = [1, 3, 5, 10]
 T_VALUES = [0.1, 0.3, 0.5, 0.7]
 
@@ -70,6 +84,7 @@ def discover_all() -> list[EvalUnit]:
     units.extend(_discover_mbpp())
     units.extend(_discover_mbpp_full())
     units.extend(_discover_he_full())
+    units.extend(_discover_he_full_jsonl())
     units.extend(_discover_he_temp())
     return units
 
@@ -158,7 +173,7 @@ def _discover_he_full() -> list[EvalUnit]:
                     HE_FULL_ROOT
                     / "analysis"
                     / "consolidated_metrics"
-                    / model_dir.name
+                    / _model_short_name(model_dir.name)
                 )
                 units.append(EvalUnit(
                     source_path=detail_json,
@@ -169,6 +184,38 @@ def _discover_he_full() -> list[EvalUnit]:
                     format="he_full_json",
                     output_dir=out_dir,
                 ))
+    return units
+
+
+def _discover_he_full_jsonl() -> list[EvalUnit]:
+    """Discover HumanEval full-precision JSONL files (new method additions not in detailed.json)."""
+    units = []
+    if not HE_FULL_ROOT.exists():
+        return units
+    for model_dir in sorted(HE_FULL_ROOT.iterdir()):
+        if not model_dir.is_dir() or model_dir.name in ("analysis",):
+            continue
+        for jsonl in sorted(model_dir.glob("*.jsonl")):
+            stem = jsonl.stem  # e.g. "pless_t0.6", "top_p0.9_t1.0"
+            parts = stem.rsplit("_t", 1)
+            method = parts[0] if len(parts) == 2 else stem
+            try:
+                temp = float(parts[1]) if len(parts) == 2 else 0.0
+            except ValueError:
+                temp = 0.0
+            out_dir = (
+                HE_FULL_ROOT / "analysis" / "consolidated_metrics"
+                / _model_short_name(model_dir.name)
+            )
+            units.append(EvalUnit(
+                source_path=jsonl,
+                model=_model_short_name(model_dir.name),
+                method=method,
+                temperature=temp,
+                dataset="humaneval",
+                format="he_full_jsonl",
+                output_dir=out_dir,
+            ))
     return units
 
 
@@ -206,6 +253,11 @@ def _discover_he_temp() -> list[EvalUnit]:
     return units
 
 
+def _load_humaneval_full_jsonl(unit: EvalUnit) -> list[dict]:
+    """Load HumanEval full-precision JSONL (new methods). Same format as temp-sweep JSONL."""
+    return load_results(unit.source_path)
+
+
 def _temp_from_method(method: str) -> float:
     """Guess temperature from method name like 'temp_0.7', 'p_less'."""
     if method.startswith("temp_"):
@@ -218,6 +270,10 @@ def _temp_from_method(method: str) -> float:
     if method in ("top_p_0.95",):
         return 1.0
     if method in ("p_less", "p_less_norm"):
+        return 1.0
+    if method in ("pless", "pless_norm"):
+        return 0.6
+    if method in ("top_p",):
         return 1.0
     return 0.0
 
@@ -289,6 +345,8 @@ def load_unit(unit: EvalUnit) -> list[dict]:
         return _load_humaneval_full_json(unit)
     elif unit.format == "he_temp_jsonl":
         return _load_humaneval_temp_jsonl(unit)
+    elif unit.format == "he_full_jsonl":
+        return _load_humaneval_full_jsonl(unit)
     else:
         raise ValueError(f"Unknown format: {unit.format}")
 
