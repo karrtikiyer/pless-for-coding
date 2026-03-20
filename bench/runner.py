@@ -9,8 +9,8 @@ from bench.generator import generate_samples, generate_samples_standard, load_mo
 from bench.humaneval.prompts import HUMANEVAL_STOP_SEQUENCES
 from bench.prompts import format_prompt_base, format_prompt_instruct, is_instruct_model
 
-# MBPP uses standalone functions (same stop sequences as HumanEval)
-MBPP_STOP_SEQUENCES = HUMANEVAL_STOP_SEQUENCES
+# MBPP uses standalone functions; also stop on few-shot delimiter for base models
+MBPP_STOP_SEQUENCES = list(HUMANEVAL_STOP_SEQUENCES) + ["\n[DONE]"]
 from bench.sampler_bridge import SAMPLERS
 
 
