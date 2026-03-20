@@ -50,7 +50,8 @@ def generate_table(metrics_list: list[dict]) -> str:
     rows = []
     for m in metrics_list:
         model = m["model"].split("/")[-1] if "/" in m["model"] else m["model"]
-        method = f"{m['method']} (t={m['temperature']})"
+        temp = m.get("temperature")
+        method = f"{m['method']} (t={temp})" if temp is not None else m["method"]
         row = [model, method]
 
         for k in k_values:

@@ -257,7 +257,7 @@ def generate_analysis(
 
     parts.append("### Limitations\n")
     parts.append(
-        "- We ran 5 configs (pless t=0.6/1.0, pless_norm t=0.6/1.0, temp 0.7) vs the paper's methods. "
+        "- We ran 6 configs (pless t=0.6/1.0, pless_norm t=0.6/1.0, temp 0.7, top_p p=0.9) vs the paper's methods. "
         "The comparison is partial.\n"
         "- Our `temp_0.7` serves as an anchor to validate evaluation setup similarity; "
         "exact match is not expected due to differences in prompting, generation length, "
@@ -404,16 +404,19 @@ def plot_metrics_overview(
         "pless": "#6B46C1",
         "pless_norm": "#B7791F",
         "temp": "#2F855A",
+        "top_p": "#D53F8C",
     }
     method_styles = {
         "pless": dict(linestyle="-", marker="o"),
         "pless_norm": dict(linestyle="-.", marker="X"),
         "temp": dict(linestyle="-", marker="s"),
+        "top_p": dict(linestyle="--", marker="D"),
     }
     method_labels = {
         "pless": "pless",
         "pless_norm": "pless_norm",
         "temp": "temp_0.7",
+        "top_p": "top_p (p=0.9)",
     }
 
     fig, axes = plt.subplots(

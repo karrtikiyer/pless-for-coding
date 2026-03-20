@@ -27,15 +27,31 @@ _MODEL_COLORS = [
 # Per-method linestyle + marker
 # ---------------------------------------------------------------------------
 _METHOD_STYLES: dict[str, dict] = {
-    "greedy":     dict(linestyle="-",  marker="o"),
-    "temp_0.2":   dict(linestyle="-",  marker="^"),
-    "temp_0.7":   dict(linestyle="-",  marker="s"),
-    "top_p_0.95": dict(linestyle="-",  marker="D"),
-    "p_less":     dict(linestyle="-",  marker="o"),
-    "p_less_norm": dict(linestyle="-.", marker="X"),
-    # legacy aliases used in MBPP results
-    "pless":      dict(linestyle="-",  marker="o"),
-    "pless_norm": dict(linestyle="-.", marker="X"),
+    "greedy":      dict(linestyle="-",   marker="o"),
+    "temp_0.2":    dict(linestyle="-",   marker="^"),
+    "temp_0.7":    dict(linestyle="-",   marker="s"),
+    "top_p_0.95":  dict(linestyle="-",   marker="D"),
+    "top_p":       dict(linestyle="--",  marker="v"),   # Fix A: top_p (p=0.9, t=1.0)
+    "p_less":      dict(linestyle="-",   marker="o"),   # canonical default
+    "p_less_norm": dict(linestyle="-.",  marker="X"),   # canonical default norm
+    # t=0.6 variants — dashed + distinct markers (Fix B)
+    "pless":       dict(linestyle="--",  marker="D"),
+    "pless_norm":  dict(linestyle="--",  marker="P"),
+}
+
+# ---------------------------------------------------------------------------
+# Human-readable display names for legend labels (Fix C)
+# ---------------------------------------------------------------------------
+_METHOD_DISPLAY_NAMES: dict[str, str] = {
+    "greedy":      "greedy",
+    "temp_0.2":    "temp (t=0.2)",
+    "temp_0.7":    "temp (t=0.7)",
+    "top_p_0.95":  "top-p (p=0.95)",
+    "top_p":       "top-p (p=0.9, t=1.0)",
+    "p_less":      "p-less (default)",
+    "p_less_norm": "p-less-norm (default)",
+    "pless":       "p-less (t=0.6)",
+    "pless_norm":  "p-less-norm (t=0.6)",
 }
 
 
@@ -49,7 +65,8 @@ def load_metrics(paths: list[Path]) -> list[dict]:
 
 def _label_for(m: dict) -> str:
     model = m["model"].split("/")[-1] if "/" in m["model"] else m["model"]
-    return f"{model} ({m['method']})"
+    method_display = _METHOD_DISPLAY_NAMES.get(m["method"], m["method"])
+    return f"{model} ({method_display})"
 
 
 def _build_style_map(metrics_list: list[dict]) -> dict[tuple[str, str], dict]:
@@ -174,11 +191,12 @@ _METHOD_COLORS: dict[str, str] = {
     "temp_0.2":    "#C05621",  # orange
     "temp_0.7":    "#2F855A",  # green
     "top_p_0.95":  "#9B2C2C",  # red
-    "p_less":      "#6B46C1",  # purple
-    "p_less_norm": "#B7791F",  # gold
-    # legacy aliases
-    "pless":       "#6B46C1",
-    "pless_norm":  "#B7791F",
+    "top_p":       "#2C7A7B",  # teal (Fix A)
+    "p_less":      "#6B46C1",  # dark purple (canonical default)
+    "p_less_norm": "#B7791F",  # dark gold   (canonical default norm)
+    # t=0.6 variants — lighter shades to indicate same algorithm (Fix B)
+    "pless":       "#9F7AEA",  # light purple
+    "pless_norm":  "#ECC94B",  # yellow-gold
 }
 
 
@@ -281,12 +299,13 @@ def plot_aggregate_lines_faceted(
             axes[row, 1].set_xticks([float(t) for t in ts])
             axes[row, 2].set_xticks([float(t) for t in ts_d])
 
-    # Shared legend at the bottom
+    # Shared legend at the bottom — use display names (Fix C)
+    legend_labels = [_METHOD_DISPLAY_NAMES.get(k, k) for k in legend_handles.keys()]
     fig.legend(
         legend_handles.values(),
-        legend_handles.keys(),
+        legend_labels,
         loc="lower center",
-        ncol=len(legend_handles),
+        ncol=min(len(legend_handles), 5),
         fontsize=9,
         frameon=True,
     )
@@ -311,7 +330,16 @@ def plot_correctness_vs_diversity(
     style_map = _build_style_map(metrics_list)
     fig, ax = plt.subplots(figsize=(8, 8))
 
-    pless_configs = [m for m in metrics_list if m["method"] in ("pless", "p_less")]
+    # Fix E: deduplicate — prefer pless (t=0.6) over p_less (default) per model
+    seen_models: set[str] = set()
+    pless_configs = []
+    for m in metrics_list:
+        if m["method"] == "pless":
+            seen_models.add(m["model"])
+            pless_configs.append(m)
+    for m in metrics_list:
+        if m["method"] == "p_less" and m["model"] not in seen_models:
+            pless_configs.append(m)
     if not pless_configs:
         pless_configs = metrics_list  # fallback
 
@@ -346,6 +374,11 @@ def plot_correctness_vs_diversity(
     # y=x reference line
     ax.plot([0, 10], [0, 10], "k--", alpha=0.3, label="y = x (max diversity)")
 
+    # Fix E: bubble size legend (reference entries)
+    for n_tasks in (1, 5, 10, 20):
+        ax.scatter([], [], s=n_tasks * 15, c="gray", alpha=0.5,
+                   label=f"{n_tasks} task{'s' if n_tasks > 1 else ''}")
+
     ax.set_xlabel("num_correct (out of 10)")
     ax.set_ylabel("num_distinct_correct (out of 10)")
     ax.set_xlim(-0.5, 10.5)
@@ -353,8 +386,8 @@ def plot_correctness_vs_diversity(
     ax.set_xticks(range(11))
     ax.set_yticks(range(11))
     ax.set_aspect("equal")
-    ax.legend(fontsize=8)
-    ax.set_title(f"{dataset_name}: Correctness vs Diversity per Task (pless)")
+    ax.legend(fontsize=8, ncol=2)
+    ax.set_title(f"{dataset_name}: Correctness vs Diversity per Task (p-less family)")
     fig.tight_layout()
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -388,7 +421,8 @@ def plot_structural_diversity_bars(
 
         color = _METHOD_COLORS.get(method, "#333333")
         offset = (i - len(methods_order) / 2 + 0.5) * bar_width
-        ax.bar(x + offset, values, bar_width * 0.9, label=method, color=color, alpha=0.85)
+        label = _METHOD_DISPLAY_NAMES.get(method, method)  # Fix C
+        ax.bar(x + offset, values, bar_width * 0.9, label=label, color=color, alpha=0.85)
 
     ax.set_xlabel("Model")
     ax.set_ylabel("Structural Diversity\n(mean pairwise AST edit distance)")
@@ -411,41 +445,86 @@ def plot_pairwise_distance_distributions(
     output_path: Path,
     dataset_name: str = "MBPP",
 ) -> None:
-    """Box plot of per-task mean_pairwise_distance distributions, one box per model×method."""
-    fig, ax = plt.subplots(figsize=(max(8, len(metrics_list) * 1.5), 5))
+    """Box plot of per-task mean_pairwise_distance distributions.
 
-    labels = []
-    data = []
-    colors = []
+    Fix D: 2×2 faceted layout (one panel per model) instead of a single
+    ultra-wide figure.  Each panel shows one box per method.
+    """
+    import matplotlib.patches as mpatches
 
-    for m in metrics_list:
-        distances = [
-            t["mean_pairwise_distance"]
-            for t in m.get("per_task", [])
-            if t.get("num_correct", 0) >= 2 and "mean_pairwise_distance" in t
-        ]
-        if not distances:
-            continue
-        short_model = m["model"].split("/")[-1] if "/" in m["model"] else m["model"]
-        labels.append(f"{short_model}\n({m['method']})")
-        data.append(distances)
-        colors.append(_METHOD_COLORS.get(m["method"], "#333333"))
-
-    if not data:
-        plt.close(fig)
+    # Group by model
+    models_order = list(dict.fromkeys(m["model"] for m in metrics_list))
+    n_models = len(models_order)
+    if n_models == 0:
         return
 
-    bp = ax.boxplot(data, patch_artist=True, widths=0.6)
-    for patch, color in zip(bp["boxes"], colors):
-        patch.set_facecolor(color)
-        patch.set_alpha(0.6)
+    ncols = min(2, n_models)
+    nrows = (n_models + ncols - 1) // ncols
 
-    ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=7)
-    ax.set_ylabel("Per-Task Mean Pairwise AST Edit Distance")
-    ax.set_title(f"{dataset_name}: Distribution of Structural Diversity Across Tasks")
-    ax.set_ylim(0, 1.0)
-    ax.grid(axis="y", alpha=0.3)
-    fig.tight_layout()
+    fig, axes = plt.subplots(nrows, ncols, figsize=(8 * ncols, 5 * nrows), squeeze=False)
+
+    # Track which methods appeared (for shared legend)
+    seen_methods: dict[str, str] = {}  # method -> color
+
+    for idx, model in enumerate(models_order):
+        ax = axes[idx // ncols][idx % ncols]
+        model_metrics = [m for m in metrics_list if m["model"] == model]
+
+        box_data = []
+        box_labels = []
+        box_colors = []
+
+        for m in model_metrics:
+            distances = [
+                t["mean_pairwise_distance"]
+                for t in m.get("per_task", [])
+                if t.get("num_correct", 0) >= 2 and "mean_pairwise_distance" in t
+            ]
+            if not distances:
+                continue
+            method = m["method"]
+            color = _METHOD_COLORS.get(method, "#333333")
+            box_data.append(distances)
+            box_labels.append(_METHOD_DISPLAY_NAMES.get(method, method))
+            box_colors.append(color)
+            seen_methods.setdefault(method, color)
+
+        if not box_data:
+            ax.set_visible(False)
+            continue
+
+        bp = ax.boxplot(box_data, patch_artist=True, widths=0.6)
+        for patch, color in zip(bp["boxes"], box_colors):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.6)
+
+        ax.set_xticklabels(box_labels, rotation=30, ha="right", fontsize=8)
+        short_model = model.split("/")[-1] if "/" in model else model
+        ax.set_title(short_model, fontsize=10)
+        ax.set_ylabel("Mean Pairwise AST Edit Distance")
+        ax.set_ylim(0, 1.0)
+        ax.grid(axis="y", alpha=0.3)
+
+    # Hide empty panels if n_models is odd
+    for idx in range(n_models, nrows * ncols):
+        axes[idx // ncols][idx % ncols].set_visible(False)
+
+    # Shared legend using Patch handles
+    legend_patches = [
+        mpatches.Patch(facecolor=color, alpha=0.6,
+                       label=_METHOD_DISPLAY_NAMES.get(method, method))
+        for method, color in seen_methods.items()
+    ]
+    fig.legend(
+        handles=legend_patches,
+        loc="lower center",
+        ncol=min(len(legend_patches), 5),
+        fontsize=9,
+        frameon=True,
+    )
+
+    fig.suptitle(f"{dataset_name}: Distribution of Structural Diversity Across Tasks", fontsize=13)
+    fig.tight_layout(rect=[0, 0.06, 1, 0.97])
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=150)
@@ -488,13 +567,13 @@ def main():
         )
         print(f"Saved {out / 'aggregate_lines_all.png'}")
 
-        # Also produce a pless-only flat plot (readable with ≤8 lines)
+        # Also produce a pless-only faceted plot (Fix F: use faceted layout, not flat)
         pless_only = [
             m for m in metrics_list
             if m["method"] in ("pless", "pless_norm", "p_less", "p_less_norm")
         ]
         if pless_only:
-            plot_aggregate_lines(
+            plot_aggregate_lines_faceted(
                 pless_only, out / "aggregate_lines_pless.png", dataset_name=args.dataset,
             )
             print(f"Saved {out / 'aggregate_lines_pless.png'}")

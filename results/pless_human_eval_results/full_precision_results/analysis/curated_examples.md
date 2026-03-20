@@ -5,12 +5,12 @@
 - **1** tasks where p-less notably outperforms baselines (advantage > 0.5)
 - **54** tasks where baselines notably outperform p-less (advantage < -0.5)
 - **109** tasks with comparable performance (|advantage| ≤ 0.5)
-- Analyzed across **4 models**: CodeLlama-7B, Codestral-22B, Qwen2.5-Coder-7B, Qwen3-Coder-30B
+- Analyzed across **4 models**: Qwen--Qwen2.5-Coder-7B-Instruct, Qwen--Qwen3-Coder-30B-A3B-Instruct, codellama--CodeLlama-7b-Instruct-hf, mistralai--Codestral-22B-v0.1
 - Highest mean diversity ratio: **temp_0.7** (0.443)
-- **CodeLlama-7B**: 1 wins, 61 losses, p_less mean=3.61, p_less_norm mean=3.59
-- **Codestral-22B**: 3 wins, 33 losses, p_less mean=7.80, p_less_norm mean=7.76
-- **Qwen2.5-Coder-7B**: 2 wins, 28 losses, p_less mean=8.33, p_less_norm mean=7.52
-- **Qwen3-Coder-30B**: 1 wins, 18 losses, p_less mean=7.60, p_less_norm mean=7.56
+- **Qwen--Qwen2.5-Coder-7B-Instruct**: 2 wins, 28 losses, p_less mean=8.33, p_less_norm mean=7.52
+- **Qwen--Qwen3-Coder-30B-A3B-Instruct**: 1 wins, 18 losses, p_less mean=7.60, p_less_norm mean=7.56
+- **codellama--CodeLlama-7b-Instruct-hf**: 1 wins, 61 losses, p_less mean=3.61, p_less_norm mean=3.59
+- **mistralai--Codestral-22B-v0.1**: 3 wins, 33 losses, p_less mean=7.80, p_less_norm mean=7.76
 
 ## Methodology
 
@@ -26,18 +26,18 @@
 
 | Model | Wins | Losses | Ties |
 |---|---|---|---|
-| CodeLlama-7B | 1 | 61 | 102 |
-| Codestral-22B | 3 | 33 | 128 |
-| Qwen2.5-Coder-7B | 2 | 28 | 134 |
-| Qwen3-Coder-30B | 1 | 18 | 145 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 2 | 28 | 134 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 1 | 18 | 145 |
+| codellama--CodeLlama-7b-Instruct-hf | 1 | 61 | 102 |
+| mistralai--Codestral-22B-v0.1 | 3 | 33 | 128 |
 
 ### By task difficulty
 
-| Difficulty | CodeLlama-7B W/L/T | Codestral-22B W/L/T | Qwen2.5-Coder-7B W/L/T | Qwen3-Coder-30B W/L/T |
+| Difficulty | Qwen--Qwen2.5-Coder-7B-Instruct W/L/T | Qwen--Qwen3-Coder-30B-A3B-Instruct W/L/T | codellama--CodeLlama-7b-Instruct-hf W/L/T | mistralai--Codestral-22B-v0.1 W/L/T |
 |---|---|---|---|---|
-| Easy | 1/26/48 | 0/7/68 | 0/6/69 | 0/1/74 |
-| Medium | 0/33/45 | 3/20/55 | 2/20/56 | 1/15/62 |
-| Hard | 0/2/9 | 0/6/5 | 0/2/9 | 0/2/9 |
+| Easy | 0/6/69 | 0/1/74 | 1/26/48 | 0/7/68 |
+| Medium | 2/20/56 | 1/15/62 | 0/33/45 | 3/20/55 |
+| Hard | 0/2/9 | 0/2/9 | 0/2/9 | 0/6/5 |
 
 ## Top P-Less Wins (7 examples)
 
@@ -47,12 +47,12 @@
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 0 | 0 | 0 | 0 | 0 | 0 |
-| Codestral-22B | 0 | 2 | 1 | 2 | 3 | 0 |
-| Qwen2.5-Coder-7B | 0 | 1 | 2 | 2 | 0 | 4 |
-| Qwen3-Coder-30B | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 0 | 1 | 2 | 2 | 0 | 4 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| codellama--CodeLlama-7b-Instruct-hf | 0 | 0 | 0 | 0 | 0 | 0 |
+| mistralai--Codestral-22B-v0.1 | 0 | 2 | 1 | 2 | 3 | 0 |
 
-**Most dramatic model:** Qwen2.5-Coder-7B — `p_less_norm` (4/10) vs `greedy` (0/10)
+**Most dramatic model:** Qwen--Qwen2.5-Coder-7B-Instruct — `p_less_norm` (4/10) vs `greedy` (0/10)
 
 <details><summary>P-less (passed) — <code>p_less_norm</code></summary>
 
@@ -104,12 +104,12 @@
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 0 | 5 | 5 | 5 | 7 | 6 |
-| Codestral-22B | 10 | 10 | 10 | 10 | 10 | 10 |
-| Qwen2.5-Coder-7B | 10 | 9 | 9 | 10 | 10 | 9 |
-| Qwen3-Coder-30B | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 10 | 9 | 9 | 10 | 10 | 9 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| codellama--CodeLlama-7b-Instruct-hf | 0 | 5 | 5 | 5 | 7 | 6 |
+| mistralai--Codestral-22B-v0.1 | 10 | 10 | 10 | 10 | 10 | 10 |
 
-**Most dramatic model:** CodeLlama-7B — `p_less` (7/10) vs `greedy` (0/10)
+**Most dramatic model:** codellama--CodeLlama-7b-Instruct-hf — `p_less` (7/10) vs `greedy` (0/10)
 
 <details><summary>P-less (passed) — <code>p_less</code></summary>
 
@@ -145,12 +145,12 @@
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 0 | 0 | 0 | 0 | 0 | 0 |
-| Codestral-22B | 10 | 10 | 9 | 9 | 10 | 10 |
-| Qwen2.5-Coder-7B | 0 | 0 | 3 | 3 | 0 | 3 |
-| Qwen3-Coder-30B | 0 | 1 | 4 | 0 | 6 | 5 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 0 | 0 | 3 | 3 | 0 | 3 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 0 | 1 | 4 | 0 | 6 | 5 |
+| codellama--CodeLlama-7b-Instruct-hf | 0 | 0 | 0 | 0 | 0 | 0 |
+| mistralai--Codestral-22B-v0.1 | 10 | 10 | 9 | 9 | 10 | 10 |
 
-**Most dramatic model:** Qwen3-Coder-30B — `p_less` (6/10) vs `greedy` (0/10)
+**Most dramatic model:** Qwen--Qwen3-Coder-30B-A3B-Instruct — `p_less` (6/10) vs `greedy` (0/10)
 
 <details><summary>P-less (passed) — <code>p_less</code></summary>
 
@@ -194,12 +194,12 @@
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 0 | 0 | 0 | 0 | 0 | 0 |
-| Codestral-22B | 0 | 1 | 1 | 1 | 6 | 3 |
-| Qwen2.5-Coder-7B | 0 | 4 | 9 | 5 | 5 | 3 |
-| Qwen3-Coder-30B | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 0 | 4 | 9 | 5 | 5 | 3 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| codellama--CodeLlama-7b-Instruct-hf | 0 | 0 | 0 | 0 | 0 | 0 |
+| mistralai--Codestral-22B-v0.1 | 0 | 1 | 1 | 1 | 6 | 3 |
 
-**Most dramatic model:** Codestral-22B — `p_less` (6/10) vs `greedy` (0/10)
+**Most dramatic model:** mistralai--Codestral-22B-v0.1 — `p_less` (6/10) vs `greedy` (0/10)
 
 <details><summary>P-less (passed) — <code>p_less</code></summary>
 
@@ -240,17 +240,17 @@
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 10 | 10 | 10 | 10 | 10 | 10 |
-| Codestral-22B | 10 | 10 | 10 | 10 | 10 | 10 |
-| Qwen2.5-Coder-7B | 10 | 10 | 9 | 9 | 10 | 10 |
-| Qwen3-Coder-30B | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 10 | 10 | 9 | 9 | 10 | 10 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| codellama--CodeLlama-7b-Instruct-hf | 10 | 10 | 10 | 10 | 10 | 10 |
+| mistralai--Codestral-22B-v0.1 | 10 | 10 | 10 | 10 | 10 | 10 |
 
-**Most dramatic model:** CodeLlama-7B — `p_less` (10/10) vs `greedy` (10/10)
+**Most dramatic model:** Qwen--Qwen2.5-Coder-7B-Instruct — `p_less` (10/10) vs `temp_0.7` (9/10)
 
 <details><summary>P-less (passed) — <code>p_less</code></summary>
 
 ```python
-    for i in range(len(numbers) - 1):
+    for i in range(len(numbers)):
         for j in range(i + 1, len(numbers)):
             if abs(numbers[i] - numbers[j]) < threshold:
                 return True
@@ -258,13 +258,12 @@
 ```
 </details>
 
-<details><summary>Baseline (failed) — <code>greedy</code></summary>
+<details><summary>Baseline (failed) — <code>temp_0.7</code></summary>
 
 ```python
-    for i in range(len(numbers) - 1):
-        for j in range(i + 1, len(numbers)):
-            if abs(numbers[i] - numbers[j]) < threshold:
-                return True
+    for num in set(numbers):
+        if any(abs(num - other_num) < threshold for other_num in numbers if num != other_num):
+            return True
     return False
 ```
 </details>
@@ -276,88 +275,57 @@
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 10 | 10 | 10 | 10 | 10 | 10 |
-| Codestral-22B | 10 | 10 | 10 | 10 | 10 | 10 |
-| Qwen2.5-Coder-7B | 10 | 10 | 9 | 9 | 10 | 9 |
-| Qwen3-Coder-30B | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 10 | 10 | 9 | 9 | 10 | 9 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| codellama--CodeLlama-7b-Instruct-hf | 10 | 10 | 10 | 10 | 10 | 10 |
+| mistralai--Codestral-22B-v0.1 | 10 | 10 | 10 | 10 | 10 | 10 |
 
-**Most dramatic model:** CodeLlama-7B — `p_less` (10/10) vs `greedy` (10/10)
+**Most dramatic model:** Qwen--Qwen2.5-Coder-7B-Instruct — `p_less` (10/10) vs `temp_0.7` (9/10)
 
 <details><summary>P-less (passed) — <code>p_less</code></summary>
 
 ```python
-    # Calculate the mean of the input list
     mean = sum(numbers) / len(numbers)
-
-    # Calculate the absolute difference between each element and the mean
-    deviations = [abs(x - mean) for x in numbers]
-
-    # Calculate the average of the absolute differences
-    mad = sum(deviations) / len(deviations)
-
-    return mad
+    return sum(abs(x - mean) for x in numbers) / len(numbers)
 ```
 </details>
 
-<details><summary>Baseline (failed) — <code>greedy</code></summary>
+<details><summary>Baseline (failed) — <code>temp_0.7</code></summary>
 
 ```python
-    # Calculate the mean of the input list
-    mean = sum(numbers) / len(numbers)
+    mean = statistics.mean(numbers)
+    return statistics.mean([abs(x - mean) for x in numbers])
 
-    # Calculate the absolute difference between each element and the mean
-    deviations = [abs(x - mean) for x in numbers]
-
-    # Calculate the average of the absolute differences
-    mad = sum(deviations) / len(deviations)
-
-    return mad
+# Test the function
+print(mean_absolute_deviation([1.0, 2.0, 3.0, 4.0]))  # Expected output: 1.0
 ```
 </details>
 
 
-### HumanEval/13
+### HumanEval/7
 
 **P-less advantage:** +0.00 | **Difficulty:** easy
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 10 | 10 | 10 | 10 | 10 | 10 |
-| Codestral-22B | 10 | 10 | 9 | 9 | 10 | 10 |
-| Qwen2.5-Coder-7B | 10 | 10 | 10 | 10 | 10 | 9 |
-| Qwen3-Coder-30B | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| codellama--CodeLlama-7b-Instruct-hf | 10 | 10 | 10 | 10 | 10 | 10 |
+| mistralai--Codestral-22B-v0.1 | 10 | 10 | 10 | 10 | 10 | 10 |
 
-**Most dramatic model:** CodeLlama-7B — `p_less` (10/10) vs `greedy` (10/10)
+**Most dramatic model:** Qwen--Qwen2.5-Coder-7B-Instruct — `p_less` (10/10) vs `greedy` (10/10)
 
 <details><summary>P-less (passed) — <code>p_less</code></summary>
 
 ```python
-    if a == 0:
-        return b
-    if b == 0:
-        return a
-    while a != b:
-        if a > b:
-            a = a - b
-        else:
-            b = b - a
-    return a
+    return [s for s in strings if substring in s]
 ```
 </details>
 
 <details><summary>Baseline (failed) — <code>greedy</code></summary>
 
 ```python
-    if a == 0:
-        return b
-    if b == 0:
-        return a
-    while a != b:
-        if a > b:
-            a = a - b
-        else:
-            b = b - a
-    return a
+    return [s for s in strings if substring in s]
 ```
 </details>
 
@@ -370,12 +338,12 @@
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 0 | 0 | 0 | 0 | 0 | 0 |
-| Codestral-22B | 0 | 0 | 0 | 0 | 0 | 0 |
-| Qwen2.5-Coder-7B | 0 | 4 | 7 | 4 | 3 | 5 |
-| Qwen3-Coder-30B | 0 | 2 | 9 | 3 | 0 | 0 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 0 | 4 | 7 | 4 | 3 | 5 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 0 | 2 | 9 | 3 | 0 | 0 |
+| codellama--CodeLlama-7b-Instruct-hf | 0 | 0 | 0 | 0 | 0 | 0 |
+| mistralai--Codestral-22B-v0.1 | 0 | 0 | 0 | 0 | 0 | 0 |
 
-**Most dramatic model:** Qwen3-Coder-30B — `temp_0.7` (9/10) vs `p_less` (0/10)
+**Most dramatic model:** Qwen--Qwen3-Coder-30B-A3B-Instruct — `temp_0.7` (9/10) vs `p_less` (0/10)
 
 <details><summary>P-less (failed) — <code>p_less</code></summary>
 
@@ -454,12 +422,12 @@
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 0 | 1 | 0 | 2 | 0 | 0 |
-| Codestral-22B | 0 | 4 | 5 | 8 | 0 | 0 |
-| Qwen2.5-Coder-7B | 0 | 0 | 0 | 0 | 0 | 0 |
-| Qwen3-Coder-30B | 0 | 0 | 0 | 0 | 0 | 0 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 0 | 0 | 0 | 0 | 0 | 0 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 0 | 0 | 0 | 0 | 0 | 0 |
+| codellama--CodeLlama-7b-Instruct-hf | 0 | 1 | 0 | 2 | 0 | 0 |
+| mistralai--Codestral-22B-v0.1 | 0 | 4 | 5 | 8 | 0 | 0 |
 
-**Most dramatic model:** Codestral-22B — `top_p_0.95` (8/10) vs `p_less` (0/10)
+**Most dramatic model:** mistralai--Codestral-22B-v0.1 — `top_p_0.95` (8/10) vs `p_less` (0/10)
 
 <details><summary>P-less (failed) — <code>p_less</code></summary>
 
@@ -525,12 +493,12 @@ def intersection(interval1, interval2):
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 0 | 0 | 4 | 4 | 0 | 0 |
-| Codestral-22B | 10 | 10 | 10 | 10 | 10 | 10 |
-| Qwen2.5-Coder-7B | 10 | 10 | 9 | 10 | 10 | 8 |
-| Qwen3-Coder-30B | 0 | 3 | 6 | 5 | 0 | 0 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 10 | 10 | 9 | 10 | 10 | 8 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 0 | 3 | 6 | 5 | 0 | 0 |
+| codellama--CodeLlama-7b-Instruct-hf | 0 | 0 | 4 | 4 | 0 | 0 |
+| mistralai--Codestral-22B-v0.1 | 10 | 10 | 10 | 10 | 10 | 10 |
 
-**Most dramatic model:** Qwen3-Coder-30B — `temp_0.7` (6/10) vs `p_less` (0/10)
+**Most dramatic model:** Qwen--Qwen3-Coder-30B-A3B-Instruct — `temp_0.7` (6/10) vs `p_less` (0/10)
 
 <details><summary>P-less (failed) — <code>p_less</code></summary>
 
@@ -583,12 +551,12 @@ def intersection(interval1, interval2):
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 10 | 9 | 4 | 4 | 10 | 10 |
-| Codestral-22B | 0 | 3 | 6 | 6 | 0 | 0 |
-| Qwen2.5-Coder-7B | 10 | 9 | 8 | 7 | 7 | 7 |
-| Qwen3-Coder-30B | 10 | 10 | 8 | 10 | 10 | 10 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 10 | 9 | 8 | 7 | 7 | 7 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 10 | 10 | 8 | 10 | 10 | 10 |
+| codellama--CodeLlama-7b-Instruct-hf | 10 | 9 | 4 | 4 | 10 | 10 |
+| mistralai--Codestral-22B-v0.1 | 0 | 3 | 6 | 6 | 0 | 0 |
 
-**Most dramatic model:** Codestral-22B — `temp_0.7` (6/10) vs `p_less` (0/10)
+**Most dramatic model:** mistralai--Codestral-22B-v0.1 — `temp_0.7` (6/10) vs `p_less` (0/10)
 
 <details><summary>P-less (failed) — <code>p_less</code></summary>
 
@@ -636,12 +604,12 @@ print(sort_array([2, 4, 3, 0, 1, 5, 6])) # => [6, 5, 4, 3, 2, 1, 0]
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 0 | 0 | 0 | 2 | 0 | 0 |
-| Codestral-22B | 10 | 5 | 2 | 5 | 3 | 5 |
-| Qwen2.5-Coder-7B | 0 | 3 | 5 | 2 | 3 | 2 |
-| Qwen3-Coder-30B | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 0 | 3 | 5 | 2 | 3 | 2 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| codellama--CodeLlama-7b-Instruct-hf | 0 | 0 | 0 | 2 | 0 | 0 |
+| mistralai--Codestral-22B-v0.1 | 10 | 5 | 2 | 5 | 3 | 5 |
 
-**Most dramatic model:** Codestral-22B — `greedy` (10/10) vs `p_less` (3/10)
+**Most dramatic model:** mistralai--Codestral-22B-v0.1 — `greedy` (10/10) vs `p_less` (3/10)
 
 <details><summary>P-less (failed) — <code>p_less</code></summary>
 
@@ -684,12 +652,12 @@ print(sort_array([2, 4, 3, 0, 1, 5, 6])) # => [6, 5, 4, 3, 2, 1, 0]
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 0 | 1 | 9 | 6 | 0 | 0 |
-| Codestral-22B | 10 | 10 | 10 | 10 | 10 | 10 |
-| Qwen2.5-Coder-7B | 10 | 10 | 10 | 10 | 10 | 10 |
-| Qwen3-Coder-30B | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| codellama--CodeLlama-7b-Instruct-hf | 0 | 1 | 9 | 6 | 0 | 0 |
+| mistralai--Codestral-22B-v0.1 | 10 | 10 | 10 | 10 | 10 | 10 |
 
-**Most dramatic model:** CodeLlama-7B — `temp_0.7` (9/10) vs `p_less` (0/10)
+**Most dramatic model:** codellama--CodeLlama-7b-Instruct-hf — `temp_0.7` (9/10) vs `p_less` (0/10)
 
 <details><summary>P-less (failed) — <code>p_less</code></summary>
 
@@ -726,12 +694,12 @@ print(sort_array([2, 4, 3, 0, 1, 5, 6])) # => [6, 5, 4, 3, 2, 1, 0]
 
 | Model | greedy | temp_0.2 | temp_0.7 | top_p_0.95 | p_less | p_less_norm |
 |---|---|---|---|---|---|---|
-| CodeLlama-7B | 0 | 0 | 0 | 0 | 0 | 0 |
-| Codestral-22B | 10 | 10 | 9 | 10 | 10 | 10 |
-| Qwen2.5-Coder-7B | 10 | 10 | 10 | 10 | 10 | 10 |
-| Qwen3-Coder-30B | 0 | 5 | 9 | 8 | 0 | 0 |
+| Qwen--Qwen2.5-Coder-7B-Instruct | 10 | 10 | 10 | 10 | 10 | 10 |
+| Qwen--Qwen3-Coder-30B-A3B-Instruct | 0 | 5 | 9 | 8 | 0 | 0 |
+| codellama--CodeLlama-7b-Instruct-hf | 0 | 0 | 0 | 0 | 0 | 0 |
+| mistralai--Codestral-22B-v0.1 | 10 | 10 | 9 | 10 | 10 | 10 |
 
-**Most dramatic model:** Qwen3-Coder-30B — `temp_0.7` (9/10) vs `p_less` (0/10)
+**Most dramatic model:** Qwen--Qwen3-Coder-30B-A3B-Instruct — `temp_0.7` (9/10) vs `p_less` (0/10)
 
 <details><summary>P-less (failed) — <code>p_less</code></summary>
 
@@ -814,33 +782,33 @@ Mean diversity ratio (num_distinct_correct / num_correct) per method:
 
 ## Per-Model Notes
 
-### CodeLlama-7B
-
-- p_less mean score: 3.61/10
-- p_less_norm mean score: 3.59/10
-- Divergence (|p_less − p_less_norm|): 0.02
-- Wins: 1, Losses: 61
-
-### Codestral-22B
-
-- p_less mean score: 7.80/10
-- p_less_norm mean score: 7.76/10
-- Divergence (|p_less − p_less_norm|): 0.04
-- Wins: 3, Losses: 33
-
-### Qwen2.5-Coder-7B
+### Qwen--Qwen2.5-Coder-7B-Instruct
 
 - p_less mean score: 8.33/10
 - p_less_norm mean score: 7.52/10
 - Divergence (|p_less − p_less_norm|): 0.81
 - Wins: 2, Losses: 28
 
-### Qwen3-Coder-30B
+### Qwen--Qwen3-Coder-30B-A3B-Instruct
 
 - p_less mean score: 7.60/10
 - p_less_norm mean score: 7.56/10
 - Divergence (|p_less − p_less_norm|): 0.04
 - Wins: 1, Losses: 18
+
+### codellama--CodeLlama-7b-Instruct-hf
+
+- p_less mean score: 3.61/10
+- p_less_norm mean score: 3.59/10
+- Divergence (|p_less − p_less_norm|): 0.02
+- Wins: 1, Losses: 61
+
+### mistralai--Codestral-22B-v0.1
+
+- p_less mean score: 7.80/10
+- p_less_norm mean score: 7.76/10
+- Divergence (|p_less − p_less_norm|): 0.04
+- Wins: 3, Losses: 33
 
 ## Appendix: Full Task Ranking
 
