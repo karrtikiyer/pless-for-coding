@@ -25,7 +25,7 @@ uv sync                       # installs all dependencies with CUDA torch
 | Qwen2.5-Coder-7B | Base | `Qwen/Qwen2.5-Coder-7B` | HumanEval |
 | Qwen2.5-Coder-7B-Instruct | Instruct | `Qwen/Qwen2.5-Coder-7B-Instruct` | HumanEval, MBPP |
 | Qwen3-Coder-30B-A3B-Instruct | Instruct | `Qwen/Qwen3-Coder-30B-A3B-Instruct` | HumanEval |
-| CodeLlama-7B | Base | `codellama/CodeLlama-7b-hf` | HumanEval |
+| CodeLlama-7B | Base | `codellama/CodeLlama-7b-hf` | HumanEval, MBPP |
 | CodeLlama-7B-Instruct | Instruct | `codellama/CodeLlama-7b-Instruct-hf` | HumanEval |
 | Qwen2.5-7B | Base | `Qwen/Qwen2.5-7B` | MBPP |
 | Llama-2-7B | Base | `meta-llama/Llama-2-7b-hf` | MBPP |
@@ -51,11 +51,12 @@ uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless
 
 ### MBPP
 
-257 problems (sanitized split) or 500 problems (full split). 10 samples per problem. Three sampling methods:
+257 problems (sanitized split) or 500 problems (full split). 10 samples per problem. Four sampling methods:
 
 | Method | Description |
 |--------|-------------|
 | `temp` | Vanilla temperature sampling via `model.generate()` |
+| `top_p` | Nucleus (top-p) sampling via `model.generate()` |
 | `pless` | Hyperparameter-free pless sampler |
 | `pless_norm` | Normalized pless sampler |
 
@@ -74,13 +75,25 @@ uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless_norm --te
 uv run python -m bench --model meta-llama/Llama-2-7b-hf --method pless --mbpp-config full
 ```
 
-**Batch runner:** Run all 5 configs for a model with a single command:
+**Batch runner:** Run all 6 configs for a model with a single command:
 
 ```bash
 bash run_bench.sh <model_id> [gpu_id]
 ```
 
 This auto-detects legacy Qwen models and switches the `transformers` version accordingly. Each config runs full MBPP (500 problems) with 10 samples.
+
+**Unattended H100 runs:** For multi-hour runs on a remote GPU, use the dedicated deployment scripts that write structured logs and sync markers for remote monitoring:
+
+```bash
+# Qwen-7B base (legacy transformers)
+bash full_run_qwen.sh
+
+# CodeLlama-7b-hf and Llama-2-7b-hf base models
+bash full_run_base_models_mbpp.sh
+```
+
+Both scripts append to a `.log` file and write `DONE:…` / `ALL_DONE:…` lines to a `sync_markers*.log` file after each config completes, enabling `monitor_sync_qwen.sh`-style remote polling and incremental result syncing.
 
 ### HumanEval
 
@@ -113,7 +126,7 @@ The orchestration script loads the model once and runs all 14 (method, temperatu
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--model` | (required) | HuggingFace model ID or local path |
-| `--method` | (required) | `pless`, `pless_norm`, or `temp` |
+| `--method` | (required) | `pless`, `pless_norm`, `temp`, or `top_p` |
 | `--n-samples` | 10 | Number of samples per problem |
 | `--max-new-tokens` | 512 | Max tokens per sample |
 | `--temperature` | 1.0 | Temperature applied to logits before softmax |
@@ -255,7 +268,10 @@ Then merge the `results/` directories.
 pless-for-coding/
 ├── pyproject.toml              # Dependencies (torch, transformers, datasets, etc.)
 ├── run_humaneval.py            # Orchestration: all 14 HumanEval configs, model loaded once
-├── run_bench.sh                # Batch MBPP runner: all 5 configs per model
+├── run_bench.sh                # Batch MBPP runner: all 6 configs per model (auto-detects legacy Qwen)
+├── full_run_qwen.sh            # H100 deployment: Qwen-7B base, 6 configs, file logging + sync markers
+├── full_run_base_models_mbpp.sh  # H100 deployment: CodeLlama-7b-hf + Llama-2-7b-hf, 6 configs each
+├── monitor_sync_qwen.sh        # Remote monitor: polls H100, syncs results after each completed config
 ├── debug_generation.py         # Debugging script for model generation
 ├── p-less/                     # Original pless sampler code (git submodule, do not modify)
 │   └── p_less_samplers.py
@@ -280,5 +296,5 @@ pless-for-coding/
 ├── compare_pass_at_k.py        # Compare pass@k between pipelines
 ├── models/                     # Local model weights (gitignored)
 └── results/                    # Benchmark results (JSONL + analysis)
-    └── pless_full_mbpp_results/  # Full MBPP results for 6 models × 5 methods
+    └── pless_full_mbpp_results/  # Full MBPP results for 6 models × 6 methods
 ```
