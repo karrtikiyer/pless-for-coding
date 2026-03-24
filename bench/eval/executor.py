@@ -80,6 +80,10 @@ def _trim_to_compilable(code: str) -> str | None:
         return code
     except SyntaxError:
         pass
+    except (MemoryError, RecursionError):
+        # Pathologically long/deeply nested code (e.g. [BEGIN]\n[END]\n... cycling)
+        # overflows the CPython parser stack — treat as uncompilable.
+        return None
 
     lines = code.split("\n")
     for end in range(len(lines) - 1, 0, -1):
@@ -88,6 +92,8 @@ def _trim_to_compilable(code: str) -> str | None:
             compile(candidate, "<sample>", "exec")
             return candidate
         except SyntaxError:
+            continue
+        except (MemoryError, RecursionError):
             continue
     return None
 
