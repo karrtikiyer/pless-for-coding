@@ -46,13 +46,16 @@ _MBPP_FEW_SHOT_EXAMPLES = [
 ]
 
 
-def format_prompt_base(task: dict) -> tuple[str, str]:
-    """3-shot completion prompt for base models, matching the paper's Llama2_input.jsonl format."""
+def format_prompt_base(task: dict, n_shots: int = 3) -> tuple[str, str]:
+    """Completion prompt for base models, matching the paper's Llama2_input.jsonl format.
+
+    n_shots controls how many few-shot examples to include (0 = zero-shot, default 3).
+    """
     desc = task["prompt"]
     test_lines = "\n".join(task["test_list"])
 
     parts = []
-    for ex in _MBPP_FEW_SHOT_EXAMPLES:
+    for ex in _MBPP_FEW_SHOT_EXAMPLES[:n_shots]:
         parts.append(
             f"You are an expert Python programmer, and here is your task: {ex['desc']} "
             f"Your code should pass these tests:\n\n{ex['tests']}\n[BEGIN]\n{ex['solution']}\n[DONE]\n\n"

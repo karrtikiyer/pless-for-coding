@@ -30,6 +30,8 @@ def parse_args():
     parser.add_argument("--mbpp-config", choices=["sanitized", "full"], default="sanitized",
                         help="MBPP dataset config: 'sanitized' (257 problems) or 'full' (500 problems)")
     parser.add_argument("--top-p", type=float, default=None, help="top_p for nucleus sampling (method=top_p)")
+    parser.add_argument("--n-shots", type=int, default=3, choices=[0, 1, 2, 3],
+                        help="Few-shot examples in base model prompt (default 3, 0=zero-shot)")
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
@@ -39,8 +41,10 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # Output path
+    # Output path — encode n_shots in filename when not the default (3)
     method_key = f"top_p{args.top_p}" if args.method == "top_p" else args.method
+    if not is_instruct_model(args.model) and args.n_shots != 3:
+        method_key = f"{method_key}_ns{args.n_shots}"
     out_path = get_output_path(args.results_dir, args.model, method_key, args.temperature)
 
     # Handle --no-resume
@@ -85,7 +89,7 @@ def main():
             if instruct:
                 prompt_text, code_prefix = format_prompt_instruct(task, tokenizer)
             else:
-                prompt_text, code_prefix = format_prompt_base(task)
+                prompt_text, code_prefix = format_prompt_base(task, n_shots=args.n_shots)
 
             if args.method in ("temp", "top_p"):
                 raw_samples = generate_samples_standard(
