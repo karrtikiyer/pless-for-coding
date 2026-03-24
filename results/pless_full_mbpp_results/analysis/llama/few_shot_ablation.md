@@ -178,86 +178,92 @@ different models. This is not a contradiction — it's a spectrum explained by m
 
 ### Why Qwen-7B Improved While Llama-2-7b Regressed
 
-The format change introduced **two competing forces** for every model:
+### The Two-Variable Problem
 
-**Force 1 — Function name inference cost (hurts all models)**
+The old scaffold → 3-shot `[BEGIN]` change is **not a single controlled variable**. It
+simultaneously modifies two things:
 
-The old scaffold extracted the function name from test assertions and hardcoded it as
-`def func_name(` — zero probability of a wrong name. The new format requires the model
-to generate the name at t=0.6 (near-deterministic). At low temperature, a wrong name
-on sample 1 means all 10 samples fail.
+1. **Removes the function name scaffold** (`def func_name(` prefix — model must now generate the full function signature)
+2. **Adds 3 worked examples** (complete problem → solution pairs)
 
-- **Llama-2-7b** (general-purpose): minimal code pretraining → higher rate of name
-  inference errors at low temperature (e.g., `remove_Occ` → `remove_occ`, `is_not_prime`
-  → `is_prime`). Approximately 7 tasks flip from all-pass to all-fail → −1.4pp.
-- **Qwen-7B** (code-capable): more code in pretraining → better function name inference
-  from test assertions at low temperature → fewer name errors → smaller inference cost.
+We have a controlled ablation isolating the example effect **only for Llama-2-7b** (ns0 vs H100,
+same format and stop, only examples differ). For Qwen-7B and CodeLlama-7b, the comparison is
+confounded — we cannot cleanly separate which change drove the outcome.
 
-**Force 2 — Code quality gain from examples (helps code-capable models)**
+### Force 1: Function Name Inference (the unconfounded claim)
 
-Three in-context code examples provide algorithmic patterns (set intersection, math.sqrt,
-lambda map). Code-capable models extract these patterns and improve solution quality;
-general-purpose models use examples mainly for format recognition.
+The scaffold extracted the function name from test assertions and hardcoded it as `def func_name(`.
+The new format requires the model to generate the name at t=0.6 (near-deterministic). A wrong name
+on sample 1 = wrong on all 10 = catastrophic per-task failure.
 
-- **Llama-2-7b**: minimal code quality lift from examples (format already learned via ns0
-  comparison, quality unchanged). Quality gain ≈ 0.
-- **Qwen-7B**: genuine code quality improvement from seeing 3 well-crafted solutions at
-  low temperature. Quality gain is real and substantial.
+- **Llama-2-7b**: general-purpose pretraining → higher name inference error rate at t=0.6
+  (e.g., `remove_Occ` → `remove_occ`, `is_not_prime` → `is_prime`). ~7 tasks flip all-fail → −1.4pp.
+- **Qwen-7B**: heavier code pretraining → likely better name inference from test assertions.
+  Smaller name error cost is plausible — but not directly measured for Qwen-7B.
 
-**Net effect:**
+This force is a credible partial explanation for why Qwen-7B fares better than Llama-2-7b
+on the same format change. It does not require few-shot examples to be useful.
 
-| Model | Name inference cost | Code quality gain | Net |
-|-------|--------------------|--------------------|-----|
-| Llama-2-7b | Large (−1.4pp+) | ~0 | **−1.4pp** |
-| CodeLlama-7b | Near-zero (format-robust) | ~0 (already strong) | **+0.3pp** |
-| Qwen-7B | Small (code-capable) | Large (+3.6pp+) | **+3.6pp** |
+### Force 2: The Example Effect (confirmed for format, unconfirmed for task-solving)
 
-### Why Qwen-7B Improved: The Format Change Switched Two Variables
+Our Llama-2-7b ns0 ablation gives the only controlled measurement:
 
-The zero-shot scaffold → 3-shot `[BEGIN]` change is not a single controlled variable —
-it simultaneously:
+| Comparison | pless delta | What it means |
+|------------|-------------|---------------|
+| 0-shot `[BEGIN]` → 3-shot `[BEGIN]` | **+8.7pp** | Examples teach the model what `[BEGIN]` means (format learning) |
+| 3-shot `[BEGIN]` vs 0-shot scaffold (canonical) | **−1.4pp** | Examples cannot recover the scaffold's task-solving advantage |
 
-1. **Adds 3 worked examples** (complete problem → solution pairs with algorithms)
-2. **Removes the function name scaffold** (`def func_name(` prefix)
+The +8.7pp is almost entirely **format learning**: without examples, the `[BEGIN]` format
+degenerates to cycling at t=0.6. The −1.4pp vs the old scaffold shows that examples did not
+add task-solving ability — the scaffold was still more effective for pless at low temperature.
 
-For Qwen-7B, these two changes have opposite signs but the example benefit dominates:
+**This is exactly what arxiv 2412.02906 predicts**: examples help base models learn format, not
+improve their coding ability. The literature's "zero-shot" is WITH the function signature scaffold
+(canonical benchmark zero-shot). Compared to that proper baseline, 3-shot examples did not help
+Llama-2-7b — confirming the paper's finding.
 
-- **Example benefit (positive)**: Qwen-7B is code-capable enough to extract algorithmic
-  patterns from the 3 in-context solutions (set intersection, `math.sqrt`, `lambda` + `map`).
-  This improves solution quality at low temperature in a way Llama-2-7b cannot.
-- **Name inference cost (near-zero)**: Qwen-7B's stronger code pretraining means it infers
-  function names from test assertions accurately at t=0.6. The scaffold was solving a problem
-  Qwen-7B largely didn't have.
+For Qwen-7B, **we have no ns0 ablation**. We cannot say whether the +3.6pp improvement came
+from the examples (few-shot task benefit) or from other effects of the format change. Possible
+explanations that don't require examples to help task-solving:
 
-For Llama-2-7b, the signs flip: examples add little quality (general-purpose model uses them
-for format, not algorithms), while the lost scaffold causes ~7 tasks to catastrophically fail.
+- The `[BEGIN]`/`[DONE]` format may simply suit Qwen-7B's generation style better than the
+  scaffold (Qwen-7B is better at generating complete functions than continuing mid-signature)
+- Force 1 alone (fewer name errors) could explain part or all of the improvement
+- Format learning: Qwen-7B, like Llama-2-7b, may need examples to recognize `[BEGIN]` format —
+  the 3 examples teach this, and Qwen-7B's stronger code capability means it executes better
+  once the format is understood
 
-**Qwen-7B didn't need the crutch, and was missing the benefit. Llama-2-7b needed the
-crutch and got nothing from the benefit.**
+**We cannot conclude that few-shot examples improved Qwen-7B's task-solving ability.**
 
-Note: Qwen-7B's new temp (29.8%) still sits 4pp below the paper's Temperature (33.8%).
-This gap exists *after* the format change and is not explained by the scaffold. It likely
-reflects unresolved evaluation methodology differences with the paper (hardware precision,
-stop-sequence implementation, or exact sampling parameters). It is a separate open question.
+### Reconciling with the Literature
 
-### The Unifying Principle
+There is no contradiction — our data confirms the literature:
 
-**Few-shot examples benefit base models in proportion to their code capability:**
+- **Controlled test (Llama-2-7b ns0 ablation)**: 3-shot `[BEGIN]` did not beat 0-shot scaffold
+  (22.5% < 23.9%). Examples helped format but not task-solving. **Literature confirmed.**
+- **Confounded test (Qwen-7B)**: format + examples changed simultaneously. The improvement is
+  real but the cause is unknown. The literature may be right for Qwen-7B too.
 
-- *Low capability (Llama-2-7b)*: Examples teach format but don't improve code quality.
-  The function name scaffold was doing irreplaceable work. Net: negative.
-- *Medium-high capability (Qwen-7B)*: Examples improve both format AND code quality.
-  The model can leverage algorithmic patterns from examples. Net: positive.
-- *High capability (CodeLlama-7b)*: Model is already format-robust and code-strong.
-  Examples add marginal value to an already-capable model. Net: neutral.
+The cross-model outcome spectrum (Llama-2-7b −1.4pp / CodeLlama +0.3pp / Qwen-7B +3.6pp) is
+explained primarily by **Force 1 (function name inference cost)**, which correlates with code
+capability and doesn't require few-shot task benefit. Force 2 may matter but its contribution
+to the Qwen-7B delta is unmeasured.
 
-This aligns with arxiv 2412.02906's finding: "Few-shot prompting predominantly benefits
-instruction-tuned models rather than base models" — but within base models, it benefits
-*stronger* base models more than weaker ones.
+Note: Qwen-7B's new temp (29.8%) still sits 4pp below the paper's Temperature (33.8%). This
+gap exists *after* the format change and is a separate open question, likely reflecting
+evaluation methodology differences with the paper (hardware precision, stop sequences, or
+exact sampling parameters).
 
-**Caveat on the cross-model comparison**: The old→new format change modifies two variables
-simultaneously (examples added + scaffold removed). We have a controlled ablation isolating
-the example effect for Llama-2-7b (ns0 vs H100), but not for Qwen-7B or CodeLlama. The
-cross-model spectrum is well-supported by outcome data but the per-model mechanism
-attribution (especially the Qwen-7B quality gain magnitude) is inference, not direct
-measurement.
+### Open Question: Qwen-7B ns0 Ablation
+
+Running `--model Qwen-7B --method pless --temperature 0.6 --n-shots 0` would directly test:
+
+| If 0-shot `[BEGIN]` result is... | Conclusion |
+|----------------------------------|------------|
+| ≈ 35.4% | Format change explains everything; examples irrelevant |
+| Between 31.8% and 35.4% | Examples add some value (format learning at minimum) |
+| < 31.8% | Scaffold was better; 3-shot partially but not fully recovers it |
+
+Until this is run, attributing Qwen-7B's improvement specifically to few-shot task benefit
+is speculative. Force 1 (name inference) is the more conservative and better-supported
+explanation.
