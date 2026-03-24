@@ -212,21 +212,33 @@ general-purpose models use examples mainly for format recognition.
 | CodeLlama-7b | Near-zero (format-robust) | ~0 (already strong) | **+0.3pp** |
 | Qwen-7B | Small (code-capable) | Large (+3.6pp+) | **+3.6pp** |
 
-### Why Qwen-7B Had More Room to Improve
+### Why Qwen-7B Improved: The Format Change Switched Two Variables
 
-An additional factor: Qwen-7B's **old zero-shot format was more suboptimal** than
-Llama-2-7b's. The sanity check divergences tell the story:
+The zero-shot scaffold → 3-shot `[BEGIN]` change is not a single controlled variable —
+it simultaneously:
 
-| Model | Our temp vs paper Temperature | Gap |
-|-------|------------------------------|-----|
-| Llama-2-7b | 17.1% vs 17.2% | **−0.1pp** (near-perfect match) |
-| Qwen-7B | 29.8% vs 33.8% | **−4.0pp** (systematic gap) |
+1. **Adds 3 worked examples** (complete problem → solution pairs with algorithms)
+2. **Removes the function name scaffold** (`def func_name(` prefix)
 
-Llama-2-7b's old format was already well-calibrated for the paper's evaluation. Qwen-7B's
-old format had a 4pp gap, suggesting the scaffold was less effective for Qwen-7B's
-generation style (possibly due to different tokenization of the `def func(` prefix, or
-that Qwen-7B's stronger base capability was being underutilized by a trivially constrained
-format).
+For Qwen-7B, these two changes have opposite signs but the example benefit dominates:
+
+- **Example benefit (positive)**: Qwen-7B is code-capable enough to extract algorithmic
+  patterns from the 3 in-context solutions (set intersection, `math.sqrt`, `lambda` + `map`).
+  This improves solution quality at low temperature in a way Llama-2-7b cannot.
+- **Name inference cost (near-zero)**: Qwen-7B's stronger code pretraining means it infers
+  function names from test assertions accurately at t=0.6. The scaffold was solving a problem
+  Qwen-7B largely didn't have.
+
+For Llama-2-7b, the signs flip: examples add little quality (general-purpose model uses them
+for format, not algorithms), while the lost scaffold causes ~7 tasks to catastrophically fail.
+
+**Qwen-7B didn't need the crutch, and was missing the benefit. Llama-2-7b needed the
+crutch and got nothing from the benefit.**
+
+Note: Qwen-7B's new temp (29.8%) still sits 4pp below the paper's Temperature (33.8%).
+This gap exists *after* the format change and is not explained by the scaffold. It likely
+reflects unresolved evaluation methodology differences with the paper (hardware precision,
+stop-sequence implementation, or exact sampling parameters). It is a separate open question.
 
 ### The Unifying Principle
 
@@ -242,3 +254,10 @@ format).
 This aligns with arxiv 2412.02906's finding: "Few-shot prompting predominantly benefits
 instruction-tuned models rather than base models" — but within base models, it benefits
 *stronger* base models more than weaker ones.
+
+**Caveat on the cross-model comparison**: The old→new format change modifies two variables
+simultaneously (examples added + scaffold removed). We have a controlled ablation isolating
+the example effect for Llama-2-7b (ns0 vs H100), but not for Qwen-7B or CodeLlama. The
+cross-model spectrum is well-supported by outcome data but the per-model mechanism
+attribution (especially the Qwen-7B quality gain magnitude) is inference, not direct
+measurement.
