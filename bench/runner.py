@@ -9,12 +9,15 @@ from bench.generator import generate_samples, generate_samples_standard, load_mo
 from bench.humaneval.prompts import HUMANEVAL_STOP_SEQUENCES
 from bench.prompts import (format_prompt_base, format_prompt_base_hybrid,
                            format_prompt_base_begin_scaffold,
+                           format_prompt_base_bigcode,
                            format_prompt_instruct, is_instruct_model)
 
 # MBPP 3-shot prompt ends with "[BEGIN]\n", so the model starts generating "def func(...".
 # HumanEval stop strings like "\ndef " would fire immediately (prompt trailing \n + generated "def ").
 # Only stop on the few-shot delimiter; extraction handles anything after the function body.
 MBPP_STOP_SEQUENCES = ["\n[DONE]"]
+# BigCode/InCoder zero-shot format: no format delimiters, stop on code-level boundaries.
+MBPP_BIGCODE_STOP_SEQUENCES = ["\nassert", "\nclass", "\nprint", '\n"""', "\nif __name__"]
 from bench.sampler_bridge import SAMPLERS
 
 
@@ -34,9 +37,11 @@ def parse_args():
     parser.add_argument("--top-p", type=float, default=None, help="top_p for nucleus sampling (method=top_p)")
     parser.add_argument("--n-shots", type=int, default=3, choices=[0, 1, 2, 3],
                         help="Few-shot examples in base model prompt (default 3, 0=zero-shot)")
-    parser.add_argument("--prompt-style", choices=["paper", "hybrid", "begin_scaffold"], default="paper",
+    parser.add_argument("--prompt-style", choices=["paper", "hybrid", "begin_scaffold", "bigcode"],
+                        default="paper",
                         help="Prompt format for base models: 'paper' = 3-shot [BEGIN]/[DONE] "
-                             "(default), 'hybrid' = scaffold no [BEGIN], 'begin_scaffold' = [BEGIN]+scaffold")
+                             "(default), 'hybrid' = scaffold no [BEGIN], 'begin_scaffold' = [BEGIN]+scaffold, "
+                             "'bigcode' = zero-shot InCoder docstring (matches arXiv 2507.03160)")
     parser.add_argument("--task-ids", type=int, nargs="+", default=None,
                         help="Only run these specific task_ids (for targeted ablations)")
     args = parser.parse_args()
@@ -56,6 +61,8 @@ def main():
         method_key = f"{method_key}_hybrid"
     if not is_instruct_model(args.model) and args.prompt_style == "begin_scaffold":
         method_key = f"{method_key}_bs"
+    if not is_instruct_model(args.model) and args.prompt_style == "bigcode":
+        method_key = f"{method_key}_bigcode"
     out_path = get_output_path(args.results_dir, args.model, method_key, args.temperature)
 
     # Handle --no-resume
@@ -86,7 +93,10 @@ def main():
     # Stop sequences for base models only
     stop_strings = None
     if not instruct and not args.no_stop:
-        stop_strings = MBPP_STOP_SEQUENCES
+        if args.prompt_style == "bigcode":
+            stop_strings = MBPP_BIGCODE_STOP_SEQUENCES
+        else:
+            stop_strings = MBPP_STOP_SEQUENCES
 
     # Filter to remaining problems
     remaining = [task for task in dataset if task["task_id"] not in completed_ids]
@@ -105,6 +115,8 @@ def main():
                 prompt_text, code_prefix = format_prompt_base_hybrid(task)
             elif args.prompt_style == "begin_scaffold":
                 prompt_text, code_prefix = format_prompt_base_begin_scaffold(task)
+            elif args.prompt_style == "bigcode":
+                prompt_text, code_prefix = format_prompt_base_bigcode(task)
             else:
                 prompt_text, code_prefix = format_prompt_base(task, n_shots=args.n_shots)
 

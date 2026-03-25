@@ -69,6 +69,20 @@ def format_prompt_base(task: dict, n_shots: int = 3) -> tuple[str, str]:
     return "".join(parts), ""  # code_prefix="" — model generates full def
 
 
+def format_prompt_base_bigcode(task: dict) -> tuple[str, str]:
+    """Zero-shot InCoder/BigCode-Eval-Harness docstring prompt for MBPP.
+
+    Matches the exact format used by arXiv 2507.03160 ("Assessing Small Language
+    Models for Code Generation"): a single docstring with the task description and
+    first test case only. No few-shot examples, no [BEGIN]/[DONE] delimiters.
+    Model generates the complete function from scratch.
+    """
+    desc = task["prompt"]
+    first_test = task["test_list"][0]
+    prompt = f'"""\n{desc}\n{first_test}\n"""\n'
+    return prompt, ""  # code_prefix="" — model generates full def
+
+
 def _extract_function_name(test_list: list[str]) -> str | None:
     """Extract function name from MBPP assert statements, e.g. 'assert func(...)' → 'func'."""
     for test in test_list:
