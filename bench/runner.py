@@ -7,7 +7,9 @@ from tqdm import tqdm
 from bench.checkpointing import append_result, get_output_path, load_completed_ids
 from bench.generator import generate_samples, generate_samples_standard, load_model_and_tokenizer
 from bench.humaneval.prompts import HUMANEVAL_STOP_SEQUENCES
-from bench.prompts import format_prompt_base, format_prompt_base_hybrid, format_prompt_instruct, is_instruct_model
+from bench.prompts import (format_prompt_base, format_prompt_base_hybrid,
+                           format_prompt_base_begin_scaffold,
+                           format_prompt_instruct, is_instruct_model)
 
 # MBPP 3-shot prompt ends with "[BEGIN]\n", so the model starts generating "def func(...".
 # HumanEval stop strings like "\ndef " would fire immediately (prompt trailing \n + generated "def ").
@@ -32,9 +34,11 @@ def parse_args():
     parser.add_argument("--top-p", type=float, default=None, help="top_p for nucleus sampling (method=top_p)")
     parser.add_argument("--n-shots", type=int, default=3, choices=[0, 1, 2, 3],
                         help="Few-shot examples in base model prompt (default 3, 0=zero-shot)")
-    parser.add_argument("--prompt-style", choices=["paper", "hybrid"], default="paper",
+    parser.add_argument("--prompt-style", choices=["paper", "hybrid", "begin_scaffold"], default="paper",
                         help="Prompt format for base models: 'paper' = 3-shot [BEGIN]/[DONE] "
-                             "(default), 'hybrid' = 3-shot scaffold with [DONE] only (no [BEGIN])")
+                             "(default), 'hybrid' = scaffold no [BEGIN], 'begin_scaffold' = [BEGIN]+scaffold")
+    parser.add_argument("--task-ids", type=int, nargs="+", default=None,
+                        help="Only run these specific task_ids (for targeted ablations)")
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
@@ -50,6 +54,8 @@ def main():
         method_key = f"{method_key}_ns{args.n_shots}"
     if not is_instruct_model(args.model) and args.prompt_style == "hybrid":
         method_key = f"{method_key}_hybrid"
+    if not is_instruct_model(args.model) and args.prompt_style == "begin_scaffold":
+        method_key = f"{method_key}_bs"
     out_path = get_output_path(args.results_dir, args.model, method_key, args.temperature)
 
     # Handle --no-resume
@@ -84,6 +90,8 @@ def main():
 
     # Filter to remaining problems
     remaining = [task for task in dataset if task["task_id"] not in completed_ids]
+    if args.task_ids is not None:
+        remaining = [task for task in remaining if task["task_id"] in set(args.task_ids)]
     if args.max_problems is not None:
         remaining = remaining[:args.max_problems]
     print(f"Problems remaining: {len(remaining)} / {len(dataset)}")
@@ -95,6 +103,8 @@ def main():
                 prompt_text, code_prefix = format_prompt_instruct(task, tokenizer)
             elif args.prompt_style == "hybrid":
                 prompt_text, code_prefix = format_prompt_base_hybrid(task)
+            elif args.prompt_style == "begin_scaffold":
+                prompt_text, code_prefix = format_prompt_base_begin_scaffold(task)
             else:
                 prompt_text, code_prefix = format_prompt_base(task, n_shots=args.n_shots)
 

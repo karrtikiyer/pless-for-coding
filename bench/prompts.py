@@ -115,6 +115,40 @@ def format_prompt_base_hybrid(task: dict) -> tuple[str, str]:
         return "".join(parts), ""
 
 
+def format_prompt_base_begin_scaffold(task: dict) -> tuple[str, str]:
+    """3-shot [BEGIN]/[DONE] with def scaffold placed after [BEGIN].
+
+    Combines paper format's [BEGIN] boundary with hybrid's name-guarantee scaffold.
+    Examples are identical to paper format. Target ends with [BEGIN]\\ndef func_name(
+    so the model generates only args + body, but [BEGIN] activates the multi-line
+    function pattern seen in examples.
+    """
+    desc = task["prompt"]
+    test_lines = "\n".join(task["test_list"])
+
+    parts = []
+    for ex in _MBPP_FEW_SHOT_EXAMPLES:
+        parts.append(
+            f"You are an expert Python programmer, and here is your task: {ex['desc']} "
+            f"Your code should pass these tests:\n\n{ex['tests']}\n[BEGIN]\n{ex['solution']}\n[DONE]\n\n"
+        )
+
+    func_name = _extract_function_name(task["test_list"])
+    if func_name:
+        parts.append(
+            f"You are an expert Python programmer, and here is your task: {desc} "
+            f"Your code should pass these tests:\n\n{test_lines}\n[BEGIN]\ndef {func_name}("
+        )
+        return "".join(parts), f"def {func_name}("
+    else:
+        # Fallback: standard paper format (very rare in MBPP)
+        parts.append(
+            f"You are an expert Python programmer, and here is your task: {desc} "
+            f"Your code should pass these tests:\n\n{test_lines}\n[BEGIN]\n"
+        )
+        return "".join(parts), ""
+
+
 def format_prompt_instruct(task: dict, tokenizer) -> tuple[str, str]:
     """Format a chat-template prompt for instruct models.
 
