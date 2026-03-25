@@ -7,7 +7,7 @@ from tqdm import tqdm
 from bench.checkpointing import append_result, get_output_path, load_completed_ids
 from bench.generator import generate_samples, generate_samples_standard, load_model_and_tokenizer
 from bench.humaneval.prompts import HUMANEVAL_STOP_SEQUENCES
-from bench.prompts import format_prompt_base, format_prompt_instruct, is_instruct_model
+from bench.prompts import format_prompt_base, format_prompt_base_hybrid, format_prompt_instruct, is_instruct_model
 
 # MBPP 3-shot prompt ends with "[BEGIN]\n", so the model starts generating "def func(...".
 # HumanEval stop strings like "\ndef " would fire immediately (prompt trailing \n + generated "def ").
@@ -32,6 +32,9 @@ def parse_args():
     parser.add_argument("--top-p", type=float, default=None, help="top_p for nucleus sampling (method=top_p)")
     parser.add_argument("--n-shots", type=int, default=3, choices=[0, 1, 2, 3],
                         help="Few-shot examples in base model prompt (default 3, 0=zero-shot)")
+    parser.add_argument("--prompt-style", choices=["paper", "hybrid"], default="paper",
+                        help="Prompt format for base models: 'paper' = 3-shot [BEGIN]/[DONE] "
+                             "(default), 'hybrid' = 3-shot scaffold with [DONE] only (no [BEGIN])")
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
@@ -45,6 +48,8 @@ def main():
     method_key = f"top_p{args.top_p}" if args.method == "top_p" else args.method
     if not is_instruct_model(args.model) and args.n_shots != 3:
         method_key = f"{method_key}_ns{args.n_shots}"
+    if not is_instruct_model(args.model) and args.prompt_style == "hybrid":
+        method_key = f"{method_key}_hybrid"
     out_path = get_output_path(args.results_dir, args.model, method_key, args.temperature)
 
     # Handle --no-resume
@@ -88,6 +93,8 @@ def main():
         try:
             if instruct:
                 prompt_text, code_prefix = format_prompt_instruct(task, tokenizer)
+            elif args.prompt_style == "hybrid":
+                prompt_text, code_prefix = format_prompt_base_hybrid(task)
             else:
                 prompt_text, code_prefix = format_prompt_base(task, n_shots=args.n_shots)
 

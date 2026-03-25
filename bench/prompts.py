@@ -1,3 +1,5 @@
+import re as _re
+
 # Fixed 3-shot examples from MBPP train split — identical to paper's Llama2_input.jsonl
 _MBPP_FEW_SHOT_EXAMPLES = [
     {
@@ -65,6 +67,52 @@ def format_prompt_base(task: dict, n_shots: int = 3) -> tuple[str, str]:
         f"Your code should pass these tests:\n\n{test_lines}\n[BEGIN]\n"
     )
     return "".join(parts), ""  # code_prefix="" — model generates full def
+
+
+def _extract_function_name(test_list: list[str]) -> str | None:
+    """Extract function name from MBPP assert statements, e.g. 'assert func(...)' → 'func'."""
+    for test in test_list:
+        m = _re.search(r"assert\s+(\w+)\s*\(", test)
+        if m:
+            return m.group(1)
+    return None
+
+
+def format_prompt_base_hybrid(task: dict) -> tuple[str, str]:
+    """3-shot prompt with scaffold and [DONE] only — no [BEGIN].
+
+    Removes [BEGIN] so the model doesn't need to learn an unfamiliar delimiter.
+    Keeps [DONE] as an unambiguous stop signal (same \\n[DONE] stop sequence applies).
+    Returns code_prefix = 'def func_name(' so the function name is guaranteed correct —
+    the model only generates the arguments and body.
+    """
+    desc = task["prompt"]
+    test_lines = "\n".join(task["test_list"])
+
+    parts = []
+    for ex in _MBPP_FEW_SHOT_EXAMPLES:
+        parts.append(
+            f"You are an expert Python programmer, and here is your task: {ex['desc']} "
+            f"Your code should pass these tests:\n\n{ex['tests']}\n\n{ex['solution']}\n[DONE]\n\n"
+        )
+
+    func_name = _extract_function_name(task["test_list"])
+    if func_name:
+        # Include def func_name( in the prompt so the model generates only args + body.
+        # code_prefix is also returned so runner.py can prepend it to raw outputs and
+        # reconstruct the complete callable function (same mechanic as the old scaffold).
+        parts.append(
+            f"You are an expert Python programmer, and here is your task: {desc} "
+            f"Your code should pass these tests:\n\n{test_lines}\ndef {func_name}("
+        )
+        return "".join(parts), f"def {func_name}("
+    else:
+        # Fallback: very rare in MBPP — drop to [BEGIN] format with no scaffold
+        parts.append(
+            f"You are an expert Python programmer, and here is your task: {desc} "
+            f"Your code should pass these tests:\n\n{test_lines}\n[BEGIN]\n"
+        )
+        return "".join(parts), ""
 
 
 def format_prompt_instruct(task: dict, tokenizer) -> tuple[str, str]:
