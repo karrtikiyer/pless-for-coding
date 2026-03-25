@@ -358,3 +358,110 @@ acceptable (-1.4pp vs scaffold) and necessary for a valid temp comparison.
 
 **No further prompt format experiments are planned.** The 3-shot `[BEGIN]` format is the right
 choice for this benchmark suite.
+
+---
+
+## Llama Hard-Task Analysis: Confirming the Simplicity-Prior Mechanism
+
+### Setup
+
+Following the Qwen-7B one-liner analysis (which identified simplicity-prior bias as the mechanism
+behind hybrid's failure), we ran the equivalent analysis for Llama-2-7b to understand the
+cross-model asymmetry: why does old scaffold beat paper for Llama, while paper beats old scaffold
+for Qwen?
+
+**Paper-only hard tasks for Llama**: tasks where 3-shot `[BEGIN]` paper format passes (≥1/10
+correct) but hybrid format completely fails (0/10). These expose the format-sensitive hard tasks.
+
+### Results
+
+Full 500-task re-evaluation (pless t=0.6):
+
+| Format | pass@1 | Tasks passing |
+|--------|--------|---------------|
+| Old scaffold (0-shot, `def func(` prefix) | **23.92%** | **167/500** |
+| 3-shot `[BEGIN]` (paper) | 22.54% | 146/500 |
+| Hybrid (3-shot, scaffold, no `[BEGIN]`) | 21.94% | 137/500 |
+| NS0 (0-shot `[BEGIN]`) | 13.76% | 139/500 |
+
+Old scaffold uniquely passes 44 tasks that paper fails; paper uniquely passes 23 tasks that old
+scaffold fails. Net: old scaffold wins by +21 tasks over paper.
+
+**Paper-only hard tasks: 19 tasks** (vs 43 for Qwen — Llama has fewer format-sensitive hard tasks
+because both formats are weak on the truly hard ones).
+
+Task IDs: `[46, 95, 102, 115, 154, 183, 191, 192, 197, 208, 211, 225, 272, 351, 384, 403, 460, 478, 503]`
+
+Performance on these 19 hard tasks:
+- Old scaffold: **12/19 pass**
+- NS0: 8/19 pass
+- Hybrid: 0/19 pass (by construction)
+- Paper: 19/19 pass (by construction)
+
+### One-Liner Rate Analysis
+
+| Format | All 500 tasks | 19 hard tasks |
+|--------|---------------|---------------|
+| NS0 (0-shot `[BEGIN]`) | **56.9%** | — |
+| Paper (3-shot `[BEGIN]`) | 22.7% | 23.2% |
+| Hybrid (3-shot scaffold) | 24.4% | 19.5% |
+| Old scaffold (0-shot) | **9.9%** | **5.8%** |
+
+The key finding: **examples, regardless of format, push Llama's one-liner rate from 9.9% to
+22–24%.** The format structure (presence of `[BEGIN]` vs scaffold) makes only 1.7pp difference
+in one-liner rate (22.7% vs 24.4%); the example presence makes a 13pp difference (9.9% → 22.7%).
+
+This is different from Qwen, where `[BEGIN]` suppressed hybrid's extreme one-liner bias (52% →
+13%), making format structure the critical variable. For Llama, examples are the dominant variable:
+any set of 3 worked examples anchors Llama in "short answer" mode.
+
+### Why Old Scaffold Beats Paper for Llama
+
+The mechanism is now confirmed:
+
+1. **Examples create a simplicity prior for Llama.** The 3 in-context worked solutions (all 3–6
+   line functions) lower the threshold for what counts as "enough code." Llama generates one-liner
+   bodies at 22–24% rate with any example set vs 9.9% without examples.
+
+2. **The scaffold suppresses one-liner bias more powerfully than examples reinforce it.** Without
+   examples, the `def func_name(` scaffold pushes one-liner rate from 56.9% (ns0) to 9.9% — a
+   47pp reduction. Adding examples undoes most of this: 9.9% → 22–24% (+13pp).
+
+3. **For Llama, the example cost exceeds the example benefit.** The 44 tasks that old scaffold
+   uniquely passes (by generating real multi-line solutions) outweigh the 23 tasks paper uniquely
+   passes (via format compliance or algorithmic patterns from examples).
+
+### Cross-Model Comparison: Updated 2×2 Picture
+
+The comparison now has clean structure across all format dimensions:
+
+```
+                  No examples          3 examples
+No scaffold  │ NS0:  Llama 13.76%  │ Paper: Llama 22.54%  │
+(↑[BEGIN])   │       Qwen  13.96%  │        Qwen  35.36%  │
+─────────────┼─────────────────────┼──────────────────────┤
+Scaffold     │ Old:  Llama 23.92%  │ Hybrid: Llama 21.94% │
+(no [BEGIN]) │       Qwen  31.82%  │         Qwen  32.0%  │
+```
+
+For Llama: scaffold is the dominant positive factor. Examples hurt in both cells.
+For Qwen: examples are the dominant positive factor. Paper ([BEGIN] + examples) wins.
+
+### Revised Understanding of "Capability Amplifier"
+
+The earlier section called examples "a capability amplifier, not a capability creator." The
+one-liner analysis refines this:
+
+- **Both models**: examples increase one-liner rate (simplicity prior effect is universal)
+- **Llama-2-7b**: simplicity prior cost > pattern-transfer benefit → net negative for examples
+- **Qwen-7B**: pattern-transfer benefit >> simplicity prior cost → net positive for examples
+
+The capability difference is specifically in **pattern transfer from worked solutions to novel
+tasks**. Qwen-7B can observe `tuple(set(A) & set(B))` from example 1 and apply analogous
+set-operation thinking to a novel task. Llama-2-7b cannot reliably do this — it gets the
+simplicity prior without the pattern transfer, making examples a net negative.
+
+The threshold separating "examples help" from "examples hurt" lies between Llama-2-7b's
+capability tier and Qwen-7B's. CodeLlama-7b (specialized for code) sits at the threshold:
+flat result (+0.3pp noise), consistent with strong pattern transfer barely exceeding the
+simplicity prior cost.

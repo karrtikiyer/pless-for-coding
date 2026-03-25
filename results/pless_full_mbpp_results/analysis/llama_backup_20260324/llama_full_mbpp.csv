@@ -1,0 +1,41 @@
+Model,Rank,Method,Source,pass@1 (%)
+Llama-2-7B (base),1,P-Less (t=0.6),Ours,23.9
+Llama-2-7B (base),2,P-Less Norm (t=0.6),Ours,23.7
+Llama-2-7B (base),3,P-Less (t=1.0),Ours,21.6
+Llama-2-7B (base),4,FSD-d,Paper,21.2
+Llama-2-7B (base),5,P-Less Norm (t=1.0),Ours,20.9
+Llama-2-7B (base),6,Beam Search,Paper,19.4
+Llama-2-7B (base),7,FSD,Paper,19.2
+Llama-2-7B (base),8,Diverse Beam Search,Paper,18.4
+Llama-2-7B (base),9,DoLa,Paper,18.4
+Llama-2-7B (base),10,Contrastive Decoding,Paper,18.2
+Llama-2-7B (base),11,Greedy,Paper,17.8
+Llama-2-7B (base),12,Contrastive Search,Paper,17.4
+Llama-2-7B (base),13,Temperature,Paper,17.2
+Llama-2-7B (base),14,Top-p,Paper,14.8
+Llama-2-7B (base),15,Temperature (t=0.7),Ours,14.0
+Llama-2-7B (base),16,Top-p (ours) (t=1.0),Ours,12.2
+Llama-2-7B (base),17,Typical,Paper,12.0
+Llama-2-7B (base),18,Top-k,Paper,10.2
+Llama-2-7B (base),19,η-Sampling,Paper,9.4
+Llama-2-7B (base),20,Mirostat,Paper,7.8
+Llama-2-7B-Chat,1,Beam Search,Paper,21.6
+Llama-2-7B-Chat,2,Diverse Beam Search,Paper,21.2
+Llama-2-7B-Chat,3,P-Less (t=0.6),Ours,20.5
+Llama-2-7B-Chat,4,P-Less Norm (t=0.6),Ours,20.4
+Llama-2-7B-Chat,5,P-Less Norm (t=1.0),Ours,20.2
+Llama-2-7B-Chat,6,P-Less (t=1.0),Ours,20.1
+Llama-2-7B-Chat,7,Temperature,Paper,20.0
+Llama-2-7B-Chat,8,Top-p (ours) (t=1.0),Ours,18.0
+Llama-2-7B-Chat,9,DoLa,Paper,18.0
+Llama-2-7B-Chat,10,Typical,Paper,18.0
+Llama-2-7B-Chat,11,FSD,Paper,17.8
+Llama-2-7B-Chat,12,FSD-d,Paper,17.8
+Llama-2-7B-Chat,13,Temperature (t=0.7),Ours,17.8
+Llama-2-7B-Chat,14,Top-p,Paper,17.6
+Llama-2-7B-Chat,15,Contrastive Search,Paper,17.4
+Llama-2-7B-Chat,16,Contrastive Decoding,Paper,17.4
+Llama-2-7B-Chat,17,Greedy,Paper,17.2
+Llama-2-7B-Chat,18,η-Sampling,Paper,17.0
+Llama-2-7B-Chat,19,Top-k,Paper,16.0
+Llama-2-7B-Chat,20,Mirostat,Paper,16.0
