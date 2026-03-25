@@ -1,28 +1,30 @@
 #!/usr/bin/env bash
-# run_bigcode_mbpp_qwen25coder3b.sh
-# Benchmark Qwen2.5-Coder-3B on MBPP full (500 tasks, n=10) with two prompt styles.
+# run_bigcode_mbpp_opencodeinterpreter13b.sh
+# Benchmark OpenCodeInterpreter-DS-1.3B on MBPP full (500 tasks, n=10) with two prompt styles.
+#
+# Model: m-a-p/OpenCodeInterpreter-DS-1.3B (based on DeepSeek-Coder-1.3B base)
 #
 # Phase A — BigCode zero-shot docstring format (matches arXiv 2507.03160):
-#   Direct comparison target: Qwen2.5-Coder-3B pass@1 = 0.57
+#   Direct comparison target: OpenCodeInterpreter-1.3B pass@1 = 0.44
 #   (their config: temp=0.2/top-p=0.95, n=10, unbiased estimator — same methodology)
 #   First config replicates paper exactly to validate pipeline before pless runs.
 #
 # Phase B — Paper 3-shot [BEGIN]/[DONE] format:
-#   Internal cross-model comparison with Llama-2-7b / CodeLlama-7b / Qwen-7B results.
+#   Internal cross-model comparison.
 #
 # Phase A: 7 configs (replication + pless@0.6, pless@1.0, pless_norm@0.6, pless_norm@1.0, temp@0.7, top_p@0.9)
 # Phase B: 6 configs (pless@0.6, pless@1.0, pless_norm@0.6, pless_norm@1.0, temp@0.7, top_p@0.9)
 
 set -euo pipefail
 
-MODEL_ID="Qwen/Qwen2.5-Coder-3B"
+MODEL_ID="m-a-p/OpenCodeInterpreter-DS-1.3B"
 RESULTS_DIR="results/pless_full_mbpp_results"
-MODEL_DIR="Qwen--Qwen2.5-Coder-3B"
+MODEL_DIR="m-a-p--OpenCodeInterpreter-DS-1.3B"
 LOG_DIR="logs"
 
 mkdir -p "$LOG_DIR"
 
-echo "Ensuring transformers>=5 for Qwen2.5..."
+echo "Ensuring transformers>=5..."
 uv add 'transformers>=5'
 
 # ── Phase A: BigCode zero-shot docstring format ────────────────────────────────
@@ -30,10 +32,10 @@ uv add 'transformers>=5'
 echo ""
 echo "=== Phase A: BigCode prompt (arXiv 2507.03160 comparison) ==="
 
-# Paper-replication config — run first to validate pipeline reproduces baseline (~0.57)
-LOG_FILE="${LOG_DIR}/qwen25_3b_bigcode_replication.log"
+# Paper-replication config — run first to validate pipeline reproduces baseline (~0.44)
+LOG_FILE="${LOG_DIR}/oci13b_bigcode_replication.log"
 echo ""
-echo "--- top_p @ 0.95 t=0.2 bigcode [PAPER REPLICATION — expected pass@1 ~0.57] ---"
+echo "--- top_p @ 0.95 t=0.2 bigcode [PAPER REPLICATION — expected pass@1 ~0.44] ---"
 echo "Started: $(date)"
 uv run python -m bench \
     --model "$MODEL_ID" \
@@ -49,7 +51,7 @@ echo "Finished: $(date)"
 for METHOD_TEMP in "pless:0.6" "pless:1.0" "pless_norm:0.6" "pless_norm:1.0" "temp:0.7"; do
     METHOD="${METHOD_TEMP%%:*}"
     TEMP="${METHOD_TEMP##*:}"
-    LOG_FILE="${LOG_DIR}/qwen25_3b_bigcode_${METHOD}_t${TEMP}.log"
+    LOG_FILE="${LOG_DIR}/oci13b_bigcode_${METHOD}_t${TEMP}.log"
 
     echo ""
     echo "--- ${METHOD} @ t=${TEMP} bigcode ---"
@@ -65,7 +67,7 @@ for METHOD_TEMP in "pless:0.6" "pless:1.0" "pless_norm:0.6" "pless_norm:1.0" "te
     echo "Finished: $(date)"
 done
 
-LOG_FILE="${LOG_DIR}/qwen25_3b_bigcode_top_p0.9.log"
+LOG_FILE="${LOG_DIR}/oci13b_bigcode_top_p0.9.log"
 echo ""
 echo "--- top_p @ 0.9 bigcode ---"
 echo "Started: $(date)"
@@ -105,7 +107,7 @@ echo "=== Phase B: Paper 3-shot format (cross-model comparison) ==="
 for METHOD_TEMP in "pless:0.6" "pless:1.0" "pless_norm:0.6" "pless_norm:1.0" "temp:0.7"; do
     METHOD="${METHOD_TEMP%%:*}"
     TEMP="${METHOD_TEMP##*:}"
-    LOG_FILE="${LOG_DIR}/qwen25_3b_paper_${METHOD}_t${TEMP}.log"
+    LOG_FILE="${LOG_DIR}/oci13b_paper_${METHOD}_t${TEMP}.log"
 
     echo ""
     echo "--- ${METHOD} @ t=${TEMP} paper ---"
@@ -120,7 +122,7 @@ for METHOD_TEMP in "pless:0.6" "pless:1.0" "pless_norm:0.6" "pless_norm:1.0" "te
     echo "Finished: $(date)"
 done
 
-LOG_FILE="${LOG_DIR}/qwen25_3b_paper_top_p0.9.log"
+LOG_FILE="${LOG_DIR}/oci13b_paper_top_p0.9.log"
 echo ""
 echo "--- top_p @ 0.9 paper ---"
 echo "Started: $(date)"
@@ -153,7 +155,7 @@ done
 echo ""
 echo "=== All done. Results in ${RESULTS_DIR}/${MODEL_DIR}/ ==="
 echo ""
-echo "Pipeline check (should reproduce arXiv 2507.03160 baseline pass@1 = 0.57):"
+echo "Pipeline check (should reproduce arXiv 2507.03160 baseline pass@1 = 0.44):"
 echo "  ${RESULTS_DIR}/${MODEL_DIR}/metrics/top_p0.95_bigcode_t0.2_metrics.json"
 echo ""
 echo "Key pless comparisons:"
