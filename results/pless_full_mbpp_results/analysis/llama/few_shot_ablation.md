@@ -259,3 +259,102 @@ the example benefit is absent, leaving only marginal task-solving gain.
 Note: Qwen-7B's 3-shot temp (29.8%) still sits 4pp below the paper's Temperature (33.8%).
 This gap exists after the format change and is a separate open question, likely reflecting
 evaluation methodology differences (hardware precision, stop sequences, or sampling parameters).
+
+---
+
+## Hybrid Format Experiment: Scaffold + Examples Without `[BEGIN]`
+
+### Hypothesis
+
+If the example benefit (code quality) and the scaffold benefit (guaranteed function name) are
+independent, combining them should give the best of both worlds:
+
+- 3 in-context worked examples → code quality improvement (especially for Qwen-7B)
+- `def func_name(` scaffold in prompt → function name guaranteed (prevents Llama-2-7b failures)
+- Drop `[BEGIN]` → remove the unfamiliar delimiter that requires format learning
+
+Expected outcome: both models improve beyond their best single-format baselines.
+
+### Results (full 500-task evaluation, 2026-03-25)
+
+| Format | Llama-2-7b pless | Llama pless_norm | Qwen-7B pless | Qwen pless_norm |
+|--------|-----------------|-----------------|--------------|-----------------|
+| Old scaffold (0-shot) | 23.9% | — | 31.82% | — |
+| 0-shot `[BEGIN]` (ns0) | 13.8% | — | 13.96% | — |
+| 3-shot `[BEGIN]` (current) | 22.54% | 22.58% | **35.36%** | **35.54%** |
+| **Hybrid (scaffold + 3 ex, `[DONE]` only)** | 21.94% | 22.2% | 31.42% | 31.34% |
+
+**The hypothesis was wrong.** The hybrid format is worse than 3-shot `[BEGIN]` for both models
+and worse than the old scaffold for Llama-2-7b:
+
+- Qwen-7B: −3.9pp vs 3-shot `[BEGIN]` (31.42% vs 35.36%)
+- Llama-2-7b: −2.0pp vs old scaffold (21.94% vs 23.9%)
+
+The hybrid results are nearly identical to the old scaffold for both models — as if the 3 worked
+examples provided no benefit at all.
+
+### Why the Hypothesis Failed: Format Inconsistency
+
+The hybrid prompt creates a structural inconsistency between examples and target:
+
+**Examples** (what the model sees 3 times):
+```
+...tests:
+
+assert similar_elements(...) == (4, 5)
+...
+
+def similar_elements(test_tup1, test_tup2):
+    res = tuple(set(test_tup1) & set(test_tup2))
+    return (res)
+[DONE]
+```
+
+**Target** (what the model must complete):
+```
+...tests:
+
+assert remove_Occ("hello","l") == "heo"
+...
+def remove_Occ(      ← model generates only from here: `s, c):\n    body`
+```
+
+In examples, the `def` keyword begins a complete function definition. In the target, the model
+is being asked to continue from mid-signature — a structurally different position. The model has
+learned "after tests, write `def func(args):\n    body\n[DONE]`" but is being forced to generate
+only `args):\n    body`, producing a cognitive mismatch that erases the code quality benefit.
+
+In contrast, the 3-shot `[BEGIN]` format is fully consistent: every example shows
+`[BEGIN]\ndef func(args):\n    body\n[DONE]`, and the target ends with `[BEGIN]\n` — the model
+generates a complete function start to finish, applying patterns from examples directly.
+
+### What `[BEGIN]` Actually Does
+
+This experiment reveals that `[BEGIN]` serves two roles, not one:
+
+1. **Stop signal** (obvious): `\n[DONE]` unambiguously terminates generation. This can be
+   replaced by other mechanisms (e.g., `max_new_tokens` + extraction pipeline).
+
+2. **Alignment marker** (less obvious): `[BEGIN]` creates a clean, consistent interface
+   between in-context examples and the target. Every example has `[BEGIN]` → code → `[DONE]`.
+   The target also ends with `[BEGIN]`. The model generates one complete unit (full function
+   definition) in a format it has seen demonstrated three times. This consistency is what allows
+   Qwen-7B to transfer algorithmic patterns from examples to the target.
+
+Removing `[BEGIN]` while keeping the scaffold breaks this alignment. The scaffold forces the
+model into a mid-signature continuation that conflicts with the complete-function pattern shown
+in examples — stranding the code quality benefit.
+
+### Implication: 3-shot `[BEGIN]` Remains the Optimal Format
+
+For code-capable base models (Qwen-7B), 3-shot `[BEGIN]` is optimal because it provides:
+- Format consistency (examples and target use the same interface)
+- Complete-function generation (model leverages full algorithmic patterns from examples)
+- Unambiguous stop
+
+For general-purpose base models (Llama-2-7b), the old zero-shot scaffold would be optimal for
+pless at low temperature if paper comparison were not a constraint — but 3-shot `[BEGIN]` is
+acceptable (-1.4pp vs scaffold) and necessary for a valid temp comparison.
+
+**No further prompt format experiments are planned.** The 3-shot `[BEGIN]` format is the right
+choice for this benchmark suite.
