@@ -204,6 +204,15 @@ def _expand_past_key_values(past_key_values, n: int):
     )
 
 
+# Uniform-mixing weight applied to probs before pless/pless_norm sampling.
+# The samplers claim "at least one token always satisfies the threshold" — true
+# mathematically (sum(p²) ≤ max(p) for any valid distribution) but false in float32:
+# GPU parallel reduction across 32256 vocab elements accumulates rounding errors that
+# can push the computed sum(p²) above max(p), zeroing all tokens → NaN → CUDA crash.
+# At α=1e-3, max_p changes by <0.1%, sampled tokens are always identical in practice.
+_PLESS_SMOOTH_ALPHA = 1e-3
+
+
 def generate_samples(
     model,
     tokenizer,
@@ -246,7 +255,8 @@ def generate_samples(
     if temperature != 1.0:
         logits = logits / temperature
     probs = torch.softmax(logits, dim=-1).unsqueeze(0).expand(N, -1).contiguous()  # (N, vocab)
-    next_tokens = sampler_fn(probs.clone())  # (N, 1)
+    probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
+    next_tokens = sampler_fn(probs_s)  # (N, 1)
     next_tokens = next_tokens.view(N)  # (N,)
 
     # Storage for generated token ids — pad with eos_id
@@ -282,7 +292,8 @@ def generate_samples(
                 if temperature != 1.0:
                     logits = logits / temperature
                 probs = torch.softmax(logits, dim=-1)  # (N, vocab)
-                next_tokens = sampler_fn(probs.clone()).view(N)  # (N,)
+                probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
+                next_tokens = sampler_fn(probs_s).view(N)  # (N,)
 
                 # Only write tokens for unfinished sequences
                 next_tokens = torch.where(finished, torch.tensor(eos_id, device=model.device), next_tokens)
