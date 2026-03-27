@@ -21,6 +21,10 @@ def compute_pass_at_k(
     pass_at_k = {}
     for k in k_values:
         if k > num_samples.min():
+            import warnings
+            warnings.warn(
+                f"k={k} exceeds minimum sample count ({num_samples.min()}), skipping pass@{k}"
+            )
             continue
         estimates = estimate_pass_at_k(num_samples, num_correct, k)
         pass_at_k[str(k)] = float(estimates.mean())

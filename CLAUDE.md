@@ -70,7 +70,7 @@ Root-level shell scripts that target a specific benchmark **must** include the b
 
 11 models supported. Legacy Qwen models (Qwen-7B, Qwen-7B-Chat) require `transformers<5` due to incompatible remote code. All others use `transformers>=5`.
 
-Chat/instruct detection: model name contains "chat", "instruct", or "coder" → uses `tokenizer.apply_chat_template()`.
+Chat/instruct detection: model name contains "chat" or "instruct" → uses `tokenizer.apply_chat_template()`.
 
 ## Results Directory Structure
 

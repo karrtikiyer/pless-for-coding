@@ -454,11 +454,6 @@ def generate_consolidated_report(units: list[EvalUnit]) -> None:
             row[f"cover@{t}_distinct"] = round(v, 2)
         # diversity metrics
         row["structural_diversity"] = m.get("structural_diversity", 0.0)
-        row["mean_distinct_3"] = m.get("mean_distinct_3", 0.0)
-        row["mean_loc_stdev"] = m.get("mean_loc_stdev", 0.0)
-        row["mean_self_codebleu"] = m.get("mean_self_codebleu", 0.0)
-        row["mean_self_syntax_match"] = m.get("mean_self_syntax_match", 0.0)
-        row["mean_self_dataflow_match"] = m.get("mean_self_dataflow_match", 0.0)
 
         rows.append(row)
 

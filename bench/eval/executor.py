@@ -159,11 +159,11 @@ def _build_program_humaneval(sample_code: str, test: str, entry_point: str) -> s
     return sample_code + "\n" + test + f"\ncheck({entry_point})\n"
 
 
-def check_sample(code: str, tests: str, timeout: float = 5.0) -> bool:
-    """Run code+tests in a subprocess, return True if it exits cleanly."""
+def check_sample(program: str, timeout: float = 5.0) -> bool:
+    """Run program in a subprocess, return True if it exits cleanly."""
     try:
         result = subprocess.run(
-            ["python3", "-c", tests],
+            ["python3", "-c", program],
             timeout=timeout,
             capture_output=True,
             stdin=subprocess.DEVNULL,
@@ -191,7 +191,7 @@ def evaluate_task(record: dict, dataset: str, timeout: float = 5.0) -> dict:
         else:
             raise ValueError(f"Unknown dataset: {dataset}")
 
-        passed = check_sample(sample, program, timeout=timeout)
+        passed = check_sample(program, timeout=timeout)
         pass_results.append(passed)
 
     return {

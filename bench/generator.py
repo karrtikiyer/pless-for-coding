@@ -248,6 +248,8 @@ def generate_samples(
                 eos_id = cid
                 break
     if eos_id is None:
+        eos_id = getattr(model.config, "eos_token_id", None)
+    if eos_id is None:
         raise ValueError("Cannot determine eos_token_id for this tokenizer")
     N = n_samples
 

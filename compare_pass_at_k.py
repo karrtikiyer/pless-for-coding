@@ -75,7 +75,7 @@ def evaluate_samples(samples: list[str], test: str, entry_point: str) -> list[bo
     for sample in samples:
         clean = extract_python_code(sample)
         program = _build_program_humaneval(clean, test, entry_point)
-        passed = check_sample(clean, program, timeout=5.0)
+        passed = check_sample(program, timeout=5.0)
         results.append(passed)
     return results
 

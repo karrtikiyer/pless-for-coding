@@ -14,17 +14,17 @@ from bench.eval.executor import (
 
 def test_check_sample_passing():
     code = "def add(a, b): return a + b\nassert add(1, 2) == 3"
-    assert check_sample("", code) is True
+    assert check_sample(code) is True
 
 
 def test_check_sample_failing():
     code = "def add(a, b): return a - b\nassert add(1, 2) == 3"
-    assert check_sample("", code) is False
+    assert check_sample(code) is False
 
 
 def test_check_sample_syntax_error():
     code = "def add(a b): return a + b"
-    assert check_sample("", code) is False
+    assert check_sample(code) is False
 
 
 # --- strip_code_fences ---
@@ -72,12 +72,12 @@ def test_evaluate_task_with_code_fences():
 
 def test_check_sample_timeout():
     code = "import time; time.sleep(100)"
-    assert check_sample("", code, timeout=0.5) is False
+    assert check_sample(code, timeout=0.5) is False
 
 
 def test_check_sample_runtime_error():
     code = "1 / 0"
-    assert check_sample("", code) is False
+    assert check_sample(code) is False
 
 
 # --- _build_program_mbpp ---
