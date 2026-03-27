@@ -91,7 +91,9 @@ def load_our_metrics(
         metrics_list = []
         for p in sorted(metrics_dir.glob("*_metrics.json")):
             with open(p) as f:
-                metrics_list.append(json.load(f))
+                m = json.load(f)
+            m["_stem"] = p.stem.replace("_metrics", "")  # e.g. "pless_hybrid_t0.6"
+            metrics_list.append(m)
         if metrics_list:
             metrics_by_model[model_key] = metrics_list
     return metrics_by_model
@@ -399,31 +401,59 @@ def plot_metrics_overview(
     models = list(our_metrics_by_model.keys())
     n_models = len(models)
 
-    # Method colours (consistent with plots.py)
-    method_colors = {
+    # Method colours and base markers (consistent with plots.py)
+    _method_colors = {
         "pless": "#6B46C1",
         "pless_norm": "#B7791F",
         "temp": "#2F855A",
         "top_p": "#D53F8C",
     }
-    method_styles = {
-        "pless": dict(linestyle="-", marker="o"),
-        "pless_norm": dict(linestyle="-.", marker="X"),
-        "temp": dict(linestyle="-", marker="s"),
-        "top_p": dict(linestyle="--", marker="D"),
+    _method_markers = {
+        "pless": "o",
+        "pless_norm": "X",
+        "temp": "s",
+        "top_p": "D",
     }
-    method_labels = {
-        "pless": "pless",
-        "pless_norm": "pless_norm",
-        "temp": "temp_0.7",
-        "top_p": "top_p (p=0.9)",
+    _method_base_names = {
+        "pless": "P-Less",
+        "pless_norm": "P-Less Norm",
+        "temp": "Temp",
+        "top_p": "Top-p",
     }
 
+    def _curve_label_generic(m: dict) -> str:
+        method = m["method"]
+        temp = m.get("temperature")
+        stem = m.get("_stem", "")
+        base = _method_base_names.get(method, method)
+        if "_hybrid" in stem:
+            variant = " [hybrid]"
+        elif "_ns0" in stem:
+            variant = " [ns0]"
+        elif "_bs" in stem:
+            variant = " [begin+scaffold]"
+        elif "_bigcode" in stem:
+            variant = " [bigcode]"
+        else:
+            variant = ""
+        top_p_val = m.get("top_p")
+        if method == "top_p" and top_p_val is not None:
+            return f"Top-p p={top_p_val}{variant} (t={temp})"
+        return f"{base}{variant} (t={temp})"
+
+    def _is_high_temp_generic(m: dict) -> bool:
+        top_p_val = m.get("top_p")
+        if m["method"] == "top_p" and top_p_val is not None and top_p_val >= 0.9:
+            # high top_p at low temp is a deliberate primary config — use solid
+            return m.get("temperature", 0.0) >= 1.0
+        return m.get("temperature", 0.0) >= 1.0
+
     fig, axes = plt.subplots(
-        n_models, 3, figsize=(15, 4 * n_models), sharey=True, squeeze=False,
+        n_models, 3, figsize=(15, 4 * n_models), sharey=False, squeeze=False,
     )
 
     legend_handles: dict[str, object] = {}
+    col_vals: list[list[float]] = [[], [], []]
 
     for row, model_key in enumerate(models):
         display = model_short.get(model_key, model_key)
@@ -431,44 +461,52 @@ def plot_metrics_overview(
 
         for m in metrics_list:
             method = m["method"]
-            color = method_colors.get(method, "#333333")
-            ms = method_styles.get(method, dict(linestyle="-", marker="x"))
-            style = dict(color=color, linewidth=2, markersize=6, **ms)
-            label = method_labels.get(method, method)
+            color = _method_colors.get(method, "#333333")
+            marker = _method_markers.get(method, "x")
+            linestyle = "--" if _is_high_temp_generic(m) else "-"
+            label = _curve_label_generic(m)
+            style = dict(color=color, linewidth=2.5, markersize=8,
+                         linestyle=linestyle, marker=marker)
 
             # pass@k
             ks = sorted(m["pass_at_k"], key=lambda x: int(x))
-            line, = axes[row, 0].plot(
-                [int(k) for k in ks],
-                [m["pass_at_k"][k] * 100 for k in ks],
-                **style,
-            )
+            vals0 = [m["pass_at_k"][k] * 100 for k in ks]
+            col_vals[0].extend(vals0)
+            line, = axes[row, 0].plot([int(k) for k in ks], vals0, **style)
             if label not in legend_handles:
                 legend_handles[label] = line
 
             # cover@t
             ts = sorted(m["cover_at_t"], key=lambda x: float(x))
-            axes[row, 1].plot(
-                [float(t) for t in ts],
-                [m["cover_at_t"][t] for t in ts],
-                **style,
-            )
+            vals1 = [m["cover_at_t"][t] for t in ts]
+            col_vals[1].extend(vals1)
+            axes[row, 1].plot([float(t) for t in ts], vals1, **style)
 
             # cover@t (distinct)
             ts_d = sorted(m["cover_at_t_distinct"], key=lambda x: float(x))
-            axes[row, 2].plot(
-                [float(t) for t in ts_d],
-                [m["cover_at_t_distinct"][t] for t in ts_d],
-                **style,
-            )
+            vals2 = [m["cover_at_t_distinct"][t] for t in ts_d]
+            col_vals[2].extend(vals2)
+            axes[row, 2].plot([float(t) for t in ts_d], vals2, **style)
 
         axes[row, 0].set_ylabel(f"{display}\n\nPercentage", fontsize=9)
         for col in range(3):
-            axes[row, col].set_ylim(0, 100)
             axes[row, col].grid(alpha=0.3)
         if row < n_models - 1:
             for col in range(3):
                 axes[row, col].tick_params(labelbottom=False)
+
+    # Tight per-column y limits so differences are visible
+    import math as _math
+    for col in range(3):
+        if not col_vals[col]:
+            continue
+        lo = max(0.0, _math.floor(min(col_vals[col])) - 3)
+        hi = min(100.0, _math.ceil(max(col_vals[col])) + 3)
+        if hi - lo < 15:
+            mid = (lo + hi) / 2
+            lo, hi = max(0.0, mid - 8), min(100.0, mid + 8)
+        for r in range(n_models):
+            axes[r, col].set_ylim(lo, hi)
 
     # Column titles and x-labels
     for col, title in enumerate(["pass@k", "cover@t", "cover@t (distinct)"]):
@@ -487,15 +525,23 @@ def plot_metrics_overview(
             axes[r, 1].set_xticks([float(t) for t in ts])
             axes[r, 2].set_xticks([float(t) for t in ts])
 
+    n_legend = len(legend_handles)
     fig.legend(
         legend_handles.values(), legend_handles.keys(),
-        loc="lower center", ncol=len(legend_handles), fontsize=9, frameon=True,
+        loc="lower center",
+        ncol=min(n_legend, 4),
+        fontsize=8.5,
+        frameon=True,
+        title="Method  (─ solid = primary/low temp,  – – dashed = t=1.0)",
+        title_fontsize=8,
     )
     fig.suptitle(suptitle, fontsize=13)
-    fig.tight_layout(rect=[0, 0.04, 1, 0.97])
+    # Reserve more bottom space when legend is tall (many items)
+    bottom_margin = 0.04 + 0.025 * max(0, (n_legend - 1) // 4)
+    fig.tight_layout(rect=[0, bottom_margin, 1, 0.97])
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=150)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 

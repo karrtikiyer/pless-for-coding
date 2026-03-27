@@ -55,11 +55,12 @@ def infer_output_path(results_file: Path) -> Path:
 
 
 def infer_metadata(results_file: Path, first_record: dict) -> dict:
-    """Extract model, method, temperature from filename or first record."""
+    """Extract model, method, temperature (and top_p if present) from first record."""
     model = first_record.get("model", "unknown")
     method = first_record.get("method", "unknown")
     temperature = first_record.get("temperature", 0.0)
-    return {"model": model, "method": method, "temperature": temperature}
+    top_p = first_record.get("top_p")
+    return {"model": model, "method": method, "temperature": temperature, "top_p": top_p}
 
 
 def main():
@@ -87,6 +88,7 @@ def main():
         model=meta["model"],
         method=meta["method"],
         temperature=meta["temperature"],
+        top_p=meta["top_p"],
         dataset=args.dataset,
         k_values=k_values,
         t_values=t_values,
