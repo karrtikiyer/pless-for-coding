@@ -34,14 +34,14 @@ Comparison of p-less sampling against the top_p=0.95/temp=0.2 baseline from "Ass
 
 | Rank | Method | Source | pass@1 (%) |
 | ---: | ------ | ------ | ---------: |
-| 1 | Top-p (paper, t=0.2) | Paper | 44.0 |
-| 2 | P-Less Norm (t=1.0) **←** | Ours | 26.8 |
-| 3 | Top-p p=0.95 (paper replication) (t=0.2) **←** | Ours | 26.5 |
-| 4 | P-Less (t=0.6) **←** | Ours | 26.5 |
-| 5 | P-Less Norm (t=0.6) **←** | Ours | 26.4 |
-| 6 | P-Less (t=1.0) **←** | Ours | 26.4 |
-| 7 | Temperature (t=0.7) **←** | Ours | 24.5 |
-| 8 | Top-p p=0.9 (t=1.0) **←** | Ours | 21.3 |
+| 1 | P-Less Norm (t=1.0) **←** | Ours | 44.6 |
+| 2 | Top-p p=0.95 (paper replication) (t=0.2) **←** | Ours | 44.5 |
+| 3 | P-Less (t=1.0) **←** | Ours | 44.1 |
+| 4 | Top-p (paper, t=0.2) | Paper | 44.0 |
+| 5 | P-Less Norm (t=0.6) **←** | Ours | 43.9 |
+| 6 | P-Less (t=0.6) **←** | Ours | 43.9 |
+| 7 | Temperature (t=0.7) **←** | Ours | 43.1 |
+| 8 | Top-p p=0.9 (t=1.0) **←** | Ours | 42.8 |
 
 
 ## Extended Metrics (Our Methods Only)
@@ -78,13 +78,13 @@ Comparison of p-less sampling against the top_p=0.95/temp=0.2 baseline from "Ass
 
 | Method | pass@1 | pass@3 | pass@5 | pass@10 | cover@0.1 | cover@0.1 (dist) | cover@0.3 | cover@0.3 (dist) | cover@0.5 | cover@0.5 (dist) | cover@0.7 | cover@0.7 (dist) |
 | --- | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: |
-| P-Less (t=0.6) | 26.5 | 30.3 | 31.5 | 32.0 | 32.0 | 29.6 | 31.2 | 17.8 | 26.6 | 9.4 | 23.8 | 4.0 |
-| P-Less (t=1.0) | 26.4 | 31.2 | 32.7 | 33.8 | 33.8 | 31.4 | 31.2 | 23.8 | 27.4 | 13.8 | 23.0 | 5.2 |
-| P-Less Norm (t=0.6) | 26.4 | 29.9 | 31.0 | 31.8 | 31.8 | 28.2 | 29.8 | 16.6 | 27.0 | 9.2 | 24.0 | 4.6 |
-| P-Less Norm (t=1.0) | 26.8 | 31.4 | 32.9 | 34.2 | 34.2 | 31.2 | 30.6 | 23.2 | 28.0 | 14.2 | 24.4 | 6.0 |
-| Temperature (t=0.7) | 24.5 | 36.5 | 41.6 | 48.2 | 48.2 | 43.2 | 32.8 | 23.6 | 24.6 | 14.2 | 18.6 | 6.2 |
-| Top-p p=0.95 (paper replication) (t=0.2) | 26.5 | 31.3 | 33.4 | 36.0 | 36.0 | 32.2 | 30.0 | 23.2 | 26.6 | 13.0 | 23.8 | 5.0 |
-| Top-p p=0.9 (t=1.0) | 21.3 | 34.7 | 40.5 | 47.8 | 47.8 | 41.4 | 31.6 | 23.2 | 21.8 | 11.4 | 13.6 | 4.0 |
+| P-Less (t=0.6) | 43.9 | 47.1 | 48.2 | 49.0 | 49.0 | 49.0 | 47.0 | 4.0 | 44.2 | 1.0 | 41.8 | 0.0 |
+| P-Less (t=1.0) | 44.1 | 48.2 | 49.7 | 51.2 | 51.2 | 51.2 | 47.2 | 6.2 | 45.0 | 1.0 | 41.0 | 0.0 |
+| P-Less Norm (t=0.6) | 43.9 | 47.3 | 48.4 | 49.4 | 49.4 | 49.4 | 47.0 | 4.2 | 44.4 | 0.6 | 41.6 | 0.2 |
+| P-Less Norm (t=1.0) | 44.6 | 48.6 | 49.8 | 51.0 | 51.0 | 51.0 | 48.4 | 6.2 | 45.6 | 1.0 | 42.8 | 0.2 |
+| Temperature (t=0.7) | 43.1 | 54.0 | 58.0 | 62.4 | 62.4 | 62.4 | 51.4 | 33.6 | 44.0 | 13.8 | 38.0 | 4.8 |
+| Top-p p=0.95 (paper replication) (t=0.2) | 44.5 | 48.8 | 50.1 | 51.8 | 51.8 | 51.8 | 47.8 | 7.8 | 46.0 | 1.4 | 42.4 | 0.0 |
+| Top-p p=0.9 (t=1.0) | 42.8 | 54.6 | 58.8 | 64.0 | 64.0 | 64.0 | 52.4 | 39.8 | 45.2 | 16.2 | 37.2 | 4.2 |
 
 *pass@k as %; cover@t = % of tasks where ≥t fraction of samples are correct; (dist) = distinct correct samples only.*
 
@@ -112,11 +112,11 @@ Comparison of p-less sampling against the top_p=0.95/temp=0.2 baseline from "Ass
 
 ### OCI-DS-1.3B
 
-- **P-Less Norm (t=1.0)**: rank 2/8
-- **Top-p p=0.95 (paper replication) (t=0.2)**: rank 3/8
-- **P-Less (t=0.6)**: rank 4/8
+- **P-Less Norm (t=1.0)**: rank 1/8
+- **Top-p p=0.95 (paper replication) (t=0.2)**: rank 2/8
+- **P-Less (t=1.0)**: rank 3/8
 - **P-Less Norm (t=0.6)**: rank 5/8
-- **P-Less (t=1.0)**: rank 6/8
+- **P-Less (t=0.6)**: rank 6/8
 - **Temperature (t=0.7)**: rank 7/8
 - **Top-p p=0.9 (t=1.0)**: rank 8/8
 
@@ -125,13 +125,3 @@ Comparison of p-less sampling against the top_p=0.95/temp=0.2 baseline from "Ass
 - We ran 6 configs (pless t=0.6/1.0, pless_norm t=0.6/1.0, temp 0.7, top_p p=0.9) vs the paper's methods. The comparison is partial.
 - Our `temp_0.7` serves as an anchor to validate evaluation setup similarity; exact match is not expected due to differences in prompting, generation length, and MBPP subset.
 - The paper reports single-sample pass@1; our pass@1 uses the unbiased estimator over 10 samples, which may differ slightly from greedy/beam-search single-shot accuracy.
-
-### OCI-DS-1.3B: Results Pending Re-run
-
-**The OCI-DS-1.3B numbers above (26.x%) used a broken tokenizer and do not reflect true performance.**
-
-Root cause: transformers 5.x loads `LlamaTokenizer` (declared in `tokenizer_config.json`) which overrides the `ByteLevel` decoder from `tokenizer.json`. This destroys whitespace in decoded text, causing BPE artifacts (`Ċ"""` instead of `\n"""`) that prevent stop sequences from firing. The model generated very long repetitive samples (mean ~803 chars vs ~214 for Qwen models), depressing pass@1.
-
-The paper authors (arXiv 2507.03160) used transformers 4.x which did not have this regression, giving them 44% pass@1 with the same BigCode format and `AutoTokenizer`.
-
-**Fix applied:** `bench/generator.py:load_model_and_tokenizer()` now auto-detects broken whitespace round-trip and reloads as `PreTrainedTokenizerFast`, which respects the `ByteLevel` decoder from `tokenizer.json`. **Action required:** re-run OCI-DS-1.3B on H100 using `run_bigcode_mbpp_oci13b_rerun.sh`. Expected pass@1 after fix: ~44% for the paper-replication config.
