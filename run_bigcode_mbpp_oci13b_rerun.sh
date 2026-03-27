@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
-# run_bigcode_mbpp_oci13b_instruct_rerun.sh
+# run_bigcode_mbpp_oci13b_rerun.sh
 #
-# Re-runs OpenCodeInterpreter-DS-1.3B MBPP benchmarks in INSTRUCT mode.
+# Re-runs OpenCodeInterpreter-DS-1.3B MBPP benchmarks in BigCode format,
+# matching the methodology of arXiv 2507.03160.
 #
-# Root cause: the original run used BigCode base-model format (wrong for this
-# instruction-tuned model). is_instruct_model() now recognises "opencodeinterpreter"
-# so this script will use tokenizer.apply_chat_template() automatically.
+# Root cause of previous bad results: transformers 5.x loads LlamaTokenizer
+# which overrides the ByteLevel decoder from tokenizer.json, destroying
+# whitespace. Fixed in bench/generator.py: auto-detects broken round-trip
+# and reloads as PreTrainedTokenizerFast.
 #
-# The original *_bigcode_*.jsonl files are moved to a backup directory first so
-# the new instruct-format results land in clean files (pless_t0.6.jsonl etc.).
+# is_instruct_model() no longer matches OCI, so --prompt-style bigcode
+# produces *_bigcode_*.jsonl output files (same as all other base models).
 #
-# Configs: 7 (replication + pless@0.6, pless@1.0, pless_norm@0.6, pless_norm@1.0,
-#              temp@0.7, top_p@0.9) — all now use instruct format.
+# Configs: 7 (replication + pless@0.6, pless@1.0, pless_norm@0.6,
+#              pless_norm@1.0, temp@0.7, top_p@0.9)
 #
-# Expected: top_p0.95_t0.2 pass@1 should be close to paper's 44%.
+# Expected: top_p0.95_bigcode_t0.2 pass@1 should be close to paper's 44%.
 
 set -euo pipefail
 
@@ -21,20 +23,20 @@ MODEL_ID="m-a-p/OpenCodeInterpreter-DS-1.3B"
 RESULTS_DIR="results/pless_full_mbpp_results"
 MODEL_DIR="${RESULTS_DIR}/m-a-p--OpenCodeInterpreter-DS-1.3B"
 LOG_DIR="logs"
-BACKUP_DIR="${MODEL_DIR}/archive_bigcode_base_$(date +%Y%m%d)"
+BACKUP_DIR="${MODEL_DIR}/archive_broken_tokenizer_$(date +%Y%m%d)"
 
 mkdir -p "$LOG_DIR"
 
-echo "=== OCI-DS-1.3B instruct-mode re-run ==="
+echo "=== OCI-DS-1.3B BigCode re-run (fixed tokenizer) ==="
 echo ""
-echo "Moving old base-format JSONL + metrics to backup: ${BACKUP_DIR}"
+echo "Backing up old results to: ${BACKUP_DIR}"
 mkdir -p "${BACKUP_DIR}"
-for f in "${MODEL_DIR}"/*_bigcode_*.jsonl; do
+for f in "${MODEL_DIR}"/*.jsonl; do
     [ -f "$f" ] && mv "$f" "${BACKUP_DIR}/"
 done
 if [ -d "${MODEL_DIR}/metrics" ]; then
     mkdir -p "${BACKUP_DIR}/metrics"
-    for f in "${MODEL_DIR}/metrics"/*_bigcode_*_metrics.json; do
+    for f in "${MODEL_DIR}/metrics"/*_metrics.json; do
         [ -f "$f" ] && mv "$f" "${BACKUP_DIR}/metrics/"
     done
 fi
@@ -44,7 +46,7 @@ echo ""
 echo "Ensuring transformers>=5..."
 uv add 'transformers>=5'
 
-# ── 7 configs — all use instruct format now ──────────────────────────────────
+# ── 7 configs — all use BigCode format ──────────────────────────────────────
 
 echo ""
 echo "--- top_p @ 0.95 t=0.2 [PAPER REPLICATION — expected pass@1 ~0.44] ---"
@@ -58,7 +60,7 @@ uv run python -m bench \
     --mbpp-config full \
     --results-dir "$RESULTS_DIR" \
     --no-resume \
-    2>&1 | tee "${LOG_DIR}/oci13b_instruct_replication.log"
+    2>&1 | tee "${LOG_DIR}/oci13b_replication.log"
 echo "Finished: $(date)"
 
 for METHOD_TEMP in "pless:0.6" "pless:1.0" "pless_norm:0.6" "pless_norm:1.0" "temp:0.7"; do
@@ -75,7 +77,7 @@ for METHOD_TEMP in "pless:0.6" "pless:1.0" "pless_norm:0.6" "pless_norm:1.0" "te
         --mbpp-config full \
         --results-dir "$RESULTS_DIR" \
         --no-resume \
-        2>&1 | tee "${LOG_DIR}/oci13b_instruct_${METHOD}_t${TEMP}.log"
+        2>&1 | tee "${LOG_DIR}/oci13b_${METHOD}_t${TEMP}.log"
     echo "Finished: $(date)"
 done
 
@@ -91,21 +93,21 @@ uv run python -m bench \
     --mbpp-config full \
     --results-dir "$RESULTS_DIR" \
     --no-resume \
-    2>&1 | tee "${LOG_DIR}/oci13b_instruct_top_p0.9.log"
+    2>&1 | tee "${LOG_DIR}/oci13b_top_p0.9.log"
 echo "Finished: $(date)"
 
 echo ""
 echo "=== Generation complete. Evaluating... ==="
 
-# Note: for instruct models, filenames have no _bigcode suffix
+# With is_instruct_model()=False + --prompt-style bigcode, filenames get _bigcode_ infix
 for f in \
-    top_p0.95_t0.2.jsonl \
-    pless_t0.6.jsonl \
-    pless_t1.0.jsonl \
-    pless_norm_t0.6.jsonl \
-    pless_norm_t1.0.jsonl \
-    temp_t0.7.jsonl \
-    top_p0.9_t1.0.jsonl; do
+    top_p0.95_bigcode_t0.2.jsonl \
+    pless_bigcode_t0.6.jsonl \
+    pless_bigcode_t1.0.jsonl \
+    pless_norm_bigcode_t0.6.jsonl \
+    pless_norm_bigcode_t1.0.jsonl \
+    temp_bigcode_t0.7.jsonl \
+    top_p0.9_bigcode_t1.0.jsonl; do
     echo "Evaluating $f ..."
     uv run python -m bench.eval \
         --results-file "${MODEL_DIR}/${f}" \
@@ -120,4 +122,4 @@ echo ""
 echo "=== Done. ==="
 echo ""
 echo "Pipeline check (should be close to paper's 44%):"
-echo "  ${MODEL_DIR}/metrics/top_p0.95_t0.2_metrics.json"
+echo "  ${MODEL_DIR}/metrics/top_p0.95_bigcode_t0.2_metrics.json"

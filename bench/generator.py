@@ -69,6 +69,18 @@ if _TF5:
 def load_model_and_tokenizer(model_id: str):
     """Load model in bfloat16 with SDPA attention and its tokenizer."""
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+
+    # Detect broken byte-level BPE decoder.  transformers 5.x + LlamaTokenizer
+    # overrides the ByteLevel decoder from tokenizer.json for DeepSeek-Coder /
+    # OCI tokenizers, destroying whitespace.  Reload as PreTrainedTokenizerFast
+    # which respects the tokenizer.json ByteLevel decoder.
+    _test = "a b\nc"
+    if tokenizer.decode(tokenizer.encode(_test), skip_special_tokens=True).strip() != _test:
+        from transformers import PreTrainedTokenizerFast
+        tokenizer = PreTrainedTokenizerFast.from_pretrained(model_id, trust_remote_code=True)
+        assert tokenizer.decode(tokenizer.encode(_test), skip_special_tokens=True).strip() == _test, \
+            f"Tokenizer for {model_id} cannot round-trip whitespace"
+
     # Old Qwen-7B / Qwen-7B-Chat use custom attention that doesn't support SDPA.
     is_old_qwen = model_id.startswith("Qwen/Qwen-7B")
     attn_impl = "eager" if is_old_qwen else "sdpa"
@@ -106,46 +118,6 @@ def load_model_and_tokenizer(model_id: str):
         tokenizer._qwen_direct_tokenize = True
 
     return model, tokenizer
-
-
-# ---------------------------------------------------------------------------
-# Byte-level BPE artifact fix
-# ---------------------------------------------------------------------------
-# Some tokenizers (DeepSeek-Coder, LLaMA, OCI-DS-1.3B) use GPT-2 byte-level
-# BPE where each raw byte is mapped to a unique Unicode character so the
-# tokenizer alphabet stays pure Unicode.  tokenizer.decode() returns these
-# Unicode surrogates directly instead of converting them back to bytes,
-# producing artifacts like Ġ (U+0120 → space) and Ċ (U+010A → newline).
-# Without the fix these artifacts survive into the stored JSONL and break
-# stop-sequence matching during generation and code execution during eval.
-# The translation is safe for code-generation datasets (MBPP/HumanEval):
-# the affected Unicode range (U+0100–U+00FF overlap chars) never appears in
-# legitimate Python source code.
-
-def _build_bpe_artifact_trans() -> dict:
-    """Return str.maketrans table: GPT-2 BPE Unicode surrogates → proper bytes."""
-    bs = (list(range(ord("!"), ord("~") + 1))
-          + list(range(ord("¡"), ord("¬") + 1))
-          + list(range(ord("®"), ord("ÿ") + 1)))
-    cs = bs[:]
-    n = 0
-    for b in range(2 ** 8):
-        if b not in bs:
-            bs.append(b)
-            cs.append(2 ** 8 + n)
-            n += 1
-    return str.maketrans({chr(c): chr(b) for b, c in zip(bs, cs) if c != b and c > 127})
-
-
-_BPE_ARTIFACT_TRANS = _build_bpe_artifact_trans()
-
-
-def _fix_bpe_artifacts(text: str) -> str:
-    """Decode GPT-2 byte-level BPE surrogates back to proper characters.
-
-    No-op for tokenizers that already return clean text (SentencePiece, tiktoken).
-    """
-    return text.translate(_BPE_ARTIFACT_TRANS)
 
 
 def _truncate_at_stop(text: str, stop_strings: list[str]) -> str:
@@ -196,12 +168,10 @@ def generate_samples_standard(
             num_return_sequences=n_samples,
             **kwargs,
         )
-    decoded_prompt = _fix_bpe_artifacts(
-        tokenizer.decode(output[0, :prompt_len], skip_special_tokens=True)
-    )
+    decoded_prompt = tokenizer.decode(output[0, :prompt_len], skip_special_tokens=True)
     samples = []
     for i in range(n_samples):
-        full_text = _fix_bpe_artifacts(tokenizer.decode(output[i], skip_special_tokens=True))
+        full_text = tokenizer.decode(output[i], skip_special_tokens=True)
         text = full_text[len(decoded_prompt):]
         # Post-generation truncation as safety net
         if stop_strings:
@@ -313,9 +283,7 @@ def generate_samples(
         # Decode first token into buffers and check for stops
         for i in range(N):
             if not finished[i]:
-                text_buffers[i] = _fix_bpe_artifacts(
-                    tokenizer.decode(all_ids[i, :1], skip_special_tokens=True)
-                )
+                text_buffers[i] = tokenizer.decode(all_ids[i, :1], skip_special_tokens=True)
                 for stop in stop_strings:
                     if stop in text_buffers[i]:
                         finished[i] = True
@@ -348,9 +316,7 @@ def generate_samples(
                     for i in range(N):
                         if not finished[i]:
                             # Decode accumulated tokens to get accurate text
-                            text_buffers[i] = _fix_bpe_artifacts(
-                                tokenizer.decode(all_ids[i, :step + 1], skip_special_tokens=True)
-                            )
+                            text_buffers[i] = tokenizer.decode(all_ids[i, :step + 1], skip_special_tokens=True)
                             for stop in stop_strings:
                                 if stop in text_buffers[i]:
                                     finished[i] = True
@@ -363,7 +329,7 @@ def generate_samples(
                 encodings = next_tokens.view(N, 1)
 
     # Decode each sequence (strip trailing eos tokens)
-    decoded_prompt = _fix_bpe_artifacts(tokenizer.decode(input_ids[0], skip_special_tokens=True))
+    decoded_prompt = tokenizer.decode(input_ids[0], skip_special_tokens=True)
     samples = []
     for i in range(N):
         ids = all_ids[i]
@@ -372,7 +338,7 @@ def generate_samples(
         if len(eos_positions) > 0:
             ids = ids[:eos_positions[0]]
         full_ids = torch.cat([input_ids[0], ids])
-        full_text = _fix_bpe_artifacts(tokenizer.decode(full_ids, skip_special_tokens=True))
+        full_text = tokenizer.decode(full_ids, skip_special_tokens=True)
         text = full_text[len(decoded_prompt):]
         # Post-generation truncation as safety net
         if stop_strings:

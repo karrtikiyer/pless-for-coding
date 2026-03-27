@@ -200,4 +200,4 @@ def format_prompt_instruct(task: dict, tokenizer) -> tuple[str, str]:
 def is_instruct_model(model_id: str) -> bool:
     """Check if a model ID indicates an instruct/chat model."""
     lower = model_id.lower()
-    return "instruct" in lower or "chat" in lower or "opencodeinterpreter" in lower
+    return "instruct" in lower or "chat" in lower

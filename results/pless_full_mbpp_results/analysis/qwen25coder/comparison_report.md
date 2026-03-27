@@ -126,12 +126,12 @@ Comparison of p-less sampling against the top_p=0.95/temp=0.2 baseline from "Ass
 - Our `temp_0.7` serves as an anchor to validate evaluation setup similarity; exact match is not expected due to differences in prompting, generation length, and MBPP subset.
 - The paper reports single-sample pass@1; our pass@1 uses the unbiased estimator over 10 samples, which may differ slightly from greedy/beam-search single-shot accuracy.
 
-### OCI-DS-1.3B: Results Invalid — Requires Re-run in Instruct Mode
+### OCI-DS-1.3B: Results Pending Re-run
 
-**The OCI-DS-1.3B numbers above (26.x%) are from an incorrectly configured run and do not reflect the model's true capability.**
+**The OCI-DS-1.3B numbers above (26.x%) used a broken tokenizer and do not reflect true performance.**
 
-Root cause: `OpenCodeInterpreter-DS-1.3B` is an instruction-tuned model, but `is_instruct_model()` returned False (it only checked for "instruct"/"chat" in the name). The model was run with the BigCode docstring base-model format instead of its native chat template.
+Root cause: transformers 5.x loads `LlamaTokenizer` (declared in `tokenizer_config.json`) which overrides the `ByteLevel` decoder from `tokenizer.json`. This destroys whitespace in decoded text, causing BPE artifacts (`Ċ"""` instead of `\n"""`) that prevent stop sequences from firing. The model generated very long repetitive samples (mean ~803 chars vs ~214 for Qwen models), depressing pass@1.
 
-Additionally, a BPE tokenizer artifact bug compounded the issue: during H100 generation, decoded intermediate text contained `Ċ"""` (BPE artifact for `\n"""`) instead of the literal `\n"""`, so the stop sequence never fired. The model generated very long repetitive samples (mean ~803 chars vs ~214 for Qwen models).
+The paper authors (arXiv 2507.03160) used transformers 4.x which did not have this regression, giving them 44% pass@1 with the same BigCode format and `AutoTokenizer`.
 
-**Fix applied:** `is_instruct_model()` now recognises `opencodeinterpreter` models. **Action required:** re-run OCI-DS-1.3B on H100 using `run_bigcode_mbpp_oci13b_instruct_rerun.sh`. Expected pass@1 after fix: ~44% for the paper-replication config.
+**Fix applied:** `bench/generator.py:load_model_and_tokenizer()` now auto-detects broken whitespace round-trip and reloads as `PreTrainedTokenizerFast`, which respects the `ByteLevel` decoder from `tokenizer.json`. **Action required:** re-run OCI-DS-1.3B on H100 using `run_bigcode_mbpp_oci13b_rerun.sh`. Expected pass@1 after fix: ~44% for the paper-replication config.
