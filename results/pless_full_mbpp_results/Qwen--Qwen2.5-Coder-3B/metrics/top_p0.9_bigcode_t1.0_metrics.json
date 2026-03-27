@@ -2,28 +2,29 @@
   "model": "Qwen/Qwen2.5-Coder-3B",
   "method": "top_p",
   "temperature": 1.0,
+  "top_p": 0.9,
   "dataset": "mbpp",
   "num_tasks": 500,
   "num_samples_per_task": 10,
   "pass_at_k": {
-    "1": 0.3466,
-    "3": 0.5829166666666667,
-    "5": 0.6713888888888889,
-    "10": 0.768
+    "1": 0.3472,
+    "3": 0.5843333333333333,
+    "5": 0.6732222222222223,
+    "10": 0.77
   },
   "cover_at_t": {
-    "0.1": 76.8,
-    "0.3": 53.400000000000006,
+    "0.1": 77.0,
+    "0.3": 53.6,
     "0.5": 37.4,
     "0.7": 20.599999999999998
   },
   "cover_at_t_distinct": {
-    "0.1": 76.6,
-    "0.3": 52.2,
+    "0.1": 76.8,
+    "0.3": 52.400000000000006,
     "0.5": 33.2,
     "0.7": 13.8
   },
-  "structural_diversity": 0.5883,
+  "structural_diversity": 0.5886,
   "per_task": [
     {
       "task_id": 11,
@@ -2155,22 +2156,22 @@
     },
     {
       "task_id": 123,
-      "num_correct": 0,
+      "num_correct": 3,
       "pass_results": [
         false,
+        true,
         false,
         false,
         false,
         false,
+        true,
         false,
         false,
-        false,
-        false,
-        false
+        true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.6963,
+      "num_ast_clusters": 3
     },
     {
       "task_id": 124,
@@ -9526,5 +9527,5 @@
       "num_ast_clusters": 0
     }
   ],
-  "timestamp": "2026-03-26T08:43:21.268989+00:00"
+  "timestamp": "2026-03-26T09:23:54.244840+00:00"
 }
