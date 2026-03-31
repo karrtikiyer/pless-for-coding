@@ -180,6 +180,103 @@ def generate_samples_standard(
     return samples
 
 
+def _resolve_pad_token_id(tokenizer):
+    """Resolve pad_token_id with robust fallback for old Qwen tokenizers."""
+    pad_id = tokenizer.pad_token_id
+    if pad_id is not None:
+        return pad_id
+    pad_id = tokenizer.eos_token_id
+    if pad_id is not None:
+        return pad_id
+    for candidate in ("<|endoftext|>", "<|im_end|>"):
+        cid = tokenizer.convert_tokens_to_ids(candidate)
+        if cid is not None and cid != tokenizer.unk_token_id:
+            return cid
+    return 0  # last resort
+
+
+def generate_samples_greedy(
+    model,
+    tokenizer,
+    prompt_text: str | list[int],
+    max_new_tokens: int,
+    stop_strings: list[str] | None = None,
+) -> list[str]:
+    """Generate a single greedy (argmax) completion."""
+    if isinstance(prompt_text, list):
+        input_ids = torch.tensor([prompt_text], device=model.device)
+    else:
+        input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
+    attention_mask = torch.ones_like(input_ids)
+    pad_token_id = _resolve_pad_token_id(tokenizer)
+    prompt_len = input_ids.shape[1]
+
+    kwargs = {}
+    if stop_strings:
+        kwargs["stop_strings"] = stop_strings
+        kwargs["tokenizer"] = tokenizer
+
+    with torch.no_grad():
+        output = model.generate(
+            input_ids,
+            attention_mask=attention_mask,
+            pad_token_id=pad_token_id,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            **kwargs,
+        )
+    decoded_prompt = tokenizer.decode(output[0, :prompt_len], skip_special_tokens=True)
+    full_text = tokenizer.decode(output[0], skip_special_tokens=True)
+    text = full_text[len(decoded_prompt):]
+    if stop_strings:
+        text = _truncate_at_stop(text, stop_strings)
+    return [text]
+
+
+def generate_samples_beam(
+    model,
+    tokenizer,
+    prompt_text: str | list[int],
+    num_beams: int,
+    max_new_tokens: int,
+    stop_strings: list[str] | None = None,
+) -> list[str]:
+    """Generate completions using beam search, returning all beam results."""
+    if isinstance(prompt_text, list):
+        input_ids = torch.tensor([prompt_text], device=model.device)
+    else:
+        input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
+    attention_mask = torch.ones_like(input_ids)
+    pad_token_id = _resolve_pad_token_id(tokenizer)
+    prompt_len = input_ids.shape[1]
+
+    kwargs = {}
+    if stop_strings:
+        kwargs["stop_strings"] = stop_strings
+        kwargs["tokenizer"] = tokenizer
+
+    with torch.no_grad():
+        output = model.generate(
+            input_ids,
+            attention_mask=attention_mask,
+            pad_token_id=pad_token_id,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            num_beams=num_beams,
+            num_return_sequences=num_beams,
+            **kwargs,
+        )
+    decoded_prompt = tokenizer.decode(output[0, :prompt_len], skip_special_tokens=True)
+    samples = []
+    for i in range(num_beams):
+        full_text = tokenizer.decode(output[i], skip_special_tokens=True)
+        text = full_text[len(decoded_prompt):]
+        if stop_strings:
+            text = _truncate_at_stop(text, stop_strings)
+        samples.append(text)
+    return samples
+
+
 def _expand_past_key_values(past_key_values, n: int):
     """Expand a KV cache from batch_size=1 to batch_size=n.
 

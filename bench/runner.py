@@ -5,7 +5,9 @@ from datasets import load_dataset
 from tqdm import tqdm
 
 from bench.checkpointing import append_result, get_output_path, load_completed_ids
-from bench.generator import generate_samples, generate_samples_standard, load_model_and_tokenizer
+from bench.generator import (generate_samples, generate_samples_standard,
+                              generate_samples_greedy, generate_samples_beam,
+                              load_model_and_tokenizer)
 from bench.humaneval.prompts import HUMANEVAL_STOP_SEQUENCES
 from bench.prompts import (format_prompt_base, format_prompt_base_hybrid,
                            format_prompt_base_begin_scaffold,
@@ -24,7 +26,9 @@ from bench.sampler_bridge import SAMPLERS
 def parse_args():
     parser = argparse.ArgumentParser(description="Benchmark pless samplers on MBPP")
     parser.add_argument("--model", required=True, help="HuggingFace model ID")
-    parser.add_argument("--method", required=True, choices=list(SAMPLERS.keys()) + ["temp", "top_p"], help="Sampling method")
+    parser.add_argument("--method", required=True,
+                        choices=list(SAMPLERS.keys()) + ["temp", "top_p", "greedy", "beam"],
+                        help="Sampling method")
     parser.add_argument("--n-samples", type=int, default=10, help="Number of samples per problem")
     parser.add_argument("--max-new-tokens", type=int, default=512, help="Max new tokens per sample")
     parser.add_argument("--results-dir", default="results", help="Output directory")
@@ -35,6 +39,7 @@ def parse_args():
     parser.add_argument("--mbpp-config", choices=["sanitized", "full"], default="sanitized",
                         help="MBPP dataset config: 'sanitized' (257 problems) or 'full' (500 problems)")
     parser.add_argument("--top-p", type=float, default=None, help="top_p for nucleus sampling (method=top_p)")
+    parser.add_argument("--num-beams", type=int, default=None, help="Beam width (method=beam)")
     parser.add_argument("--n-shots", type=int, default=3, choices=[0, 1, 2, 3],
                         help="Few-shot examples in base model prompt (default 3, 0=zero-shot)")
     parser.add_argument("--prompt-style", choices=["paper", "hybrid", "begin_scaffold", "bigcode"],
@@ -47,6 +52,8 @@ def parse_args():
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
+    if args.method == "beam" and args.num_beams is None:
+        parser.error("--num-beams is required when --method is beam")
     return args
 
 
@@ -54,7 +61,12 @@ def main():
     args = parse_args()
 
     # Output path — encode n_shots in filename when not the default (3)
-    method_key = f"top_p{args.top_p}" if args.method == "top_p" else args.method
+    if args.method == "top_p":
+        method_key = f"top_p{args.top_p}"
+    elif args.method == "beam":
+        method_key = f"beam{args.num_beams}"
+    else:
+        method_key = args.method
     if not is_instruct_model(args.model) and args.n_shots != 3:
         method_key = f"{method_key}_ns{args.n_shots}"
     if not is_instruct_model(args.model) and args.prompt_style == "hybrid":
@@ -86,7 +98,7 @@ def main():
     print(f"Loading model: {args.model}")
     model, tokenizer = load_model_and_tokenizer(args.model)
 
-    if args.method not in ("temp", "top_p"):
+    if args.method not in ("temp", "top_p", "greedy", "beam"):
         sampler_fn = SAMPLERS[args.method]
     instruct = is_instruct_model(args.model)
 
@@ -120,7 +132,24 @@ def main():
             else:
                 prompt_text, code_prefix = format_prompt_base(task, n_shots=args.n_shots)
 
-            if args.method in ("temp", "top_p"):
+            if args.method == "greedy":
+                raw_samples = generate_samples_greedy(
+                    model=model,
+                    tokenizer=tokenizer,
+                    prompt_text=prompt_text,
+                    max_new_tokens=args.max_new_tokens,
+                    stop_strings=stop_strings,
+                )
+            elif args.method == "beam":
+                raw_samples = generate_samples_beam(
+                    model=model,
+                    tokenizer=tokenizer,
+                    prompt_text=prompt_text,
+                    num_beams=args.num_beams,
+                    max_new_tokens=args.max_new_tokens,
+                    stop_strings=stop_strings,
+                )
+            elif args.method in ("temp", "top_p"):
                 raw_samples = generate_samples_standard(
                     model=model,
                     tokenizer=tokenizer,
@@ -158,6 +187,8 @@ def main():
             }
             if args.method == "top_p":
                 record["top_p"] = args.top_p
+            if args.method == "beam":
+                record["num_beams"] = args.num_beams
             if task.get("test_setup_code"):
                 record["test_setup_code"] = task["test_setup_code"]
             append_result(out_path, record)

@@ -26,9 +26,14 @@ CONFIGS=(
   "temp 0.7"
   "pless 0.6"
   "pless_norm 0.6"
+  "pless 0.7"
+  "pless_norm 0.7"
   "pless 1.0"
   "pless_norm 1.0"
   "top_p 0.9"
+  "greedy 1.0"
+  "beam4 1.0"
+  "beam8 1.0"
 )
 
 echo "=== Benchmark: $MODEL_ID on GPU $GPU_ID ==="
@@ -40,6 +45,15 @@ for cfg in "${CONFIGS[@]}"; do
     echo "--- method=$method top_p=$val ---"
     echo "Started: $(date)"
     uv run python -m bench --model "$MODEL_ID" --method top_p --top-p "$val" --temperature 1.0 --mbpp-config full
+  elif [ "$method" = "greedy" ]; then
+    echo "--- method=$method ---"
+    echo "Started: $(date)"
+    uv run python -m bench --model "$MODEL_ID" --method greedy --temperature "$val" --n-samples 1 --mbpp-config full
+  elif [[ "$method" == beam* ]]; then
+    num_beams="${method#beam}"
+    echo "--- method=beam num_beams=$num_beams ---"
+    echo "Started: $(date)"
+    uv run python -m bench --model "$MODEL_ID" --method beam --num-beams "$num_beams" --temperature "$val" --mbpp-config full
   else
     echo "--- method=$method temperature=$val ---"
     echo "Started: $(date)"

@@ -12,22 +12,17 @@ for arg in "$@"; do
   esac
 done
 
-RESULTS_DIR="results/pless_full_mbpp_results"
-LEGACY_MODELS=("Qwen/Qwen-7B" "Qwen/Qwen-7B-Chat")
-
 export CUDA_VISIBLE_DEVICES="$GPU_ID"
 
-# Collect model IDs from result directories
-MODELS=()
-for dir in "$RESULTS_DIR"/*/; do
-  dirname=$(basename "$dir")
-  # Skip non-model dirs
-  [[ "$dirname" == "analysis"* ]] && continue
-  model_id="${dirname/--//}"
-  MODELS+=("$model_id")
-done
+# Read model configs from bench.models registry (no folder scanning)
+# Each line: model_id|prompt_style|legacy
+MODEL_CONFIGS=$(uv run python -c "
+from bench.models import MBPP_MODELS
+for m in MBPP_MODELS:
+    print(f'{m.model_id}|{m.prompt_style}|{m.legacy}')
+")
 
-echo "=== top_p=0.9 sweep across ${#MODELS[@]} models on GPU $GPU_ID$($DRY_RUN && echo ' (DRY RUN)') ==="
+echo "=== top_p=0.9 sweep on GPU $GPU_ID$($DRY_RUN && echo ' (DRY RUN)') ==="
 
 # Validate CLI contract before any uv add or GPU work
 echo "Validating CLI contract with bench runner..."
@@ -42,17 +37,11 @@ parse_args()
 fi
 echo "  CLI OK"
 
-for MODEL_ID in "${MODELS[@]}"; do
+while IFS='|' read -r MODEL_ID PROMPT_STYLE IS_LEGACY; do
   echo ""
   echo ">>> Model: $MODEL_ID"
 
-  # Legacy detection
-  is_legacy=false
-  for m in "${LEGACY_MODELS[@]}"; do
-    [[ "$MODEL_ID" == "$m" ]] && is_legacy=true
-  done
-
-  if $is_legacy; then
+  if [ "$IS_LEGACY" = "True" ]; then
     echo ">>> Legacy model — transformers <5"
     $DRY_RUN && echo "  (would run: uv add 'transformers<5,>=4.37')"
     $DRY_RUN || uv add 'transformers<5,>=4.37'
@@ -63,13 +52,16 @@ for MODEL_ID in "${MODELS[@]}"; do
   fi
 
   CMD=("uv" "run" "python" "-m" "bench" "--model" "$MODEL_ID" "--method" "top_p" "--top-p" "0.9" "--temperature" "1.0" "--mbpp-config" "full")
+  if [ "$PROMPT_STYLE" = "bigcode" ]; then
+    CMD+=("--prompt-style" "bigcode")
+  fi
   echo "  CMD: ${CMD[*]}"
   if ! $DRY_RUN; then
     echo "Started: $(date)"
     "${CMD[@]}"
     echo "Finished: $(date)"
   fi
-done
+done <<< "$MODEL_CONFIGS"
 
 echo ""
 echo "=== top_p sweep complete ==="
