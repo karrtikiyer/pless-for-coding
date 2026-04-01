@@ -39,6 +39,12 @@ _METHOD_STYLES: dict[str, dict] = {
     "pless":       dict(linestyle="--",  marker="D"),
     "pless_norm":  dict(linestyle="--",  marker="P"),
     "top_p0.9":    dict(linestyle="--",  marker="v"),   # top-p from JSONL discovery
+    # BigCode variants (same shapes as non-bigcode equivalents)
+    "pless_bigcode":       dict(linestyle="--",  marker="D"),
+    "pless_norm_bigcode":  dict(linestyle="--",  marker="P"),
+    "temp_bigcode":        dict(linestyle="-",   marker="s"),
+    "top_p0.9_bigcode":    dict(linestyle="--",  marker="v"),
+    "top_p0.95_bigcode":   dict(linestyle="-",   marker="D"),
 }
 
 # ---------------------------------------------------------------------------
@@ -56,6 +62,12 @@ _METHOD_DISPLAY_NAMES: dict[str, str] = {
     "pless":       "p-less (t=0.6)",
     "pless_norm":  "p-less-norm (t=0.6)",
     "top_p0.9":    "top-p (p=0.9, t=1.0)",
+    # BigCode variants — strip suffix for cleaner legends
+    "pless_bigcode":       "p-less (t=0.6)",
+    "pless_norm_bigcode":  "p-less-norm (t=0.6)",
+    "temp_bigcode":        "temp (t=0.7)",
+    "top_p0.9_bigcode":    "top-p (p=0.9, t=1.0)",
+    "top_p0.95_bigcode":   "top-p (p=0.95, t=0.2)",
 }
 
 
@@ -207,6 +219,12 @@ _METHOD_COLORS: dict[str, str] = {
     "pless":       "#9F7AEA",  # light purple
     "pless_norm":  "#ECC94B",  # yellow-gold
     "top_p0.9":    "#2C7A7B",  # teal (same family as top_p)
+    # BigCode variants — same colors as non-bigcode equivalents
+    "pless_bigcode":       "#9F7AEA",
+    "pless_norm_bigcode":  "#ECC94B",
+    "temp_bigcode":        "#2F855A",
+    "top_p0.9_bigcode":    "#2C7A7B",
+    "top_p0.95_bigcode":   "#9B2C2C",
 }
 
 
@@ -920,12 +938,20 @@ def parse_args():
         "--dataset", type=str, default="MBPP",
         help="Dataset name used in plot titles (default: MBPP)",
     )
+    parser.add_argument(
+        "--methods", nargs="+",
+        help="Filter to specific methods (e.g. pless pless_norm temp top_p0.9)",
+    )
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
     metrics_list = load_metrics(args.metrics)
+
+    if args.methods:
+        allowed = set(args.methods)
+        metrics_list = [m for m in metrics_list if m["method"] in allowed]
 
     out = args.output_dir
     out.mkdir(parents=True, exist_ok=True)

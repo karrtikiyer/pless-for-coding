@@ -6,29 +6,27 @@
   "num_tasks": 257,
   "num_samples_per_task": 10,
   "pass_at_k": {
-    "1": 0.2867704280155642,
-    "3": 0.4187418936446174,
-    "5": 0.4646254091779383,
-    "10": 0.5136186770428015
+    "1": 0.3175097276264591,
+    "3": 0.43702983138780804,
+    "5": 0.481548391081465,
+    "10": 0.5291828793774319
   },
   "cover_at_t": {
-    "0.1": 51.36186770428015,
-    "0.3": 39.688715953307394,
-    "0.5": 31.517509727626457,
-    "0.7": 21.40077821011673
+    "0.1": 52.918287937743195,
+    "0.3": 42.023346303501945,
+    "0.5": 33.07392996108949,
+    "0.7": 23.346303501945524
   },
   "cover_at_t_distinct": {
-    "0.1": 48.249027237354085,
-    "0.3": 29.961089494163424,
-    "0.5": 14.785992217898833,
-    "0.7": 3.501945525291829
+    "0.1": 49.416342412451364,
+    "0.3": 33.46303501945525,
+    "0.5": 15.953307392996107,
+    "0.7": 4.669260700389105
   },
-  "structural_diversity": 0.4381,
-  "mean_distinct_3": 0.447,
-  "mean_loc_stdev": 53.9298,
-  "mean_self_codebleu": 0.4482,
-  "mean_self_syntax_match": 0.5556,
-  "mean_self_dataflow_match": 0.6687,
+  "structural_diversity": 0.4658,
+  "codebleu_diversity": 0.584,
+  "syntax_match_diversity": 0.4804,
+  "dataflow_match_diversity": 0.3642,
   "per_task": [
     {
       "task_id": 11,
@@ -48,11 +46,9 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.6417,
       "num_ast_clusters": 5,
-      "distinct_3": 0.2459,
-      "loc_stdev": 178.5538,
-      "self_codebleu": 0.2944,
-      "self_syntax_match": 0.4622,
-      "self_dataflow_match": 0.5285
+      "self_codebleu": 0.7056,
+      "self_syntax_match": 0.5378,
+      "self_dataflow_match": 0.4715
     },
     {
       "task_id": 12,
@@ -72,11 +68,9 @@
       "num_distinct_correct": 7,
       "mean_pairwise_distance": 0.5412,
       "num_ast_clusters": 7,
-      "distinct_3": 0.5601,
-      "loc_stdev": 6.4531,
-      "self_codebleu": 0.4117,
-      "self_syntax_match": 0.5458,
-      "self_dataflow_match": 0.6689
+      "self_codebleu": 0.5883,
+      "self_syntax_match": 0.4542,
+      "self_dataflow_match": 0.3311
     },
     {
       "task_id": 14,
@@ -96,11 +90,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 16,
@@ -120,35 +112,31 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 17,
-      "num_correct": 6,
+      "num_correct": 10,
       "pass_results": [
         true,
-        false,
-        false,
         true,
         true,
         true,
-        false,
         true,
         true,
-        false
+        true,
+        true,
+        true,
+        true
       ],
-      "num_distinct_correct": 1,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 1,
-      "distinct_3": 0.1667,
-      "loc_stdev": 0.4082,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "num_distinct_correct": 2,
+      "mean_pairwise_distance": 0.2741,
+      "num_ast_clusters": 2,
+      "self_codebleu": 0.4039,
+      "self_syntax_match": 0.1261,
+      "self_dataflow_match": 0.2926
     },
     {
       "task_id": 18,
@@ -168,17 +156,15 @@
       "num_distinct_correct": 7,
       "mean_pairwise_distance": 0.5689,
       "num_ast_clusters": 5,
-      "distinct_3": 0.4472,
-      "loc_stdev": 24.3465,
-      "self_codebleu": 0.2949,
-      "self_syntax_match": 0.3896,
-      "self_dataflow_match": 0.5644
+      "self_codebleu": 0.6828,
+      "self_syntax_match": 0.6096,
+      "self_dataflow_match": 0.4011
     },
     {
       "task_id": 19,
-      "num_correct": 2,
+      "num_correct": 3,
       "pass_results": [
-        false,
+        true,
         true,
         false,
         false,
@@ -192,19 +178,17 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.2412,
-      "loc_stdev": 43.8406,
-      "self_codebleu": 0.7547,
-      "self_syntax_match": 0.875,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.5317,
+      "self_syntax_match": 0.3451,
+      "self_dataflow_match": 0.4021
     },
     {
       "task_id": 20,
-      "num_correct": 5,
+      "num_correct": 6,
       "pass_results": [
         false,
         true,
-        false,
+        true,
         true,
         false,
         false,
@@ -216,11 +200,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.6468,
       "num_ast_clusters": 4,
-      "distinct_3": 0.1863,
-      "loc_stdev": 31.281,
-      "self_codebleu": 0.3827,
-      "self_syntax_match": 0.6317,
-      "self_dataflow_match": 0.5205
+      "self_codebleu": 0.6514,
+      "self_syntax_match": 0.4407,
+      "self_dataflow_match": 0.5152
     },
     {
       "task_id": 56,
@@ -240,11 +222,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 57,
@@ -264,11 +244,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 58,
@@ -288,11 +266,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.0342,
       "num_ast_clusters": 1,
-      "distinct_3": 0.5812,
-      "loc_stdev": 7.8102,
-      "self_codebleu": 0.7541,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.2122,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": 59,
@@ -312,11 +288,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 61,
@@ -336,15 +310,13 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 62,
-      "num_correct": 8,
+      "num_correct": 9,
       "pass_results": [
         true,
         true,
@@ -354,17 +326,15 @@
         true,
         true,
         true,
-        false,
+        true,
         true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.6329,
-      "num_ast_clusters": 5,
-      "distinct_3": 0.4902,
-      "loc_stdev": 22.7498,
-      "self_codebleu": 0.3266,
-      "self_syntax_match": 0.4341,
-      "self_dataflow_match": 0.5225
+      "num_distinct_correct": 6,
+      "mean_pairwise_distance": 0.6933,
+      "num_ast_clusters": 6,
+      "self_codebleu": 0.649,
+      "self_syntax_match": 0.5721,
+      "self_dataflow_match": 0.464
     },
     {
       "task_id": 63,
@@ -384,11 +354,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.6146,
-      "loc_stdev": 18.3848,
-      "self_codebleu": 0.4711,
-      "self_syntax_match": 0.1875,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.5289,
+      "self_syntax_match": 0.8125,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": 64,
@@ -408,11 +376,9 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.5031,
       "num_ast_clusters": 4,
-      "distinct_3": 0.6454,
-      "loc_stdev": 153.1724,
-      "self_codebleu": 0.4857,
-      "self_syntax_match": 0.6891,
-      "self_dataflow_match": 0.8284
+      "self_codebleu": 0.4797,
+      "self_syntax_match": 0.2945,
+      "self_dataflow_match": 0.1511
     },
     {
       "task_id": 65,
@@ -432,22 +398,20 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 66,
-      "num_correct": 7,
+      "num_correct": 8,
       "pass_results": [
         true,
         true,
         true,
         false,
         true,
-        false,
+        true,
         true,
         false,
         true,
@@ -456,11 +420,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.3915,
       "num_ast_clusters": 3,
-      "distinct_3": 0.2338,
-      "loc_stdev": 17.5919,
-      "self_codebleu": 0.4023,
-      "self_syntax_match": 0.4552,
-      "self_dataflow_match": 0.5068
+      "self_codebleu": 0.6982,
+      "self_syntax_match": 0.6349,
+      "self_dataflow_match": 0.5963
     },
     {
       "task_id": 67,
@@ -480,11 +442,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 68,
@@ -504,11 +464,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 69,
@@ -528,11 +486,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 70,
@@ -552,11 +508,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.6572,
       "num_ast_clusters": 3,
-      "distinct_3": 0.1405,
-      "loc_stdev": 15.9049,
-      "self_codebleu": 0.4212,
-      "self_syntax_match": 0.5755,
-      "self_dataflow_match": 0.5005
+      "self_codebleu": 0.6866,
+      "self_syntax_match": 0.5434,
+      "self_dataflow_match": 0.5092
     },
     {
       "task_id": 71,
@@ -576,18 +530,16 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.4136,
       "num_ast_clusters": 2,
-      "distinct_3": 0.8453,
-      "loc_stdev": 5.6569,
-      "self_codebleu": 0.4062,
-      "self_syntax_match": 0.8119,
-      "self_dataflow_match": 0.4667
+      "self_codebleu": 0.5938,
+      "self_syntax_match": 0.1881,
+      "self_dataflow_match": 0.5333
     },
     {
       "task_id": 72,
-      "num_correct": 0,
+      "num_correct": 1,
       "pass_results": [
         false,
-        false,
+        true,
         false,
         false,
         false,
@@ -599,12 +551,10 @@
       ],
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "num_ast_clusters": 1,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 74,
@@ -624,11 +574,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 75,
@@ -648,15 +596,13 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.7239,
       "num_ast_clusters": 3,
-      "distinct_3": 0.4983,
-      "loc_stdev": 9.7425,
-      "self_codebleu": 0.2691,
-      "self_syntax_match": 0.2065,
-      "self_dataflow_match": 0.5574
+      "self_codebleu": 0.7309,
+      "self_syntax_match": 0.7935,
+      "self_dataflow_match": 0.4426
     },
     {
       "task_id": 77,
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
@@ -667,20 +613,18 @@
         true,
         true,
         true,
-        false
+        true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.5236,
-      "num_ast_clusters": 6,
-      "distinct_3": 0.4936,
-      "loc_stdev": 3.1002,
-      "self_codebleu": 0.4778,
-      "self_syntax_match": 0.5663,
-      "self_dataflow_match": 0.8657
+      "num_distinct_correct": 9,
+      "mean_pairwise_distance": 0.5964,
+      "num_ast_clusters": 7,
+      "self_codebleu": 0.5123,
+      "self_syntax_match": 0.4343,
+      "self_dataflow_match": 0.1597
     },
     {
       "task_id": 79,
-      "num_correct": 8,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
@@ -688,19 +632,17 @@
         true,
         true,
         true,
-        false,
         true,
-        false,
+        true,
+        true,
         true
       ],
-      "num_distinct_correct": 7,
-      "mean_pairwise_distance": 0.5202,
-      "num_ast_clusters": 3,
-      "distinct_3": 0.3133,
-      "loc_stdev": 22.3287,
-      "self_codebleu": 0.6035,
-      "self_syntax_match": 0.7239,
-      "self_dataflow_match": 0.8334
+      "num_distinct_correct": 9,
+      "mean_pairwise_distance": 0.6351,
+      "num_ast_clusters": 4,
+      "self_codebleu": 0.4477,
+      "self_syntax_match": 0.3707,
+      "self_dataflow_match": 0.1287
     },
     {
       "task_id": 80,
@@ -720,11 +662,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.3592,
-      "loc_stdev": 1.0,
-      "self_codebleu": 0.8763,
-      "self_syntax_match": 0.9745,
-      "self_dataflow_match": 0.9951
+      "self_codebleu": 0.1237,
+      "self_syntax_match": 0.0255,
+      "self_dataflow_match": 0.0049
     },
     {
       "task_id": 82,
@@ -744,11 +684,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 83,
@@ -768,11 +706,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 84,
@@ -792,11 +728,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 85,
@@ -816,11 +750,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 86,
@@ -840,11 +772,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.7517,
-      "loc_stdev": 23.3345,
-      "self_codebleu": 0.291,
-      "self_syntax_match": 0.7287,
-      "self_dataflow_match": 0.1212
+      "self_codebleu": 0.709,
+      "self_syntax_match": 0.2713,
+      "self_dataflow_match": 0.8788
     },
     {
       "task_id": 87,
@@ -864,11 +794,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 88,
@@ -888,22 +816,20 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.091,
       "num_ast_clusters": 2,
-      "distinct_3": 0.3117,
-      "loc_stdev": 158.7297,
-      "self_codebleu": 0.6515,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.2841,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": 89,
-      "num_correct": 3,
+      "num_correct": 4,
       "pass_results": [
         true,
         false,
         false,
         false,
         false,
-        false,
+        true,
         true,
         false,
         false,
@@ -912,11 +838,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.4463,
       "num_ast_clusters": 3,
-      "distinct_3": 0.5943,
-      "loc_stdev": 261.5569,
-      "self_codebleu": 0.5089,
-      "self_syntax_match": 0.4603,
-      "self_dataflow_match": 0.9167
+      "self_codebleu": 0.6299,
+      "self_syntax_match": 0.5729,
+      "self_dataflow_match": 0.3531
     },
     {
       "task_id": 90,
@@ -936,11 +860,9 @@
       "num_distinct_correct": 8,
       "mean_pairwise_distance": 0.4876,
       "num_ast_clusters": 7,
-      "distinct_3": 0.5405,
-      "loc_stdev": 4.2131,
-      "self_codebleu": 0.3996,
-      "self_syntax_match": 0.4592,
-      "self_dataflow_match": 0.6647
+      "self_codebleu": 0.611,
+      "self_syntax_match": 0.5251,
+      "self_dataflow_match": 0.3454
     },
     {
       "task_id": 91,
@@ -960,11 +882,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.206,
       "num_ast_clusters": 2,
-      "distinct_3": 0.395,
-      "loc_stdev": 165.8106,
-      "self_codebleu": 0.4744,
-      "self_syntax_match": 0.5895,
-      "self_dataflow_match": 0.8849
+      "self_codebleu": 0.5628,
+      "self_syntax_match": 0.4972,
+      "self_dataflow_match": 0.1296
     },
     {
       "task_id": 92,
@@ -984,11 +904,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 93,
@@ -1008,11 +926,9 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.8596,
       "num_ast_clusters": 6,
-      "distinct_3": 0.3414,
-      "loc_stdev": 27.1314,
-      "self_codebleu": 0.3409,
-      "self_syntax_match": 0.4071,
-      "self_dataflow_match": 0.5268
+      "self_codebleu": 0.6591,
+      "self_syntax_match": 0.5929,
+      "self_dataflow_match": 0.4732
     },
     {
       "task_id": 94,
@@ -1032,11 +948,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.4074,
       "num_ast_clusters": 2,
-      "distinct_3": 0.6757,
-      "loc_stdev": 0.7071,
-      "self_codebleu": 0.5556,
-      "self_syntax_match": 0.5714,
-      "self_dataflow_match": 0.3333
+      "self_codebleu": 0.4444,
+      "self_syntax_match": 0.4286,
+      "self_dataflow_match": 0.6667
     },
     {
       "task_id": 95,
@@ -1056,11 +970,9 @@
       "num_distinct_correct": 8,
       "mean_pairwise_distance": 0.7672,
       "num_ast_clusters": 8,
-      "distinct_3": 0.3333,
-      "loc_stdev": 10.5255,
-      "self_codebleu": 0.313,
-      "self_syntax_match": 0.267,
-      "self_dataflow_match": 0.4776
+      "self_codebleu": 0.6888,
+      "self_syntax_match": 0.733,
+      "self_dataflow_match": 0.5299
     },
     {
       "task_id": 96,
@@ -1080,11 +992,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.358,
-      "loc_stdev": 26.0576,
-      "self_codebleu": 0.4695,
-      "self_syntax_match": 0.7403,
-      "self_dataflow_match": 0.4542
+      "self_codebleu": 0.5305,
+      "self_syntax_match": 0.2597,
+      "self_dataflow_match": 0.5458
     },
     {
       "task_id": 97,
@@ -1104,11 +1014,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.616,
       "num_ast_clusters": 3,
-      "distinct_3": 0.3839,
-      "loc_stdev": 203.819,
-      "self_codebleu": 0.3405,
-      "self_syntax_match": 0.4869,
-      "self_dataflow_match": 0.3942
+      "self_codebleu": 0.6595,
+      "self_syntax_match": 0.5131,
+      "self_dataflow_match": 0.6058
     },
     {
       "task_id": 98,
@@ -1128,11 +1036,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 99,
@@ -1152,11 +1058,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.3458,
       "num_ast_clusters": 3,
-      "distinct_3": 0.6737,
-      "loc_stdev": 22.0635,
-      "self_codebleu": 0.3783,
-      "self_syntax_match": 0.4056,
-      "self_dataflow_match": 0.4138
+      "self_codebleu": 0.703,
+      "self_syntax_match": 0.6718,
+      "self_dataflow_match": 0.6437
     },
     {
       "task_id": 100,
@@ -1176,11 +1080,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 101,
@@ -1200,35 +1102,31 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.6897,
       "num_ast_clusters": 5,
-      "distinct_3": 0.2287,
-      "loc_stdev": 12.3211,
-      "self_codebleu": 0.4053,
-      "self_syntax_match": 0.416,
-      "self_dataflow_match": 0.6431
+      "self_codebleu": 0.6213,
+      "self_syntax_match": 0.6229,
+      "self_dataflow_match": 0.3822
     },
     {
       "task_id": 102,
-      "num_correct": 1,
+      "num_correct": 6,
       "pass_results": [
         false,
+        true,
+        true,
+        true,
         false,
         false,
         true,
         false,
-        false,
-        false,
-        false,
-        false,
-        false
+        true,
+        true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.6953,
+      "num_ast_clusters": 3,
+      "self_codebleu": 0.4727,
+      "self_syntax_match": 0.3318,
+      "self_dataflow_match": 0.3859
     },
     {
       "task_id": 103,
@@ -1248,11 +1146,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.6055,
       "num_ast_clusters": 2,
-      "distinct_3": 0.5935,
-      "loc_stdev": 23.8607,
-      "self_codebleu": 0.5752,
-      "self_syntax_match": 0.6152,
-      "self_dataflow_match": 0.4485
+      "self_codebleu": 0.4248,
+      "self_syntax_match": 0.3848,
+      "self_dataflow_match": 0.5515
     },
     {
       "task_id": 104,
@@ -1272,17 +1168,15 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.2556,
-      "loc_stdev": 94.2406,
-      "self_codebleu": 0.4747,
-      "self_syntax_match": 0.7072,
-      "self_dataflow_match": 0.6556
+      "self_codebleu": 0.5253,
+      "self_syntax_match": 0.2928,
+      "self_dataflow_match": 0.3444
     },
     {
       "task_id": 105,
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
-        false,
+        true,
         true,
         true,
         true,
@@ -1293,14 +1187,12 @@
         true,
         true
       ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.648,
-      "num_ast_clusters": 6,
-      "distinct_3": 0.1359,
-      "loc_stdev": 26.0614,
-      "self_codebleu": 0.3399,
-      "self_syntax_match": 0.4853,
-      "self_dataflow_match": 0.4464
+      "num_distinct_correct": 7,
+      "mean_pairwise_distance": 0.7223,
+      "num_ast_clusters": 7,
+      "self_codebleu": 0.704,
+      "self_syntax_match": 0.5813,
+      "self_dataflow_match": 0.6035
     },
     {
       "task_id": 106,
@@ -1320,11 +1212,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 108,
@@ -1344,11 +1234,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 109,
@@ -1368,11 +1256,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.559,
       "num_ast_clusters": 4,
-      "distinct_3": 0.8551,
-      "loc_stdev": 4.5735,
-      "self_codebleu": 0.3362,
-      "self_syntax_match": 0.4257,
-      "self_dataflow_match": 0.6335
+      "self_codebleu": 0.6638,
+      "self_syntax_match": 0.5743,
+      "self_dataflow_match": 0.3665
     },
     {
       "task_id": 111,
@@ -1392,17 +1278,15 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 113,
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
-        false,
+        true,
         true,
         true,
         true,
@@ -1413,18 +1297,16 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.1785,
-      "num_ast_clusters": 2,
-      "distinct_3": 0.451,
-      "loc_stdev": 33.1717,
-      "self_codebleu": 0.5092,
-      "self_syntax_match": 0.6538,
-      "self_dataflow_match": 0.7758
+      "num_distinct_correct": 4,
+      "mean_pairwise_distance": 0.3924,
+      "num_ast_clusters": 3,
+      "self_codebleu": 0.6492,
+      "self_syntax_match": 0.4643,
+      "self_dataflow_match": 0.4059
     },
     {
       "task_id": 115,
-      "num_correct": 6,
+      "num_correct": 7,
       "pass_results": [
         true,
         false,
@@ -1433,18 +1315,16 @@
         true,
         true,
         false,
-        false,
+        true,
         false,
         true
       ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.8276,
-      "num_ast_clusters": 5,
-      "distinct_3": 0.1559,
-      "loc_stdev": 90.3071,
-      "self_codebleu": 0.3438,
-      "self_syntax_match": 0.4086,
-      "self_dataflow_match": 0.6807
+      "num_distinct_correct": 7,
+      "mean_pairwise_distance": 0.7786,
+      "num_ast_clusters": 6,
+      "self_codebleu": 0.5987,
+      "self_syntax_match": 0.5081,
+      "self_dataflow_match": 0.2643
     },
     {
       "task_id": 116,
@@ -1464,11 +1344,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 117,
@@ -1488,35 +1366,31 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 118,
-      "num_correct": 5,
+      "num_correct": 10,
       "pass_results": [
         true,
-        false,
         true,
         true,
-        false,
         true,
-        false,
         true,
-        false,
-        false
+        true,
+        true,
+        true,
+        true,
+        true
       ],
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.5217,
       "num_ast_clusters": 2,
-      "distinct_3": 0.6474,
-      "loc_stdev": 38.5902,
-      "self_codebleu": 0.2938,
-      "self_syntax_match": 0.4935,
-      "self_dataflow_match": 0.5182
+      "self_codebleu": 0.6521,
+      "self_syntax_match": 0.4543,
+      "self_dataflow_match": 0.3693
     },
     {
       "task_id": 119,
@@ -1536,11 +1410,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 120,
@@ -1560,11 +1432,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.5403,
       "num_ast_clusters": 2,
-      "distinct_3": 0.5776,
-      "loc_stdev": 11.0151,
-      "self_codebleu": 0.4953,
-      "self_syntax_match": 0.5833,
-      "self_dataflow_match": 0.7333
+      "self_codebleu": 0.5047,
+      "self_syntax_match": 0.4167,
+      "self_dataflow_match": 0.2667
     },
     {
       "task_id": 123,
@@ -1584,11 +1454,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 124,
@@ -1608,11 +1476,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 125,
@@ -1632,11 +1498,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 126,
@@ -1656,19 +1520,17 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 127,
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
-        false,
+        true,
         true,
         true,
         true,
@@ -1680,11 +1542,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.2647,
       "num_ast_clusters": 2,
-      "distinct_3": 0.3817,
-      "loc_stdev": 39.9712,
-      "self_codebleu": 0.3198,
-      "self_syntax_match": 0.5751,
-      "self_dataflow_match": 0.557
+      "self_codebleu": 0.7035,
+      "self_syntax_match": 0.4949,
+      "self_dataflow_match": 0.4127
     },
     {
       "task_id": 128,
@@ -1704,11 +1564,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 129,
@@ -1728,11 +1586,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 130,
@@ -1752,11 +1608,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.7576,
       "num_ast_clusters": 3,
-      "distinct_3": 0.7863,
-      "loc_stdev": 7.5056,
-      "self_codebleu": 0.266,
-      "self_syntax_match": 0.2867,
-      "self_dataflow_match": 0.3548
+      "self_codebleu": 0.734,
+      "self_syntax_match": 0.7133,
+      "self_dataflow_match": 0.6452
     },
     {
       "task_id": 131,
@@ -1776,11 +1630,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 132,
@@ -1800,11 +1652,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 133,
@@ -1824,11 +1674,9 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.6155,
       "num_ast_clusters": 5,
-      "distinct_3": 0.5506,
-      "loc_stdev": 5.7071,
-      "self_codebleu": 0.306,
-      "self_syntax_match": 0.3992,
-      "self_dataflow_match": 0.4898
+      "self_codebleu": 0.6994,
+      "self_syntax_match": 0.6556,
+      "self_dataflow_match": 0.5491
     },
     {
       "task_id": 135,
@@ -1848,11 +1696,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 137,
@@ -1872,11 +1718,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 138,
@@ -1896,11 +1740,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 139,
@@ -1920,11 +1762,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 140,
@@ -1944,11 +1784,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 141,
@@ -1968,11 +1806,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.7855,
       "num_ast_clusters": 3,
-      "distinct_3": 0.859,
-      "loc_stdev": 5.909,
-      "self_codebleu": 0.2194,
-      "self_syntax_match": 0.2109,
-      "self_dataflow_match": 0.5357
+      "self_codebleu": 0.7806,
+      "self_syntax_match": 0.7891,
+      "self_dataflow_match": 0.4643
     },
     {
       "task_id": 142,
@@ -1992,11 +1828,9 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.2369,
       "num_ast_clusters": 3,
-      "distinct_3": 0.5758,
-      "loc_stdev": 139.6379,
-      "self_codebleu": 0.5229,
-      "self_syntax_match": 0.8605,
-      "self_dataflow_match": 0.8504
+      "self_codebleu": 0.5282,
+      "self_syntax_match": 0.242,
+      "self_dataflow_match": 0.2619
     },
     {
       "task_id": 143,
@@ -2016,11 +1850,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 145,
@@ -2040,11 +1872,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1582,
-      "loc_stdev": 3.2146,
-      "self_codebleu": 0.6526,
-      "self_syntax_match": 0.8007,
-      "self_dataflow_match": 0.5331
+      "self_codebleu": 0.3474,
+      "self_syntax_match": 0.1993,
+      "self_dataflow_match": 0.4669
     },
     {
       "task_id": 160,
@@ -2064,11 +1894,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 161,
@@ -2088,35 +1916,31 @@
       "num_distinct_correct": 7,
       "mean_pairwise_distance": 0.5693,
       "num_ast_clusters": 6,
-      "distinct_3": 0.3607,
-      "loc_stdev": 16.5747,
-      "self_codebleu": 0.3513,
-      "self_syntax_match": 0.4455,
-      "self_dataflow_match": 0.6005
+      "self_codebleu": 0.716,
+      "self_syntax_match": 0.636,
+      "self_dataflow_match": 0.46
     },
     {
       "task_id": 162,
-      "num_correct": 0,
+      "num_correct": 2,
       "pass_results": [
         false,
+        true,
         false,
         false,
         false,
         false,
         false,
         false,
-        false,
-        false,
+        true,
         false
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "num_distinct_correct": 2,
+      "mean_pairwise_distance": 0.7771,
+      "num_ast_clusters": 2,
+      "self_codebleu": 0.6587,
+      "self_syntax_match": 0.0062,
+      "self_dataflow_match": 0.8293
     },
     {
       "task_id": 163,
@@ -2136,11 +1960,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 164,
@@ -2160,11 +1982,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 165,
@@ -2184,11 +2004,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 166,
@@ -2208,11 +2026,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 167,
@@ -2232,11 +2048,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 168,
@@ -2256,11 +2070,9 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.6903,
       "num_ast_clusters": 5,
-      "distinct_3": 0.4868,
-      "loc_stdev": 17.8801,
-      "self_codebleu": 0.3086,
-      "self_syntax_match": 0.408,
-      "self_dataflow_match": 0.5085
+      "self_codebleu": 0.6914,
+      "self_syntax_match": 0.592,
+      "self_dataflow_match": 0.4915
     },
     {
       "task_id": 170,
@@ -2280,11 +2092,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.5441,
       "num_ast_clusters": 3,
-      "distinct_3": 0.646,
-      "loc_stdev": 3.4641,
-      "self_codebleu": 0.4594,
-      "self_syntax_match": 0.3726,
-      "self_dataflow_match": 0.6286
+      "self_codebleu": 0.6636,
+      "self_syntax_match": 0.7702,
+      "self_dataflow_match": 0.413
     },
     {
       "task_id": 171,
@@ -2304,11 +2114,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.571,
       "num_ast_clusters": 4,
-      "distinct_3": 0.4296,
-      "loc_stdev": 3.8987,
-      "self_codebleu": 0.4508,
-      "self_syntax_match": 0.4244,
-      "self_dataflow_match": 0.65
+      "self_codebleu": 0.5609,
+      "self_syntax_match": 0.6059,
+      "self_dataflow_match": 0.3472
     },
     {
       "task_id": 172,
@@ -2328,11 +2136,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 222,
@@ -2352,11 +2158,9 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.5518,
       "num_ast_clusters": 4,
-      "distinct_3": 0.2203,
-      "loc_stdev": 16.4556,
-      "self_codebleu": 0.3073,
-      "self_syntax_match": 0.4306,
-      "self_dataflow_match": 0.5322
+      "self_codebleu": 0.6759,
+      "self_syntax_match": 0.5469,
+      "self_dataflow_match": 0.4421
     },
     {
       "task_id": 223,
@@ -2376,35 +2180,31 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.404,
       "num_ast_clusters": 2,
-      "distinct_3": 0.8679,
-      "loc_stdev": 1.7321,
-      "self_codebleu": 0.3673,
-      "self_syntax_match": 0.292,
-      "self_dataflow_match": 0.8056
+      "self_codebleu": 0.7704,
+      "self_syntax_match": 0.8889,
+      "self_dataflow_match": 0.25
     },
     {
       "task_id": 224,
-      "num_correct": 4,
+      "num_correct": 6,
       "pass_results": [
         false,
-        false,
-        true,
-        false,
         true,
         true,
         false,
+        true,
+        true,
+        false,
         false,
         true,
-        false
+        true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.8974,
-      "num_ast_clusters": 2,
-      "distinct_3": 0.2326,
-      "loc_stdev": 21.7102,
-      "self_codebleu": 0.1266,
-      "self_syntax_match": 0.0932,
-      "self_dataflow_match": 0.2548
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.8962,
+      "num_ast_clusters": 3,
+      "self_codebleu": 0.7847,
+      "self_syntax_match": 0.7315,
+      "self_dataflow_match": 0.6604
     },
     {
       "task_id": 226,
@@ -2424,15 +2224,13 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 227,
-      "num_correct": 8,
+      "num_correct": 9,
       "pass_results": [
         true,
         true,
@@ -2441,18 +2239,16 @@
         true,
         true,
         true,
-        false,
+        true,
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0284,
-      "num_ast_clusters": 1,
-      "distinct_3": 0.1663,
-      "loc_stdev": 38.0563,
-      "self_codebleu": 0.4465,
-      "self_syntax_match": 0.6169,
-      "self_dataflow_match": 0.5977
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.456,
+      "num_ast_clusters": 2,
+      "self_codebleu": 0.6103,
+      "self_syntax_match": 0.4206,
+      "self_dataflow_match": 0.4737
     },
     {
       "task_id": 228,
@@ -2472,11 +2268,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 229,
@@ -2496,11 +2290,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 230,
@@ -2520,11 +2312,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.2018,
       "num_ast_clusters": 2,
-      "distinct_3": 0.4943,
-      "loc_stdev": 257.7889,
-      "self_codebleu": 0.5234,
-      "self_syntax_match": 0.6404,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.5479,
+      "self_syntax_match": 0.4444,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": 232,
@@ -2544,11 +2334,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 233,
@@ -2568,35 +2356,31 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 234,
-      "num_correct": 8,
+      "num_correct": 10,
       "pass_results": [
-        false,
         true,
         true,
         true,
         true,
         true,
         true,
-        false,
+        true,
+        true,
         true,
         true
       ],
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.2301,
       "num_ast_clusters": 2,
-      "distinct_3": 0.4089,
-      "loc_stdev": 34.6482,
-      "self_codebleu": 0.703,
-      "self_syntax_match": 0.8365,
-      "self_dataflow_match": 0.804
+      "self_codebleu": 0.496,
+      "self_syntax_match": 0.4199,
+      "self_dataflow_match": 0.2893
     },
     {
       "task_id": 235,
@@ -2616,11 +2400,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 237,
@@ -2640,11 +2422,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 238,
@@ -2664,11 +2444,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 239,
@@ -2688,11 +2466,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 240,
@@ -2712,35 +2488,31 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.5357,
       "num_ast_clusters": 4,
-      "distinct_3": 0.8592,
-      "loc_stdev": 248.3113,
-      "self_codebleu": 0.4366,
-      "self_syntax_match": 0.6042,
-      "self_dataflow_match": 0.9182
+      "self_codebleu": 0.5289,
+      "self_syntax_match": 0.4258,
+      "self_dataflow_match": 0.0303
     },
     {
       "task_id": 242,
-      "num_correct": 6,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
-        false,
         true,
         true,
-        false,
         true,
-        false,
         true,
-        false
+        true,
+        true,
+        true,
+        true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.7611,
-      "num_ast_clusters": 3,
-      "distinct_3": 0.124,
-      "loc_stdev": 201.4256,
-      "self_codebleu": 0.3749,
-      "self_syntax_match": 0.3836,
-      "self_dataflow_match": 0.6876
+      "num_distinct_correct": 5,
+      "mean_pairwise_distance": 0.8342,
+      "num_ast_clusters": 5,
+      "self_codebleu": 0.6652,
+      "self_syntax_match": 0.5361,
+      "self_dataflow_match": 0.4247
     },
     {
       "task_id": 244,
@@ -2760,11 +2532,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 245,
@@ -2784,11 +2554,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 246,
@@ -2808,11 +2576,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 247,
@@ -2832,11 +2598,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 248,
@@ -2856,11 +2620,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 249,
@@ -2880,35 +2642,31 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.6936,
       "num_ast_clusters": 5,
-      "distinct_3": 0.5476,
-      "loc_stdev": 3.3862,
-      "self_codebleu": 0.3853,
-      "self_syntax_match": 0.3502,
-      "self_dataflow_match": 0.6922
+      "self_codebleu": 0.5956,
+      "self_syntax_match": 0.6771,
+      "self_dataflow_match": 0.3451
     },
     {
       "task_id": 250,
-      "num_correct": 7,
+      "num_correct": 10,
       "pass_results": [
         true,
-        false,
-        false,
         true,
         true,
         true,
-        false,
+        true,
+        true,
+        true,
         true,
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.5907,
-      "num_ast_clusters": 3,
-      "distinct_3": 0.136,
-      "loc_stdev": 11.6476,
-      "self_codebleu": 0.4878,
-      "self_syntax_match": 0.6165,
-      "self_dataflow_match": 0.5069
+      "num_distinct_correct": 5,
+      "mean_pairwise_distance": 0.6558,
+      "num_ast_clusters": 4,
+      "self_codebleu": 0.61,
+      "self_syntax_match": 0.5137,
+      "self_dataflow_match": 0.5461
     },
     {
       "task_id": 251,
@@ -2928,15 +2686,13 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 252,
-      "num_correct": 7,
+      "num_correct": 8,
       "pass_results": [
         true,
         true,
@@ -2944,7 +2700,7 @@
         false,
         true,
         true,
-        false,
+        true,
         true,
         false,
         true
@@ -2952,11 +2708,9 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.6653,
       "num_ast_clusters": 5,
-      "distinct_3": 0.2401,
-      "loc_stdev": 17.2902,
-      "self_codebleu": 0.4288,
-      "self_syntax_match": 0.3972,
-      "self_dataflow_match": 0.6552
+      "self_codebleu": 0.6435,
+      "self_syntax_match": 0.703,
+      "self_dataflow_match": 0.3968
     },
     {
       "task_id": 253,
@@ -2976,11 +2730,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 255,
@@ -3000,11 +2752,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 256,
@@ -3024,11 +2774,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 257,
@@ -3048,11 +2796,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.3328,
       "num_ast_clusters": 3,
-      "distinct_3": 0.2336,
-      "loc_stdev": 153.8824,
-      "self_codebleu": 0.5611,
-      "self_syntax_match": 0.9437,
-      "self_dataflow_match": 0.8174
+      "self_codebleu": 0.5629,
+      "self_syntax_match": 0.0933,
+      "self_dataflow_match": 0.2955
     },
     {
       "task_id": 259,
@@ -3072,11 +2818,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 260,
@@ -3096,11 +2840,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 261,
@@ -3120,11 +2862,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.3842,
       "num_ast_clusters": 2,
-      "distinct_3": 0.4555,
-      "loc_stdev": 2.9439,
-      "self_codebleu": 0.4641,
-      "self_syntax_match": 0.4706,
-      "self_dataflow_match": 0.8071
+      "self_codebleu": 0.3734,
+      "self_syntax_match": 0.6167,
+      "self_dataflow_match": 0.2167
     },
     {
       "task_id": 262,
@@ -3144,11 +2884,9 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.5758,
       "num_ast_clusters": 5,
-      "distinct_3": 0.485,
-      "loc_stdev": 3.3116,
-      "self_codebleu": 0.4709,
-      "self_syntax_match": 0.5058,
-      "self_dataflow_match": 0.8237
+      "self_codebleu": 0.5291,
+      "self_syntax_match": 0.4942,
+      "self_dataflow_match": 0.1763
     },
     {
       "task_id": 264,
@@ -3168,11 +2906,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 265,
@@ -3192,11 +2928,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 266,
@@ -3216,11 +2950,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 267,
@@ -3240,11 +2972,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 268,
@@ -3264,11 +2994,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 269,
@@ -3288,11 +3016,9 @@
       "num_distinct_correct": 7,
       "mean_pairwise_distance": 0.6567,
       "num_ast_clusters": 7,
-      "distinct_3": 0.2108,
-      "loc_stdev": 24.226,
-      "self_codebleu": 0.4188,
-      "self_syntax_match": 0.6792,
-      "self_dataflow_match": 0.5997
+      "self_codebleu": 0.6315,
+      "self_syntax_match": 0.3608,
+      "self_dataflow_match": 0.462
     },
     {
       "task_id": 270,
@@ -3312,11 +3038,9 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.3665,
       "num_ast_clusters": 2,
-      "distinct_3": 0.495,
-      "loc_stdev": 3.4448,
-      "self_codebleu": 0.5366,
-      "self_syntax_match": 0.6383,
-      "self_dataflow_match": 0.6419
+      "self_codebleu": 0.5151,
+      "self_syntax_match": 0.4075,
+      "self_dataflow_match": 0.4057
     },
     {
       "task_id": 271,
@@ -3336,11 +3060,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 272,
@@ -3360,11 +3082,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.4599,
       "num_ast_clusters": 3,
-      "distinct_3": 0.5339,
-      "loc_stdev": 3.0443,
-      "self_codebleu": 0.4518,
-      "self_syntax_match": 0.4819,
-      "self_dataflow_match": 0.7723
+      "self_codebleu": 0.5635,
+      "self_syntax_match": 0.6644,
+      "self_dataflow_match": 0.2917
     },
     {
       "task_id": 273,
@@ -3384,11 +3104,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.1912,
       "num_ast_clusters": 2,
-      "distinct_3": 0.5643,
-      "loc_stdev": 5.933,
-      "self_codebleu": 0.4175,
-      "self_syntax_match": 0.508,
-      "self_dataflow_match": 0.8264
+      "self_codebleu": 0.599,
+      "self_syntax_match": 0.695,
+      "self_dataflow_match": 0.1758
     },
     {
       "task_id": 274,
@@ -3408,11 +3126,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 276,
@@ -3432,11 +3148,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 277,
@@ -3456,11 +3170,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.4511,
       "num_ast_clusters": 2,
-      "distinct_3": 0.1486,
-      "loc_stdev": 142.6949,
-      "self_codebleu": 0.5802,
-      "self_syntax_match": 0.7578,
-      "self_dataflow_match": 0.6599
+      "self_codebleu": 0.3017,
+      "self_syntax_match": 0.1624,
+      "self_dataflow_match": 0.2379
     },
     {
       "task_id": 278,
@@ -3480,11 +3192,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 279,
@@ -3504,35 +3214,31 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.2574,
-      "loc_stdev": 1.4142,
-      "self_codebleu": 0.8168,
-      "self_syntax_match": 0.92,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.1832,
+      "self_syntax_match": 0.08,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": 280,
-      "num_correct": 7,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
-        false,
         true,
         true,
         true,
         true,
         true,
-        false,
-        false
+        true,
+        true,
+        true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.1667,
-      "num_ast_clusters": 2,
-      "distinct_3": 0.1253,
-      "loc_stdev": 15.0713,
-      "self_codebleu": 0.4247,
-      "self_syntax_match": 0.595,
-      "self_dataflow_match": 0.5739
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.5321,
+      "num_ast_clusters": 3,
+      "self_codebleu": 0.579,
+      "self_syntax_match": 0.4287,
+      "self_dataflow_match": 0.4327
     },
     {
       "task_id": 281,
@@ -3552,35 +3258,31 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.779,
       "num_ast_clusters": 6,
-      "distinct_3": 0.1796,
-      "loc_stdev": 37.6813,
-      "self_codebleu": 0.3871,
-      "self_syntax_match": 0.4638,
-      "self_dataflow_match": 0.8103
+      "self_codebleu": 0.6128,
+      "self_syntax_match": 0.5362,
+      "self_dataflow_match": 0.1892
     },
     {
       "task_id": 282,
-      "num_correct": 8,
+      "num_correct": 10,
       "pass_results": [
         true,
-        false,
         true,
         true,
         true,
         true,
         true,
         true,
-        false,
+        true,
+        true,
         true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.6184,
-      "num_ast_clusters": 5,
-      "distinct_3": 0.3828,
-      "loc_stdev": 167.1142,
-      "self_codebleu": 0.2753,
-      "self_syntax_match": 0.3671,
-      "self_dataflow_match": 0.4943
+      "num_distinct_correct": 6,
+      "mean_pairwise_distance": 0.6963,
+      "num_ast_clusters": 6,
+      "self_codebleu": 0.7619,
+      "self_syntax_match": 0.6681,
+      "self_dataflow_match": 0.5681
     },
     {
       "task_id": 283,
@@ -3600,11 +3302,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 284,
@@ -3624,23 +3324,21 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.4526,
       "num_ast_clusters": 4,
-      "distinct_3": 0.2851,
-      "loc_stdev": 157.3162,
-      "self_codebleu": 0.4824,
-      "self_syntax_match": 0.5616,
-      "self_dataflow_match": 0.9259
+      "self_codebleu": 0.5715,
+      "self_syntax_match": 0.5674,
+      "self_dataflow_match": 0.1067
     },
     {
       "task_id": 285,
-      "num_correct": 2,
+      "num_correct": 5,
       "pass_results": [
-        false,
+        true,
         true,
         false,
-        false,
+        true,
         true,
         false,
-        false,
+        true,
         false,
         false,
         false
@@ -3648,11 +3346,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1815,
-      "loc_stdev": 2.8284,
-      "self_codebleu": 0.6515,
-      "self_syntax_match": 0.7143,
-      "self_dataflow_match": 0.6
+      "self_codebleu": 0.2517,
+      "self_syntax_match": 0.2032,
+      "self_dataflow_match": 0.1812
     },
     {
       "task_id": 286,
@@ -3672,11 +3368,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 287,
@@ -3696,11 +3390,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 290,
@@ -3720,11 +3412,9 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.6964,
       "num_ast_clusters": 6,
-      "distinct_3": 0.7386,
-      "loc_stdev": 172.0233,
-      "self_codebleu": 0.3123,
-      "self_syntax_match": 0.3524,
-      "self_dataflow_match": 0.6014
+      "self_codebleu": 0.6832,
+      "self_syntax_match": 0.6476,
+      "self_dataflow_match": 0.3808
     },
     {
       "task_id": 291,
@@ -3744,11 +3434,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 292,
@@ -3768,11 +3456,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.5619,
       "num_ast_clusters": 4,
-      "distinct_3": 0.8448,
-      "loc_stdev": 1.8257,
-      "self_codebleu": 0.2713,
-      "self_syntax_match": 0.217,
-      "self_dataflow_match": 0.5795
+      "self_codebleu": 0.7287,
+      "self_syntax_match": 0.783,
+      "self_dataflow_match": 0.4205
     },
     {
       "task_id": 293,
@@ -3792,11 +3478,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 294,
@@ -3816,11 +3500,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 295,
@@ -3840,11 +3522,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 296,
@@ -3864,11 +3544,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 297,
@@ -3888,11 +3566,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 299,
@@ -3912,11 +3588,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 300,
@@ -3936,11 +3610,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 301,
@@ -3960,11 +3632,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 304,
@@ -3984,11 +3654,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 305,
@@ -4008,11 +3676,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 306,
@@ -4032,11 +3698,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 307,
@@ -4056,11 +3720,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 308,
@@ -4080,15 +3742,13 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 309,
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
@@ -4099,16 +3759,14 @@
         true,
         true,
         true,
-        false
+        true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.6596,
-      "num_ast_clusters": 3,
-      "distinct_3": 0.1948,
-      "loc_stdev": 33.4851,
-      "self_codebleu": 0.3893,
-      "self_syntax_match": 0.6136,
-      "self_dataflow_match": 0.597
+      "num_distinct_correct": 4,
+      "mean_pairwise_distance": 0.7062,
+      "num_ast_clusters": 4,
+      "self_codebleu": 0.5853,
+      "self_syntax_match": 0.3568,
+      "self_dataflow_match": 0.3864
     },
     {
       "task_id": 310,
@@ -4128,11 +3786,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 311,
@@ -4152,11 +3808,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 312,
@@ -4176,11 +3830,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 388,
@@ -4200,11 +3852,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 389,
@@ -4224,15 +3874,13 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.1633,
       "num_ast_clusters": 1,
-      "distinct_3": 0.7561,
-      "loc_stdev": 21.9203,
-      "self_codebleu": 0.5595,
-      "self_syntax_match": 0.8182,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.4405,
+      "self_syntax_match": 0.1818,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": 390,
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
@@ -4242,17 +3890,15 @@
         true,
         true,
         true,
-        false,
+        true,
         true
       ],
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.5203,
       "num_ast_clusters": 4,
-      "distinct_3": 0.2553,
-      "loc_stdev": 149.5374,
-      "self_codebleu": 0.4308,
-      "self_syntax_match": 0.6478,
-      "self_dataflow_match": 0.7118
+      "self_codebleu": 0.5875,
+      "self_syntax_match": 0.4291,
+      "self_dataflow_match": 0.2564
     },
     {
       "task_id": 391,
@@ -4272,11 +3918,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 392,
@@ -4296,11 +3940,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 393,
@@ -4320,11 +3962,9 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.413,
       "num_ast_clusters": 4,
-      "distinct_3": 0.4386,
-      "loc_stdev": 18.3021,
-      "self_codebleu": 0.3975,
-      "self_syntax_match": 0.5464,
-      "self_dataflow_match": 0.5976
+      "self_codebleu": 0.6009,
+      "self_syntax_match": 0.4536,
+      "self_dataflow_match": 0.396
     },
     {
       "task_id": 394,
@@ -4344,11 +3984,9 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.6741,
       "num_ast_clusters": 5,
-      "distinct_3": 0.3381,
-      "loc_stdev": 10.3785,
-      "self_codebleu": 0.3333,
-      "self_syntax_match": 0.3854,
-      "self_dataflow_match": 0.5473
+      "self_codebleu": 0.6667,
+      "self_syntax_match": 0.6146,
+      "self_dataflow_match": 0.4527
     },
     {
       "task_id": 395,
@@ -4368,11 +4006,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 396,
@@ -4392,11 +4028,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.1574,
       "num_ast_clusters": 1,
-      "distinct_3": 0.6319,
-      "loc_stdev": 9.1059,
-      "self_codebleu": 0.5835,
-      "self_syntax_match": 0.7867,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.4165,
+      "self_syntax_match": 0.2133,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": 397,
@@ -4416,11 +4050,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 398,
@@ -4440,11 +4072,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 399,
@@ -4464,11 +4094,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 400,
@@ -4488,11 +4116,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 401,
@@ -4512,46 +4138,42 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 404,
-      "num_correct": 6,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
-        false,
         true,
         true,
-        false,
         true,
         true,
-        false,
-        false
+        true,
+        true,
+        true,
+        true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.4253,
-      "num_ast_clusters": 3,
-      "distinct_3": 0.6894,
-      "loc_stdev": 26.0691,
-      "self_codebleu": 0.5097,
-      "self_syntax_match": 0.6977,
-      "self_dataflow_match": 0.7414
+      "num_distinct_correct": 4,
+      "mean_pairwise_distance": 0.5572,
+      "num_ast_clusters": 4,
+      "self_codebleu": 0.5228,
+      "self_syntax_match": 0.3217,
+      "self_dataflow_match": 0.2606
     },
     {
       "task_id": 405,
-      "num_correct": 7,
+      "num_correct": 9,
       "pass_results": [
         true,
-        false,
+        true,
         false,
         true,
         true,
-        false,
+        true,
         true,
         true,
         true,
@@ -4560,11 +4182,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.2268,
       "num_ast_clusters": 2,
-      "distinct_3": 0.3333,
-      "loc_stdev": 0.7868,
-      "self_codebleu": 0.6448,
-      "self_syntax_match": 0.7403,
-      "self_dataflow_match": 0.9365
+      "self_codebleu": 0.5363,
+      "self_syntax_match": 0.4418,
+      "self_dataflow_match": 0.2135
     },
     {
       "task_id": 406,
@@ -4584,11 +4204,9 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.4538,
       "num_ast_clusters": 5,
-      "distinct_3": 0.2203,
-      "loc_stdev": 30.3322,
-      "self_codebleu": 0.4117,
-      "self_syntax_match": 0.6987,
-      "self_dataflow_match": 0.5425
+      "self_codebleu": 0.642,
+      "self_syntax_match": 0.3518,
+      "self_dataflow_match": 0.5003
     },
     {
       "task_id": 407,
@@ -4608,11 +4226,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 408,
@@ -4632,11 +4248,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 409,
@@ -4656,11 +4270,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.7948,
       "num_ast_clusters": 3,
-      "distinct_3": 0.972,
-      "loc_stdev": 3.6056,
-      "self_codebleu": 0.2513,
-      "self_syntax_match": 0.2368,
-      "self_dataflow_match": 0.6667
+      "self_codebleu": 0.7487,
+      "self_syntax_match": 0.7632,
+      "self_dataflow_match": 0.3333
     },
     {
       "task_id": 410,
@@ -4680,43 +4292,39 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 411,
-      "num_correct": 0,
+      "num_correct": 3,
       "pass_results": [
         false,
         false,
         false,
         false,
         false,
+        true,
+        true,
         false,
         false,
-        false,
-        false,
-        false
+        true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.4237,
+      "num_ast_clusters": 2,
+      "self_codebleu": 0.3456,
+      "self_syntax_match": 0.1029,
+      "self_dataflow_match": 0.33
     },
     {
       "task_id": 412,
-      "num_correct": 2,
+      "num_correct": 3,
       "pass_results": [
         false,
         false,
-        false,
+        true,
         true,
         false,
         false,
@@ -4728,11 +4336,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.4538,
-      "loc_stdev": 11.3137,
-      "self_codebleu": 0.3708,
-      "self_syntax_match": 0.339,
-      "self_dataflow_match": 0.84
+      "self_codebleu": 0.6004,
+      "self_syntax_match": 0.6608,
+      "self_dataflow_match": 0.2298
     },
     {
       "task_id": 413,
@@ -4752,11 +4358,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.43,
       "num_ast_clusters": 3,
-      "distinct_3": 0.3382,
-      "loc_stdev": 206.2322,
-      "self_codebleu": 0.5613,
-      "self_syntax_match": 0.5161,
-      "self_dataflow_match": 0.8316
+      "self_codebleu": 0.4387,
+      "self_syntax_match": 0.4839,
+      "self_dataflow_match": 0.1684
     },
     {
       "task_id": 414,
@@ -4776,11 +4380,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.2831,
       "num_ast_clusters": 3,
-      "distinct_3": 0.282,
-      "loc_stdev": 185.6416,
-      "self_codebleu": 0.3077,
-      "self_syntax_match": 0.3337,
-      "self_dataflow_match": 0.5305
+      "self_codebleu": 0.7554,
+      "self_syntax_match": 0.8161,
+      "self_dataflow_match": 0.5865
     },
     {
       "task_id": 415,
@@ -4800,11 +4402,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 417,
@@ -4824,11 +4424,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 418,
@@ -4848,11 +4446,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.3142,
       "num_ast_clusters": 2,
-      "distinct_3": 0.4664,
-      "loc_stdev": 17.4356,
-      "self_codebleu": 0.2764,
-      "self_syntax_match": 0.388,
-      "self_dataflow_match": 0.3552
+      "self_codebleu": 0.8237,
+      "self_syntax_match": 0.726,
+      "self_dataflow_match": 0.7429
     },
     {
       "task_id": 419,
@@ -4872,11 +4468,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 420,
@@ -4896,11 +4490,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 421,
@@ -4920,11 +4512,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 422,
@@ -4944,22 +4534,20 @@
       "num_distinct_correct": 9,
       "mean_pairwise_distance": 0.5454,
       "num_ast_clusters": 6,
-      "distinct_3": 0.4983,
-      "loc_stdev": 5.5588,
-      "self_codebleu": 0.4073,
-      "self_syntax_match": 0.4288,
-      "self_dataflow_match": 0.4612
+      "self_codebleu": 0.6021,
+      "self_syntax_match": 0.5707,
+      "self_dataflow_match": 0.5445
     },
     {
       "task_id": 424,
-      "num_correct": 1,
+      "num_correct": 2,
       "pass_results": [
         false,
         false,
         false,
         false,
         false,
-        false,
+        true,
         false,
         true,
         false,
@@ -4968,11 +4556,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": 0.8082,
+      "self_syntax_match": 0.9012,
+      "self_dataflow_match": 0.6
     },
     {
       "task_id": 425,
@@ -4992,11 +4578,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.227,
       "num_ast_clusters": 3,
-      "distinct_3": 0.4046,
-      "loc_stdev": 5.2967,
-      "self_codebleu": 0.5614,
-      "self_syntax_match": 0.7495,
-      "self_dataflow_match": 0.7281
+      "self_codebleu": 0.5823,
+      "self_syntax_match": 0.4742,
+      "self_dataflow_match": 0.414
     },
     {
       "task_id": 426,
@@ -5016,15 +4600,13 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.6271,
       "num_ast_clusters": 5,
-      "distinct_3": 0.3651,
-      "loc_stdev": 84.4499,
-      "self_codebleu": 0.3754,
-      "self_syntax_match": 0.5011,
-      "self_dataflow_match": 0.6163
+      "self_codebleu": 0.6737,
+      "self_syntax_match": 0.5721,
+      "self_dataflow_match": 0.4429
     },
     {
       "task_id": 427,
-      "num_correct": 3,
+      "num_correct": 4,
       "pass_results": [
         false,
         true,
@@ -5032,7 +4614,7 @@
         false,
         false,
         true,
-        false,
+        true,
         false,
         false,
         false
@@ -5040,11 +4622,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.8214,
       "num_ast_clusters": 2,
-      "distinct_3": 0.2391,
-      "loc_stdev": 156.4907,
-      "self_codebleu": 0.4028,
-      "self_syntax_match": 0.475,
-      "self_dataflow_match": 0.4282
+      "self_codebleu": 0.5568,
+      "self_syntax_match": 0.4343,
+      "self_dataflow_match": 0.397
     },
     {
       "task_id": 428,
@@ -5064,11 +4644,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.6132,
       "num_ast_clusters": 2,
-      "distinct_3": 0.9674,
-      "loc_stdev": 5.6569,
-      "self_codebleu": 0.2652,
-      "self_syntax_match": 0.4571,
-      "self_dataflow_match": 0.5172
+      "self_codebleu": 0.7003,
+      "self_syntax_match": 0.5429,
+      "self_dataflow_match": 0.3448
     },
     {
       "task_id": 429,
@@ -5088,11 +4666,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 430,
@@ -5112,11 +4688,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 431,
@@ -5136,11 +4710,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 432,
@@ -5160,15 +4732,13 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 433,
-      "num_correct": 0,
+      "num_correct": 1,
       "pass_results": [
         false,
         false,
@@ -5176,23 +4746,21 @@
         false,
         false,
         false,
-        false,
+        true,
         false,
         false,
         false
       ],
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "num_ast_clusters": 1,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 434,
-      "num_correct": 2,
+      "num_correct": 3,
       "pass_results": [
         true,
         false,
@@ -5200,7 +4768,7 @@
         true,
         false,
         false,
-        false,
+        true,
         false,
         false,
         false
@@ -5208,59 +4776,53 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.3097,
-      "loc_stdev": 16.2635,
-      "self_codebleu": 0.2995,
-      "self_syntax_match": 0.2342,
-      "self_dataflow_match": 0.6304
+      "self_codebleu": 0.5761,
+      "self_syntax_match": 0.5577,
+      "self_dataflow_match": 0.3673
     },
     {
       "task_id": 435,
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
         true,
         true,
         true,
-        true,
-        true,
-        true,
-        true,
-        false
-      ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.3801,
-      "num_ast_clusters": 3,
-      "distinct_3": 0.4767,
-      "loc_stdev": 9.3541,
-      "self_codebleu": 0.539,
-      "self_syntax_match": 0.6713,
-      "self_dataflow_match": 0.9056
-    },
-    {
-      "task_id": 436,
-      "num_correct": 7,
-      "pass_results": [
-        true,
-        true,
-        false,
-        false,
-        false,
         true,
         true,
         true,
         true,
         true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.7007,
-      "num_ast_clusters": 5,
-      "distinct_3": 0.4903,
-      "loc_stdev": 22.3372,
-      "self_codebleu": 0.323,
-      "self_syntax_match": 0.3571,
-      "self_dataflow_match": 0.5619
+      "num_distinct_correct": 6,
+      "mean_pairwise_distance": 0.3801,
+      "num_ast_clusters": 3,
+      "self_codebleu": 0.4766,
+      "self_syntax_match": 0.4762,
+      "self_dataflow_match": 0.0794
+    },
+    {
+      "task_id": 436,
+      "num_correct": 10,
+      "pass_results": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 7,
+      "mean_pairwise_distance": 0.7653,
+      "num_ast_clusters": 7,
+      "self_codebleu": 0.7072,
+      "self_syntax_match": 0.6482,
+      "self_dataflow_match": 0.4963
     },
     {
       "task_id": 437,
@@ -5280,11 +4842,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 438,
@@ -5304,11 +4864,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 439,
@@ -5328,11 +4886,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.7629,
       "num_ast_clusters": 2,
-      "distinct_3": 0.9178,
-      "loc_stdev": 7.7782,
-      "self_codebleu": 0.4676,
-      "self_syntax_match": 0.7857,
-      "self_dataflow_match": 0.75
+      "self_codebleu": 0.5324,
+      "self_syntax_match": 0.2143,
+      "self_dataflow_match": 0.25
     },
     {
       "task_id": 440,
@@ -5352,11 +4908,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 441,
@@ -5376,11 +4930,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 442,
@@ -5400,11 +4952,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 443,
@@ -5424,11 +4974,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.5862,
       "num_ast_clusters": 2,
-      "distinct_3": 0.8214,
-      "loc_stdev": 4.0415,
-      "self_codebleu": 0.2921,
-      "self_syntax_match": 0.358,
-      "self_dataflow_match": 0.4815
+      "self_codebleu": 0.9282,
+      "self_syntax_match": 0.963,
+      "self_dataflow_match": 0.7778
     },
     {
       "task_id": 444,
@@ -5448,11 +4996,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 445,
@@ -5472,35 +5018,31 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 446,
-      "num_correct": 5,
+      "num_correct": 6,
       "pass_results": [
         true,
         true,
         true,
         false,
-        false,
+        true,
         true,
         false,
         false,
         true,
         false
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.1609,
-      "num_ast_clusters": 2,
-      "distinct_3": 0.1803,
-      "loc_stdev": 226.3217,
-      "self_codebleu": 0.4475,
-      "self_syntax_match": 0.8307,
-      "self_dataflow_match": 0.4845
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.5207,
+      "num_ast_clusters": 3,
+      "self_codebleu": 0.6428,
+      "self_syntax_match": 0.2955,
+      "self_dataflow_match": 0.6128
     },
     {
       "task_id": 447,
@@ -5520,11 +5062,9 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.6617,
       "num_ast_clusters": 5,
-      "distinct_3": 0.5396,
-      "loc_stdev": 4.6952,
-      "self_codebleu": 0.4031,
-      "self_syntax_match": 0.5107,
-      "self_dataflow_match": 0.6909
+      "self_codebleu": 0.5679,
+      "self_syntax_match": 0.4883,
+      "self_dataflow_match": 0.2722
     },
     {
       "task_id": 448,
@@ -5544,11 +5084,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 450,
@@ -5568,11 +5106,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 451,
@@ -5592,11 +5128,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.2747,
       "num_ast_clusters": 3,
-      "distinct_3": 0.2523,
-      "loc_stdev": 0.5,
-      "self_codebleu": 0.6507,
-      "self_syntax_match": 0.5983,
-      "self_dataflow_match": 0.9048
+      "self_codebleu": 0.5697,
+      "self_syntax_match": 0.6425,
+      "self_dataflow_match": 0.2857
     },
     {
       "task_id": 452,
@@ -5616,11 +5150,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 453,
@@ -5640,35 +5172,31 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 454,
-      "num_correct": 4,
+      "num_correct": 6,
       "pass_results": [
         true,
         false,
         false,
         true,
         false,
-        false,
+        true,
         true,
         false,
-        false,
+        true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.8846,
-      "num_ast_clusters": 2,
-      "distinct_3": 0.4612,
-      "loc_stdev": 210.7495,
-      "self_codebleu": 0.1753,
-      "self_syntax_match": 0.2899,
-      "self_dataflow_match": 0.2514
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.9297,
+      "num_ast_clusters": 3,
+      "self_codebleu": 0.77,
+      "self_syntax_match": 0.6526,
+      "self_dataflow_match": 0.6126
     },
     {
       "task_id": 455,
@@ -5688,11 +5216,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.047,
       "num_ast_clusters": 1,
-      "distinct_3": 0.2222,
-      "loc_stdev": 213.6758,
-      "self_codebleu": 0.9371,
-      "self_syntax_match": 0.9807,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.171,
+      "self_syntax_match": 0.0435,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": 456,
@@ -5712,15 +5238,13 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.5257,
       "num_ast_clusters": 5,
-      "distinct_3": 0.1746,
-      "loc_stdev": 8.2175,
-      "self_codebleu": 0.358,
-      "self_syntax_match": 0.4524,
-      "self_dataflow_match": 0.636
+      "self_codebleu": 0.6916,
+      "self_syntax_match": 0.6355,
+      "self_dataflow_match": 0.3599
     },
     {
       "task_id": 457,
-      "num_correct": 5,
+      "num_correct": 6,
       "pass_results": [
         true,
         true,
@@ -5731,25 +5255,23 @@
         true,
         false,
         false,
-        false
+        true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.6635,
-      "num_ast_clusters": 5,
-      "distinct_3": 0.7236,
-      "loc_stdev": 4.2661,
-      "self_codebleu": 0.3283,
-      "self_syntax_match": 0.3582,
-      "self_dataflow_match": 0.7525
+      "num_distinct_correct": 6,
+      "mean_pairwise_distance": 0.746,
+      "num_ast_clusters": 6,
+      "self_codebleu": 0.6861,
+      "self_syntax_match": 0.6723,
+      "self_dataflow_match": 0.2249
     },
     {
       "task_id": 458,
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
         true,
-        false,
+        true,
         true,
         true,
         true,
@@ -5757,14 +5279,12 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.2476,
-      "num_ast_clusters": 2,
-      "distinct_3": 0.6231,
-      "loc_stdev": 163.3424,
-      "self_codebleu": 0.5849,
-      "self_syntax_match": 0.7856,
-      "self_dataflow_match": 0.8192
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.4097,
+      "num_ast_clusters": 3,
+      "self_codebleu": 0.6025,
+      "self_syntax_match": 0.5173,
+      "self_dataflow_match": 0.2556
     },
     {
       "task_id": 459,
@@ -5784,11 +5304,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.2414,
       "num_ast_clusters": 2,
-      "distinct_3": 0.8,
-      "loc_stdev": 0.7071,
-      "self_codebleu": 0.5926,
-      "self_syntax_match": 0.5556,
-      "self_dataflow_match": 0.8333
+      "self_codebleu": 0.4074,
+      "self_syntax_match": 0.4444,
+      "self_dataflow_match": 0.1667
     },
     {
       "task_id": 460,
@@ -5808,11 +5326,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 461,
@@ -5832,11 +5348,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 462,
@@ -5856,11 +5370,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 463,
@@ -5880,11 +5392,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 464,
@@ -5904,11 +5414,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.168,
       "num_ast_clusters": 2,
-      "distinct_3": 0.243,
-      "loc_stdev": 245.867,
-      "self_codebleu": 0.6418,
-      "self_syntax_match": 0.8421,
-      "self_dataflow_match": 0.8197
+      "self_codebleu": 0.3627,
+      "self_syntax_match": 0.0556,
+      "self_dataflow_match": 0.0952
     },
     {
       "task_id": 465,
@@ -5928,11 +5436,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.6087,
       "num_ast_clusters": 2,
-      "distinct_3": 0.318,
-      "loc_stdev": 22.2868,
-      "self_codebleu": 0.3573,
-      "self_syntax_match": 0.4354,
-      "self_dataflow_match": 0.4825
+      "self_codebleu": 0.6427,
+      "self_syntax_match": 0.5646,
+      "self_dataflow_match": 0.5175
     },
     {
       "task_id": 468,
@@ -5952,11 +5458,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 470,
@@ -5976,11 +5480,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 471,
@@ -6000,11 +5502,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.2419,
       "num_ast_clusters": 3,
-      "distinct_3": 0.6333,
-      "loc_stdev": 2.3401,
-      "self_codebleu": 0.5062,
-      "self_syntax_match": 0.6192,
-      "self_dataflow_match": 0.7971
+      "self_codebleu": 0.5475,
+      "self_syntax_match": 0.4352,
+      "self_dataflow_match": 0.2738
     },
     {
       "task_id": 472,
@@ -6024,11 +5524,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 473,
@@ -6048,11 +5546,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": 474,
@@ -6072,17 +5568,15 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.5261,
       "num_ast_clusters": 4,
-      "distinct_3": 0.4495,
-      "loc_stdev": 196.3774,
-      "self_codebleu": 0.376,
-      "self_syntax_match": 0.528,
-      "self_dataflow_match": 0.6644
+      "self_codebleu": 0.6254,
+      "self_syntax_match": 0.4565,
+      "self_dataflow_match": 0.3222
     },
     {
       "task_id": 475,
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
-        false,
+        true,
         true,
         true,
         true,
@@ -6093,22 +5587,20 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0536,
-      "num_ast_clusters": 1,
-      "distinct_3": 0.4573,
-      "loc_stdev": 5.7542,
-      "self_codebleu": 0.7202,
-      "self_syntax_match": 0.9429,
-      "self_dataflow_match": 0.9889
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.2404,
+      "num_ast_clusters": 2,
+      "self_codebleu": 0.6242,
+      "self_syntax_match": 0.4436,
+      "self_dataflow_match": 0.4323
     },
     {
       "task_id": 476,
-      "num_correct": 8,
+      "num_correct": 9,
       "pass_results": [
         true,
         true,
-        false,
+        true,
         true,
         true,
         true,
@@ -6120,59 +5612,53 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.4886,
       "num_ast_clusters": 3,
-      "distinct_3": 0.3774,
-      "loc_stdev": 22.5626,
-      "self_codebleu": 0.5273,
-      "self_syntax_match": 0.6836,
-      "self_dataflow_match": 0.9222
+      "self_codebleu": 0.5561,
+      "self_syntax_match": 0.3683,
+      "self_dataflow_match": 0.2229
     },
     {
       "task_id": 477,
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
         true,
         true,
         true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 5,
+      "mean_pairwise_distance": 0.5589,
+      "num_ast_clusters": 5,
+      "self_codebleu": 0.5793,
+      "self_syntax_match": 0.3985,
+      "self_dataflow_match": 0.2729
+    },
+    {
+      "task_id": 478,
+      "num_correct": 4,
+      "pass_results": [
+        false,
         false,
         true,
+        false,
         true,
+        false,
+        false,
+        false,
         true,
         true
       ],
       "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.4511,
+      "mean_pairwise_distance": 0.6709,
       "num_ast_clusters": 4,
-      "distinct_3": 0.5457,
-      "loc_stdev": 40.9268,
-      "self_codebleu": 0.4066,
-      "self_syntax_match": 0.5723,
-      "self_dataflow_match": 0.6555
-    },
-    {
-      "task_id": 478,
-      "num_correct": 3,
-      "pass_results": [
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true
-      ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.471,
-      "num_ast_clusters": 3,
-      "distinct_3": 0.5714,
-      "loc_stdev": 0.5774,
-      "self_codebleu": 0.478,
-      "self_syntax_match": 0.4884,
-      "self_dataflow_match": 0.4444
+      "self_codebleu": 0.6106,
+      "self_syntax_match": 0.4746,
+      "self_dataflow_match": 0.5899
     },
     {
       "task_id": 479,
@@ -6192,12 +5678,10 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     }
   ],
-  "timestamp": "2026-03-03T15:01:00.386784+00:00"
+  "timestamp": "2026-04-01T10:31:46.665301+00:00"
 }
