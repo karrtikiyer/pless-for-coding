@@ -11,6 +11,8 @@ from bench.eval.plots import (
     plot_aggregate_lines,
     plot_aggregate_lines_faceted,
     plot_correctness_vs_diversity,
+    plot_pareto_scatter,
+    plot_method_heatmaps,
     load_metrics,
     _build_style_map,
 )
@@ -114,5 +116,61 @@ def test_plot_aggregate_lines_24_configs(tmp_path):
 def test_plot_aggregate_lines_faceted(tmp_path):
     out = tmp_path / "lines_faceted.png"
     plot_aggregate_lines_faceted(_multi_model_metrics_list(), out, dataset_name="HumanEval")
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def _make_metrics_with_diversity(model: str, method: str, pass1: float = 0.8, div: float = 0.3) -> dict:
+    """Create metrics dict with diversity fields for Pareto/heatmap tests."""
+    m = _make_metrics(model, method)
+    m["pass_at_k"]["1"] = pass1
+    m["structural_diversity"] = div
+    m["codebleu_diversity"] = div * 0.9
+    m["dataflow_match_diversity"] = div * 1.1
+    return m
+
+
+def _pareto_metrics_list():
+    """4 models × 3 methods with varying pass@1 and diversity."""
+    return [
+        _make_metrics_with_diversity("ModelA", "greedy", 0.85, 0.0),
+        _make_metrics_with_diversity("ModelA", "p_less", 0.82, 0.15),
+        _make_metrics_with_diversity("ModelA", "temp_0.7", 0.78, 0.35),
+        _make_metrics_with_diversity("ModelB", "greedy", 0.75, 0.0),
+        _make_metrics_with_diversity("ModelB", "p_less", 0.73, 0.18),
+        _make_metrics_with_diversity("ModelB", "temp_0.7", 0.70, 0.40),
+    ]
+
+
+def test_plot_pareto_scatter(tmp_path):
+    out = tmp_path / "pareto.png"
+    plot_pareto_scatter(_pareto_metrics_list(), out)
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def test_plot_pareto_scatter_with_methods_filter(tmp_path):
+    out = tmp_path / "pareto_filtered.png"
+    plot_pareto_scatter(_pareto_metrics_list(), out, methods=["greedy", "p_less"])
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def test_plot_method_heatmaps(tmp_path):
+    out = tmp_path / "heatmaps.png"
+    plot_method_heatmaps(_pareto_metrics_list(), out)
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def test_plot_method_heatmaps_with_missing_cells(tmp_path):
+    """Heatmap handles missing (model, method) combinations gracefully."""
+    metrics = [
+        _make_metrics_with_diversity("ModelA", "greedy", 0.85, 0.0),
+        _make_metrics_with_diversity("ModelA", "p_less", 0.82, 0.15),
+        _make_metrics_with_diversity("ModelB", "p_less", 0.73, 0.18),
+    ]
+    out = tmp_path / "heatmaps_sparse.png"
+    plot_method_heatmaps(metrics, out)
     assert out.exists()
     assert out.stat().st_size > 0

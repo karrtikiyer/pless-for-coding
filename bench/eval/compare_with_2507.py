@@ -254,13 +254,17 @@ def parse_args():
     )
     parser.add_argument(
         "--output", type=Path,
-        default=Path("results/pless_full_mbpp_results/analysis/qwen25coder/comparison_report.md"),
+        default=Path("results/pless_full_mbpp_results/analysis/small_models_2507/comparison_report.md"),
         help="Output markdown report path",
     )
     parser.add_argument(
         "--figures-dir", type=Path,
-        default=Path("results/pless_full_mbpp_results/analysis/qwen25coder/figures"),
+        default=Path("results/pless_full_mbpp_results/analysis/small_models_2507/figures"),
         help="Directory for generated plots",
+    )
+    parser.add_argument(
+        "--models", nargs="+",
+        help="Filter to specific model(s) by key (e.g. 'm-a-p/OpenCodeInterpreter-DS-1.3B')",
     )
     return parser.parse_args()
 
@@ -268,7 +272,17 @@ def parse_args():
 def main():
     args = parse_args()
 
-    our_metrics = load_our_metrics(args.results_dir, model_key_map=_MODEL_KEY_MAP)
+    # Filter dicts when --models is provided
+    paper_results = PAPER_RESULTS
+    model_key_map = _MODEL_KEY_MAP
+    model_short = _MODEL_SHORT
+    if args.models:
+        requested = set(args.models)
+        paper_results = {k: v for k, v in PAPER_RESULTS.items() if k in requested}
+        model_key_map = {k: v for k, v in _MODEL_KEY_MAP.items() if v in requested}
+        model_short = {k: v for k, v in _MODEL_SHORT.items() if k in requested}
+
+    our_metrics = load_our_metrics(args.results_dir, model_key_map=model_key_map)
     if not our_metrics:
         print("ERROR: No metrics files found. Run `python -m bench.eval` first.")
         raise SystemExit(1)
@@ -278,21 +292,24 @@ def main():
         methods = [(m["method"], m.get("top_p"), m.get("temperature")) for m in mlist]
         print(f"  {model_key}: {methods}")
 
+    # Build title from selected models
+    short_names = [model_short.get(k, k) for k in our_metrics]
+    models_label = ", ".join(short_names)
+
     # Enrich top_p method keys with their actual p value for the report table
     enriched_metrics = _enrich_metrics(our_metrics)
 
     report = generate_report(
         enriched_metrics,
-        paper_results=PAPER_RESULTS,
-        title="MBPP: P-Less vs arXiv 2507.03160 Baseline (Qwen2.5-Coder-3B, 1.5B & OCI-DS-1.3B)",
+        paper_results=paper_results,
+        title=f"MBPP: P-Less vs arXiv 2507.03160 Baseline ({models_label})",
         description=(
             "Comparison of p-less sampling against the top_p=0.95/temp=0.2 baseline from "
             '"Assessing Small Language Models for Code Generation" '
             "(arXiv:2507.03160). BigCode zero-shot docstring format, MBPP full (500 tasks), "
-            "n=10, unbiased pass@k estimator. Models: Qwen2.5-Coder-3B, Qwen2.5-Coder-1.5B, "
-            "OpenCodeInterpreter-DS-1.3B."
+            f"n=10, unbiased pass@k estimator. Models: {models_label}."
         ),
-        model_short=_MODEL_SHORT,
+        model_short=model_short,
         our_method_names=_OUR_METHOD_NAMES,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -303,9 +320,9 @@ def main():
     fig_path = args.figures_dir / "pass_at_1_comparison.png"
     plot_comparison(
         enriched_metrics, fig_path,
-        paper_results=PAPER_RESULTS,
-        model_short=_MODEL_SHORT,
-        suptitle="MBPP pass@1: P-Less vs arXiv 2507.03160 (Qwen2.5-Coder-3B, 1.5B & OCI-DS-1.3B)",
+        paper_results=paper_results,
+        model_short=model_short,
+        suptitle=f"MBPP pass@1: P-Less vs arXiv 2507.03160 ({models_label})",
     )
     print(f"Figure saved to {fig_path}")
 
@@ -314,8 +331,8 @@ def main():
     plot_metrics_overview_2507(
         our_metrics,   # use original (not enriched) so _curve_label can read top_p field
         overview_path,
-        model_short=_MODEL_SHORT,
-        suptitle="MBPP: Metrics Overview (Qwen2.5-Coder-3B, 1.5B & OCI-DS-1.3B, BigCode format)",
+        model_short=model_short,
+        suptitle=f"MBPP: Metrics Overview ({models_label}, BigCode format)",
     )
     print(f"Figure saved to {overview_path}")
 

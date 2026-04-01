@@ -31,12 +31,14 @@ _METHOD_STYLES: dict[str, dict] = {
     "temp_0.2":    dict(linestyle="-",   marker="^"),
     "temp_0.7":    dict(linestyle="-",   marker="s"),
     "top_p_0.95":  dict(linestyle="-",   marker="D"),
+    "temp":         dict(linestyle="-",   marker="s"),
     "top_p":       dict(linestyle="--",  marker="v"),   # Fix A: top_p (p=0.9, t=1.0)
     "p_less":      dict(linestyle="-",   marker="o"),   # canonical default
     "p_less_norm": dict(linestyle="-.",  marker="X"),   # canonical default norm
     # t=0.6 variants — dashed + distinct markers (Fix B)
     "pless":       dict(linestyle="--",  marker="D"),
     "pless_norm":  dict(linestyle="--",  marker="P"),
+    "top_p0.9":    dict(linestyle="--",  marker="v"),   # top-p from JSONL discovery
 }
 
 # ---------------------------------------------------------------------------
@@ -47,11 +49,13 @@ _METHOD_DISPLAY_NAMES: dict[str, str] = {
     "temp_0.2":    "temp (t=0.2)",
     "temp_0.7":    "temp (t=0.7)",
     "top_p_0.95":  "top-p (p=0.95)",
+    "temp":         "temp (t=0.7)",
     "top_p":       "top-p (p=0.9, t=1.0)",
     "p_less":      "p-less (default)",
     "p_less_norm": "p-less-norm (default)",
     "pless":       "p-less (t=0.6)",
     "pless_norm":  "p-less-norm (t=0.6)",
+    "top_p0.9":    "top-p (p=0.9, t=1.0)",
 }
 
 
@@ -59,7 +63,11 @@ def load_metrics(paths: list[Path]) -> list[dict]:
     results = []
     for p in paths:
         with open(p) as f:
-            results.append(json.load(f))
+            m = json.load(f)
+        # Normalize model names: directory-style "org--model" → HF-style "org/model"
+        if "model" in m:
+            m["model"] = m["model"].replace("--", "/", 1)
+        results.append(m)
     return results
 
 
@@ -191,12 +199,14 @@ _METHOD_COLORS: dict[str, str] = {
     "temp_0.2":    "#C05621",  # orange
     "temp_0.7":    "#2F855A",  # green
     "top_p_0.95":  "#9B2C2C",  # red
+    "temp":         "#2F855A",  # green (same family as temp_0.7)
     "top_p":       "#2C7A7B",  # teal (Fix A)
     "p_less":      "#6B46C1",  # dark purple (canonical default)
     "p_less_norm": "#B7791F",  # dark gold   (canonical default norm)
     # t=0.6 variants — lighter shades to indicate same algorithm (Fix B)
     "pless":       "#9F7AEA",  # light purple
     "pless_norm":  "#ECC94B",  # yellow-gold
+    "top_p0.9":    "#2C7A7B",  # teal (same family as top_p)
 }
 
 
@@ -542,7 +552,7 @@ def plot_correctness_vs_diversity_multimethod(
     Shows multiple methods per panel (color = method) to compare sampling strategies.
     """
     if methods is None:
-        methods = ["greedy", "p_less", "p_less_norm", "temp_0.7"]
+        methods = list(dict.fromkeys(m["method"] for m in metrics_list))
 
     # Filter to requested methods
     filtered = [m for m in metrics_list if m["method"] in methods]
@@ -625,7 +635,7 @@ def plot_diversity_metrics_bars(
     Shows AST structural diversity, CodeBLEU diversity, and dataflow diversity side by side.
     """
     if methods is None:
-        methods = ["greedy", "p_less", "p_less_norm", "temp_0.7"]
+        methods = list(dict.fromkeys(m["method"] for m in metrics_list))
 
     filtered = [m for m in metrics_list if m["method"] in methods]
     if not filtered:
@@ -678,6 +688,217 @@ def plot_diversity_metrics_bars(
     )
     fig.tight_layout(rect=[0, 0, 1, 0.95])
 
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Marker shapes for per-model encoding in scatter plots
+# ---------------------------------------------------------------------------
+_MODEL_MARKERS = ["o", "s", "^", "D", "v", "P", "X", "*"]
+
+
+def plot_pareto_scatter(
+    metrics_list: list[dict],
+    output_path: Path,
+    dataset_name: str = "HUMANEVAL",
+    methods: list[str] | None = None,
+    diversity_key: str = "codebleu_diversity",
+    diversity_fallback: str = "structural_diversity",
+) -> None:
+    """Aggregate Pareto scatter: pass@1 vs mean diversity, one point per (model, method).
+
+    Color encodes method, marker shape encodes model.  A dashed Pareto frontier
+    connects non-dominated points (higher pass@1 AND higher diversity is better).
+    """
+    if methods is None:
+        methods = list(dict.fromkeys(m["method"] for m in metrics_list))
+
+    filtered = [m for m in metrics_list if m["method"] in methods]
+    if not filtered:
+        return
+
+    # Detect which diversity key is actually available
+    has_primary = any(diversity_key in m for m in filtered)
+    active_key = diversity_key if has_primary else diversity_fallback
+
+    models_order = list(dict.fromkeys(m["model"] for m in filtered))
+    model_marker = {name: _MODEL_MARKERS[i % len(_MODEL_MARKERS)] for i, name in enumerate(models_order)}
+
+    import matplotlib.patches as mpatches
+    from matplotlib.lines import Line2D
+
+    fig, ax = plt.subplots(figsize=(12, 7))
+
+    # Collect (model, pass1, div) triples for per-model lines
+    all_points: list[tuple[str, float, float]] = []
+
+    for m in filtered:
+        method = m["method"]
+        model = m["model"]
+        pass1 = m.get("pass_at_k", {}).get("1", 0.0)
+        div = m.get(active_key, 0.0)
+
+        color = _METHOD_COLORS.get(method, "#333333")
+        marker = model_marker[model]
+
+        ax.scatter(
+            pass1, div,
+            s=160,
+            color=color,
+            marker=marker,
+            edgecolors="black",
+            linewidth=0.8,
+            zorder=3,
+        )
+        all_points.append((model, pass1, div))
+
+    # Per-model connecting lines: show within-model trade-off trajectory
+    for model in models_order:
+        model_pts = [(p1, d) for (m_model, p1, d) in all_points if m_model == model]
+        if len(model_pts) < 2:
+            continue
+        model_pts.sort(key=lambda p: p[0])
+        mx, my = zip(*model_pts)
+        ax.plot(mx, my, "-", color="gray", alpha=0.3, linewidth=1.0, zorder=1)
+
+    # --- Two separate legends with section titles ---
+    # Method legend (color)
+    method_handles: list[mpatches.Patch | Line2D] = [
+        Line2D([0], [0], color="none", label="$\\bf{Method}$"),  # section title
+    ]
+    for method in methods:
+        if any(m["method"] == method for m in filtered):
+            display = _METHOD_DISPLAY_NAMES.get(method, method)
+            color = _METHOD_COLORS.get(method, "#333333")
+            method_handles.append(mpatches.Patch(color=color, label=display))
+
+    # Model legend (marker shape)
+    model_handles: list[Line2D] = [
+        Line2D([0], [0], color="none", label="$\\bf{Model}$"),  # section title
+    ]
+    for model in models_order:
+        short = model.split("/")[-1] if "/" in model else model
+        marker = model_marker[model]
+        model_handles.append(
+            Line2D([0], [0], marker=marker, color="gray", linestyle="None",
+                   markersize=8, markeredgecolor="black", markeredgewidth=0.8,
+                   label=short)
+        )
+
+    # Place both legends outside the plot area (right side)
+    leg_method = ax.legend(
+        handles=method_handles,
+        fontsize=8,
+        loc="upper left",
+        bbox_to_anchor=(1.02, 1.0),
+        framealpha=0.9,
+        borderaxespad=0,
+    )
+    ax.add_artist(leg_method)  # keep first legend when adding second
+    ax.legend(
+        handles=model_handles,
+        fontsize=8,
+        loc="upper left",
+        bbox_to_anchor=(1.02, 0.42),
+        framealpha=0.9,
+        borderaxespad=0,
+    )
+
+    _DIVERSITY_LABELS = {
+        "codebleu_diversity": "CodeBLEU Diversity",
+        "structural_diversity": "Structural Diversity",
+        "dataflow_match_diversity": "Dataflow Diversity",
+    }
+    div_display = _DIVERSITY_LABELS.get(active_key, active_key)
+    ax.set_xlabel("pass@1", fontsize=11)
+    ax.set_ylabel(f"Mean {div_display}", fontsize=11)
+    ax.set_title(f"{dataset_name}: Correctness vs Diversity Trade-off", fontsize=13)
+    ax.grid(alpha=0.3)
+
+    fig.tight_layout(rect=[0, 0, 0.78, 1])
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+
+def plot_method_heatmaps(
+    metrics_list: list[dict],
+    output_path: Path,
+    dataset_name: str = "HUMANEVAL",
+    methods: list[str] | None = None,
+    diversity_key: str = "codebleu_diversity",
+    diversity_fallback: str = "structural_diversity",
+) -> None:
+    """Side-by-side heatmaps: model × method grids for pass@1 and mean diversity."""
+    if methods is None:
+        methods = list(dict.fromkeys(m["method"] for m in metrics_list))
+
+    filtered = [m for m in metrics_list if m["method"] in methods]
+    if not filtered:
+        return
+
+    # Detect which diversity key is actually available
+    has_primary = any(diversity_key in m for m in filtered)
+    active_key = diversity_key if has_primary else diversity_fallback
+
+    models_order = list(dict.fromkeys(m["model"] for m in filtered))
+    methods_order = [mt for mt in methods if any(f["method"] == mt for f in filtered)]
+
+    n_models = len(models_order)
+    n_methods = len(methods_order)
+
+    # Build 2D arrays
+    pass1_grid = np.full((n_models, n_methods), np.nan)
+    div_grid = np.full((n_models, n_methods), np.nan)
+
+    for m in filtered:
+        row = models_order.index(m["model"])
+        if m["method"] not in methods_order:
+            continue
+        col = methods_order.index(m["method"])
+        pass1_grid[row, col] = m.get("pass_at_k", {}).get("1", np.nan)
+        div_grid[row, col] = m.get(active_key, np.nan)
+
+    short_models = [m.split("/")[-1] if "/" in m else m for m in models_order]
+    method_labels = [_METHOD_DISPLAY_NAMES.get(mt, mt) for mt in methods_order]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6 + n_methods * 1.2, 1.5 + n_models * 0.9))
+
+    _DIVERSITY_LABELS = {
+        "codebleu_diversity": "CodeBLEU Diversity",
+        "structural_diversity": "Structural Diversity",
+        "dataflow_match_diversity": "Dataflow Diversity",
+    }
+    div_title = _DIVERSITY_LABELS.get(active_key, "Diversity")
+
+    for ax, grid, cmap, title in [
+        (ax1, pass1_grid, "Blues", "pass@1"),
+        (ax2, div_grid, "Greens", div_title),
+    ]:
+        im = ax.imshow(grid, cmap=cmap, aspect="auto", vmin=0)
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+        # Annotate cells
+        for i in range(n_models):
+            for j in range(n_methods):
+                val = grid[i, j]
+                if np.isnan(val):
+                    ax.text(j, i, "—", ha="center", va="center", fontsize=8, color="gray")
+                else:
+                    # Choose text color for readability
+                    text_color = "white" if val > 0.6 else "black"
+                    ax.text(j, i, f"{val:.3f}", ha="center", va="center",
+                            fontsize=8, fontweight="bold", color=text_color)
+
+        ax.set_xticks(range(n_methods))
+        ax.set_xticklabels(method_labels, rotation=40, ha="right", fontsize=7)
+        ax.set_yticks(range(n_models))
+        ax.set_yticklabels(short_models, fontsize=8)
+        ax.set_title(f"{dataset_name}: {title}", fontsize=10)
+
+    fig.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=150)
     plt.close(fig)
@@ -740,12 +961,19 @@ def main():
     )
     print(f"Saved {out / 'correctness_vs_diversity.png'}")
 
-    # Multi-method comparison chart
-    plot_correctness_vs_diversity_multimethod(
-        metrics_list, out / "correctness_vs_diversity_multimethod.png",
+    # Primary: Pareto scatter — aggregate correctness vs diversity trade-off
+    plot_pareto_scatter(
+        metrics_list, out / "pareto_correctness_diversity.png",
         dataset_name=args.dataset,
     )
-    print(f"Saved {out / 'correctness_vs_diversity_multimethod.png'}")
+    print(f"Saved {out / 'pareto_correctness_diversity.png'}")
+
+    # Secondary: Heatmaps — model × method grid for pass@1 and diversity
+    plot_method_heatmaps(
+        metrics_list, out / "method_heatmaps.png",
+        dataset_name=args.dataset,
+    )
+    print(f"Saved {out / 'method_heatmaps.png'}")
 
     # Structural diversity plots (only if data includes the new metrics)
     has_diversity = any("structural_diversity" in m for m in metrics_list)
