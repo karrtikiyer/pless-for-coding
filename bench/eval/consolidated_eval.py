@@ -576,6 +576,10 @@ def parse_args():
         "--report-only", action="store_true",
         help="Only generate consolidated report from existing metrics",
     )
+    parser.add_argument(
+        "--dataset", choices=["humaneval", "mbpp", "all"], default="all",
+        help="Only evaluate configs for this dataset (default: all)",
+    )
     return parser.parse_args()
 
 
@@ -585,6 +589,8 @@ def main():
     # Phase 1: Discover all configurations
     print("Phase 1: Discovering configurations...")
     units = discover_all()
+    if args.dataset != "all":
+        units = [u for u in units if u.dataset == args.dataset]
     print(f"  Found {len(units)} configurations")
 
     by_format = {}
@@ -643,4 +649,8 @@ def main():
 
 
 if __name__ == "__main__":
+    import platform
+    if platform.system() == "Darwin":
+        import multiprocessing
+        multiprocessing.set_start_method("fork")
     main()
