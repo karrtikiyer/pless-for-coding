@@ -81,8 +81,8 @@ while IFS='|' read -r MODEL_ID PROMPT_STYLE IS_LEGACY; do
          "--mbpp-config" "full")
     [[ ${#PROMPT_ARGS[@]} -gt 0 ]] && CMD+=("${PROMPT_ARGS[@]}")
 
-    # Greedy: override n-samples to 1
-    if [ "$method" = "greedy" ]; then
+    # Deterministic methods: single output per problem
+    if [ "$method" = "greedy" ] || [ "$method" = "beam" ]; then
       CMD+=("--n-samples" "1")
     fi
 

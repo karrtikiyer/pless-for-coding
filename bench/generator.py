@@ -241,7 +241,13 @@ def generate_samples_beam(
     max_new_tokens: int,
     stop_strings: list[str] | None = None,
 ) -> list[str]:
-    """Generate completions using beam search, returning all beam results."""
+    """Generate the single best completion via beam search.
+
+    Beam search explores ``num_beams`` paths but returns only the highest-
+    scoring sequence.  Beam width is a search budget, not a sample count —
+    the lower-ranked beams are correlated search byproducts, not independent
+    samples.  This matches the standard evaluation protocol (arXiv:2402.06925).
+    """
     if isinstance(prompt_text, list):
         input_ids = torch.tensor([prompt_text], device=model.device)
     else:
@@ -263,18 +269,15 @@ def generate_samples_beam(
             max_new_tokens=max_new_tokens,
             do_sample=False,
             num_beams=num_beams,
-            num_return_sequences=num_beams,
+            num_return_sequences=1,
             **kwargs,
         )
     decoded_prompt = tokenizer.decode(output[0, :prompt_len], skip_special_tokens=True)
-    samples = []
-    for i in range(num_beams):
-        full_text = tokenizer.decode(output[i], skip_special_tokens=True)
-        text = full_text[len(decoded_prompt):]
-        if stop_strings:
-            text = _truncate_at_stop(text, stop_strings)
-        samples.append(text)
-    return samples
+    full_text = tokenizer.decode(output[0], skip_special_tokens=True)
+    text = full_text[len(decoded_prompt):]
+    if stop_strings:
+        text = _truncate_at_stop(text, stop_strings)
+    return [text]
 
 
 def _expand_past_key_values(past_key_values, n: int):

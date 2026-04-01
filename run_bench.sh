@@ -53,7 +53,7 @@ for cfg in "${CONFIGS[@]}"; do
     num_beams="${method#beam}"
     echo "--- method=beam num_beams=$num_beams ---"
     echo "Started: $(date)"
-    uv run python -m bench --model "$MODEL_ID" --method beam --num-beams "$num_beams" --temperature "$val" --mbpp-config full
+    uv run python -m bench --model "$MODEL_ID" --method beam --num-beams "$num_beams" --temperature "$val" --n-samples 1 --mbpp-config full
   else
     echo "--- method=$method temperature=$val ---"
     echo "Started: $(date)"
