@@ -18,9 +18,11 @@ from bench.eval.executor import evaluate_all
 from bench.eval.loader import load_results
 from bench.eval.metrics import (
     add_distinct_counts,
+    add_self_codebleu,
     add_structural_diversity,
     compute_cover_at_t,
     compute_pass_at_k,
+    compute_self_codebleu_diversity,
     compute_structural_diversity,
 )
 
@@ -59,6 +61,9 @@ def evaluate_file(jsonl_path: Path, workers: int, timeout: float) -> dict:
     # Structural diversity
     add_structural_diversity(task_results, records)
 
+    # CodeBLEU diversity
+    add_self_codebleu(task_results, records)
+
     # Metadata from first record
     first = records[0]
     num_samples_per_task = len(first["samples"]) if records else 0
@@ -69,6 +74,7 @@ def evaluate_file(jsonl_path: Path, workers: int, timeout: float) -> dict:
         task_results, T_VALUES, num_samples_per_task
     )
     structural_diversity = compute_structural_diversity(task_results)
+    codebleu_diversity = compute_self_codebleu_diversity(task_results)
 
     return {
         "model": first.get("model", "unknown"),
@@ -81,6 +87,7 @@ def evaluate_file(jsonl_path: Path, workers: int, timeout: float) -> dict:
         "cover_at_t": cover_at_t,
         "cover_at_t_distinct": cover_at_t_distinct,
         "structural_diversity": structural_diversity,
+        **codebleu_diversity,
         "per_task": task_results,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

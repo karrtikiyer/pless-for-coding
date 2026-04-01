@@ -1,34 +1,32 @@
 {
-  "model": "CodeLlama-7B",
+  "model": "codellama--CodeLlama-7b-Instruct-hf",
   "method": "p_less_norm",
   "temperature": 1.0,
   "dataset": "humaneval",
   "num_tasks": 164,
   "num_samples_per_task": 10,
   "pass_at_k": {
-    "1": 0.35853658536585364,
-    "3": 0.379369918699187,
-    "5": 0.38600948509485095,
-    "10": 0.3902439024390244
+    "1": 0.35121951219512193,
+    "3": 0.37327235772357725,
+    "5": 0.3799119241192412,
+    "10": 0.38414634146341464
   },
   "cover_at_t": {
-    "0.1": 39.02439024390244,
-    "0.3": 37.19512195121951,
-    "0.5": 36.58536585365854,
-    "0.7": 33.53658536585366
+    "0.1": 38.41463414634146,
+    "0.3": 36.58536585365854,
+    "0.5": 35.97560975609756,
+    "0.7": 32.926829268292686
   },
   "cover_at_t_distinct": {
-    "0.1": 39.02439024390244,
-    "0.3": 5.487804878048781,
+    "0.1": 38.41463414634146,
+    "0.3": 4.2682926829268295,
     "0.5": 0.0,
     "0.7": 0.0
   },
-  "structural_diversity": 0.0759,
-  "mean_distinct_3": 0.1426,
-  "mean_loc_stdev": 0.7659,
-  "mean_self_codebleu": 0.9429,
-  "mean_self_syntax_match": 0.9312,
-  "mean_self_dataflow_match": 0.9452,
+  "structural_diversity": 0.0735,
+  "codebleu_diversity": 0.0844,
+  "syntax_match_diversity": 0.1099,
+  "dataflow_match_diversity": 0.0812,
   "per_task": [
     {
       "task_id": "HumanEval/0",
@@ -48,11 +46,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/1",
@@ -72,11 +68,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/10",
@@ -96,11 +90,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/100",
@@ -120,11 +112,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/101",
@@ -144,11 +134,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/102",
@@ -168,11 +156,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/103",
@@ -192,11 +178,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/104",
@@ -216,11 +200,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.0762,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1093,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.9739,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0536,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/105",
@@ -240,11 +222,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/106",
@@ -264,35 +244,31 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/107",
-      "num_correct": 10,
+      "num_correct": 8,
       "pass_results": [
         true,
         true,
         true,
         true,
         true,
-        true,
-        true,
+        false,
+        false,
         true,
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.3604,
-      "num_ast_clusters": 3,
-      "distinct_3": 0.1442,
-      "loc_stdev": 5.3427,
-      "self_codebleu": 0.8075,
-      "self_syntax_match": 0.7836,
-      "self_dataflow_match": 0.8612
+      "num_distinct_correct": 2,
+      "mean_pairwise_distance": 0.3325,
+      "num_ast_clusters": 2,
+      "self_codebleu": 0.2736,
+      "self_syntax_match": 0.2979,
+      "self_dataflow_match": 0.3103
     },
     {
       "task_id": "HumanEval/108",
@@ -312,11 +288,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/109",
@@ -336,11 +310,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/11",
@@ -360,11 +332,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1947,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/110",
@@ -384,11 +354,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/111",
@@ -408,11 +376,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/112",
@@ -432,11 +398,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.1323,
       "num_ast_clusters": 2,
-      "distinct_3": 0.0977,
-      "loc_stdev": 1.4491,
-      "self_codebleu": 0.9355,
-      "self_syntax_match": 0.8825,
-      "self_dataflow_match": 0.9088
+      "self_codebleu": 0.1564,
+      "self_syntax_match": 0.2727,
+      "self_dataflow_match": 0.2381
     },
     {
       "task_id": "HumanEval/113",
@@ -456,11 +420,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/114",
@@ -480,11 +442,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/115",
@@ -504,11 +464,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/116",
@@ -528,11 +486,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.0847,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1327,
-      "loc_stdev": 0.5164,
-      "self_codebleu": 0.884,
-      "self_syntax_match": 0.8851,
-      "self_dataflow_match": 0.8717
+      "self_codebleu": 0.1473,
+      "self_syntax_match": 0.1379,
+      "self_dataflow_match": 0.2034
     },
     {
       "task_id": "HumanEval/117",
@@ -552,11 +508,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/118",
@@ -576,11 +530,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/119",
@@ -600,11 +552,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/12",
@@ -624,11 +574,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/120",
@@ -648,11 +596,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/121",
@@ -672,11 +618,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.1355,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1681,
-      "loc_stdev": 5.3635,
-      "self_codebleu": 0.8321,
-      "self_syntax_match": 0.8254,
-      "self_dataflow_match": 0.9852
+      "self_codebleu": 0.2048,
+      "self_syntax_match": 0.2222,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/122",
@@ -696,11 +640,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.1403,
       "num_ast_clusters": 2,
-      "distinct_3": 0.1351,
-      "loc_stdev": 0.8819,
-      "self_codebleu": 0.8565,
-      "self_syntax_match": 0.7955,
-      "self_dataflow_match": 0.8029
+      "self_codebleu": 0.2938,
+      "self_syntax_match": 0.3889,
+      "self_dataflow_match": 0.3846
     },
     {
       "task_id": "HumanEval/123",
@@ -720,11 +662,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/124",
@@ -744,11 +684,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/125",
@@ -768,11 +706,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/126",
@@ -792,11 +728,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/127",
@@ -816,11 +750,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/128",
@@ -840,11 +772,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/129",
@@ -864,11 +794,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/13",
@@ -888,11 +816,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0983,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/130",
@@ -912,11 +838,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/131",
@@ -936,11 +860,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/132",
@@ -960,11 +882,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/133",
@@ -984,11 +904,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/134",
@@ -1008,11 +926,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/135",
@@ -1032,11 +948,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/136",
@@ -1056,11 +970,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0971,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/137",
@@ -1080,11 +992,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/138",
@@ -1104,11 +1014,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/139",
@@ -1128,11 +1036,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/14",
@@ -1152,11 +1058,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/140",
@@ -1176,11 +1080,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/141",
@@ -1200,11 +1102,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/142",
@@ -1224,11 +1124,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/143",
@@ -1248,11 +1146,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.006,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1015,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.9951,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0092,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/144",
@@ -1272,11 +1168,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/145",
@@ -1296,11 +1190,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/146",
@@ -1320,11 +1212,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/147",
@@ -1344,11 +1234,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/148",
@@ -1368,11 +1256,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/149",
@@ -1392,11 +1278,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1051,
-      "loc_stdev": 0.9661,
-      "self_codebleu": 0.9793,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/15",
@@ -1416,11 +1300,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/150",
@@ -1440,11 +1322,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0959,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/151",
@@ -1464,11 +1344,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/152",
@@ -1488,11 +1366,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.4329,
       "num_ast_clusters": 2,
-      "distinct_3": 0.1108,
-      "loc_stdev": 3.0984,
-      "self_codebleu": 0.7468,
-      "self_syntax_match": 0.4845,
-      "self_dataflow_match": 0.636
+      "self_codebleu": 0.4848,
+      "self_syntax_match": 0.9706,
+      "self_dataflow_match": 0.7143
     },
     {
       "task_id": "HumanEval/153",
@@ -1512,11 +1388,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0878,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/154",
@@ -1536,11 +1410,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/155",
@@ -1560,11 +1432,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/156",
@@ -1584,11 +1454,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.25,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/157",
@@ -1608,11 +1476,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/158",
@@ -1632,11 +1498,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/159",
@@ -1656,11 +1520,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/16",
@@ -1680,11 +1542,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/160",
@@ -1704,11 +1564,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/161",
@@ -1728,11 +1586,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/162",
@@ -1752,11 +1608,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/163",
@@ -1776,11 +1630,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/17",
@@ -1800,11 +1652,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/18",
@@ -1824,11 +1674,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/19",
@@ -1848,11 +1696,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/2",
@@ -1872,11 +1718,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/20",
@@ -1896,11 +1740,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.4837,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/21",
@@ -1920,11 +1762,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.1511,
       "num_ast_clusters": 2,
-      "distinct_3": 0.1526,
-      "loc_stdev": 1.2517,
-      "self_codebleu": 0.8287,
-      "self_syntax_match": 0.8599,
-      "self_dataflow_match": 0.7538
+      "self_codebleu": 0.2712,
+      "self_syntax_match": 0.2345,
+      "self_dataflow_match": 0.3702
     },
     {
       "task_id": "HumanEval/22",
@@ -1944,11 +1784,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/23",
@@ -1968,11 +1806,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/24",
@@ -1992,11 +1828,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1667,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/25",
@@ -2016,11 +1850,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.2137,
       "num_ast_clusters": 2,
-      "distinct_3": 0.1214,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.8648,
-      "self_syntax_match": 0.8314,
-      "self_dataflow_match": 0.803
+      "self_codebleu": 0.2411,
+      "self_syntax_match": 0.383,
+      "self_dataflow_match": 0.2
     },
     {
       "task_id": "HumanEval/26",
@@ -2040,11 +1872,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/27",
@@ -2064,11 +1894,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/28",
@@ -2088,11 +1916,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/29",
@@ -2112,11 +1938,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/3",
@@ -2136,11 +1960,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/30",
@@ -2160,11 +1982,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/31",
@@ -2184,11 +2004,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/32",
@@ -2208,11 +2026,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/33",
@@ -2232,11 +2048,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/34",
@@ -2256,11 +2070,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/35",
@@ -2280,11 +2092,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/36",
@@ -2304,11 +2114,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/37",
@@ -2328,11 +2136,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/38",
@@ -2352,11 +2158,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/39",
@@ -2376,11 +2180,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/4",
@@ -2400,11 +2202,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.0838,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1195,
-      "loc_stdev": 1.5492,
-      "self_codebleu": 0.9233,
-      "self_syntax_match": 0.9369,
-      "self_dataflow_match": 0.9414
+      "self_codebleu": 0.1006,
+      "self_syntax_match": 0.0857,
+      "self_dataflow_match": 0.0909
     },
     {
       "task_id": "HumanEval/40",
@@ -2424,11 +2224,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/41",
@@ -2448,11 +2246,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/42",
@@ -2472,11 +2268,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/43",
@@ -2496,11 +2290,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0974,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/44",
@@ -2520,11 +2312,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/45",
@@ -2544,11 +2334,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/46",
@@ -2568,11 +2356,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/47",
@@ -2592,11 +2378,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/48",
@@ -2616,11 +2400,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.4312,
       "num_ast_clusters": 2,
-      "distinct_3": 0.1634,
-      "loc_stdev": 3.1623,
-      "self_codebleu": 0.6066,
-      "self_syntax_match": 0.5057,
-      "self_dataflow_match": 0.6642
+      "self_codebleu": 0.6938,
+      "self_syntax_match": 0.9118,
+      "self_dataflow_match": 0.5333
     },
     {
       "task_id": "HumanEval/49",
@@ -2640,11 +2422,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.4821,
       "num_ast_clusters": 2,
-      "distinct_3": 0.2325,
-      "loc_stdev": 2.1909,
-      "self_codebleu": 0.6772,
-      "self_syntax_match": 0.5434,
-      "self_dataflow_match": 0.7056
+      "self_codebleu": 0.5333,
+      "self_syntax_match": 0.75,
+      "self_dataflow_match": 0.5
     },
     {
       "task_id": "HumanEval/5",
@@ -2664,11 +2444,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/50",
@@ -2688,11 +2466,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/51",
@@ -2712,11 +2488,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/52",
@@ -2736,11 +2510,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/53",
@@ -2760,11 +2532,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/54",
@@ -2784,11 +2554,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/55",
@@ -2808,11 +2576,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/56",
@@ -2832,11 +2598,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/57",
@@ -2856,11 +2620,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/58",
@@ -2880,11 +2642,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.3754,
       "num_ast_clusters": 3,
-      "distinct_3": 0.2046,
-      "loc_stdev": 5.4813,
-      "self_codebleu": 0.8079,
-      "self_syntax_match": 0.7106,
-      "self_dataflow_match": 0.8825
+      "self_codebleu": 0.3301,
+      "self_syntax_match": 0.5456,
+      "self_dataflow_match": 0.1587
     },
     {
       "task_id": "HumanEval/59",
@@ -2904,11 +2664,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.561,
       "num_ast_clusters": 2,
-      "distinct_3": 0.7382,
-      "loc_stdev": 7.0711,
-      "self_codebleu": 0.632,
-      "self_syntax_match": 0.6774,
-      "self_dataflow_match": 0.8667
+      "self_codebleu": 0.368,
+      "self_syntax_match": 0.3226,
+      "self_dataflow_match": 0.1333
     },
     {
       "task_id": "HumanEval/6",
@@ -2928,11 +2686,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/60",
@@ -2952,11 +2708,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/61",
@@ -2976,11 +2730,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/62",
@@ -3000,11 +2752,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.1231,
       "num_ast_clusters": 1,
-      "distinct_3": 0.628,
-      "loc_stdev": 4.9497,
-      "self_codebleu": 0.8609,
-      "self_syntax_match": 0.8889,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.1391,
+      "self_syntax_match": 0.1111,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/63",
@@ -3024,11 +2774,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/64",
@@ -3048,11 +2796,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/65",
@@ -3072,11 +2818,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/66",
@@ -3096,11 +2840,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/67",
@@ -3120,11 +2862,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/68",
@@ -3144,11 +2884,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0895,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/69",
@@ -3168,11 +2906,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/7",
@@ -3192,11 +2928,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/70",
@@ -3216,11 +2950,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/71",
@@ -3240,11 +2972,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/72",
@@ -3264,11 +2994,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.1466,
       "num_ast_clusters": 2,
-      "distinct_3": 0.0932,
-      "loc_stdev": 0.4216,
-      "self_codebleu": 0.9106,
-      "self_syntax_match": 0.8819,
-      "self_dataflow_match": 0.8206
+      "self_codebleu": 0.2682,
+      "self_syntax_match": 0.3469,
+      "self_dataflow_match": 0.55
     },
     {
       "task_id": "HumanEval/73",
@@ -3288,11 +3016,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/74",
@@ -3312,11 +3038,9 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.1276,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1249,
-      "loc_stdev": 0.8756,
-      "self_codebleu": 0.8767,
-      "self_syntax_match": 0.8544,
-      "self_dataflow_match": 0.9807
+      "self_codebleu": 0.1657,
+      "self_syntax_match": 0.1494,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/75",
@@ -3336,11 +3060,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/76",
@@ -3360,11 +3082,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/77",
@@ -3384,35 +3104,31 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/78",
-      "num_correct": 10,
+      "num_correct": 0,
       "pass_results": [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.1987,
-      "num_ast_clusters": 2,
-      "distinct_3": 0.1091,
-      "loc_stdev": 1.4491,
-      "self_codebleu": 0.8258,
-      "self_syntax_match": 0.9044,
-      "self_dataflow_match": 0.5414
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/79",
@@ -3432,11 +3148,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/8",
@@ -3456,11 +3170,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0975,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/80",
@@ -3480,11 +3192,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/81",
@@ -3504,11 +3214,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/82",
@@ -3528,11 +3236,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/83",
@@ -3552,11 +3258,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/84",
@@ -3576,11 +3280,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/85",
@@ -3600,11 +3302,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/86",
@@ -3624,11 +3324,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.111,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.9759,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/87",
@@ -3648,11 +3346,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/88",
@@ -3672,11 +3368,9 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.1376,
       "num_ast_clusters": 2,
-      "distinct_3": 0.0927,
-      "loc_stdev": 1.0328,
-      "self_codebleu": 0.8824,
-      "self_syntax_match": 0.8508,
-      "self_dataflow_match": 0.7689
+      "self_codebleu": 0.1649,
+      "self_syntax_match": 0.2143,
+      "self_dataflow_match": 0.3
     },
     {
       "task_id": "HumanEval/89",
@@ -3696,11 +3390,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/9",
@@ -3720,11 +3412,9 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.3763,
       "num_ast_clusters": 4,
-      "distinct_3": 0.3039,
-      "loc_stdev": 1.9664,
-      "self_codebleu": 0.7621,
-      "self_syntax_match": 0.6912,
-      "self_dataflow_match": 0.7806
+      "self_codebleu": 0.2905,
+      "self_syntax_match": 0.3584,
+      "self_dataflow_match": 0.2931
     },
     {
       "task_id": "HumanEval/90",
@@ -3744,11 +3434,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/91",
@@ -3768,11 +3456,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/92",
@@ -3792,11 +3478,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.0948,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/93",
@@ -3816,11 +3500,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/94",
@@ -3840,11 +3522,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/95",
@@ -3864,11 +3544,9 @@
       "num_distinct_correct": 1,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 1,
-      "distinct_3": 0.089,
-      "loc_stdev": 0.0,
-      "self_codebleu": 1.0,
-      "self_syntax_match": 1.0,
-      "self_dataflow_match": 1.0
+      "self_codebleu": 0.0,
+      "self_syntax_match": 0.0,
+      "self_dataflow_match": 0.0
     },
     {
       "task_id": "HumanEval/96",
@@ -3888,11 +3566,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/97",
@@ -3912,11 +3588,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/98",
@@ -3936,11 +3610,9 @@
       "num_distinct_correct": 0,
       "mean_pairwise_distance": 0.0,
       "num_ast_clusters": 0,
-      "distinct_3": 0.0,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null
     },
     {
       "task_id": "HumanEval/99",
@@ -3960,12 +3632,10 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.0818,
       "num_ast_clusters": 1,
-      "distinct_3": 0.1877,
-      "loc_stdev": 0.0,
-      "self_codebleu": 0.9012,
-      "self_syntax_match": 0.8018,
-      "self_dataflow_match": 0.92
+      "self_codebleu": 0.1269,
+      "self_syntax_match": 0.2222,
+      "self_dataflow_match": 0.1333
     }
   ],
-  "timestamp": "2026-03-03T15:09:29.577181+00:00"
+  "timestamp": "2026-03-31T12:49:40.473486+00:00"
 }

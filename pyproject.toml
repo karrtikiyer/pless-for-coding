@@ -19,6 +19,8 @@ dependencies = [
     "zss",
     "sentencepiece",
     "transformers-stream-generator",
+    "codebleu>=0.7.0",
+    "tree-sitter-python>=0.23,<0.24",
 ]
 
 [[tool.uv.index]]

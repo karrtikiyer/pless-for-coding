@@ -531,6 +531,158 @@ def plot_pairwise_distance_distributions(
     plt.close(fig)
 
 
+def plot_correctness_vs_diversity_multimethod(
+    metrics_list: list[dict],
+    output_path: Path,
+    dataset_name: str = "HUMANEVAL",
+    methods: list[str] | None = None,
+) -> None:
+    """2×2 faceted bubble chart: correctness vs distinct-correct, one panel per model.
+
+    Shows multiple methods per panel (color = method) to compare sampling strategies.
+    """
+    if methods is None:
+        methods = ["greedy", "p_less", "p_less_norm", "temp_0.7"]
+
+    # Filter to requested methods
+    filtered = [m for m in metrics_list if m["method"] in methods]
+    if not filtered:
+        return
+
+    models_order = list(dict.fromkeys(m["model"] for m in filtered))
+    n_models = len(models_order)
+    ncols = min(2, n_models)
+    nrows = (n_models + ncols - 1) // ncols
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(7 * ncols, 7 * nrows), squeeze=False)
+
+    for idx, model in enumerate(models_order):
+        ax = axes[idx // ncols][idx % ncols]
+        model_metrics = [m for m in filtered if m["model"] == model]
+
+        for m in model_metrics:
+            method = m["method"]
+            color = _METHOD_COLORS.get(method, "#333333")
+            label = _METHOD_DISPLAY_NAMES.get(method, method)
+
+            counts: Counter[tuple[int, int]] = Counter()
+            for task in m.get("per_task", []):
+                nc = task["num_correct"]
+                ndc = task.get("num_distinct_correct", 0)
+                counts[(nc, ndc)] += 1
+
+            xs, ys, sizes = [], [], []
+            for (nc, ndc), count in counts.items():
+                xs.append(nc)
+                ys.append(ndc)
+                sizes.append(count)
+
+            ax.scatter(
+                xs, ys,
+                s=np.array(sizes, dtype=float) * 15,
+                alpha=0.55,
+                color=color,
+                edgecolors="white",
+                linewidth=0.5,
+                label=label,
+            )
+
+        ax.plot([0, 10], [0, 10], "k--", alpha=0.3)
+        short_model = model.split("/")[-1] if "/" in model else model
+        ax.set_title(short_model, fontsize=10)
+        ax.set_xlabel("num_correct (out of 10)")
+        ax.set_ylabel("num_distinct_correct (out of 10)")
+        ax.set_xlim(-0.5, 10.5)
+        ax.set_ylim(-0.5, 10.5)
+        ax.set_xticks(range(11))
+        ax.set_yticks(range(11))
+        ax.set_aspect("equal")
+        ax.legend(fontsize=7, loc="upper left")
+
+    # Hide empty panels
+    for idx in range(n_models, nrows * ncols):
+        axes[idx // ncols][idx % ncols].set_visible(False)
+
+    fig.suptitle(
+        f"{dataset_name}: Correctness vs Diversity — Multi-Method Comparison",
+        fontsize=13,
+    )
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+
+def plot_diversity_metrics_bars(
+    metrics_list: list[dict],
+    output_path: Path,
+    dataset_name: str = "HUMANEVAL",
+    methods: list[str] | None = None,
+) -> None:
+    """Grouped bar chart comparing multiple diversity metrics across models and methods.
+
+    Shows AST structural diversity, CodeBLEU diversity, and dataflow diversity side by side.
+    """
+    if methods is None:
+        methods = ["greedy", "p_less", "p_less_norm", "temp_0.7"]
+
+    filtered = [m for m in metrics_list if m["method"] in methods]
+    if not filtered:
+        return
+
+    models_order = list(dict.fromkeys(m["model"] for m in filtered))
+    methods_order = [m for m in methods if any(f["method"] == m for f in filtered)]
+
+    diversity_keys = [
+        ("structural_diversity", "AST Edit Distance"),
+        ("codebleu_diversity", "1 - CodeBLEU"),
+        ("dataflow_match_diversity", "1 - Dataflow Match"),
+    ]
+
+    n_metrics = len(diversity_keys)
+    fig, axes = plt.subplots(1, n_metrics, figsize=(6 * n_metrics, 5), squeeze=False)
+
+    for col, (key, title) in enumerate(diversity_keys):
+        ax = axes[0, col]
+        bar_width = 0.8 / max(len(methods_order), 1)
+        x = np.arange(len(models_order))
+
+        for i, method in enumerate(methods_order):
+            values = []
+            for model in models_order:
+                match = [m for m in filtered if m["model"] == model and m["method"] == method]
+                if match and key in match[0]:
+                    values.append(match[0][key])
+                else:
+                    values.append(0.0)
+
+            color = _METHOD_COLORS.get(method, "#333333")
+            offset = (i - len(methods_order) / 2 + 0.5) * bar_width
+            label = _METHOD_DISPLAY_NAMES.get(method, method)
+            ax.bar(x + offset, values, bar_width * 0.9, label=label, color=color, alpha=0.85)
+
+        ax.set_title(title, fontsize=10)
+        short_models = [m.split("/")[-1] if "/" in m else m for m in models_order]
+        ax.set_xticks(x)
+        ax.set_xticklabels(short_models, rotation=25, ha="right", fontsize=7)
+        ax.set_ylim(0, 1.0)
+        ax.grid(axis="y", alpha=0.3)
+        if col == 0:
+            ax.set_ylabel("Diversity Score")
+            ax.legend(fontsize=7)
+
+    fig.suptitle(
+        f"{dataset_name}: Diversity Metrics by Model & Method",
+        fontsize=13,
+    )
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate metric visualizations from JSON files"
@@ -588,6 +740,13 @@ def main():
     )
     print(f"Saved {out / 'correctness_vs_diversity.png'}")
 
+    # Multi-method comparison chart
+    plot_correctness_vs_diversity_multimethod(
+        metrics_list, out / "correctness_vs_diversity_multimethod.png",
+        dataset_name=args.dataset,
+    )
+    print(f"Saved {out / 'correctness_vs_diversity_multimethod.png'}")
+
     # Structural diversity plots (only if data includes the new metrics)
     has_diversity = any("structural_diversity" in m for m in metrics_list)
     if has_diversity:
@@ -600,6 +759,15 @@ def main():
             metrics_list, out / "pairwise_distance_distributions.png", dataset_name=args.dataset,
         )
         print(f"Saved {out / 'pairwise_distance_distributions.png'}")
+
+    # CodeBLEU diversity bar chart (only if data includes the new metrics)
+    has_codebleu = any("codebleu_diversity" in m for m in metrics_list)
+    if has_codebleu:
+        plot_diversity_metrics_bars(
+            metrics_list, out / "diversity_metrics_comparison.png",
+            dataset_name=args.dataset,
+        )
+        print(f"Saved {out / 'diversity_metrics_comparison.png'}")
 
 
 if __name__ == "__main__":
