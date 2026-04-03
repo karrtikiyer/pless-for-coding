@@ -22,6 +22,7 @@ MBPP_MODELS: list[ModelConfig] = [
     ModelConfig("Qwen/Qwen-7B-Chat",                  prompt_style="paper", legacy=True),
     ModelConfig("Qwen/Qwen2.5-Coder-1.5B",           prompt_style="bigcode"),
     ModelConfig("Qwen/Qwen2.5-Coder-3B",             prompt_style="bigcode"),
+    ModelConfig("Qwen/Qwen2.5-Coder-3B-Instruct",  prompt_style="bigcode"),
     ModelConfig("m-a-p/OpenCodeInterpreter-DS-1.3B",  prompt_style="bigcode"),
 ]
 

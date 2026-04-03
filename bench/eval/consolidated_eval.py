@@ -38,6 +38,7 @@ _MODEL_SHORT_NAMES: dict[str, str] = {
     "mistralai--Codestral-22B-v0.1":        "Codestral-22B",
     "Qwen--Qwen2.5-Coder-7B-Instruct":      "Qwen2.5-Coder-7B",
     "Qwen--Qwen3-Coder-30B-A3B-Instruct":   "Qwen3-Coder-30B",
+    "Qwen--Qwen2.5-Coder-3B-Instruct":      "Qwen2.5-Coder-3B-Instruct",
 }
 
 
