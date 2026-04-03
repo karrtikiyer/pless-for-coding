@@ -20,7 +20,7 @@ from bench.prompts import (format_prompt_base, format_prompt_base_hybrid,
 MBPP_STOP_SEQUENCES = ["\n[DONE]"]
 # BigCode/InCoder zero-shot format: no format delimiters, stop on code-level boundaries.
 MBPP_BIGCODE_STOP_SEQUENCES = ["\nassert", "\nclass", "\nprint", '\n"""', "\nif __name__"]
-from bench.sampler_bridge import SAMPLERS
+from bench.sampler_bridge import SAMPLERS, make_pless_post_temp_sampler
 
 
 def parse_args():
@@ -49,11 +49,16 @@ def parse_args():
                              "'bigcode' = zero-shot InCoder docstring (matches arXiv 2507.03160)")
     parser.add_argument("--task-ids", type=int, nargs="+", default=None,
                         help="Only run these specific task_ids (for targeted ablations)")
+    parser.add_argument("--post-temperature", type=float, default=None,
+                        help="Post-truncation temperature (T₂) for p-less variants. "
+                             "Applied after p-less threshold pruning to flatten survivor distribution.")
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
     if args.method == "beam" and args.num_beams is None:
         parser.error("--num-beams is required when --method is beam")
+    if args.post_temperature is not None and args.method not in SAMPLERS:
+        parser.error("--post-temperature only works with p-less methods")
     return args
 
 
@@ -73,6 +78,8 @@ def main():
         method_key = f"{method_key}_hybrid"
     if not is_instruct_model(args.model) and args.prompt_style == "begin_scaffold":
         method_key = f"{method_key}_bs"
+    if args.post_temperature is not None:
+        method_key = f"{method_key}_pt{args.post_temperature}"
     if not is_instruct_model(args.model) and args.prompt_style == "bigcode":
         method_key = f"{method_key}_bigcode"
     out_path = get_output_path(args.results_dir, args.model, method_key, args.temperature)
@@ -99,7 +106,10 @@ def main():
     model, tokenizer = load_model_and_tokenizer(args.model)
 
     if args.method not in ("temp", "top_p", "greedy", "beam"):
-        sampler_fn = SAMPLERS[args.method]
+        if args.post_temperature is not None:
+            sampler_fn = make_pless_post_temp_sampler(args.post_temperature)
+        else:
+            sampler_fn = SAMPLERS[args.method]
     instruct = is_instruct_model(args.model)
 
     # Stop sequences for base models only
@@ -189,6 +199,8 @@ def main():
                 record["top_p"] = args.top_p
             if args.method == "beam":
                 record["num_beams"] = args.num_beams
+            if args.post_temperature is not None:
+                record["post_temperature"] = args.post_temperature
             if task.get("test_setup_code"):
                 record["test_setup_code"] = task["test_setup_code"]
             append_result(out_path, record)

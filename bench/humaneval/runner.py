@@ -12,7 +12,7 @@ from bench.humaneval.prompts import (
     format_prompt_instruct,
     is_instruct_model,
 )
-from bench.sampler_bridge import SAMPLERS
+from bench.sampler_bridge import SAMPLERS, make_pless_post_temp_sampler
 
 METHODS = list(SAMPLERS.keys()) + ["temp", "top_p"]
 
@@ -31,9 +31,14 @@ def parse_args():
     parser.add_argument("--task-ids", nargs="+", default=None,
                         help="Only run specific task IDs (e.g., HumanEval/74 HumanEval/59)")
     parser.add_argument("--top-p", type=float, default=None, help="top_p for nucleus sampling (method=top_p)")
+    parser.add_argument("--post-temperature", type=float, default=None,
+                        help="Post-truncation temperature (T₂) for p-less variants. "
+                             "Applied after p-less threshold pruning to flatten survivor distribution.")
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
+    if args.post_temperature is not None and args.method not in SAMPLERS:
+        parser.error("--post-temperature only works with p-less methods")
     return args
 
 
@@ -51,6 +56,7 @@ def run_benchmark(
     no_stop: bool = False,
     task_ids: list[str] | None = None,
     top_p: float | None = None,
+    post_temperature: float | None = None,
 ):
     """Run HumanEval benchmark for a single (method, temperature) config.
 
@@ -58,6 +64,8 @@ def run_benchmark(
     or via the CLI main() which loads the model itself.
     """
     method_key = f"top_p{top_p}" if method == "top_p" else method
+    if post_temperature is not None:
+        method_key = f"{method_key}_pt{post_temperature}"
     out_path = get_output_path(results_dir, model_id, method_key, temperature, benchmark="humaneval")
 
     if no_resume and out_path.exists():
@@ -83,7 +91,13 @@ def run_benchmark(
         remaining = remaining[:max_problems]
     print(f"  Problems remaining: {len(remaining)} / {len(dataset)}")
 
-    sampler_fn = SAMPLERS.get(method) if method not in ("temp", "top_p") else None
+    if method not in ("temp", "top_p"):
+        if post_temperature is not None:
+            sampler_fn = make_pless_post_temp_sampler(post_temperature)
+        else:
+            sampler_fn = SAMPLERS.get(method)
+    else:
+        sampler_fn = None
 
     for task in tqdm(remaining, desc=f"{method}_t{temperature}"):
         task_id = task["task_id"]
@@ -131,6 +145,8 @@ def run_benchmark(
             }
             if method == "top_p":
                 record["top_p"] = top_p
+            if post_temperature is not None:
+                record["post_temperature"] = post_temperature
             append_result(out_path, record)
             tqdm.write(f"  Completed task_id={task_id}")
 
@@ -161,6 +177,7 @@ def main():
         no_stop=args.no_stop,
         task_ids=args.task_ids,
         top_p=args.top_p,
+        post_temperature=args.post_temperature,
     )
 
 
