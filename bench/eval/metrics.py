@@ -166,6 +166,8 @@ def add_self_codebleu(
             result["self_codebleu"] = None
             result["self_syntax_match"] = None
             result["self_dataflow_match"] = None
+            result["self_ngram_match"] = None
+            result["self_weighted_ngram_match"] = None
             continue
 
         # Deduplicate by AST fingerprint to avoid redundant expensive comparisons
@@ -183,9 +185,12 @@ def add_self_codebleu(
             result["self_codebleu"] = 0.0
             result["self_syntax_match"] = 0.0
             result["self_dataflow_match"] = 0.0
+            result["self_ngram_match"] = 0.0
+            result["self_weighted_ngram_match"] = 0.0
             continue
 
         bleu_scores, syntax_scores, dataflow_scores = [], [], []
+        ngram_scores, weighted_ngram_scores = [], []
         for i in range(len(unique_codes)):
             for j in range(i + 1, len(unique_codes)):
                 try:
@@ -197,6 +202,8 @@ def add_self_codebleu(
                     bleu_scores.append(res["codebleu"])
                     syntax_scores.append(res["syntax_match_score"])
                     dataflow_scores.append(res["dataflow_match_score"])
+                    ngram_scores.append(res["ngram_match_score"])
+                    weighted_ngram_scores.append(res["weighted_ngram_match_score"])
                 except Exception:
                     continue
 
@@ -204,17 +211,22 @@ def add_self_codebleu(
             result["self_codebleu"] = None
             result["self_syntax_match"] = None
             result["self_dataflow_match"] = None
+            result["self_ngram_match"] = None
+            result["self_weighted_ngram_match"] = None
             continue
 
         result["self_codebleu"] = round(1.0 - _mean(bleu_scores), 4)
         result["self_syntax_match"] = round(1.0 - _mean(syntax_scores), 4)
         result["self_dataflow_match"] = round(1.0 - _mean(dataflow_scores), 4)
+        result["self_ngram_match"] = round(1.0 - _mean(ngram_scores), 4)
+        result["self_weighted_ngram_match"] = round(1.0 - _mean(weighted_ngram_scores), 4)
 
 
 def compute_self_codebleu_diversity(task_results: list[dict]) -> dict[str, float]:
     """Compute aggregate CodeBLEU diversity metrics across tasks with >=2 correct solutions."""
     metrics = {}
-    for key in ("self_codebleu", "self_syntax_match", "self_dataflow_match"):
+    for key in ("self_codebleu", "self_syntax_match", "self_dataflow_match",
+                "self_ngram_match", "self_weighted_ngram_match"):
         values = [
             r[key] for r in task_results
             if r.get("num_correct", 0) >= 2 and r.get(key) is not None

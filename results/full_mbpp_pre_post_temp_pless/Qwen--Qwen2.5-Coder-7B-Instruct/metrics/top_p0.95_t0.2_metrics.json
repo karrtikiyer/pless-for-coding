@@ -25,9 +25,9 @@
     "0.7": 1.2
   },
   "structural_diversity": 0.099,
-  "codebleu_diversity": 0.2425,
+  "codebleu_diversity": 0.2424,
   "syntax_match_diversity": 0.2251,
-  "dataflow_match_diversity": 0.1395,
+  "dataflow_match_diversity": 0.1394,
   "per_task": [
     {
       "task_id": 11,
@@ -49,7 +49,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.352,
       "self_syntax_match": 0.1393,
-      "self_dataflow_match": 0.212
+      "self_dataflow_match": 0.212,
+      "self_ngram_match": 0.5752,
+      "self_weighted_ngram_match": 0.4818
     },
     {
       "task_id": 12,
@@ -71,7 +73,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6706,
       "self_syntax_match": 0.875,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.974,
+      "self_weighted_ngram_match": 0.8335
     },
     {
       "task_id": 13,
@@ -93,7 +97,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 14,
@@ -115,7 +121,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.4595,
       "self_syntax_match": 0.6724,
-      "self_dataflow_match": 0.0606
+      "self_dataflow_match": 0.0606,
+      "self_ngram_match": 0.6756,
+      "self_weighted_ngram_match": 0.4295
     },
     {
       "task_id": 15,
@@ -137,7 +145,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 16,
@@ -159,7 +169,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 17,
@@ -181,7 +193,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 18,
@@ -203,7 +217,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4914,
       "self_syntax_match": 0.4167,
-      "self_dataflow_match": 0.3961
+      "self_dataflow_match": 0.3961,
+      "self_ngram_match": 0.6725,
+      "self_weighted_ngram_match": 0.4805
     },
     {
       "task_id": 19,
@@ -225,7 +241,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.7565,
       "self_syntax_match": 0.7427,
-      "self_dataflow_match": 0.3667
+      "self_dataflow_match": 0.3667,
+      "self_ngram_match": 0.9772,
+      "self_weighted_ngram_match": 0.9393
     },
     {
       "task_id": 20,
@@ -247,7 +265,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 21,
@@ -269,7 +289,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.7697,
       "self_syntax_match": 0.8333,
-      "self_dataflow_match": 0.3333
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.9712,
+      "self_weighted_ngram_match": 0.941
     },
     {
       "task_id": 22,
@@ -291,7 +313,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 23,
@@ -313,7 +337,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 24,
@@ -333,9 +359,11 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.4561,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.6135,
+      "self_codebleu": 0.6165,
       "self_syntax_match": 0.5293,
-      "self_dataflow_match": 0.2761
+      "self_dataflow_match": 0.2881,
+      "self_ngram_match": 0.8432,
+      "self_weighted_ngram_match": 0.8055
     },
     {
       "task_id": 25,
@@ -357,7 +385,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.2996,
       "self_syntax_match": 0.3707,
-      "self_dataflow_match": 0.08
+      "self_dataflow_match": 0.08,
+      "self_ngram_match": 0.3823,
+      "self_weighted_ngram_match": 0.3654
     },
     {
       "task_id": 26,
@@ -379,7 +409,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 27,
@@ -401,7 +433,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 28,
@@ -423,7 +457,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.1764,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.1818
+      "self_dataflow_match": 0.1818,
+      "self_ngram_match": 0.2717,
+      "self_weighted_ngram_match": 0.2521
     },
     {
       "task_id": 29,
@@ -445,7 +481,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.3011,
       "self_syntax_match": 0.3333,
-      "self_dataflow_match": 0.3158
+      "self_dataflow_match": 0.3158,
+      "self_ngram_match": 0.3191,
+      "self_weighted_ngram_match": 0.2361
     },
     {
       "task_id": 30,
@@ -467,7 +505,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 31,
@@ -489,7 +529,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 32,
@@ -511,7 +553,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 33,
@@ -533,7 +577,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 34,
@@ -555,7 +601,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 35,
@@ -577,7 +625,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 36,
@@ -597,9 +647,11 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.2009,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.9028,
+      "self_codebleu": 0.8896,
       "self_syntax_match": 0.9565,
-      "self_dataflow_match": 0.6842
+      "self_dataflow_match": 0.6316,
+      "self_ngram_match": 0.9892,
+      "self_weighted_ngram_match": 0.9813
     },
     {
       "task_id": 37,
@@ -621,7 +673,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 38,
@@ -643,7 +697,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 39,
@@ -665,7 +721,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 40,
@@ -687,7 +745,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.1535,
       "self_syntax_match": 0.3158,
-      "self_dataflow_match": 0.1667
+      "self_dataflow_match": 0.1667,
+      "self_ngram_match": 0.0683,
+      "self_weighted_ngram_match": 0.0633
     },
     {
       "task_id": 41,
@@ -709,7 +769,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3707,
       "self_syntax_match": 0.2857,
-      "self_dataflow_match": 0.25
+      "self_dataflow_match": 0.25,
+      "self_ngram_match": 0.7071,
+      "self_weighted_ngram_match": 0.2402
     },
     {
       "task_id": 42,
@@ -731,7 +793,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.643,
       "self_syntax_match": 0.696,
-      "self_dataflow_match": 0.3556
+      "self_dataflow_match": 0.3556,
+      "self_ngram_match": 0.7683,
+      "self_weighted_ngram_match": 0.7522
     },
     {
       "task_id": 43,
@@ -753,7 +817,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 44,
@@ -775,7 +841,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 45,
@@ -797,7 +865,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 46,
@@ -819,7 +889,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 47,
@@ -841,7 +913,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 48,
@@ -863,7 +937,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 49,
@@ -885,7 +961,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 50,
@@ -907,7 +985,9 @@
       "num_ast_clusters": 4,
       "self_codebleu": 0.5921,
       "self_syntax_match": 0.6106,
-      "self_dataflow_match": 0.4217
+      "self_dataflow_match": 0.4217,
+      "self_ngram_match": 0.7325,
+      "self_weighted_ngram_match": 0.6035
     },
     {
       "task_id": 51,
@@ -929,7 +1009,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 52,
@@ -951,7 +1033,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 53,
@@ -973,7 +1057,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 54,
@@ -995,7 +1081,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3111,
       "self_syntax_match": 0.3156,
-      "self_dataflow_match": 0.1667
+      "self_dataflow_match": 0.1667,
+      "self_ngram_match": 0.4267,
+      "self_weighted_ngram_match": 0.3354
     },
     {
       "task_id": 55,
@@ -1017,7 +1105,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5867,
       "self_syntax_match": 0.7172,
-      "self_dataflow_match": 0.2222
+      "self_dataflow_match": 0.2222,
+      "self_ngram_match": 0.7204,
+      "self_weighted_ngram_match": 0.687
     },
     {
       "task_id": 56,
@@ -1039,7 +1129,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 57,
@@ -1061,7 +1153,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.7335,
       "self_syntax_match": 0.3,
-      "self_dataflow_match": 0.7
+      "self_dataflow_match": 0.7,
+      "self_ngram_match": 0.9706,
+      "self_weighted_ngram_match": 0.9636
     },
     {
       "task_id": 58,
@@ -1083,7 +1177,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 59,
@@ -1105,7 +1201,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 60,
@@ -1127,7 +1225,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 61,
@@ -1147,9 +1247,11 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.3195,
       "num_ast_clusters": 4,
-      "self_codebleu": 0.6216,
+      "self_codebleu": 0.6299,
       "self_syntax_match": 0.4925,
-      "self_dataflow_match": 0.4275
+      "self_dataflow_match": 0.4609,
+      "self_ngram_match": 0.7945,
+      "self_weighted_ngram_match": 0.7717
     },
     {
       "task_id": 62,
@@ -1171,7 +1273,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6629,
       "self_syntax_match": 0.8571,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.9922,
+      "self_weighted_ngram_match": 0.8023
     },
     {
       "task_id": 63,
@@ -1193,7 +1297,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 64,
@@ -1215,7 +1321,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6762,
       "self_syntax_match": 0.6154,
-      "self_dataflow_match": 0.2
+      "self_dataflow_match": 0.2,
+      "self_ngram_match": 0.9738,
+      "self_weighted_ngram_match": 0.9155
     },
     {
       "task_id": 65,
@@ -1237,7 +1345,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 66,
@@ -1259,7 +1369,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 67,
@@ -1281,7 +1393,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 68,
@@ -1303,7 +1417,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 69,
@@ -1325,7 +1441,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.3728,
       "self_syntax_match": 0.1404,
-      "self_dataflow_match": 0.0645
+      "self_dataflow_match": 0.0645,
+      "self_ngram_match": 0.6535,
+      "self_weighted_ngram_match": 0.6328
     },
     {
       "task_id": 70,
@@ -1347,7 +1465,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3625,
       "self_syntax_match": 0.5263,
-      "self_dataflow_match": 0.4
+      "self_dataflow_match": 0.4,
+      "self_ngram_match": 0.2671,
+      "self_weighted_ngram_match": 0.2564
     },
     {
       "task_id": 71,
@@ -1369,7 +1489,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 72,
@@ -1391,7 +1513,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 73,
@@ -1413,7 +1537,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 74,
@@ -1435,7 +1561,9 @@
       "num_ast_clusters": 4,
       "self_codebleu": 0.4192,
       "self_syntax_match": 0.3143,
-      "self_dataflow_match": 0.3142
+      "self_dataflow_match": 0.3142,
+      "self_ngram_match": 0.5579,
+      "self_weighted_ngram_match": 0.4905
     },
     {
       "task_id": 75,
@@ -1457,7 +1585,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 76,
@@ -1479,7 +1609,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 77,
@@ -1501,7 +1633,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 78,
@@ -1523,7 +1657,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.9346,
       "self_syntax_match": 0.9167,
-      "self_dataflow_match": 0.8571
+      "self_dataflow_match": 0.8571,
+      "self_ngram_match": 0.9887,
+      "self_weighted_ngram_match": 0.9761
     },
     {
       "task_id": 79,
@@ -1545,7 +1681,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 80,
@@ -1567,7 +1705,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 81,
@@ -1589,7 +1729,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.3112,
       "self_syntax_match": 0.5135,
-      "self_dataflow_match": 0.2389
+      "self_dataflow_match": 0.2389,
+      "self_ngram_match": 0.2625,
+      "self_weighted_ngram_match": 0.23
     },
     {
       "task_id": 82,
@@ -1611,7 +1753,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 83,
@@ -1633,7 +1777,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 84,
@@ -1655,7 +1801,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 85,
@@ -1677,7 +1825,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 86,
@@ -1699,7 +1849,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 87,
@@ -1721,7 +1873,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 88,
@@ -1743,7 +1897,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.7715,
       "self_syntax_match": 0.7442,
-      "self_dataflow_match": 0.5379
+      "self_dataflow_match": 0.5379,
+      "self_ngram_match": 0.922,
+      "self_weighted_ngram_match": 0.8821
     },
     {
       "task_id": 89,
@@ -1765,7 +1921,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 90,
@@ -1787,7 +1945,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4418,
       "self_syntax_match": 0.5,
-      "self_dataflow_match": 0.75
+      "self_dataflow_match": 0.75,
+      "self_ngram_match": 0.2649,
+      "self_weighted_ngram_match": 0.2522
     },
     {
       "task_id": 91,
@@ -1809,7 +1969,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6954,
       "self_syntax_match": 0.8182,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.9865,
+      "self_weighted_ngram_match": 0.977
     },
     {
       "task_id": 92,
@@ -1829,9 +1991,11 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.1538,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.6593,
+      "self_codebleu": 0.6208,
       "self_syntax_match": 0.5833,
-      "self_dataflow_match": 0.5385
+      "self_dataflow_match": 0.3846,
+      "self_ngram_match": 0.8334,
+      "self_weighted_ngram_match": 0.682
     },
     {
       "task_id": 93,
@@ -1853,7 +2017,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6499,
       "self_syntax_match": 0.8333,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.986,
+      "self_weighted_ngram_match": 0.7802
     },
     {
       "task_id": 94,
@@ -1875,7 +2041,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 95,
@@ -1897,7 +2065,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.7177,
       "self_syntax_match": 0.4,
-      "self_dataflow_match": 0.5
+      "self_dataflow_match": 0.5,
+      "self_ngram_match": 0.9882,
+      "self_weighted_ngram_match": 0.9824
     },
     {
       "task_id": 96,
@@ -1919,7 +2089,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 97,
@@ -1941,7 +2113,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 98,
@@ -1963,7 +2137,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 99,
@@ -1985,7 +2161,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 100,
@@ -2005,9 +2183,11 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.28,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.8322,
+      "self_codebleu": 0.8044,
       "self_syntax_match": 0.4737,
-      "self_dataflow_match": 0.8889
+      "self_dataflow_match": 0.7778,
+      "self_ngram_match": 0.9879,
+      "self_weighted_ngram_match": 0.9782
     },
     {
       "task_id": 101,
@@ -2029,7 +2209,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 102,
@@ -2051,7 +2233,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 103,
@@ -2073,7 +2257,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 104,
@@ -2095,7 +2281,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 105,
@@ -2117,7 +2305,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 106,
@@ -2139,7 +2329,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.6201,
       "self_syntax_match": 0.5556,
-      "self_dataflow_match": 0.125
+      "self_dataflow_match": 0.125,
+      "self_ngram_match": 0.9181,
+      "self_weighted_ngram_match": 0.8819
     },
     {
       "task_id": 107,
@@ -2159,9 +2351,11 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.6066,
       "num_ast_clusters": 3,
-      "self_codebleu": 0.5779,
+      "self_codebleu": 0.5889,
       "self_syntax_match": 0.3457,
-      "self_dataflow_match": 0.5729
+      "self_dataflow_match": 0.6167,
+      "self_ngram_match": 0.7983,
+      "self_weighted_ngram_match": 0.5948
     },
     {
       "task_id": 108,
@@ -2183,7 +2377,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 109,
@@ -2205,7 +2401,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 110,
@@ -2227,7 +2425,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 111,
@@ -2249,7 +2449,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 112,
@@ -2271,7 +2473,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 113,
@@ -2293,7 +2497,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 114,
@@ -2315,7 +2521,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 115,
@@ -2337,7 +2545,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 116,
@@ -2359,7 +2569,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 117,
@@ -2379,9 +2591,11 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.4407,
       "num_ast_clusters": 4,
-      "self_codebleu": 0.6445,
+      "self_codebleu": 0.6442,
       "self_syntax_match": 0.6452,
-      "self_dataflow_match": 0.6276
+      "self_dataflow_match": 0.6264,
+      "self_ngram_match": 0.6901,
+      "self_weighted_ngram_match": 0.615
     },
     {
       "task_id": 118,
@@ -2403,7 +2617,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.8539,
       "self_syntax_match": 0.8462,
-      "self_dataflow_match": 0.7143
+      "self_dataflow_match": 0.7143,
+      "self_ngram_match": 0.9308,
+      "self_weighted_ngram_match": 0.9244
     },
     {
       "task_id": 119,
@@ -2423,9 +2639,11 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.4376,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.4896,
+      "self_codebleu": 0.474,
       "self_syntax_match": 0.3276,
-      "self_dataflow_match": 0.2631
+      "self_dataflow_match": 0.2006,
+      "self_ngram_match": 0.7173,
+      "self_weighted_ngram_match": 0.6506
     },
     {
       "task_id": 120,
@@ -2447,7 +2665,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 121,
@@ -2469,7 +2689,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 122,
@@ -2491,7 +2713,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 123,
@@ -2513,7 +2737,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 124,
@@ -2535,7 +2761,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 125,
@@ -2557,7 +2785,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.3651,
       "self_syntax_match": 0.2121,
-      "self_dataflow_match": 0.6087
+      "self_dataflow_match": 0.6087,
+      "self_ngram_match": 0.3248,
+      "self_weighted_ngram_match": 0.3146
     },
     {
       "task_id": 126,
@@ -2577,9 +2807,11 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.2469,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.6792,
+      "self_codebleu": 0.6923,
       "self_syntax_match": 0.4074,
-      "self_dataflow_match": 0.4211
+      "self_dataflow_match": 0.4737,
+      "self_ngram_match": 0.9531,
+      "self_weighted_ngram_match": 0.9352
     },
     {
       "task_id": 127,
@@ -2601,7 +2833,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4853,
       "self_syntax_match": 0.3333,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.8144,
+      "self_weighted_ngram_match": 0.7937
     },
     {
       "task_id": 128,
@@ -2623,7 +2857,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.1717,
       "self_syntax_match": 0.1569,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.2984,
+      "self_weighted_ngram_match": 0.2315
     },
     {
       "task_id": 129,
@@ -2643,9 +2879,11 @@
       "num_distinct_correct": 6,
       "mean_pairwise_distance": 0.274,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.4384,
+      "self_codebleu": 0.4439,
       "self_syntax_match": 0.3084,
-      "self_dataflow_match": 0.2121
+      "self_dataflow_match": 0.2338,
+      "self_ngram_match": 0.6428,
+      "self_weighted_ngram_match": 0.5905
     },
     {
       "task_id": 130,
@@ -2667,7 +2905,9 @@
       "num_ast_clusters": 4,
       "self_codebleu": 0.6085,
       "self_syntax_match": 0.5304,
-      "self_dataflow_match": 0.5321
+      "self_dataflow_match": 0.5321,
+      "self_ngram_match": 0.711,
+      "self_weighted_ngram_match": 0.6604
     },
     {
       "task_id": 131,
@@ -2689,7 +2929,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 132,
@@ -2711,7 +2953,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 133,
@@ -2733,7 +2977,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 134,
@@ -2755,7 +3001,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 135,
@@ -2777,7 +3025,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 136,
@@ -2799,7 +3049,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 137,
@@ -2821,7 +3073,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3935,
       "self_syntax_match": 0.4286,
-      "self_dataflow_match": 0.2667
+      "self_dataflow_match": 0.2667,
+      "self_ngram_match": 0.4473,
+      "self_weighted_ngram_match": 0.4315
     },
     {
       "task_id": 138,
@@ -2843,7 +3097,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 139,
@@ -2865,7 +3121,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6266,
       "self_syntax_match": 0.8571,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.8582,
+      "self_weighted_ngram_match": 0.7911
     },
     {
       "task_id": 140,
@@ -2887,7 +3145,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 141,
@@ -2909,7 +3169,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.2119,
       "self_syntax_match": 0.1515,
-      "self_dataflow_match": 0.2303
+      "self_dataflow_match": 0.2303,
+      "self_ngram_match": 0.2445,
+      "self_weighted_ngram_match": 0.2213
     },
     {
       "task_id": 142,
@@ -2931,7 +3193,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.3846,
       "self_syntax_match": 0.3333,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.6311,
+      "self_weighted_ngram_match": 0.5741
     },
     {
       "task_id": 143,
@@ -2953,7 +3217,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 144,
@@ -2975,7 +3241,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.1614,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.3288,
+      "self_weighted_ngram_match": 0.317
     },
     {
       "task_id": 145,
@@ -2997,7 +3265,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 146,
@@ -3019,7 +3289,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 147,
@@ -3041,7 +3313,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5712,
       "self_syntax_match": 0.3617,
-      "self_dataflow_match": 0.3529
+      "self_dataflow_match": 0.3529,
+      "self_ngram_match": 0.832,
+      "self_weighted_ngram_match": 0.738
     },
     {
       "task_id": 148,
@@ -3063,7 +3337,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 149,
@@ -3085,7 +3361,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0609,
       "self_syntax_match": 0.2143,
-      "self_dataflow_match": 0.0294
+      "self_dataflow_match": 0.0294,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 150,
@@ -3107,7 +3385,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0665,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.1361,
+      "self_weighted_ngram_match": 0.1298
     },
     {
       "task_id": 151,
@@ -3129,7 +3409,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5008,
       "self_syntax_match": 0.5119,
-      "self_dataflow_match": 0.0683
+      "self_dataflow_match": 0.0683,
+      "self_ngram_match": 0.7494,
+      "self_weighted_ngram_match": 0.6738
     },
     {
       "task_id": 152,
@@ -3151,7 +3433,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 153,
@@ -3173,7 +3457,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4383,
       "self_syntax_match": 0.5238,
-      "self_dataflow_match": 0.25
+      "self_dataflow_match": 0.25,
+      "self_ngram_match": 0.4938,
+      "self_weighted_ngram_match": 0.4855
     },
     {
       "task_id": 154,
@@ -3195,7 +3481,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 155,
@@ -3217,7 +3505,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4741,
       "self_syntax_match": 0.2459,
-      "self_dataflow_match": 0.3333
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.73,
+      "self_weighted_ngram_match": 0.5871
     },
     {
       "task_id": 156,
@@ -3239,7 +3529,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 157,
@@ -3261,7 +3553,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 158,
@@ -3283,7 +3577,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 159,
@@ -3305,7 +3601,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3718,
       "self_syntax_match": 0.3376,
-      "self_dataflow_match": 0.084
+      "self_dataflow_match": 0.084,
+      "self_ngram_match": 0.5588,
+      "self_weighted_ngram_match": 0.5066
     },
     {
       "task_id": 160,
@@ -3325,9 +3623,11 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.3119,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.4231,
+      "self_codebleu": 0.4363,
       "self_syntax_match": 0.5806,
-      "self_dataflow_match": 0.2632
+      "self_dataflow_match": 0.3158,
+      "self_ngram_match": 0.5465,
+      "self_weighted_ngram_match": 0.3022
     },
     {
       "task_id": 161,
@@ -3349,7 +3649,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 162,
@@ -3371,7 +3673,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 163,
@@ -3393,7 +3697,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.235,
       "self_syntax_match": 0.3,
-      "self_dataflow_match": 0.3077
+      "self_dataflow_match": 0.3077,
+      "self_ngram_match": 0.17,
+      "self_weighted_ngram_match": 0.1624
     },
     {
       "task_id": 164,
@@ -3413,9 +3719,11 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.3025,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.606,
+      "self_codebleu": 0.5933,
       "self_syntax_match": 0.4069,
-      "self_dataflow_match": 0.4962
+      "self_dataflow_match": 0.4454,
+      "self_ngram_match": 0.7734,
+      "self_weighted_ngram_match": 0.7474
     },
     {
       "task_id": 165,
@@ -3437,7 +3745,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.5492,
       "self_syntax_match": 0.489,
-      "self_dataflow_match": 0.2737
+      "self_dataflow_match": 0.2737,
+      "self_ngram_match": 0.7372,
+      "self_weighted_ngram_match": 0.6967
     },
     {
       "task_id": 166,
@@ -3459,7 +3769,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 167,
@@ -3481,7 +3793,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 168,
@@ -3503,7 +3817,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 169,
@@ -3525,7 +3841,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.5259,
       "self_syntax_match": 0.5679,
-      "self_dataflow_match": 0.3632
+      "self_dataflow_match": 0.3632,
+      "self_ngram_match": 0.6178,
+      "self_weighted_ngram_match": 0.5548
     },
     {
       "task_id": 170,
@@ -3547,7 +3865,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 171,
@@ -3569,7 +3889,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6278,
       "self_syntax_match": 0.8333,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.8391,
+      "self_weighted_ngram_match": 0.8387
     },
     {
       "task_id": 172,
@@ -3591,7 +3913,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 173,
@@ -3613,7 +3937,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6215,
       "self_syntax_match": 0.3857,
-      "self_dataflow_match": 0.3704
+      "self_dataflow_match": 0.3704,
+      "self_ngram_match": 0.8707,
+      "self_weighted_ngram_match": 0.8591
     },
     {
       "task_id": 174,
@@ -3635,7 +3961,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 175,
@@ -3657,7 +3985,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0551,
       "self_syntax_match": 0.1304,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0827,
+      "self_weighted_ngram_match": 0.0072
     },
     {
       "task_id": 176,
@@ -3679,7 +4009,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 177,
@@ -3701,7 +4033,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 178,
@@ -3723,7 +4057,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 179,
@@ -3745,7 +4081,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.5696,
       "self_syntax_match": 0.5563,
-      "self_dataflow_match": 0.1789
+      "self_dataflow_match": 0.1789,
+      "self_ngram_match": 0.8012,
+      "self_weighted_ngram_match": 0.742
     },
     {
       "task_id": 180,
@@ -3767,7 +4105,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 181,
@@ -3787,9 +4127,11 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.3692,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.5799,
+      "self_codebleu": 0.6174,
       "self_syntax_match": 0.5556,
-      "self_dataflow_match": 0.2
+      "self_dataflow_match": 0.35,
+      "self_ngram_match": 0.8673,
+      "self_weighted_ngram_match": 0.6968
     },
     {
       "task_id": 182,
@@ -3811,7 +4153,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.2933,
       "self_syntax_match": 0.1026,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.5406,
+      "self_weighted_ngram_match": 0.5303
     },
     {
       "task_id": 183,
@@ -3833,7 +4177,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3409,
       "self_syntax_match": 0.5,
-      "self_dataflow_match": 0.0909
+      "self_dataflow_match": 0.0909,
+      "self_ngram_match": 0.4614,
+      "self_weighted_ngram_match": 0.3111
     },
     {
       "task_id": 184,
@@ -3855,7 +4201,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 185,
@@ -3877,7 +4225,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 186,
@@ -3899,7 +4249,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 187,
@@ -3921,7 +4273,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.2815,
       "self_syntax_match": 0.0791,
-      "self_dataflow_match": 0.3715
+      "self_dataflow_match": 0.3715,
+      "self_ngram_match": 0.3599,
+      "self_weighted_ngram_match": 0.3156
     },
     {
       "task_id": 188,
@@ -3943,7 +4297,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 189,
@@ -3965,7 +4321,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 190,
@@ -3987,7 +4345,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 191,
@@ -4009,7 +4369,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 192,
@@ -4031,7 +4393,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4348,
       "self_syntax_match": 0.4348,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.6597,
+      "self_weighted_ngram_match": 0.6446
     },
     {
       "task_id": 193,
@@ -4053,7 +4417,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 194,
@@ -4073,9 +4439,11 @@
       "num_distinct_correct": 7,
       "mean_pairwise_distance": 0.2957,
       "num_ast_clusters": 4,
-      "self_codebleu": 0.5363,
+      "self_codebleu": 0.5391,
       "self_syntax_match": 0.3805,
-      "self_dataflow_match": 0.4288
+      "self_dataflow_match": 0.44,
+      "self_ngram_match": 0.6802,
+      "self_weighted_ngram_match": 0.6558
     },
     {
       "task_id": 195,
@@ -4097,7 +4465,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 196,
@@ -4119,7 +4489,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 197,
@@ -4141,7 +4513,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.679,
       "self_syntax_match": 0.8571,
-      "self_dataflow_match": 0.3333
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.7714,
+      "self_weighted_ngram_match": 0.754
     },
     {
       "task_id": 198,
@@ -4163,7 +4537,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 199,
@@ -4183,9 +4559,11 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.314,
       "num_ast_clusters": 3,
-      "self_codebleu": 0.6638,
+      "self_codebleu": 0.6846,
       "self_syntax_match": 0.6749,
-      "self_dataflow_match": 0.2692
+      "self_dataflow_match": 0.3526,
+      "self_ngram_match": 0.8694,
+      "self_weighted_ngram_match": 0.8417
     },
     {
       "task_id": 200,
@@ -4207,7 +4585,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5026,
       "self_syntax_match": 0.25,
-      "self_dataflow_match": 0.3636
+      "self_dataflow_match": 0.3636,
+      "self_ngram_match": 0.8448,
+      "self_weighted_ngram_match": 0.552
     },
     {
       "task_id": 201,
@@ -4229,7 +4609,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 202,
@@ -4251,7 +4633,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 203,
@@ -4273,7 +4657,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 204,
@@ -4295,7 +4681,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 205,
@@ -4317,7 +4705,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 206,
@@ -4339,7 +4729,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.8037,
       "self_syntax_match": 0.9375,
-      "self_dataflow_match": 0.3333
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.9744,
+      "self_weighted_ngram_match": 0.9694
     },
     {
       "task_id": 207,
@@ -4361,7 +4753,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.2453,
       "self_syntax_match": 0.1077,
-      "self_dataflow_match": 0.5556
+      "self_dataflow_match": 0.5556,
+      "self_ngram_match": 0.1559,
+      "self_weighted_ngram_match": 0.1622
     },
     {
       "task_id": 208,
@@ -4383,7 +4777,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.4471,
       "self_syntax_match": 0.4934,
-      "self_dataflow_match": 0.2143
+      "self_dataflow_match": 0.2143,
+      "self_ngram_match": 0.5982,
+      "self_weighted_ngram_match": 0.4824
     },
     {
       "task_id": 209,
@@ -4405,7 +4801,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 210,
@@ -4427,7 +4825,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.4706,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.9775,
+      "self_weighted_ngram_match": 0.9051
     },
     {
       "task_id": 211,
@@ -4449,7 +4849,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 212,
@@ -4471,7 +4873,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.8942,
       "self_syntax_match": 0.8,
-      "self_dataflow_match": 0.8333
+      "self_dataflow_match": 0.8333,
+      "self_ngram_match": 0.9788,
+      "self_weighted_ngram_match": 0.9649
     },
     {
       "task_id": 213,
@@ -4493,7 +4897,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4984,
       "self_syntax_match": 0.7143,
-      "self_dataflow_match": 0.5
+      "self_dataflow_match": 0.5,
+      "self_ngram_match": 0.392,
+      "self_weighted_ngram_match": 0.3874
     },
     {
       "task_id": 214,
@@ -4515,7 +4921,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6042,
       "self_syntax_match": 0.5455,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.9387,
+      "self_weighted_ngram_match": 0.9328
     },
     {
       "task_id": 215,
@@ -4537,7 +4945,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 216,
@@ -4559,7 +4969,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 217,
@@ -4581,7 +4993,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 218,
@@ -4603,7 +5017,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 219,
@@ -4625,7 +5041,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 220,
@@ -4647,7 +5065,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 221,
@@ -4669,7 +5089,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4465,
       "self_syntax_match": 0.6667,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.6086,
+      "self_weighted_ngram_match": 0.5107
     },
     {
       "task_id": 222,
@@ -4691,7 +5113,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 223,
@@ -4713,7 +5137,9 @@
       "num_ast_clusters": 5,
       "self_codebleu": 0.444,
       "self_syntax_match": 0.3964,
-      "self_dataflow_match": 0.4117
+      "self_dataflow_match": 0.4117,
+      "self_ngram_match": 0.5152,
+      "self_weighted_ngram_match": 0.4527
     },
     {
       "task_id": 224,
@@ -4735,7 +5161,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6628,
       "self_syntax_match": 0.7078,
-      "self_dataflow_match": 0.2667
+      "self_dataflow_match": 0.2667,
+      "self_ngram_match": 0.9394,
+      "self_weighted_ngram_match": 0.7374
     },
     {
       "task_id": 225,
@@ -4757,7 +5185,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 226,
@@ -4777,9 +5207,11 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.4534,
       "num_ast_clusters": 4,
-      "self_codebleu": 0.7361,
+      "self_codebleu": 0.7382,
       "self_syntax_match": 0.6707,
-      "self_dataflow_match": 0.4742
+      "self_dataflow_match": 0.4826,
+      "self_ngram_match": 0.9186,
+      "self_weighted_ngram_match": 0.8811
     },
     {
       "task_id": 227,
@@ -4801,7 +5233,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 228,
@@ -4823,7 +5257,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3769,
       "self_syntax_match": 0.6667,
-      "self_dataflow_match": 0.1538
+      "self_dataflow_match": 0.1538,
+      "self_ngram_match": 0.3463,
+      "self_weighted_ngram_match": 0.341
     },
     {
       "task_id": 229,
@@ -4845,7 +5281,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 230,
@@ -4867,7 +5305,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4333,
       "self_syntax_match": 0.4444,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.6809,
+      "self_weighted_ngram_match": 0.6077
     },
     {
       "task_id": 231,
@@ -4889,7 +5329,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 232,
@@ -4911,7 +5353,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 233,
@@ -4933,7 +5377,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 234,
@@ -4955,7 +5401,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 235,
@@ -4977,7 +5425,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6504,
       "self_syntax_match": 0.4333,
-      "self_dataflow_match": 0.5
+      "self_dataflow_match": 0.5,
+      "self_ngram_match": 0.8381,
+      "self_weighted_ngram_match": 0.83
     },
     {
       "task_id": 236,
@@ -4999,7 +5449,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 237,
@@ -5021,7 +5473,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 238,
@@ -5043,7 +5497,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 239,
@@ -5063,9 +5519,11 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.0524,
       "num_ast_clusters": 1,
-      "self_codebleu": 0.1826,
+      "self_codebleu": 0.1786,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.3095
+      "self_dataflow_match": 0.2937,
+      "self_ngram_match": 0.2142,
+      "self_weighted_ngram_match": 0.2065
     },
     {
       "task_id": 240,
@@ -5087,7 +5545,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 241,
@@ -5109,7 +5569,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 242,
@@ -5131,7 +5593,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 243,
@@ -5153,7 +5617,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 244,
@@ -5175,7 +5641,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5842,
       "self_syntax_match": 0.375,
-      "self_dataflow_match": 0.4
+      "self_dataflow_match": 0.4,
+      "self_ngram_match": 0.9034,
+      "self_weighted_ngram_match": 0.6583
     },
     {
       "task_id": 245,
@@ -5195,9 +5663,11 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.173,
       "num_ast_clusters": 4,
-      "self_codebleu": 0.4372,
+      "self_codebleu": 0.4379,
       "self_syntax_match": 0.1541,
-      "self_dataflow_match": 0.4293
+      "self_dataflow_match": 0.4321,
+      "self_ngram_match": 0.6217,
+      "self_weighted_ngram_match": 0.5436
     },
     {
       "task_id": 246,
@@ -5219,7 +5689,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 247,
@@ -5241,7 +5713,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.7139,
       "self_syntax_match": 0.4302,
-      "self_dataflow_match": 0.6714
+      "self_dataflow_match": 0.6714,
+      "self_ngram_match": 0.8976,
+      "self_weighted_ngram_match": 0.8565
     },
     {
       "task_id": 248,
@@ -5263,7 +5737,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 249,
@@ -5285,7 +5761,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 250,
@@ -5307,7 +5785,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 251,
@@ -5329,7 +5809,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.6783,
       "self_syntax_match": 0.6931,
-      "self_dataflow_match": 0.3068
+      "self_dataflow_match": 0.3068,
+      "self_ngram_match": 0.8737,
+      "self_weighted_ngram_match": 0.8395
     },
     {
       "task_id": 252,
@@ -5351,7 +5833,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 253,
@@ -5373,7 +5857,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 254,
@@ -5395,7 +5881,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 255,
@@ -5417,7 +5905,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 256,
@@ -5437,9 +5927,11 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.4188,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.5413,
+      "self_codebleu": 0.5357,
       "self_syntax_match": 0.4833,
-      "self_dataflow_match": 0.4833
+      "self_dataflow_match": 0.4611,
+      "self_ngram_match": 0.6118,
+      "self_weighted_ngram_match": 0.5867
     },
     {
       "task_id": 257,
@@ -5461,7 +5953,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 258,
@@ -5483,7 +5977,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 259,
@@ -5505,7 +6001,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 260,
@@ -5527,7 +6025,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 261,
@@ -5549,7 +6049,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.7067,
       "self_syntax_match": 0.7857,
-      "self_dataflow_match": 0.3333
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.8562,
+      "self_weighted_ngram_match": 0.8518
     },
     {
       "task_id": 262,
@@ -5571,7 +6073,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 263,
@@ -5593,7 +6097,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 264,
@@ -5615,7 +6121,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 265,
@@ -5637,7 +6145,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 266,
@@ -5659,7 +6169,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 267,
@@ -5681,7 +6193,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 268,
@@ -5703,7 +6217,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.363,
       "self_syntax_match": 0.3636,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.6858,
+      "self_weighted_ngram_match": 0.4027
     },
     {
       "task_id": 269,
@@ -5725,7 +6241,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 270,
@@ -5747,7 +6265,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.161,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.3291,
+      "self_weighted_ngram_match": 0.3147
     },
     {
       "task_id": 271,
@@ -5769,7 +6289,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.1524,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.3108,
+      "self_weighted_ngram_match": 0.2987
     },
     {
       "task_id": 272,
@@ -5791,7 +6313,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 273,
@@ -5813,7 +6337,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.7417,
       "self_syntax_match": 0.7857,
-      "self_dataflow_match": 0.3333
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.9273,
+      "self_weighted_ngram_match": 0.9205
     },
     {
       "task_id": 274,
@@ -5835,7 +6361,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 275,
@@ -5857,7 +6385,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 276,
@@ -5879,7 +6409,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 277,
@@ -5901,7 +6433,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 278,
@@ -5923,7 +6457,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 279,
@@ -5945,7 +6481,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 280,
@@ -5967,7 +6505,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 281,
@@ -5989,7 +6529,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 282,
@@ -6011,7 +6553,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 283,
@@ -6033,7 +6577,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.723,
       "self_syntax_match": 0.7194,
-      "self_dataflow_match": 0.5764
+      "self_dataflow_match": 0.5764,
+      "self_ngram_match": 0.8081,
+      "self_weighted_ngram_match": 0.7883
     },
     {
       "task_id": 284,
@@ -6055,7 +6601,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 285,
@@ -6077,7 +6625,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 286,
@@ -6099,7 +6649,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 287,
@@ -6121,7 +6673,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 288,
@@ -6143,7 +6697,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 289,
@@ -6165,7 +6721,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 290,
@@ -6187,7 +6745,9 @@
       "num_ast_clusters": 4,
       "self_codebleu": 0.5222,
       "self_syntax_match": 0.5412,
-      "self_dataflow_match": 0.3432
+      "self_dataflow_match": 0.3432,
+      "self_ngram_match": 0.7401,
+      "self_weighted_ngram_match": 0.4644
     },
     {
       "task_id": 291,
@@ -6209,7 +6769,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0536,
       "self_syntax_match": 0.0652,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0746,
+      "self_weighted_ngram_match": 0.0746
     },
     {
       "task_id": 292,
@@ -6231,7 +6793,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 293,
@@ -6253,7 +6817,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 294,
@@ -6275,7 +6841,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4146,
       "self_syntax_match": 0.3636,
-      "self_dataflow_match": 0.6
+      "self_dataflow_match": 0.6,
+      "self_ngram_match": 0.3919,
+      "self_weighted_ngram_match": 0.3029
     },
     {
       "task_id": 295,
@@ -6295,9 +6863,11 @@
       "num_distinct_correct": 7,
       "mean_pairwise_distance": 0.4536,
       "num_ast_clusters": 5,
-      "self_codebleu": 0.4918,
+      "self_codebleu": 0.502,
       "self_syntax_match": 0.4777,
-      "self_dataflow_match": 0.2198
+      "self_dataflow_match": 0.2606,
+      "self_ngram_match": 0.692,
+      "self_weighted_ngram_match": 0.5777
     },
     {
       "task_id": 296,
@@ -6319,7 +6889,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.5938,
       "self_syntax_match": 0.4708,
-      "self_dataflow_match": 0.635
+      "self_dataflow_match": 0.635,
+      "self_ngram_match": 0.6496,
+      "self_weighted_ngram_match": 0.6197
     },
     {
       "task_id": 297,
@@ -6341,7 +6913,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 298,
@@ -6363,7 +6937,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 299,
@@ -6385,7 +6961,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 300,
@@ -6407,7 +6985,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5157,
       "self_syntax_match": 0.4818,
-      "self_dataflow_match": 0.4402
+      "self_dataflow_match": 0.4402,
+      "self_ngram_match": 0.5864,
+      "self_weighted_ngram_match": 0.5543
     },
     {
       "task_id": 301,
@@ -6429,7 +7009,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 302,
@@ -6451,7 +7033,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.622,
       "self_syntax_match": 0.5194,
-      "self_dataflow_match": 0.3889
+      "self_dataflow_match": 0.3889,
+      "self_ngram_match": 0.8099,
+      "self_weighted_ngram_match": 0.7698
     },
     {
       "task_id": 303,
@@ -6473,7 +7057,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 304,
@@ -6495,7 +7081,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 305,
@@ -6517,7 +7105,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 306,
@@ -6539,7 +7129,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 307,
@@ -6561,7 +7153,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 308,
@@ -6583,7 +7177,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3217,
       "self_syntax_match": 0.4064,
-      "self_dataflow_match": 0.101
+      "self_dataflow_match": 0.101,
+      "self_ngram_match": 0.4727,
+      "self_weighted_ngram_match": 0.3067
     },
     {
       "task_id": 309,
@@ -6605,7 +7201,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 310,
@@ -6627,7 +7225,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 311,
@@ -6649,7 +7249,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 312,
@@ -6671,7 +7273,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 313,
@@ -6693,7 +7297,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 314,
@@ -6715,7 +7321,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.3985,
       "self_syntax_match": 0.0556,
-      "self_dataflow_match": 0.0196
+      "self_dataflow_match": 0.0196,
+      "self_ngram_match": 0.7849,
+      "self_weighted_ngram_match": 0.734
     },
     {
       "task_id": 315,
@@ -6737,7 +7345,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.2687,
       "self_syntax_match": 0.2368,
-      "self_dataflow_match": 0.0455
+      "self_dataflow_match": 0.0455,
+      "self_ngram_match": 0.3975,
+      "self_weighted_ngram_match": 0.3948
     },
     {
       "task_id": 316,
@@ -6759,7 +7369,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 317,
@@ -6781,7 +7393,9 @@
       "num_ast_clusters": 5,
       "self_codebleu": 0.6395,
       "self_syntax_match": 0.5098,
-      "self_dataflow_match": 0.4983
+      "self_dataflow_match": 0.4983,
+      "self_ngram_match": 0.7904,
+      "self_weighted_ngram_match": 0.7596
     },
     {
       "task_id": 318,
@@ -6803,7 +7417,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 319,
@@ -6825,7 +7441,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 320,
@@ -6845,9 +7463,11 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.5894,
       "num_ast_clusters": 4,
-      "self_codebleu": 0.8039,
+      "self_codebleu": 0.8045,
       "self_syntax_match": 0.7297,
-      "self_dataflow_match": 0.7261
+      "self_dataflow_match": 0.7281,
+      "self_ngram_match": 0.8939,
+      "self_weighted_ngram_match": 0.866
     },
     {
       "task_id": 321,
@@ -6869,7 +7489,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.2282,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.6667
+      "self_dataflow_match": 0.6667,
+      "self_ngram_match": 0.1248,
+      "self_weighted_ngram_match": 0.1215
     },
     {
       "task_id": 322,
@@ -6891,7 +7513,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6286,
       "self_syntax_match": 0.3333,
-      "self_dataflow_match": 0.4615
+      "self_dataflow_match": 0.4615,
+      "self_ngram_match": 0.903,
+      "self_weighted_ngram_match": 0.8167
     },
     {
       "task_id": 323,
@@ -6913,7 +7537,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 324,
@@ -6935,7 +7561,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 325,
@@ -6955,9 +7583,11 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.2131,
       "num_ast_clusters": 3,
-      "self_codebleu": 0.6768,
+      "self_codebleu": 0.6967,
       "self_syntax_match": 0.5989,
-      "self_dataflow_match": 0.5556
+      "self_dataflow_match": 0.6351,
+      "self_ngram_match": 0.8606,
+      "self_weighted_ngram_match": 0.6921
     },
     {
       "task_id": 326,
@@ -6979,7 +7609,9 @@
       "num_ast_clusters": 6,
       "self_codebleu": 0.7237,
       "self_syntax_match": 0.6756,
-      "self_dataflow_match": 0.5755
+      "self_dataflow_match": 0.5755,
+      "self_ngram_match": 0.8436,
+      "self_weighted_ngram_match": 0.8
     },
     {
       "task_id": 327,
@@ -7001,7 +7633,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 328,
@@ -7023,7 +7657,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 329,
@@ -7045,7 +7681,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.3282,
       "self_syntax_match": 0.6,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.366,
+      "self_weighted_ngram_match": 0.347
     },
     {
       "task_id": 330,
@@ -7067,7 +7705,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 331,
@@ -7089,7 +7729,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.6995,
       "self_syntax_match": 0.7005,
-      "self_dataflow_match": 0.4893
+      "self_dataflow_match": 0.4893,
+      "self_ngram_match": 0.8316,
+      "self_weighted_ngram_match": 0.7766
     },
     {
       "task_id": 332,
@@ -7111,7 +7753,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 333,
@@ -7133,7 +7777,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.4048,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.8142,
+      "self_weighted_ngram_match": 0.805
     },
     {
       "task_id": 334,
@@ -7155,7 +7801,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 335,
@@ -7177,7 +7825,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 336,
@@ -7199,7 +7849,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 337,
@@ -7221,7 +7873,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 338,
@@ -7243,7 +7897,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 339,
@@ -7265,7 +7921,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 340,
@@ -7287,7 +7945,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 341,
@@ -7309,7 +7969,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 342,
@@ -7331,7 +7993,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 343,
@@ -7353,7 +8017,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.393,
       "self_syntax_match": 0.2454,
-      "self_dataflow_match": 0.1956
+      "self_dataflow_match": 0.1956,
+      "self_ngram_match": 0.5759,
+      "self_weighted_ngram_match": 0.555
     },
     {
       "task_id": 344,
@@ -7375,7 +8041,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 345,
@@ -7397,7 +8065,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.534,
       "self_syntax_match": 0.9375,
-      "self_dataflow_match": 0.4
+      "self_dataflow_match": 0.4,
+      "self_ngram_match": 0.4096,
+      "self_weighted_ngram_match": 0.3891
     },
     {
       "task_id": 346,
@@ -7419,7 +8089,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 347,
@@ -7441,7 +8113,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 348,
@@ -7463,7 +8137,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 349,
@@ -7485,7 +8161,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 350,
@@ -7507,7 +8185,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 351,
@@ -7529,7 +8209,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3417,
       "self_syntax_match": 0.2684,
-      "self_dataflow_match": 0.4199
+      "self_dataflow_match": 0.4199,
+      "self_ngram_match": 0.4056,
+      "self_weighted_ngram_match": 0.2727
     },
     {
       "task_id": 352,
@@ -7551,7 +8233,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.6398,
       "self_syntax_match": 0.5965,
-      "self_dataflow_match": 0.4667
+      "self_dataflow_match": 0.4667,
+      "self_ngram_match": 0.7531,
+      "self_weighted_ngram_match": 0.7428
     },
     {
       "task_id": 353,
@@ -7573,7 +8257,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.6177,
       "self_syntax_match": 0.6735,
-      "self_dataflow_match": 0.1629
+      "self_dataflow_match": 0.1629,
+      "self_ngram_match": 0.8442,
+      "self_weighted_ngram_match": 0.7902
     },
     {
       "task_id": 354,
@@ -7595,7 +8281,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 355,
@@ -7617,7 +8305,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 356,
@@ -7639,7 +8329,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.5657,
       "self_syntax_match": 0.7847,
-      "self_dataflow_match": 0.2857
+      "self_dataflow_match": 0.2857,
+      "self_ngram_match": 0.6043,
+      "self_weighted_ngram_match": 0.588
     },
     {
       "task_id": 357,
@@ -7661,7 +8353,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.5779,
       "self_syntax_match": 0.7273,
-      "self_dataflow_match": 0.375
+      "self_dataflow_match": 0.375,
+      "self_ngram_match": 0.6089,
+      "self_weighted_ngram_match": 0.6003
     },
     {
       "task_id": 358,
@@ -7683,7 +8377,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.1041,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.213,
+      "self_weighted_ngram_match": 0.2033
     },
     {
       "task_id": 359,
@@ -7705,7 +8401,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 360,
@@ -7727,7 +8425,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 361,
@@ -7749,7 +8449,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 362,
@@ -7771,7 +8473,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 363,
@@ -7793,7 +8497,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 364,
@@ -7813,9 +8519,11 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.0598,
       "num_ast_clusters": 1,
-      "self_codebleu": 0.3448,
+      "self_codebleu": 0.3557,
       "self_syntax_match": 0.1951,
-      "self_dataflow_match": 0.1304
+      "self_dataflow_match": 0.1739,
+      "self_ngram_match": 0.5367,
+      "self_weighted_ngram_match": 0.5169
     },
     {
       "task_id": 365,
@@ -7837,7 +8545,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 366,
@@ -7859,7 +8569,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.7232,
       "self_syntax_match": 0.9286,
-      "self_dataflow_match": 0.3333
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.8523,
+      "self_weighted_ngram_match": 0.7786
     },
     {
       "task_id": 367,
@@ -7881,7 +8593,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 368,
@@ -7903,7 +8617,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 369,
@@ -7925,7 +8641,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4572,
       "self_syntax_match": 0.5455,
-      "self_dataflow_match": 0.3333
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.4819,
+      "self_weighted_ngram_match": 0.4683
     },
     {
       "task_id": 370,
@@ -7947,7 +8665,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.2028,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.4123,
+      "self_weighted_ngram_match": 0.399
     },
     {
       "task_id": 371,
@@ -7969,7 +8689,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.4677,
       "self_syntax_match": 0.3822,
-      "self_dataflow_match": 0.316
+      "self_dataflow_match": 0.316,
+      "self_ngram_match": 0.6174,
+      "self_weighted_ngram_match": 0.5552
     },
     {
       "task_id": 372,
@@ -7991,7 +8713,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4169,
       "self_syntax_match": 0.2857,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.8825,
+      "self_weighted_ngram_match": 0.4993
     },
     {
       "task_id": 373,
@@ -8013,7 +8737,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 374,
@@ -8035,7 +8761,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 375,
@@ -8057,7 +8785,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 376,
@@ -8079,7 +8809,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.1691,
       "self_syntax_match": 0.2258,
-      "self_dataflow_match": 0.1333
+      "self_dataflow_match": 0.1333,
+      "self_ngram_match": 0.1586,
+      "self_weighted_ngram_match": 0.1586
     },
     {
       "task_id": 377,
@@ -8101,7 +8833,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.816,
       "self_syntax_match": 0.8462,
-      "self_dataflow_match": 0.4286
+      "self_dataflow_match": 0.4286,
+      "self_ngram_match": 0.999,
+      "self_weighted_ngram_match": 0.9902
     },
     {
       "task_id": 378,
@@ -8123,7 +8857,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5669,
       "self_syntax_match": 0.4167,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.9837,
+      "self_weighted_ngram_match": 0.8674
     },
     {
       "task_id": 379,
@@ -8145,7 +8881,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 380,
@@ -8167,7 +8905,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4984,
       "self_syntax_match": 0.3219,
-      "self_dataflow_match": 0.3542
+      "self_dataflow_match": 0.3542,
+      "self_ngram_match": 0.6944,
+      "self_weighted_ngram_match": 0.6232
     },
     {
       "task_id": 381,
@@ -8189,7 +8929,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 382,
@@ -8209,9 +8951,11 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.485,
       "num_ast_clusters": 3,
-      "self_codebleu": 0.6101,
+      "self_codebleu": 0.6166,
       "self_syntax_match": 0.4896,
-      "self_dataflow_match": 0.3904
+      "self_dataflow_match": 0.416,
+      "self_ngram_match": 0.817,
+      "self_weighted_ngram_match": 0.7437
     },
     {
       "task_id": 383,
@@ -8233,7 +8977,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 384,
@@ -8255,7 +9001,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6725,
       "self_syntax_match": 0.4286,
-      "self_dataflow_match": 0.3333
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.986,
+      "self_weighted_ngram_match": 0.9422
     },
     {
       "task_id": 385,
@@ -8277,7 +9025,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 386,
@@ -8299,7 +9049,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 387,
@@ -8321,7 +9073,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.2999,
       "self_syntax_match": 0.3889,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.4612,
+      "self_weighted_ngram_match": 0.3493
     },
     {
       "task_id": 388,
@@ -8341,9 +9095,11 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.3545,
       "num_ast_clusters": 3,
-      "self_codebleu": 0.7061,
+      "self_codebleu": 0.719,
       "self_syntax_match": 0.7739,
-      "self_dataflow_match": 0.4615
+      "self_dataflow_match": 0.5128,
+      "self_ngram_match": 0.8061,
+      "self_weighted_ngram_match": 0.783
     },
     {
       "task_id": 389,
@@ -8365,7 +9121,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.6804,
       "self_syntax_match": 0.5778,
-      "self_dataflow_match": 0.3833
+      "self_dataflow_match": 0.3833,
+      "self_ngram_match": 0.9021,
+      "self_weighted_ngram_match": 0.8581
     },
     {
       "task_id": 390,
@@ -8387,7 +9145,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 391,
@@ -8409,7 +9169,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.6593,
       "self_syntax_match": 0.7417,
-      "self_dataflow_match": 0.4
+      "self_dataflow_match": 0.4,
+      "self_ngram_match": 0.7535,
+      "self_weighted_ngram_match": 0.7418
     },
     {
       "task_id": 392,
@@ -8431,7 +9193,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.7019,
       "self_syntax_match": 0.5959,
-      "self_dataflow_match": 0.4747
+      "self_dataflow_match": 0.4747,
+      "self_ngram_match": 0.8888,
+      "self_weighted_ngram_match": 0.8482
     },
     {
       "task_id": 393,
@@ -8453,7 +9217,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.4318,
       "self_syntax_match": 0.4643,
-      "self_dataflow_match": 0.0256
+      "self_dataflow_match": 0.0256,
+      "self_ngram_match": 0.7123,
+      "self_weighted_ngram_match": 0.5251
     },
     {
       "task_id": 394,
@@ -8475,7 +9241,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6261,
       "self_syntax_match": 0.4286,
-      "self_dataflow_match": 0.125
+      "self_dataflow_match": 0.125,
+      "self_ngram_match": 0.9836,
+      "self_weighted_ngram_match": 0.9674
     },
     {
       "task_id": 395,
@@ -8497,7 +9265,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 396,
@@ -8519,7 +9289,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.2427,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.5082,
+      "self_weighted_ngram_match": 0.4626
     },
     {
       "task_id": 397,
@@ -8541,7 +9313,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3661,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.7366,
+      "self_weighted_ngram_match": 0.7277
     },
     {
       "task_id": 398,
@@ -8563,7 +9337,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 399,
@@ -8585,7 +9361,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6788,
       "self_syntax_match": 0.7857,
-      "self_dataflow_match": 0.3333
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.808,
+      "self_weighted_ngram_match": 0.7881
     },
     {
       "task_id": 400,
@@ -8607,7 +9385,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 401,
@@ -8629,7 +9409,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3739,
       "self_syntax_match": 0.6,
-      "self_dataflow_match": 0.1176
+      "self_dataflow_match": 0.1176,
+      "self_ngram_match": 0.4146,
+      "self_weighted_ngram_match": 0.3634
     },
     {
       "task_id": 402,
@@ -8651,7 +9433,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4358,
       "self_syntax_match": 0.3873,
-      "self_dataflow_match": 0.4147
+      "self_dataflow_match": 0.4147,
+      "self_ngram_match": 0.5048,
+      "self_weighted_ngram_match": 0.4364
     },
     {
       "task_id": 403,
@@ -8673,7 +9457,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 404,
@@ -8695,7 +9481,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 405,
@@ -8717,7 +9505,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 406,
@@ -8739,7 +9529,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.1014,
       "self_syntax_match": 0.1481,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.1541,
+      "self_weighted_ngram_match": 0.1035
     },
     {
       "task_id": 407,
@@ -8759,9 +9551,11 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.0209,
       "num_ast_clusters": 1,
-      "self_codebleu": 0.2825,
+      "self_codebleu": 0.2783,
       "self_syntax_match": 0.1767,
-      "self_dataflow_match": 0.2444
+      "self_dataflow_match": 0.2276,
+      "self_ngram_match": 0.3591,
+      "self_weighted_ngram_match": 0.3499
     },
     {
       "task_id": 408,
@@ -8781,9 +9575,11 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.1792,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.4752,
+      "self_codebleu": 0.4768,
       "self_syntax_match": 0.4215,
-      "self_dataflow_match": 0.4119
+      "self_dataflow_match": 0.4183,
+      "self_ngram_match": 0.5519,
+      "self_weighted_ngram_match": 0.5157
     },
     {
       "task_id": 409,
@@ -8805,7 +9601,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5139,
       "self_syntax_match": 0.4,
-      "self_dataflow_match": 0.8
+      "self_dataflow_match": 0.8,
+      "self_ngram_match": 0.4361,
+      "self_weighted_ngram_match": 0.4197
     },
     {
       "task_id": 410,
@@ -8827,7 +9625,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 411,
@@ -8849,7 +9649,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.264,
       "self_syntax_match": 0.3333,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.3568,
+      "self_weighted_ngram_match": 0.366
     },
     {
       "task_id": 412,
@@ -8871,7 +9673,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 413,
@@ -8893,7 +9697,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 414,
@@ -8915,7 +9721,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 415,
@@ -8937,7 +9745,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 416,
@@ -8957,9 +9767,11 @@
       "num_distinct_correct": 5,
       "mean_pairwise_distance": 0.2449,
       "num_ast_clusters": 3,
-      "self_codebleu": 0.4586,
+      "self_codebleu": 0.4622,
       "self_syntax_match": 0.4003,
-      "self_dataflow_match": 0.359
+      "self_dataflow_match": 0.3733,
+      "self_ngram_match": 0.5934,
+      "self_weighted_ngram_match": 0.4817
     },
     {
       "task_id": 417,
@@ -8981,7 +9793,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 418,
@@ -9003,7 +9817,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.7124,
       "self_syntax_match": 0.875,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.9896,
+      "self_weighted_ngram_match": 0.9849
     },
     {
       "task_id": 419,
@@ -9025,7 +9841,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6121,
       "self_syntax_match": 0.4792,
-      "self_dataflow_match": 0.5417
+      "self_dataflow_match": 0.5417,
+      "self_ngram_match": 0.72,
+      "self_weighted_ngram_match": 0.7077
     },
     {
       "task_id": 420,
@@ -9047,7 +9865,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.1524,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.3108,
+      "self_weighted_ngram_match": 0.2987
     },
     {
       "task_id": 421,
@@ -9069,7 +9889,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5205,
       "self_syntax_match": 0.4722,
-      "self_dataflow_match": 0.2074
+      "self_dataflow_match": 0.2074,
+      "self_ngram_match": 0.7763,
+      "self_weighted_ngram_match": 0.626
     },
     {
       "task_id": 422,
@@ -9091,7 +9913,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5308,
       "self_syntax_match": 0.5625,
-      "self_dataflow_match": 0.5385
+      "self_dataflow_match": 0.5385,
+      "self_ngram_match": 0.5186,
+      "self_weighted_ngram_match": 0.5037
     },
     {
       "task_id": 423,
@@ -9111,9 +9935,11 @@
       "num_distinct_correct": 3,
       "mean_pairwise_distance": 0.0368,
       "num_ast_clusters": 1,
-      "self_codebleu": 0.2856,
+      "self_codebleu": 0.282,
       "self_syntax_match": 0.1667,
-      "self_dataflow_match": 0.3476
+      "self_dataflow_match": 0.3333,
+      "self_ngram_match": 0.3173,
+      "self_weighted_ngram_match": 0.3108
     },
     {
       "task_id": 424,
@@ -9135,7 +9961,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 425,
@@ -9157,7 +9985,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5018,
       "self_syntax_match": 0.6667,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.7108,
+      "self_weighted_ngram_match": 0.6296
     },
     {
       "task_id": 426,
@@ -9179,7 +10009,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 427,
@@ -9201,7 +10033,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 428,
@@ -9223,7 +10057,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 429,
@@ -9245,7 +10081,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 430,
@@ -9267,7 +10105,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 431,
@@ -9289,7 +10129,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.2814,
       "self_syntax_match": 0.2727,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.5008,
+      "self_weighted_ngram_match": 0.352
     },
     {
       "task_id": 432,
@@ -9311,7 +10153,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.4147,
       "self_syntax_match": 0.6444,
-      "self_dataflow_match": 0.1429
+      "self_dataflow_match": 0.1429,
+      "self_ngram_match": 0.4484,
+      "self_weighted_ngram_match": 0.423
     },
     {
       "task_id": 433,
@@ -9333,7 +10177,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.1981,
       "self_syntax_match": 0.359,
-      "self_dataflow_match": 0.1111
+      "self_dataflow_match": 0.1111,
+      "self_ngram_match": 0.1671,
+      "self_weighted_ngram_match": 0.1551
     },
     {
       "task_id": 434,
@@ -9355,7 +10201,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 435,
@@ -9377,7 +10225,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 436,
@@ -9399,7 +10249,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 437,
@@ -9421,7 +10273,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.7061,
       "self_syntax_match": 0.6316,
-      "self_dataflow_match": 0.5227
+      "self_dataflow_match": 0.5227,
+      "self_ngram_match": 0.874,
+      "self_weighted_ngram_match": 0.796
     },
     {
       "task_id": 438,
@@ -9443,7 +10297,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 439,
@@ -9465,7 +10321,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.7515,
       "self_syntax_match": 0.75,
-      "self_dataflow_match": 0.3
+      "self_dataflow_match": 0.3,
+      "self_ngram_match": 0.9862,
+      "self_weighted_ngram_match": 0.9699
     },
     {
       "task_id": 440,
@@ -9487,7 +10345,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 441,
@@ -9509,7 +10369,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 442,
@@ -9531,7 +10393,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.504,
       "self_syntax_match": 0.4737,
-      "self_dataflow_match": 0.3846
+      "self_dataflow_match": 0.3846,
+      "self_ngram_match": 0.7301,
+      "self_weighted_ngram_match": 0.4276
     },
     {
       "task_id": 443,
@@ -9553,7 +10417,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 444,
@@ -9575,7 +10441,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 445,
@@ -9597,7 +10465,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 446,
@@ -9619,7 +10489,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.3888,
       "self_syntax_match": 0.5,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.534,
+      "self_weighted_ngram_match": 0.5213
     },
     {
       "task_id": 447,
@@ -9641,7 +10513,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 448,
@@ -9661,9 +10535,11 @@
       "num_distinct_correct": 4,
       "mean_pairwise_distance": 0.4792,
       "num_ast_clusters": 4,
-      "self_codebleu": 0.6523,
+      "self_codebleu": 0.6564,
       "self_syntax_match": 0.5906,
-      "self_dataflow_match": 0.498
+      "self_dataflow_match": 0.5144,
+      "self_ngram_match": 0.7888,
+      "self_weighted_ngram_match": 0.7317
     },
     {
       "task_id": 449,
@@ -9685,7 +10561,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.6337,
       "self_syntax_match": 0.4615,
-      "self_dataflow_match": 0.1176
+      "self_dataflow_match": 0.1176,
+      "self_ngram_match": 0.9822,
+      "self_weighted_ngram_match": 0.9735
     },
     {
       "task_id": 450,
@@ -9707,7 +10585,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 451,
@@ -9729,7 +10609,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 452,
@@ -9751,7 +10633,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 453,
@@ -9773,7 +10657,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 454,
@@ -9795,7 +10681,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 455,
@@ -9817,7 +10705,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 456,
@@ -9839,7 +10729,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3548,
       "self_syntax_match": 0.5,
-      "self_dataflow_match": 0.4286
+      "self_dataflow_match": 0.4286,
+      "self_ngram_match": 0.2521,
+      "self_weighted_ngram_match": 0.2387
     },
     {
       "task_id": 457,
@@ -9861,7 +10753,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.2172,
       "self_syntax_match": 0.3333,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.3094,
+      "self_weighted_ngram_match": 0.2261
     },
     {
       "task_id": 458,
@@ -9883,7 +10777,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 459,
@@ -9905,7 +10801,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6968,
       "self_syntax_match": 0.4286,
-      "self_dataflow_match": 0.5556
+      "self_dataflow_match": 0.5556,
+      "self_ngram_match": 0.9373,
+      "self_weighted_ngram_match": 0.8656
     },
     {
       "task_id": 460,
@@ -9927,7 +10825,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 461,
@@ -9949,7 +10849,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 462,
@@ -9971,7 +10873,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 463,
@@ -9993,7 +10897,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 464,
@@ -10015,7 +10921,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.7344,
       "self_syntax_match": 0.9167,
-      "self_dataflow_match": 0.2857
+      "self_dataflow_match": 0.2857,
+      "self_ngram_match": 0.8724,
+      "self_weighted_ngram_match": 0.8627
     },
     {
       "task_id": 465,
@@ -10037,7 +10945,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 466,
@@ -10059,7 +10969,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.381,
       "self_syntax_match": 0.3182,
-      "self_dataflow_match": 0.0417
+      "self_dataflow_match": 0.0417,
+      "self_ngram_match": 0.5885,
+      "self_weighted_ngram_match": 0.5755
     },
     {
       "task_id": 467,
@@ -10081,7 +10993,9 @@
       "num_ast_clusters": 4,
       "self_codebleu": 0.7537,
       "self_syntax_match": 0.8874,
-      "self_dataflow_match": 0.2745
+      "self_dataflow_match": 0.2745,
+      "self_ngram_match": 0.9449,
+      "self_weighted_ngram_match": 0.9081
     },
     {
       "task_id": 468,
@@ -10101,9 +11015,11 @@
       "num_distinct_correct": 7,
       "mean_pairwise_distance": 0.3147,
       "num_ast_clusters": 3,
-      "self_codebleu": 0.4797,
+      "self_codebleu": 0.4805,
       "self_syntax_match": 0.3348,
-      "self_dataflow_match": 0.3637
+      "self_dataflow_match": 0.3668,
+      "self_ngram_match": 0.6643,
+      "self_weighted_ngram_match": 0.5561
     },
     {
       "task_id": 469,
@@ -10125,7 +11041,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4687,
       "self_syntax_match": 0.493,
-      "self_dataflow_match": 0.2414
+      "self_dataflow_match": 0.2414,
+      "self_ngram_match": 0.5835,
+      "self_weighted_ngram_match": 0.5568
     },
     {
       "task_id": 470,
@@ -10147,7 +11065,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.46,
       "self_syntax_match": 0.5263,
-      "self_dataflow_match": 0.2179
+      "self_dataflow_match": 0.2179,
+      "self_ngram_match": 0.551,
+      "self_weighted_ngram_match": 0.5446
     },
     {
       "task_id": 471,
@@ -10169,7 +11089,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 472,
@@ -10191,7 +11113,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 473,
@@ -10213,7 +11137,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 474,
@@ -10235,7 +11161,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 475,
@@ -10257,7 +11185,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3645,
       "self_syntax_match": 0.5,
-      "self_dataflow_match": 0.5625
+      "self_dataflow_match": 0.5625,
+      "self_ngram_match": 0.2067,
+      "self_weighted_ngram_match": 0.1887
     },
     {
       "task_id": 476,
@@ -10279,7 +11209,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 477,
@@ -10301,7 +11233,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.449,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.9045,
+      "self_weighted_ngram_match": 0.8914
     },
     {
       "task_id": 478,
@@ -10323,7 +11257,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 479,
@@ -10345,7 +11281,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.2364,
       "self_syntax_match": 0.3636,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.2984,
+      "self_weighted_ngram_match": 0.2836
     },
     {
       "task_id": 480,
@@ -10367,7 +11305,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3174,
       "self_syntax_match": 0.3126,
-      "self_dataflow_match": 0.1813
+      "self_dataflow_match": 0.1813,
+      "self_ngram_match": 0.4316,
+      "self_weighted_ngram_match": 0.3439
     },
     {
       "task_id": 481,
@@ -10389,7 +11329,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4083,
       "self_syntax_match": 0.1818,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.7309,
+      "self_weighted_ngram_match": 0.7205
     },
     {
       "task_id": 482,
@@ -10411,7 +11353,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 483,
@@ -10433,7 +11377,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 484,
@@ -10455,7 +11401,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 485,
@@ -10477,7 +11425,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4184,
       "self_syntax_match": 0.3667,
-      "self_dataflow_match": 0.5
+      "self_dataflow_match": 0.5,
+      "self_ngram_match": 0.412,
+      "self_weighted_ngram_match": 0.3947
     },
     {
       "task_id": 486,
@@ -10499,7 +11449,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5087,
       "self_syntax_match": 0.4167,
-      "self_dataflow_match": 0.2941
+      "self_dataflow_match": 0.2941,
+      "self_ngram_match": 0.7222,
+      "self_weighted_ngram_match": 0.602
     },
     {
       "task_id": 487,
@@ -10521,7 +11473,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 488,
@@ -10543,7 +11497,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 489,
@@ -10565,7 +11521,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 490,
@@ -10587,7 +11545,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 491,
@@ -10609,7 +11569,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.3837,
       "self_syntax_match": 0.5644,
-      "self_dataflow_match": 0.2561
+      "self_dataflow_match": 0.2561,
+      "self_ngram_match": 0.4136,
+      "self_weighted_ngram_match": 0.3009
     },
     {
       "task_id": 492,
@@ -10631,7 +11593,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.1781,
       "self_syntax_match": 0.0811,
-      "self_dataflow_match": 0.3077
+      "self_dataflow_match": 0.3077,
+      "self_ngram_match": 0.1918,
+      "self_weighted_ngram_match": 0.1319
     },
     {
       "task_id": 493,
@@ -10653,7 +11617,9 @@
       "num_ast_clusters": 0,
       "self_codebleu": null,
       "self_syntax_match": null,
-      "self_dataflow_match": null
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
     },
     {
       "task_id": 494,
@@ -10675,7 +11641,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 495,
@@ -10697,7 +11665,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 496,
@@ -10719,7 +11689,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 497,
@@ -10741,7 +11713,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.2252,
       "self_syntax_match": 0.2727,
-      "self_dataflow_match": 0.1765
+      "self_dataflow_match": 0.1765,
+      "self_ngram_match": 0.2298,
+      "self_weighted_ngram_match": 0.2219
     },
     {
       "task_id": 498,
@@ -10763,7 +11737,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 499,
@@ -10785,7 +11761,9 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.6082,
       "self_syntax_match": 0.8056,
-      "self_dataflow_match": 0.2
+      "self_dataflow_match": 0.2,
+      "self_ngram_match": 0.7179,
+      "self_weighted_ngram_match": 0.7095
     },
     {
       "task_id": 500,
@@ -10807,7 +11785,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.6891,
       "self_syntax_match": 0.4615,
-      "self_dataflow_match": 0.7143
+      "self_dataflow_match": 0.7143,
+      "self_ngram_match": 0.7953,
+      "self_weighted_ngram_match": 0.7851
     },
     {
       "task_id": 501,
@@ -10829,7 +11809,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 502,
@@ -10851,7 +11833,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 503,
@@ -10873,7 +11857,9 @@
       "num_ast_clusters": 4,
       "self_codebleu": 0.7379,
       "self_syntax_match": 0.7512,
-      "self_dataflow_match": 0.3472
+      "self_dataflow_match": 0.3472,
+      "self_ngram_match": 0.9541,
+      "self_weighted_ngram_match": 0.8991
     },
     {
       "task_id": 504,
@@ -10895,7 +11881,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 505,
@@ -10917,7 +11905,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.0,
       "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.0,
+      "self_weighted_ngram_match": 0.0
     },
     {
       "task_id": 506,
@@ -10939,7 +11929,9 @@
       "num_ast_clusters": 1,
       "self_codebleu": 0.1145,
       "self_syntax_match": 0.1273,
-      "self_dataflow_match": 0.1395
+      "self_dataflow_match": 0.1395,
+      "self_ngram_match": 0.1671,
+      "self_weighted_ngram_match": 0.0243
     },
     {
       "task_id": 507,
@@ -10961,7 +11953,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.5584,
       "self_syntax_match": 0.4,
-      "self_dataflow_match": 0.0
+      "self_dataflow_match": 0.0,
+      "self_ngram_match": 0.9533,
+      "self_weighted_ngram_match": 0.8803
     },
     {
       "task_id": 508,
@@ -10983,7 +11977,9 @@
       "num_ast_clusters": 2,
       "self_codebleu": 0.4948,
       "self_syntax_match": 0.619,
-      "self_dataflow_match": 0.1875
+      "self_dataflow_match": 0.1875,
+      "self_ngram_match": 0.7877,
+      "self_weighted_ngram_match": 0.3851
     },
     {
       "task_id": 509,
@@ -11003,9 +11999,11 @@
       "num_distinct_correct": 2,
       "mean_pairwise_distance": 0.0928,
       "num_ast_clusters": 2,
-      "self_codebleu": 0.3658,
+      "self_codebleu": 0.2922,
       "self_syntax_match": 0.2105,
-      "self_dataflow_match": 0.3529
+      "self_dataflow_match": 0.0588,
+      "self_ngram_match": 0.4588,
+      "self_weighted_ngram_match": 0.4407
     },
     {
       "task_id": 510,
@@ -11027,8 +12025,12 @@
       "num_ast_clusters": 3,
       "self_codebleu": 0.4142,
       "self_syntax_match": 0.239,
-      "self_dataflow_match": 0.6357
+      "self_dataflow_match": 0.6357,
+      "self_ngram_match": 0.4682,
+      "self_weighted_ngram_match": 0.3141
     }
   ],
-  "timestamp": "2026-04-06T13:48:57.227824+00:00"
+  "timestamp": "2026-04-06T13:48:57.227824+00:00",
+  "ngram_match_diversity": 0.3178,
+  "weighted_ngram_match_diversity": 0.2874
 }

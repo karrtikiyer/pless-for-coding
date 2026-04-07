@@ -827,6 +827,9 @@ def plot_pareto_scatter(
     _DIVERSITY_LABELS = {
         "codebleu_diversity": "CodeBLEU Diversity",
         "structural_diversity": "Structural Diversity",
+        "ngram_match_diversity": "N-gram Diversity",
+        "weighted_ngram_match_diversity": "Weighted N-gram Diversity",
+        "syntax_match_diversity": "Syntax Match Diversity",
         "dataflow_match_diversity": "Dataflow Diversity",
     }
     div_display = _DIVERSITY_LABELS.get(active_key, active_key)
@@ -887,6 +890,9 @@ def plot_method_heatmaps(
     _DIVERSITY_LABELS = {
         "codebleu_diversity": "CodeBLEU Diversity",
         "structural_diversity": "Structural Diversity",
+        "ngram_match_diversity": "N-gram Diversity",
+        "weighted_ngram_match_diversity": "Weighted N-gram Diversity",
+        "syntax_match_diversity": "Syntax Match Diversity",
         "dataflow_match_diversity": "Dataflow Diversity",
     }
     div_title = _DIVERSITY_LABELS.get(active_key, "Diversity")
@@ -993,6 +999,23 @@ def main():
         dataset_name=args.dataset,
     )
     print(f"Saved {out / 'pareto_correctness_diversity.png'}")
+
+    # Per-subcomponent CodeBLEU pareto plots
+    _SUBCOMPONENT_PARETOS = [
+        ("ngram_match_diversity",          "pareto_ngram_diversity.png"),
+        ("weighted_ngram_match_diversity", "pareto_weighted_ngram_diversity.png"),
+        ("syntax_match_diversity",         "pareto_syntax_diversity.png"),
+        ("dataflow_match_diversity",       "pareto_dataflow_diversity.png"),
+    ]
+    has_codebleu = any("codebleu_diversity" in m for m in metrics_list)
+    if has_codebleu:
+        for div_key, filename in _SUBCOMPONENT_PARETOS:
+            plot_pareto_scatter(
+                metrics_list, out / filename,
+                dataset_name=args.dataset,
+                diversity_key=div_key,
+            )
+            print(f"Saved {out / filename}")
 
     # Secondary: Heatmaps — model × method grid for pass@1 and diversity
     plot_method_heatmaps(

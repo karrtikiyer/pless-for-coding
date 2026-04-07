@@ -441,8 +441,27 @@ def plot_metrics_overview(rows: list[dict], output_path: Path) -> None:
     plt.close(fig)
 
 
-def plot_pareto_scatter(rows: list[dict], output_path: Path) -> None:
-    """Pareto scatter: pass@1 vs codebleu_diversity."""
+_DIVERSITY_LABELS = {
+    "codebleu_diversity": "CodeBLEU Diversity",
+    "ngram_match_diversity": "N-gram Diversity",
+    "weighted_ngram_match_diversity": "Weighted N-gram Diversity",
+    "syntax_match_diversity": "Syntax Match Diversity",
+    "dataflow_match_diversity": "Dataflow Diversity",
+}
+
+_SUBCOMPONENT_PARETOS = [
+    ("ngram_match_diversity",          "pareto_ngram_diversity.png"),
+    ("weighted_ngram_match_diversity", "pareto_weighted_ngram_diversity.png"),
+    ("syntax_match_diversity",         "pareto_syntax_diversity.png"),
+    ("dataflow_match_diversity",       "pareto_dataflow_diversity.png"),
+]
+
+
+def plot_pareto_scatter(
+    rows: list[dict], output_path: Path,
+    diversity_key: str = "codebleu_diversity",
+) -> None:
+    """Pareto scatter: pass@1 vs diversity metric."""
     plot_rows = _plot_rows(rows)
     from matplotlib.lines import Line2D
     from matplotlib.patches import Patch
@@ -452,7 +471,7 @@ def plot_pareto_scatter(rows: list[dict], output_path: Path) -> None:
     points = []
     for r in plot_rows:
         p1 = r["pass_at_k"]["1"] * 100
-        div = r.get("codebleu_diversity", 0)
+        div = r.get(diversity_key, 0)
         if r["_group"] == "t1t2":
             color = T1_COLORS.get(r["_t1"], "#888888")
             marker = T2_MARKERS.get(r["_t2"], "x")
@@ -483,10 +502,11 @@ def plot_pareto_scatter(rows: list[dict], output_path: Path) -> None:
     if len(frontier_x) > 1:
         ax.plot(frontier_x, frontier_y, "--", color="gray", alpha=0.4, linewidth=1)
 
+    div_label = _DIVERSITY_LABELS.get(diversity_key, diversity_key)
     ax.set_xlabel("pass@1 (%)", fontsize=11)
-    ax.set_ylabel("CodeBLEU Diversity", fontsize=11)
+    ax.set_ylabel(div_label, fontsize=11)
     ax.set_title(
-        "MBPP: Correctness vs Diversity — P-less T1/T2 (Qwen2.5-Coder-3B)",
+        f"MBPP: Correctness vs {div_label} — P-less T1/T2 (Qwen2.5-Coder-3B)",
         fontsize=12,
     )
     ax.grid(alpha=0.3)
@@ -1067,8 +1087,11 @@ def plot_instruct_pass_at_1_bars(rows: list[dict], output_path: Path) -> None:
     plt.close(fig)
 
 
-def plot_instruct_pareto(rows: list[dict], output_path: Path) -> None:
-    """Pareto scatter: pass@1 vs codebleu_diversity — instruct primary, base greyed."""
+def plot_instruct_pareto(
+    rows: list[dict], output_path: Path,
+    diversity_key: str = "codebleu_diversity",
+) -> None:
+    """Pareto scatter: pass@1 vs diversity — instruct primary, base greyed."""
     from matplotlib.lines import Line2D
     from matplotlib.patches import Patch
 
@@ -1083,7 +1106,7 @@ def plot_instruct_pareto(rows: list[dict], output_path: Path) -> None:
         if r["_method"] == "pless_norm":
             continue
         p1 = r["pass_at_k"]["1"] * 100
-        div = r.get("codebleu_diversity", 0)
+        div = r.get(diversity_key, 0)
 
         if r["_group"] == "instruct":
             color = METHOD_COLORS.get(r["_method"], "#888888")
@@ -1105,10 +1128,11 @@ def plot_instruct_pareto(rows: list[dict], output_path: Path) -> None:
         ax.annotate(label, (p1, div), textcoords="offset points",
                     xytext=(5, 5), fontsize=5.5, alpha=0.7)
 
+    div_label = _DIVERSITY_LABELS.get(diversity_key, diversity_key)
     ax.set_xlabel("pass@1 (%)", fontsize=11)
-    ax.set_ylabel("CodeBLEU Diversity", fontsize=11)
+    ax.set_ylabel(div_label, fontsize=11)
     ax.set_title(
-        "Correctness vs Diversity: Instruct High-T1",
+        f"Correctness vs {div_label}: Instruct High-T1",
         fontsize=12,
     )
     ax.grid(alpha=0.3)
@@ -1290,6 +1314,10 @@ def main():
         plot_instruct_pareto(rows, figures_dir / "pareto_correctness_diversity.png")
         print(f"Plot: {figures_dir / 'pareto_correctness_diversity.png'}")
 
+        for div_key, filename in _SUBCOMPONENT_PARETOS:
+            plot_instruct_pareto(rows, figures_dir / filename, diversity_key=div_key)
+            print(f"Plot: {figures_dir / filename}")
+
         plot_instruct_t2_at_high_t1(rows, figures_dir / "t2_effect_at_high_t1.png")
         print(f"Plot: {figures_dir / 't2_effect_at_high_t1.png'}")
 
@@ -1319,6 +1347,10 @@ def main():
 
         plot_pareto_scatter(rows, FIGURES_DIR / "pareto_correctness_diversity.png")
         print(f"Plot: {FIGURES_DIR / 'pareto_correctness_diversity.png'}")
+
+        for div_key, filename in _SUBCOMPONENT_PARETOS:
+            plot_pareto_scatter(rows, FIGURES_DIR / filename, diversity_key=div_key)
+            print(f"Plot: {FIGURES_DIR / filename}")
 
         plot_t2_effect_heatmap(rows, FIGURES_DIR / "t2_effect_heatmap.png")
         print(f"Plot: {FIGURES_DIR / 't2_effect_heatmap.png'}")
