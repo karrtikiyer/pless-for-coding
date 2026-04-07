@@ -52,6 +52,10 @@ def parse_args():
     parser.add_argument("--post-temperature", type=float, default=None,
                         help="Post-truncation temperature (T₂) for p-less variants. "
                              "Applied after p-less threshold pruning to flatten survivor distribution.")
+    parser.add_argument("--dtype", choices=["bfloat16", "float16"], default="bfloat16",
+                        help="Model dtype (default: bfloat16)")
+    parser.add_argument("--attn-impl", choices=["sdpa", "eager"], default=None,
+                        help="Attention implementation (default: auto — sdpa, eager for old Qwen)")
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
@@ -82,6 +86,10 @@ def main():
         method_key = f"{method_key}_pt{args.post_temperature}"
     if not is_instruct_model(args.model) and args.prompt_style == "bigcode":
         method_key = f"{method_key}_bigcode"
+    if args.dtype != "bfloat16":
+        method_key = f"{method_key}_{args.dtype}"
+    if args.attn_impl is not None:
+        method_key = f"{method_key}_{args.attn_impl}"
     out_path = get_output_path(args.results_dir, args.model, method_key, args.temperature)
 
     # Handle --no-resume
@@ -103,7 +111,7 @@ def main():
 
     # Load model
     print(f"Loading model: {args.model}")
-    model, tokenizer = load_model_and_tokenizer(args.model)
+    model, tokenizer = load_model_and_tokenizer(args.model, dtype=args.dtype, attn_impl=args.attn_impl)
 
     if args.method not in ("temp", "top_p", "greedy", "beam"):
         if args.post_temperature is not None:

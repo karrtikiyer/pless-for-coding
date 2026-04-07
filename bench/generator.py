@@ -66,8 +66,19 @@ if _TF5:
     PreTrainedModel._initialize_weights = _fixed_initialize_weights
 
 
-def load_model_and_tokenizer(model_id: str):
-    """Load model in bfloat16 with SDPA attention and its tokenizer."""
+def load_model_and_tokenizer(
+    model_id: str,
+    dtype: str = "bfloat16",
+    attn_impl: str | None = None,
+):
+    """Load model and tokenizer.
+
+    Args:
+        model_id: HuggingFace model ID.
+        dtype: Model dtype — "bfloat16" (default) or "float16".
+        attn_impl: Attention implementation — None (auto: sdpa, eager for old Qwen),
+                   "sdpa", or "eager".
+    """
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 
     # Detect broken byte-level BPE decoder.  transformers 5.x + LlamaTokenizer
@@ -83,10 +94,12 @@ def load_model_and_tokenizer(model_id: str):
 
     # Old Qwen-7B / Qwen-7B-Chat use custom attention that doesn't support SDPA.
     is_old_qwen = model_id.startswith("Qwen/Qwen-7B")
-    attn_impl = "eager" if is_old_qwen else "sdpa"
+    if attn_impl is None:
+        attn_impl = "eager" if is_old_qwen else "sdpa"
+    torch_dtype = torch.float16 if dtype == "float16" else torch.bfloat16
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch_dtype,
         device_map="auto",
         attn_implementation=attn_impl,
         use_cache=True,
