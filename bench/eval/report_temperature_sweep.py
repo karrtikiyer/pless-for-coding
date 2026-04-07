@@ -44,8 +44,10 @@ _METHOD_LINESTYLES = {
 
 _MODEL_SHORT_NAMES = {
     "Qwen/Qwen2.5-Coder-7B": "Qwen2.5-Coder-7B",
+    "Qwen/Qwen2.5-Coder-7B-Instruct": "Qwen2.5-Coder-7B-Instruct",
     "Qwen/Qwen3-Coder-30B-A3B-Instruct": "Qwen3-Coder-30B",
     "codellama/CodeLlama-7b-hf": "CodeLlama-7b",
+    "codellama/CodeLlama-7b-Instruct-hf": "CodeLlama-7b-Instruct",
     "mistralai/Codestral-22B-v0.1": "Codestral-22B",
 }
 

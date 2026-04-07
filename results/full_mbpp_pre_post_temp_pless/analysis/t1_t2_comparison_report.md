@@ -74,11 +74,11 @@ How much diversity (struct_div, codebleu_div) is gained per percentage point of 
 
 ## Key Findings
 
-1. **T2 has negligible effect on the base model.** At T1=0.6, T2 adds +0.005-0.007 struct_div while costing ~1pp pass@1. At T1=0.8, T2 adds +0.003-0.010. At T1=1.0, T2 *decreases* diversity slightly. The post-truncation flattening does not meaningfully change outcomes when P-less already leaves a moderate number of survivors.
+1. **T2 effect is regime-dependent on the base model.** At T1=0.6, T2 adds only +0.005–0.007 struct_div while costing ~1pp pass@1 (poor exchange rate). At T1=0.8, T2=5.0 is a notable anomaly: +0.1pp pass@1 (within noise, but no cost) AND +0.032 codebleu_div — the one case where T2 appears genuinely beneficial. At T1=1.0, T2 *reverses direction* and decreases diversity, suggesting the flattening causes convergence on a few popular alternatives rather than spreading across many.
 
-2. **T1 (pre-truncation temperature) does all the work.** The diversity jump from T1=0.6→0.8→1.0 is substantial (struct_div 0.097→0.167→0.255), matching the effect of raising temperature in standard P-less. T1 controls pruning aggressiveness by shaping the distribution before the collision entropy threshold is computed.
+2. **T1 (pre-truncation temperature) does most of the work.** The diversity jump from T1=0.6→0.8→1.0 is substantial (struct_div 0.097→0.167→0.255), matching the effect of raising temperature in standard P-less. T1 controls pruning aggressiveness by shaping the distribution before the collision entropy threshold is computed. T1 is 2–14× more efficient than T2 at converting pass@1 into diversity.
 
 3. **Best new config: pless T1=0.8 (no T2).** At 58.7% pass@1, 0.167 struct_div, 0.298 codebleu_div, it matches top_p0.95/t=0.2 (58.2%) while providing a useful diversity level — with zero hyperparameters beyond T1.
 
-4. **Implication for instruct models:** Since T2 doesn't help on base models where P-less leaves some survivors, it will help even less on instruct models where P-less leaves ~1 survivor. The instruct experiment needs high T1 (>1.0) to open the distribution — T2 alone cannot rescue diversity.
+4. **Implication for instruct models:** T2 alone cannot rescue diversity on instruct models where P-less at low T1 leaves ~1 survivor. The instruct experiment needs high T1 (>1.0) to open the distribution first. However, the T1=0.8/T2=5.0 anomaly suggests T2 may have a narrow sweet spot when the survivor set is moderate — worth testing at high T1 on instruct where more survivors exist.
 

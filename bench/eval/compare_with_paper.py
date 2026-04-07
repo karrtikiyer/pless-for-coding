@@ -58,6 +58,9 @@ _OUR_METHOD_NAMES = {
     "pless": "P-Less",
     "pless_norm": "P-Less Norm",
     "temp": "Temperature",
+    "greedy": "Greedy (ours)",
+    "beam4": "Beam-4",
+    "beam8": "Beam-8",
 }
 
 # Model directory name → paper model key

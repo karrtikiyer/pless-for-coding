@@ -42,15 +42,18 @@ def compute_pass_at_k(
     num_correct = np.array([r["num_correct"] for r in task_results])
 
     pass_at_k = {}
+    pass_at_1 = None
     for k in k_values:
         if k > num_samples.min():
-            import warnings
-            warnings.warn(
-                f"k={k} exceeds minimum sample count ({num_samples.min()}), skipping pass@{k}"
-            )
+            # For single-sample methods (greedy, beam): copy pass@1
+            if pass_at_1 is not None:
+                pass_at_k[str(k)] = pass_at_1
             continue
         estimates = estimate_pass_at_k(num_samples, num_correct, k)
-        pass_at_k[str(k)] = float(estimates.mean())
+        val = float(estimates.mean())
+        pass_at_k[str(k)] = val
+        if k == 1:
+            pass_at_1 = val
 
     return pass_at_k
 

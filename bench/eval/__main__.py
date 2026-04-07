@@ -55,11 +55,25 @@ def infer_output_path(results_file: Path) -> Path:
 
 
 def infer_metadata(results_file: Path, first_record: dict) -> dict:
-    """Extract model, method, temperature (and top_p if present) from first record."""
+    """Extract model, method, temperature (and top_p if present) from first record.
+
+    For beam search files, the JSONL ``method`` field is just "beam" regardless
+    of beam width.  Derive a more specific name (beam4, beam8, …) from the
+    filename so that metrics for different beam widths stay distinguishable.
+    """
     model = first_record.get("model", "unknown")
     method = first_record.get("method", "unknown")
     temperature = first_record.get("temperature", 0.0)
     top_p = first_record.get("top_p")
+
+    # Derive method from filename for beam configs (beam4_t1.0.jsonl → beam4)
+    stem = results_file.stem  # e.g. beam4_t1.0 or beam8_bigcode_t1.0
+    if method == "beam" and stem.startswith("beam"):
+        # Extract beam prefix: "beam4_t1.0" → "beam4", "beam8_bigcode_t1.0" → "beam8"
+        parts = stem.split("_")
+        if parts and parts[0].startswith("beam"):
+            method = parts[0]
+
     return {"model": model, "method": method, "temperature": temperature, "top_p": top_p}
 
 
