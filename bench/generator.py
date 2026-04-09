@@ -114,7 +114,7 @@ def load_model_and_tokenizer(
     # pre-creates a DynamicCache(config=...) with uninitialised layers (keys=None),
     # which Qwen misinterprets as a populated cache → 'NoneType' has no attr 'size'.
     # Opting out makes generate() skip DynamicCache creation entirely.
-    if is_old_qwen:
+    if is_old_qwen and _TF5:
         type(model)._supports_default_dynamic_cache = classmethod(lambda cls: False)
 
     # Old Qwen tokenizers lack chat_template; set Qwen's ChatML format so
@@ -225,7 +225,7 @@ def generate_samples_greedy(
     prompt_len = input_ids.shape[1]
 
     kwargs = {}
-    if stop_strings:
+    if stop_strings and _TF5:
         kwargs["stop_strings"] = stop_strings
         kwargs["tokenizer"] = tokenizer
 
