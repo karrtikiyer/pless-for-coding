@@ -20,14 +20,15 @@ from bench.prompts import (format_prompt_base, format_prompt_base_hybrid,
 MBPP_STOP_SEQUENCES = ["\n[DONE]"]
 # BigCode/InCoder zero-shot format: no format delimiters, stop on code-level boundaries.
 MBPP_BIGCODE_STOP_SEQUENCES = ["\nassert", "\nclass", "\nprint", '\n"""', "\nif __name__"]
-from bench.sampler_bridge import SAMPLERS, make_pless_post_temp_sampler
+from bench.sampler_bridge import (SAMPLERS, LOGIT_SAMPLERS, make_pless_post_temp_sampler,
+                                  make_top_h_sampler, make_top_nsigma_sampler)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Benchmark pless samplers on MBPP")
     parser.add_argument("--model", required=True, help="HuggingFace model ID")
     parser.add_argument("--method", required=True,
-                        choices=list(SAMPLERS.keys()) + ["temp", "top_p", "greedy", "beam"],
+                        choices=list(SAMPLERS.keys()) + sorted(LOGIT_SAMPLERS) + ["temp", "top_p", "greedy", "beam"],
                         help="Sampling method")
     parser.add_argument("--n-samples", type=int, default=10, help="Number of samples per problem")
     parser.add_argument("--max-new-tokens", type=int, default=512, help="Max new tokens per sample")
@@ -52,6 +53,10 @@ def parse_args():
     parser.add_argument("--post-temperature", type=float, default=None,
                         help="Post-truncation temperature (T₂) for p-less variants. "
                              "Applied after p-less threshold pruning to flatten survivor distribution.")
+    parser.add_argument("--alpha", type=float, default=None,
+                        help="Entropy threshold coefficient for top-H (default 0.4, range (0,1))")
+    parser.add_argument("--nsigma", type=float, default=None,
+                        help="Threshold multiplier for top-nσ (default 1.0)")
     parser.add_argument("--dtype", choices=["bfloat16", "float16"], default="bfloat16",
                         help="Model dtype (default: bfloat16)")
     parser.add_argument("--attn-impl", choices=["sdpa", "eager"], default=None,
@@ -63,6 +68,10 @@ def parse_args():
         parser.error("--num-beams is required when --method is beam")
     if args.post_temperature is not None and args.method not in SAMPLERS:
         parser.error("--post-temperature only works with p-less methods")
+    if args.alpha is not None and args.method != "top_h":
+        parser.error("--alpha only works with top_h method")
+    if args.nsigma is not None and args.method != "top_nsigma":
+        parser.error("--nsigma only works with top_nsigma method")
     return args
 
 
@@ -74,6 +83,10 @@ def main():
         method_key = f"top_p{args.top_p}"
     elif args.method == "beam":
         method_key = f"beam{args.num_beams}"
+    elif args.method == "top_h" and args.alpha is not None and args.alpha != 0.4:
+        method_key = f"top_h_a{args.alpha}"
+    elif args.method == "top_nsigma" and args.nsigma is not None and args.nsigma != 1.0:
+        method_key = f"top_nsigma_n{args.nsigma}"
     else:
         method_key = args.method
     if not is_instruct_model(args.model) and args.n_shots != 3:
@@ -113,8 +126,14 @@ def main():
     print(f"Loading model: {args.model}")
     model, tokenizer = load_model_and_tokenizer(args.model, dtype=args.dtype, attn_impl=args.attn_impl)
 
+    sampler_fn = None
+    logit_sampler_fn = None
     if args.method not in ("temp", "top_p", "greedy", "beam"):
-        if args.post_temperature is not None:
+        if args.method == "top_h":
+            logit_sampler_fn = make_top_h_sampler(args.alpha if args.alpha is not None else 0.4)
+        elif args.method == "top_nsigma":
+            logit_sampler_fn = make_top_nsigma_sampler(args.nsigma if args.nsigma is not None else 1.0)
+        elif args.post_temperature is not None:
             sampler_fn = make_pless_post_temp_sampler(args.post_temperature)
         else:
             sampler_fn = SAMPLERS[args.method]
@@ -188,6 +207,7 @@ def main():
                     max_new_tokens=args.max_new_tokens,
                     temperature=args.temperature,
                     stop_strings=stop_strings,
+                    logit_sampler_fn=logit_sampler_fn,
                 )
 
             # Prepend the code prefix so each sample is complete, executable code
@@ -209,6 +229,10 @@ def main():
                 record["num_beams"] = args.num_beams
             if args.post_temperature is not None:
                 record["post_temperature"] = args.post_temperature
+            if args.alpha is not None:
+                record["alpha"] = args.alpha
+            if args.nsigma is not None:
+                record["nsigma"] = args.nsigma
             if task.get("test_setup_code"):
                 record["test_setup_code"] = task["test_setup_code"]
             append_result(out_path, record)

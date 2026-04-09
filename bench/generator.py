@@ -345,8 +345,15 @@ def generate_samples(
     max_new_tokens: int,
     temperature: float,
     stop_strings: list[str] | None = None,
+    logit_sampler_fn=None,
 ) -> list[str]:
-    """Generate n_samples completions in parallel using batched decoding."""
+    """Generate n_samples completions in parallel using batched decoding.
+
+    Either *sampler_fn* (prob-based, for pless methods) or *logit_sampler_fn*
+    (logit-based, for top-H / top-nσ) drives token selection.  When
+    *logit_sampler_fn* is provided it receives temperature-scaled logits
+    directly — no softmax or smoothing is applied.
+    """
     if isinstance(prompt_text, list):
         input_ids = torch.tensor([prompt_text], device=model.device)
     else:
@@ -379,10 +386,14 @@ def generate_samples(
     logits = prefill_logits[0, -1].float()  # (vocab,)
     if temperature != 1.0:
         logits = logits / temperature
-    probs = torch.softmax(logits, dim=-1).unsqueeze(0).expand(N, -1).contiguous()  # (N, vocab)
-    probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
-    next_tokens = sampler_fn(probs_s)  # (N, 1)
-    next_tokens = next_tokens.view(N)  # (N,)
+    if logit_sampler_fn is not None:
+        logits_batch = logits.unsqueeze(0).expand(N, -1).contiguous()  # (N, vocab)
+        next_tokens = logit_sampler_fn(logits_batch).view(N)           # (N,)
+    else:
+        probs = torch.softmax(logits, dim=-1).unsqueeze(0).expand(N, -1).contiguous()  # (N, vocab)
+        probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
+        next_tokens = sampler_fn(probs_s)  # (N, 1)
+        next_tokens = next_tokens.view(N)  # (N,)
 
     # Storage for generated token ids — pad with eos_id
     all_ids = torch.full((N, max_new_tokens), eos_id, dtype=torch.long, device=model.device)
@@ -416,9 +427,12 @@ def generate_samples(
                 logits = output.logits[:, -1].float()  # (N, vocab)
                 if temperature != 1.0:
                     logits = logits / temperature
-                probs = torch.softmax(logits, dim=-1)  # (N, vocab)
-                probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
-                next_tokens = sampler_fn(probs_s).view(N)  # (N,)
+                if logit_sampler_fn is not None:
+                    next_tokens = logit_sampler_fn(logits).view(N)  # (N,)
+                else:
+                    probs = torch.softmax(logits, dim=-1)  # (N, vocab)
+                    probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
+                    next_tokens = sampler_fn(probs_s).view(N)  # (N,)
 
                 # Only write tokens for unfinished sequences
                 next_tokens = torch.where(finished, torch.tensor(eos_id, device=model.device), next_tokens)

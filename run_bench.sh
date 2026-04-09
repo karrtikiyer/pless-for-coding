@@ -31,6 +31,8 @@ CONFIGS=(
   "pless 1.0"
   "pless_norm 1.0"
   "top_p 0.9"
+  "top_h 1.0"
+  "top_nsigma 1.0"
   "greedy 1.0"
   "beam4 1.0"
   "beam8 1.0"
