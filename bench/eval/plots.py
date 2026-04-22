@@ -928,6 +928,206 @@ def plot_method_heatmaps(
     plt.close(fig)
 
 
+def plot_pass_at_1_comparison(
+    metrics_list: list[dict],
+    output_path: Path,
+    dataset_name: str = "MBPP",
+) -> None:
+    """Horizontal bar chart ranking methods by pass@1, one subplot per model."""
+    from matplotlib.patches import Patch
+
+    models_order = list(dict.fromkeys(m["model"] for m in metrics_list))
+    n_models = len(models_order)
+    if n_models == 0:
+        return
+
+    by_model: dict[str, list[dict]] = {model: [] for model in models_order}
+    for m in metrics_list:
+        by_model[m["model"]].append(m)
+
+    fig, axes = plt.subplots(
+        1, n_models, figsize=(8 * n_models, max(5, 0.4 * max(
+            len(v) for v in by_model.values()
+        ))), squeeze=False,
+    )
+
+    for col, model in enumerate(models_order):
+        ax = axes[0, col]
+        configs = by_model[model]
+
+        # Extract pass@1 and sort descending
+        rows = []
+        for m in configs:
+            p1 = m.get("pass_at_k", {}).get("1")
+            if p1 is None:
+                continue
+            label = _METHOD_DISPLAY_NAMES.get(m["method"], m["method"])
+            rows.append((label, p1 * 100, m["method"]))
+        rows.sort(key=lambda r: r[1], reverse=True)
+
+        if not rows:
+            continue
+
+        methods = [r[0] for r in rows]
+        scores = [r[1] for r in rows]
+        method_keys = [r[2] for r in rows]
+
+        colors = [_METHOD_COLORS.get(mk, "#A0AEC0") for mk in method_keys]
+
+        y_pos = np.arange(len(methods))
+        bars = ax.barh(y_pos, scores, color=colors, edgecolor=[
+            _darken(c) for c in colors
+        ], linewidth=0.5)
+
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(methods, fontsize=8)
+        ax.invert_yaxis()
+        ax.set_xlabel("pass@1 (%)")
+        short_model = model.split("/")[-1] if "/" in model else model
+        ax.set_title(short_model, fontsize=11)
+        ax.grid(axis="x", alpha=0.3)
+
+        for bar, score in zip(bars, scores):
+            ax.text(
+                bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2,
+                f"{score:.1f}", va="center", fontsize=7,
+            )
+
+    fig.suptitle(f"{dataset_name}: pass@1 Comparison", fontsize=13)
+    fig.tight_layout()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+
+def _darken(hex_color: str, factor: float = 0.7) -> str:
+    """Darken a hex colour for bar edges."""
+    hex_color = hex_color.lstrip("#")
+    r, g, b = (int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    r, g, b = int(r * factor), int(g * factor), int(b * factor)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def plot_metrics_overview(
+    metrics_list: list[dict],
+    output_path: Path,
+    dataset_name: str = "MBPP",
+) -> None:
+    """Faceted line plot with tight y-limits: one row per model, 3 columns.
+
+    Similar to plot_aggregate_lines_faceted but with zoomed y-axes to
+    highlight differences between methods (matching the MBPP per-family style).
+    """
+    import math as _math
+
+    models_order = list(dict.fromkeys(m["model"] for m in metrics_list))
+    by_model: dict[str, list[dict]] = {model: [] for model in models_order}
+    for m in metrics_list:
+        by_model[m["model"]].append(m)
+
+    n_models = len(models_order)
+    if n_models == 0:
+        return
+
+    col_titles = ["pass@k", "cover@t", "cover@t (distinct)"]
+    fig, axes = plt.subplots(
+        n_models, 3, figsize=(15, 4 * n_models), sharey=False, squeeze=False,
+    )
+
+    legend_handles: dict[str, object] = {}
+    col_vals: list[list[list[float]]] = [[[] for _ in range(3)] for _ in range(n_models)]
+
+    for row, model in enumerate(models_order):
+        for m in by_model[model]:
+            method = m["method"]
+            method_style = _METHOD_STYLES.get(method, dict(linestyle="-", marker="x"))
+            color = _METHOD_COLORS.get(method, "#333333")
+            label = _METHOD_DISPLAY_NAMES.get(method, method)
+            style = dict(
+                color=color,
+                linestyle=method_style["linestyle"],
+                marker=method_style["marker"],
+                linewidth=2.5,
+                markersize=8,
+            )
+
+            # pass@k
+            ks = sorted(m["pass_at_k"], key=lambda x: int(x))
+            vals0 = [m["pass_at_k"][k] * 100 for k in ks]
+            col_vals[row][0].extend(vals0)
+            line, = axes[row, 0].plot([int(k) for k in ks], vals0, **style)
+            if label not in legend_handles:
+                legend_handles[label] = line
+
+            # cover@t
+            ts = sorted(m["cover_at_t"], key=lambda x: float(x))
+            vals1 = [m["cover_at_t"][t] for t in ts]
+            col_vals[row][1].extend(vals1)
+            axes[row, 1].plot([float(t) for t in ts], vals1, **style)
+
+            # cover@t (distinct)
+            ts_d = sorted(m["cover_at_t_distinct"], key=lambda x: float(x))
+            vals2 = [m["cover_at_t_distinct"][t] for t in ts_d]
+            col_vals[row][2].extend(vals2)
+            axes[row, 2].plot([float(t) for t in ts_d], vals2, **style)
+
+        short_model = model.split("/")[-1] if "/" in model else model
+        axes[row, 0].set_ylabel(f"{short_model}\n\nPercentage", fontsize=9)
+        for c in range(3):
+            axes[row, c].grid(alpha=0.3)
+        if row < n_models - 1:
+            for c in range(3):
+                axes[row, c].tick_params(labelbottom=False)
+
+    # Tight per-model per-column y-limits
+    for row in range(n_models):
+        for c in range(3):
+            vals = col_vals[row][c]
+            if not vals:
+                continue
+            lo = max(0.0, _math.floor(min(vals)) - 3)
+            hi = min(100.0, _math.ceil(max(vals)) + 3)
+            if hi - lo < 15:
+                mid = (lo + hi) / 2
+                lo, hi = max(0.0, mid - 8), min(100.0, mid + 8)
+            axes[row, c].set_ylim(lo, hi)
+
+    # Column titles and x-labels
+    for c, title in enumerate(col_titles):
+        axes[0, c].set_title(title, fontsize=11)
+    axes[-1, 0].set_xlabel("k")
+    axes[-1, 1].set_xlabel("t")
+    axes[-1, 2].set_xlabel("t")
+
+    # Set x-ticks from last plotted data
+    if metrics_list:
+        last = metrics_list[-1]
+        ks = sorted(last["pass_at_k"], key=lambda x: int(x))
+        ts = sorted(last["cover_at_t"], key=lambda x: float(x))
+        ts_d = sorted(last["cover_at_t_distinct"], key=lambda x: float(x))
+        for row in range(n_models):
+            axes[row, 0].set_xticks([int(k) for k in ks])
+            axes[row, 1].set_xticks([float(t) for t in ts])
+            axes[row, 2].set_xticks([float(t) for t in ts_d])
+
+    n_legend = len(legend_handles)
+    fig.legend(
+        legend_handles.values(), legend_handles.keys(),
+        loc="lower center",
+        ncol=min(n_legend, 5),
+        fontsize=8.5,
+        frameon=True,
+    )
+    fig.suptitle(f"{dataset_name}: Metrics Overview", fontsize=13)
+    bottom_margin = 0.04 + 0.025 * max(0, (n_legend - 1) // 5)
+    fig.tight_layout(rect=[0, bottom_margin, 1, 0.97])
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate metric visualizations from JSON files"
@@ -1045,6 +1245,19 @@ def main():
             dataset_name=args.dataset,
         )
         print(f"Saved {out / 'diversity_metrics_comparison.png'}")
+
+    # pass@1 comparison bar chart (ranked horizontal bars per model)
+    plot_pass_at_1_comparison(
+        metrics_list, out / "pass_at_1_comparison.png", dataset_name=args.dataset,
+    )
+    print(f"Saved {out / 'pass_at_1_comparison.png'}")
+
+    # Metrics overview with tight y-limits (zoomed faceted line plots)
+    if n_models >= 1:
+        plot_metrics_overview(
+            metrics_list, out / "metrics_overview.png", dataset_name=args.dataset,
+        )
+        print(f"Saved {out / 'metrics_overview.png'}")
 
 
 if __name__ == "__main__":

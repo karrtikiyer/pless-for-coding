@@ -581,6 +581,11 @@ def parse_args():
         "--dataset", choices=["humaneval", "mbpp", "all"], default="all",
         help="Only evaluate configs for this dataset (default: all)",
     )
+    parser.add_argument(
+        "--format", nargs="+", default=None,
+        help="Only evaluate configs matching these formats "
+             "(e.g. he_full_json he_full_jsonl mbpp_jsonl he_temp_jsonl)",
+    )
     return parser.parse_args()
 
 
@@ -592,6 +597,9 @@ def main():
     units = discover_all()
     if args.dataset != "all":
         units = [u for u in units if u.dataset == args.dataset]
+    if args.format:
+        allowed_formats = set(args.format)
+        units = [u for u in units if u.format in allowed_formats]
     print(f"  Found {len(units)} configurations")
 
     by_format = {}

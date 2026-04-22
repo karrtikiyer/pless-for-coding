@@ -214,3 +214,15 @@ results/**/*.zip
 
 # Model weights
 models/
+
+# Backup snapshots
+**/*_backup_*/
+
+# Scratch / debug text files
+test.txt
+testLog.txt
+countHexadecimal.txt
+my_program_log.txt
+
+# Experimental result folders
+results/results_tf*/
