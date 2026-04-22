@@ -12,9 +12,10 @@ from bench.humaneval.prompts import (
     format_prompt_instruct,
     is_instruct_model,
 )
-from bench.sampler_bridge import SAMPLERS, make_pless_post_temp_sampler
+from bench.sampler_bridge import (SAMPLERS, LOGIT_SAMPLERS, make_pless_post_temp_sampler,
+                                  make_top_h_sampler, make_top_nsigma_sampler)
 
-METHODS = list(SAMPLERS.keys()) + ["temp", "top_p"]
+METHODS = list(SAMPLERS.keys()) + sorted(LOGIT_SAMPLERS) + ["temp", "top_p"]
 
 
 def parse_args():
@@ -34,11 +35,19 @@ def parse_args():
     parser.add_argument("--post-temperature", type=float, default=None,
                         help="Post-truncation temperature (T₂) for p-less variants. "
                              "Applied after p-less threshold pruning to flatten survivor distribution.")
+    parser.add_argument("--alpha", type=float, default=None,
+                        help="Entropy threshold coefficient for top-H (default 0.4, range (0,1))")
+    parser.add_argument("--nsigma", type=float, default=None,
+                        help="Threshold multiplier for top-nσ (default 1.0)")
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
     if args.post_temperature is not None and args.method not in SAMPLERS:
         parser.error("--post-temperature only works with p-less methods")
+    if args.alpha is not None and args.method != "top_h":
+        parser.error("--alpha only works with top_h method")
+    if args.nsigma is not None and args.method != "top_nsigma":
+        parser.error("--nsigma only works with top_nsigma method")
     return args
 
 
@@ -57,6 +66,8 @@ def run_benchmark(
     task_ids: list[str] | None = None,
     top_p: float | None = None,
     post_temperature: float | None = None,
+    alpha: float | None = None,
+    nsigma: float | None = None,
 ):
     """Run HumanEval benchmark for a single (method, temperature) config.
 
@@ -64,6 +75,10 @@ def run_benchmark(
     or via the CLI main() which loads the model itself.
     """
     method_key = f"top_p{top_p}" if method == "top_p" else method
+    if method == "top_h" and alpha is not None and alpha != 0.4:
+        method_key = f"top_h_a{alpha}"
+    if method == "top_nsigma" and nsigma is not None and nsigma != 1.0:
+        method_key = f"top_nsigma_n{nsigma}"
     if post_temperature is not None:
         method_key = f"{method_key}_pt{post_temperature}"
     out_path = get_output_path(results_dir, model_id, method_key, temperature, benchmark="humaneval")
@@ -91,13 +106,17 @@ def run_benchmark(
         remaining = remaining[:max_problems]
     print(f"  Problems remaining: {len(remaining)} / {len(dataset)}")
 
+    sampler_fn = None
+    logit_sampler_fn = None
     if method not in ("temp", "top_p"):
-        if post_temperature is not None:
+        if method == "top_h":
+            logit_sampler_fn = make_top_h_sampler(alpha if alpha is not None else 0.4)
+        elif method == "top_nsigma":
+            logit_sampler_fn = make_top_nsigma_sampler(nsigma if nsigma is not None else 1.0)
+        elif post_temperature is not None:
             sampler_fn = make_pless_post_temp_sampler(post_temperature)
         else:
             sampler_fn = SAMPLERS.get(method)
-    else:
-        sampler_fn = None
 
     for task in tqdm(remaining, desc=f"{method}_t{temperature}"):
         task_id = task["task_id"]
@@ -128,6 +147,7 @@ def run_benchmark(
                     max_new_tokens=max_new_tokens,
                     temperature=temperature,
                     stop_strings=stop_strings,
+                    logit_sampler_fn=logit_sampler_fn,
                 )
 
             samples = [code_prefix + s for s in raw_samples]
@@ -147,6 +167,10 @@ def run_benchmark(
                 record["top_p"] = top_p
             if post_temperature is not None:
                 record["post_temperature"] = post_temperature
+            if alpha is not None:
+                record["alpha"] = alpha
+            if nsigma is not None:
+                record["nsigma"] = nsigma
             append_result(out_path, record)
             tqdm.write(f"  Completed task_id={task_id}")
 
@@ -178,6 +202,8 @@ def main():
         task_ids=args.task_ids,
         top_p=args.top_p,
         post_temperature=args.post_temperature,
+        alpha=args.alpha,
+        nsigma=args.nsigma,
     )
 
 

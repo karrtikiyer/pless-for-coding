@@ -21,6 +21,8 @@ CONFIGS = [
     ("pless_norm", 2.5, None),
     ("pless_norm", 3.0, None),
     ("top_p", 1.0, 0.9),
+    ("top_h", 1.0, None),
+    ("top_nsigma", 1.0, None),
 ]
 
 
