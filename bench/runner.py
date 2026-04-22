@@ -27,7 +27,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Benchmark pless samplers on MBPP")
     parser.add_argument("--model", required=True, help="HuggingFace model ID")
     parser.add_argument("--method", required=True,
-                        choices=list(SAMPLERS.keys()) + ["temp", "top_p", "greedy", "beam"],
+                        choices=list(SAMPLERS.keys()) + ["temp", "top_p", "top_k", "greedy", "beam"],
                         help="Sampling method")
     parser.add_argument("--n-samples", type=int, default=10, help="Number of samples per problem")
     parser.add_argument("--max-new-tokens", type=int, default=512, help="Max new tokens per sample")
@@ -39,6 +39,7 @@ def parse_args():
     parser.add_argument("--mbpp-config", choices=["sanitized", "full"], default="sanitized",
                         help="MBPP dataset config: 'sanitized' (257 problems) or 'full' (500 problems)")
     parser.add_argument("--top-p", type=float, default=None, help="top_p for nucleus sampling (method=top_p)")
+    parser.add_argument("--top-k", type=int, default=None, help="top_k for top-k sampling (method=top_k)")
     parser.add_argument("--num-beams", type=int, default=None, help="Beam width (method=beam)")
     parser.add_argument("--n-shots", type=int, default=3, choices=[0, 1, 2, 3],
                         help="Few-shot examples in base model prompt (default 3, 0=zero-shot)")
@@ -59,6 +60,8 @@ def parse_args():
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
+    if args.method == "top_k" and args.top_k is None:
+        parser.error("--top-k is required when --method is top_k")
     if args.method == "beam" and args.num_beams is None:
         parser.error("--num-beams is required when --method is beam")
     if args.post_temperature is not None and args.method not in SAMPLERS:
@@ -72,6 +75,8 @@ def main():
     # Output path — encode n_shots in filename when not the default (3)
     if args.method == "top_p":
         method_key = f"top_p{args.top_p}"
+    elif args.method == "top_k":
+        method_key = f"top_k{args.top_k}"
     elif args.method == "beam":
         method_key = f"beam{args.num_beams}"
     else:
@@ -113,7 +118,7 @@ def main():
     print(f"Loading model: {args.model}")
     model, tokenizer = load_model_and_tokenizer(args.model, dtype=args.dtype, attn_impl=args.attn_impl)
 
-    if args.method not in ("temp", "top_p", "greedy", "beam"):
+    if args.method not in ("temp", "top_p", "top_k", "greedy", "beam"):
         if args.post_temperature is not None:
             sampler_fn = make_pless_post_temp_sampler(args.post_temperature)
         else:
@@ -167,7 +172,7 @@ def main():
                     max_new_tokens=args.max_new_tokens,
                     stop_strings=stop_strings,
                 )
-            elif args.method in ("temp", "top_p"):
+            elif args.method in ("temp", "top_p", "top_k"):
                 raw_samples = generate_samples_standard(
                     model=model,
                     tokenizer=tokenizer,
@@ -177,6 +182,7 @@ def main():
                     temperature=args.temperature,
                     stop_strings=stop_strings,
                     top_p=args.top_p if args.method == "top_p" else 1.0,
+                    top_k=args.top_k if args.method == "top_k" else 0,
                 )
             else:
                 raw_samples = generate_samples(
@@ -205,6 +211,8 @@ def main():
             }
             if args.method == "top_p":
                 record["top_p"] = args.top_p
+            if args.method == "top_k":
+                record["top_k"] = args.top_k
             if args.method == "beam":
                 record["num_beams"] = args.num_beams
             if args.post_temperature is not None:
