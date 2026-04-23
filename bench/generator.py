@@ -26,13 +26,29 @@ for _name in ("GenerateOutput", "SampleOutput"):
 # Qwen-7B's remote code does past_key_values[i] to access KV cache layers.
 from transformers.cache_utils import DynamicCache
 
-if not hasattr(DynamicCache, '__getitem__'):
-    def _dynamic_cache_getitem(self, i):
+# Restore/fix DynamicCache subscript access for old Qwen compatibility.
+# TF5 removed __getitem__; TF4 has __getitem__ but returns (None, None)
+# tuples for uninitialised layers — old Qwen then calls .size() on None.
+# Override unconditionally so uninitialised layers always return None.
+def _dynamic_cache_getitem(self, i):
+    # TF5 path: .layers attribute with is_initialized check
+    if hasattr(self, 'layers'):
+        if i >= len(self.layers):
+            return None
         layer = self.layers[i]
         if not layer.is_initialized:
             return None
         return (layer.keys, layer.values)
-    DynamicCache.__getitem__ = _dynamic_cache_getitem
+    # TF4 path: key_cache / value_cache lists
+    if hasattr(self, 'key_cache'):
+        if i >= len(self.key_cache):
+            return None
+        k, v = self.key_cache[i], self.value_cache[i]
+        if k is None or v is None:
+            return None
+        return (k, v)
+    return None
+DynamicCache.__getitem__ = _dynamic_cache_getitem
 
 # Restore get_head_mask removed in transformers 5.x.
 # Qwen-7B's remote code calls self.get_head_mask(head_mask, num_layers).
@@ -110,11 +126,12 @@ def load_model_and_tokenizer(
     # DynamicCache (CUDAGraph overwrites KV cache tensors). Re-enable when fixed upstream.
 
     # Qwen-7B's remote code manages its own tuple-of-tuples KV cache and expects
-    # past_key_values=None on the first forward pass.  transformers 5.x generate()
-    # pre-creates a DynamicCache(config=...) with uninitialised layers (keys=None),
-    # which Qwen misinterprets as a populated cache → 'NoneType' has no attr 'size'.
-    # Opting out makes generate() skip DynamicCache creation entirely.
-    if is_old_qwen and _TF5:
+    # past_key_values=None on the first forward pass.  Both transformers 5.x and
+    # late 4.x generate() pre-create a DynamicCache with uninitialised layers
+    # (keys=None), which Qwen misinterprets as a populated cache →
+    # 'NoneType' has no attr 'size'.  Opt out unconditionally so generate()
+    # skips DynamicCache creation (harmless no-op if the method isn't checked).
+    if is_old_qwen:
         type(model)._supports_default_dynamic_cache = classmethod(lambda cls: False)
 
     # Old Qwen tokenizers lack chat_template; set Qwen's ChatML format so
