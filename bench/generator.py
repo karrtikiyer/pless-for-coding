@@ -160,6 +160,19 @@ def _truncate_at_stop(text: str, stop_strings: list[str]) -> str:
     return text[:earliest]
 
 
+def _strip_think_content(text: str) -> str:
+    """Strip <think>...</think> block from decoded text.
+
+    Finds the last </think> tag and returns everything after it, stripped of
+    leading whitespace. If no </think> found, returns the original text.
+    """
+    marker = "</think>"
+    idx = text.rfind(marker)
+    if idx == -1:
+        return text
+    return text[idx + len(marker):].lstrip("\n")
+
+
 def generate_samples_standard(
     model,
     tokenizer,
@@ -474,6 +487,162 @@ def generate_samples(
         full_text = tokenizer.decode(full_ids, skip_special_tokens=True)
         text = full_text[len(decoded_prompt):]
         # Post-generation truncation as safety net
+        if stop_strings:
+            text = _truncate_at_stop(text, stop_strings)
+        samples.append(text)
+
+    return samples
+
+
+def generate_samples_split(
+    model,
+    tokenizer,
+    prompt_text: str | list[int],
+    sampler_fn_think,
+    sampler_fn_code,
+    n_samples: int,
+    max_new_tokens: int,
+    temperature_think: float,
+    temperature_code: float,
+    stop_strings: list[str] | None = None,
+    think_end_token_id: int = 151668,
+) -> list[str]:
+    """Generate samples with different samplers for thinking vs code phases.
+
+    Starts in "think" mode (using sampler_fn_think + temperature_think).
+    When </think> token is emitted, switches to "code" mode (sampler_fn_code
+    + temperature_code) for the remainder. One-way transition per sample.
+    """
+    # Verify </think> token ID at runtime
+    think_end_ids = tokenizer.encode("</think>", add_special_tokens=False)
+    assert len(think_end_ids) == 1 and think_end_ids[0] == think_end_token_id, (
+        f"Expected </think> to be single token {think_end_token_id}, "
+        f"got {think_end_ids}"
+    )
+
+    if isinstance(prompt_text, list):
+        input_ids = torch.tensor([prompt_text], device=model.device)
+    else:
+        input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(model.device)
+    eos_id = tokenizer.eos_token_id
+    if eos_id is None:
+        for candidate in ("<|endoftext|>", "<|im_end|>"):
+            cid = tokenizer.convert_tokens_to_ids(candidate)
+            if cid is not None and cid != tokenizer.unk_token_id:
+                eos_id = cid
+                break
+    if eos_id is None:
+        eos_id = getattr(model.config, "eos_token_id", None)
+    if eos_id is None:
+        raise ValueError("Cannot determine eos_token_id for this tokenizer")
+    N = n_samples
+
+    # Prefill: run prompt through model once to get KV cache (batch_size=1)
+    with torch.no_grad():
+        prefill_output = model(input_ids=input_ids, return_dict=True)
+    prefill_kv = prefill_output.past_key_values
+    prefill_logits = prefill_output.logits  # (1, seq_len, vocab)
+
+    # Expand KV cache to batch_size=N
+    past_key_values = _expand_past_key_values(prefill_kv, N)
+
+    # All samples start in think mode
+    inside_think = torch.ones(N, dtype=torch.bool, device=model.device)
+
+    # First token from prefill logits — all in think mode, use temperature_think
+    logits = prefill_logits[0, -1].float()  # (vocab,)
+    if temperature_think != 1.0:
+        logits = logits / temperature_think
+    probs = torch.softmax(logits, dim=-1).unsqueeze(0).expand(N, -1).contiguous()  # (N, vocab)
+    probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
+    next_tokens = sampler_fn_think(probs_s.clone()).view(N)
+
+    # Storage for generated token ids
+    all_ids = torch.full((N, max_new_tokens), eos_id, dtype=torch.long, device=model.device)
+    all_ids[:, 0] = next_tokens
+
+    # Track finished sequences
+    finished = next_tokens == eos_id
+    # Check think→code transition
+    inside_think = inside_think & (next_tokens != think_end_token_id)
+
+    # Rolling text buffers for stop sequence detection
+    text_buffers = [""] * N if stop_strings else None
+
+    if stop_strings and not finished.all():
+        for i in range(N):
+            if not finished[i]:
+                text_buffers[i] = tokenizer.decode(all_ids[i, :1], skip_special_tokens=True)
+                for stop in stop_strings:
+                    if stop in text_buffers[i]:
+                        finished[i] = True
+                        break
+
+    if not finished.all():
+        encodings = next_tokens.view(N, 1)
+        with torch.no_grad():
+            for step in range(1, max_new_tokens):
+                output = model(
+                    input_ids=encodings,
+                    past_key_values=past_key_values,
+                    return_dict=True,
+                )
+                logits = output.logits[:, -1].float()  # (N, vocab)
+
+                # Element-wise temperature based on think/code phase
+                temp_vec = torch.where(inside_think, temperature_think, temperature_code)
+                logits = logits / temp_vec.unsqueeze(-1)
+
+                probs = torch.softmax(logits, dim=-1)  # (N, vocab)
+                probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
+
+                # Split batch: apply appropriate sampler to each phase
+                next_tokens = torch.full((N,), eos_id, dtype=torch.long, device=model.device)
+                think_mask = inside_think & ~finished
+                code_mask = ~inside_think & ~finished
+                if think_mask.any():
+                    idx = think_mask.nonzero(as_tuple=True)[0]
+                    next_tokens[idx] = sampler_fn_think(probs_s[idx].clone()).view(-1)
+                if code_mask.any():
+                    idx = code_mask.nonzero(as_tuple=True)[0]
+                    next_tokens[idx] = sampler_fn_code(probs_s[idx].clone()).view(-1)
+
+                # Write tokens for unfinished sequences
+                next_tokens = torch.where(finished, torch.tensor(eos_id, device=model.device), next_tokens)
+                all_ids[:, step] = next_tokens
+
+                finished = finished | (next_tokens == eos_id)
+
+                # One-way think→code transition when </think> is emitted
+                inside_think = inside_think & (next_tokens != think_end_token_id)
+
+                # Check stop sequences
+                if stop_strings:
+                    for i in range(N):
+                        if not finished[i]:
+                            text_buffers[i] = tokenizer.decode(all_ids[i, :step + 1], skip_special_tokens=True)
+                            for stop in stop_strings:
+                                if stop in text_buffers[i]:
+                                    finished[i] = True
+                                    break
+
+                if finished.all():
+                    break
+
+                past_key_values = output.past_key_values
+                encodings = next_tokens.view(N, 1)
+
+    # Decode each sequence
+    decoded_prompt = tokenizer.decode(input_ids[0], skip_special_tokens=True)
+    samples = []
+    for i in range(N):
+        ids = all_ids[i]
+        eos_positions = (ids == eos_id).nonzero(as_tuple=True)[0]
+        if len(eos_positions) > 0:
+            ids = ids[:eos_positions[0]]
+        full_ids = torch.cat([input_ids[0], ids])
+        full_text = tokenizer.decode(full_ids, skip_special_tokens=True)
+        text = full_text[len(decoded_prompt):]
         if stop_strings:
             text = _truncate_at_stop(text, stop_strings)
         samples.append(text)

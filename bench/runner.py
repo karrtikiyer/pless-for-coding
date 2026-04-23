@@ -7,6 +7,7 @@ from tqdm import tqdm
 from bench.checkpointing import append_result, get_output_path, load_completed_ids
 from bench.generator import (generate_samples, generate_samples_standard,
                               generate_samples_greedy, generate_samples_beam,
+                              generate_samples_split, _strip_think_content,
                               load_model_and_tokenizer)
 from bench.humaneval.prompts import HUMANEVAL_STOP_SEQUENCES
 from bench.prompts import (format_prompt_base, format_prompt_base_hybrid,
@@ -20,14 +21,14 @@ from bench.prompts import (format_prompt_base, format_prompt_base_hybrid,
 MBPP_STOP_SEQUENCES = ["\n[DONE]"]
 # BigCode/InCoder zero-shot format: no format delimiters, stop on code-level boundaries.
 MBPP_BIGCODE_STOP_SEQUENCES = ["\nassert", "\nclass", "\nprint", '\n"""', "\nif __name__"]
-from bench.sampler_bridge import SAMPLERS, make_pless_post_temp_sampler
+from bench.sampler_bridge import SAMPLERS, SPLIT_SAMPLERS, make_pless_post_temp_sampler
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Benchmark pless samplers on MBPP")
     parser.add_argument("--model", required=True, help="HuggingFace model ID")
     parser.add_argument("--method", required=True,
-                        choices=list(SAMPLERS.keys()) + ["temp", "top_p", "top_k", "greedy", "beam"],
+                        choices=list(SAMPLERS.keys()) + ["temp", "top_p", "top_k", "greedy", "beam", "split"],
                         help="Sampling method")
     parser.add_argument("--n-samples", type=int, default=10, help="Number of samples per problem")
     parser.add_argument("--max-new-tokens", type=int, default=512, help="Max new tokens per sample")
@@ -57,6 +58,17 @@ def parse_args():
                         help="Model dtype (default: bfloat16)")
     parser.add_argument("--attn-impl", choices=["sdpa", "eager"], default=None,
                         help="Attention implementation (default: auto — sdpa, eager for old Qwen)")
+    parser.add_argument("--enable-thinking", action="store_true",
+                        help="Enable thinking mode (<think> tags). Think content is stripped from "
+                             "code samples; raw output with thinking is saved separately in JSONL.")
+    parser.add_argument("--temp-think", type=float, default=None,
+                        help="Temperature during <think> phase (--method split only)")
+    parser.add_argument("--temp-code", type=float, default=None,
+                        help="Temperature during code phase (--method split only)")
+    parser.add_argument("--sampler-think", choices=list(SPLIT_SAMPLERS.keys()), default=None,
+                        help="Sampler for think phase (--method split only)")
+    parser.add_argument("--sampler-code", choices=list(SPLIT_SAMPLERS.keys()), default=None,
+                        help="Sampler for code phase (--method split only)")
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
@@ -66,6 +78,10 @@ def parse_args():
         parser.error("--num-beams is required when --method is beam")
     if args.post_temperature is not None and args.method not in SAMPLERS:
         parser.error("--post-temperature only works with p-less methods")
+    if args.method == "split":
+        for arg_name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
+            if getattr(args, arg_name) is None:
+                parser.error(f"--{arg_name.replace('_', '-')} is required when --method is split")
     return args
 
 
@@ -79,8 +95,12 @@ def main():
         method_key = f"top_k{args.top_k}"
     elif args.method == "beam":
         method_key = f"beam{args.num_beams}"
+    elif args.method == "split":
+        method_key = f"split_{args.sampler_think}_t{args.temp_think}_{args.sampler_code}_t{args.temp_code}"
     else:
         method_key = args.method
+    if args.enable_thinking:
+        method_key = f"{method_key}_think"
     if not is_instruct_model(args.model) and args.n_shots != 3:
         method_key = f"{method_key}_ns{args.n_shots}"
     if not is_instruct_model(args.model) and args.prompt_style == "hybrid":
@@ -118,7 +138,10 @@ def main():
     print(f"Loading model: {args.model}")
     model, tokenizer = load_model_and_tokenizer(args.model, dtype=args.dtype, attn_impl=args.attn_impl)
 
-    if args.method not in ("temp", "top_p", "top_k", "greedy", "beam"):
+    if args.method == "split":
+        sampler_fn_think = SPLIT_SAMPLERS[args.sampler_think]
+        sampler_fn_code = SPLIT_SAMPLERS[args.sampler_code]
+    elif args.method not in ("temp", "top_p", "top_k", "greedy", "beam"):
         if args.post_temperature is not None:
             sampler_fn = make_pless_post_temp_sampler(args.post_temperature)
         else:
@@ -145,7 +168,8 @@ def main():
         task_id = task["task_id"]
         try:
             if instruct:
-                prompt_text, code_prefix = format_prompt_instruct(task, tokenizer)
+                prompt_text, code_prefix = format_prompt_instruct(
+                    task, tokenizer, enable_thinking=args.enable_thinking)
             elif args.prompt_style == "hybrid":
                 prompt_text, code_prefix = format_prompt_base_hybrid(task)
             elif args.prompt_style == "begin_scaffold":
@@ -184,6 +208,19 @@ def main():
                     top_p=args.top_p if args.method == "top_p" else 1.0,
                     top_k=args.top_k if args.method == "top_k" else 0,
                 )
+            elif args.method == "split":
+                raw_samples = generate_samples_split(
+                    model=model,
+                    tokenizer=tokenizer,
+                    prompt_text=prompt_text,
+                    sampler_fn_think=sampler_fn_think,
+                    sampler_fn_code=sampler_fn_code,
+                    n_samples=args.n_samples,
+                    max_new_tokens=args.max_new_tokens,
+                    temperature_think=args.temp_think,
+                    temperature_code=args.temp_code,
+                    stop_strings=stop_strings,
+                )
             else:
                 raw_samples = generate_samples(
                     model=model,
@@ -197,7 +234,11 @@ def main():
                 )
 
             # Prepend the code prefix so each sample is complete, executable code
-            samples = [code_prefix + s for s in raw_samples]
+            samples_with_think = [code_prefix + s for s in raw_samples]
+            if args.enable_thinking:
+                samples = [_strip_think_content(s) for s in samples_with_think]
+            else:
+                samples = samples_with_think
 
             record = {
                 "model": args.model,
@@ -209,12 +250,19 @@ def main():
                 "test_list": task["test_list"],
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
+            if args.enable_thinking:
+                record["samples_with_thinking"] = samples_with_think
             if args.method == "top_p":
                 record["top_p"] = args.top_p
             if args.method == "top_k":
                 record["top_k"] = args.top_k
             if args.method == "beam":
                 record["num_beams"] = args.num_beams
+            if args.method == "split":
+                record["sampler_think"] = args.sampler_think
+                record["sampler_code"] = args.sampler_code
+                record["temp_think"] = args.temp_think
+                record["temp_code"] = args.temp_code
             if args.post_temperature is not None:
                 record["post_temperature"] = args.post_temperature
             if task.get("test_setup_code"):

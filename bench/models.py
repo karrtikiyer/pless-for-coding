@@ -24,6 +24,7 @@ MBPP_MODELS: list[ModelConfig] = [
     ModelConfig("Qwen/Qwen2.5-Coder-3B",             prompt_style="bigcode"),
     ModelConfig("Qwen/Qwen2.5-Coder-3B-Instruct",  prompt_style="bigcode"),
     ModelConfig("m-a-p/OpenCodeInterpreter-DS-1.3B",  prompt_style="bigcode"),
+    ModelConfig("Qwen/Qwen3-8B",                      prompt_style="paper"),
 ]
 
 HUMANEVAL_MODELS: list[ModelConfig] = [
@@ -33,4 +34,5 @@ HUMANEVAL_MODELS: list[ModelConfig] = [
     ModelConfig("Qwen/Qwen2.5-Coder-7B",                 prompt_style="paper"),
     ModelConfig("Qwen/Qwen2.5-Coder-7B-Instruct",        prompt_style="paper"),
     ModelConfig("Qwen/Qwen3-Coder-30B-A3B-Instruct",     prompt_style="paper"),
+    ModelConfig("Qwen/Qwen3-8B",                          prompt_style="paper"),
 ]

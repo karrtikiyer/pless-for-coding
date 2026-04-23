@@ -16,6 +16,44 @@ SAMPLERS = {
 }
 
 
+def make_temperature_sampler(top_p: float = 0.95, top_k: int = 20):
+    """Standard temperature sampler with top-p/top-k filtering + multinomial.
+
+    Default parameters match Qwen3's recommended generation config for thinking mode.
+    Temperature scaling is handled by the caller (generator loop), so this
+    sampler only applies top-k/top-p filtering and samples.
+    """
+    def sampler(probs: torch.Tensor) -> torch.Tensor:
+        probs = probs.clone()
+        # top-k: zero out everything outside the top-k tokens
+        if top_k > 0:
+            topk_vals, _ = probs.topk(min(top_k, probs.shape[-1]), dim=-1)
+            threshold = topk_vals[:, -1].unsqueeze(-1)
+            probs[probs < threshold] = 0.0
+
+        # top-p (nucleus): sort descending, cumsum, zero tokens past the threshold
+        if top_p < 1.0:
+            sorted_probs, sorted_indices = probs.sort(dim=-1, descending=True)
+            cumsum = sorted_probs.cumsum(dim=-1)
+            # Shift right so the token that crosses the threshold is kept
+            mask = cumsum - sorted_probs > top_p
+            sorted_probs[mask] = 0.0
+            probs.scatter_(dim=-1, index=sorted_indices, src=sorted_probs)
+
+        # Renormalize and sample
+        probs.div_(probs.sum(dim=-1, keepdim=True).clamp(min=1e-12))
+        return torch.multinomial(probs, num_samples=1)
+    return sampler
+
+
+# Samplers available for the split decoding method's --sampler-think / --sampler-code args
+SPLIT_SAMPLERS = {
+    "pless": p_less_decode,
+    "pless_norm": p_less_norm_decode,
+    "temp_standard": make_temperature_sampler(),
+}
+
+
 def make_pless_post_temp_sampler(post_temperature: float):
     """P-less truncation followed by post-truncation temperature scaling.
 

@@ -163,11 +163,15 @@ def format_prompt_base_begin_scaffold(task: dict) -> tuple[str, str]:
         return "".join(parts), ""
 
 
-def format_prompt_instruct(task: dict, tokenizer) -> tuple[str, str]:
+def format_prompt_instruct(task: dict, tokenizer, enable_thinking: bool = False) -> tuple[str, str]:
     """Format a chat-template prompt for instruct models.
 
     Returns (full_prompt, code_prefix). For instruct models the code_prefix
     is empty since the model generates the complete function.
+
+    Args:
+        enable_thinking: Pass enable_thinking=True to the chat template (Qwen3 thinking mode).
+                         Only passed when True to avoid sending unknown kwargs to non-Qwen3 tokenizers.
     """
     test_lines = "\n".join(task["test_list"])
     user_msg = (
@@ -180,6 +184,7 @@ def format_prompt_instruct(task: dict, tokenizer) -> tuple[str, str]:
         {"role": "system", "content": "You are a helpful coding assistant. Write clean, correct Python code."},
         {"role": "user", "content": user_msg},
     ]
+    extra_kwargs = {"enable_thinking": True} if enable_thinking else {}
     # Most tokenizers handle special tokens correctly when encoding the
     # template string, so default to the text path (preserves BOS behaviour).
     # Old Qwen tokenizers are the exception: <|im_start|>/<|im_end|> get
@@ -189,10 +194,12 @@ def format_prompt_instruct(task: dict, tokenizer) -> tuple[str, str]:
     if getattr(tokenizer, '_qwen_direct_tokenize', False):
         prompt = tokenizer.apply_chat_template(
             messages, tokenize=True, add_generation_prompt=True, return_dict=False,
+            **extra_kwargs,
         )
     else:
         prompt = tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True,
+            **extra_kwargs,
         )
     return prompt, ""
 
@@ -200,4 +207,9 @@ def format_prompt_instruct(task: dict, tokenizer) -> tuple[str, str]:
 def is_instruct_model(model_id: str) -> bool:
     """Check if a model ID indicates an instruct/chat model."""
     lower = model_id.lower()
-    return "instruct" in lower or "chat" in lower
+    if "instruct" in lower or "chat" in lower:
+        return True
+    # Qwen3 series are instruction-tuned by default (separate -Base variants exist)
+    if "qwen3-" in lower and "-base" not in lower:
+        return True
+    return False

@@ -5,16 +5,18 @@ from datasets import load_dataset
 from tqdm import tqdm
 
 from bench.checkpointing import append_result, get_output_path, load_completed_ids
-from bench.generator import generate_samples, generate_samples_standard, load_model_and_tokenizer
+from bench.generator import (generate_samples, generate_samples_standard,
+                              generate_samples_split, _strip_think_content,
+                              load_model_and_tokenizer)
 from bench.humaneval.prompts import (
     HUMANEVAL_STOP_SEQUENCES,
     format_prompt_base,
     format_prompt_instruct,
     is_instruct_model,
 )
-from bench.sampler_bridge import SAMPLERS, make_pless_post_temp_sampler
+from bench.sampler_bridge import SAMPLERS, SPLIT_SAMPLERS, make_pless_post_temp_sampler
 
-METHODS = list(SAMPLERS.keys()) + ["temp", "top_p"]
+METHODS = list(SAMPLERS.keys()) + ["temp", "top_p", "split"]
 
 
 def parse_args():
@@ -34,11 +36,26 @@ def parse_args():
     parser.add_argument("--post-temperature", type=float, default=None,
                         help="Post-truncation temperature (T₂) for p-less variants. "
                              "Applied after p-less threshold pruning to flatten survivor distribution.")
+    parser.add_argument("--enable-thinking", action="store_true",
+                        help="Enable thinking mode (<think> tags). Think content is stripped from "
+                             "code samples; raw output with thinking is saved separately in JSONL.")
+    parser.add_argument("--temp-think", type=float, default=None,
+                        help="Temperature during <think> phase (--method split only)")
+    parser.add_argument("--temp-code", type=float, default=None,
+                        help="Temperature during code phase (--method split only)")
+    parser.add_argument("--sampler-think", choices=list(SPLIT_SAMPLERS.keys()), default=None,
+                        help="Sampler for think phase (--method split only)")
+    parser.add_argument("--sampler-code", choices=list(SPLIT_SAMPLERS.keys()), default=None,
+                        help="Sampler for code phase (--method split only)")
     args = parser.parse_args()
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
     if args.post_temperature is not None and args.method not in SAMPLERS:
         parser.error("--post-temperature only works with p-less methods")
+    if args.method == "split":
+        for arg_name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
+            if getattr(args, arg_name) is None:
+                parser.error(f"--{arg_name.replace('_', '-')} is required when --method is split")
     return args
 
 
@@ -57,13 +74,25 @@ def run_benchmark(
     task_ids: list[str] | None = None,
     top_p: float | None = None,
     post_temperature: float | None = None,
+    enable_thinking: bool = False,
+    temp_think: float | None = None,
+    temp_code: float | None = None,
+    sampler_think: str | None = None,
+    sampler_code: str | None = None,
 ):
     """Run HumanEval benchmark for a single (method, temperature) config.
 
     Can be called directly (from orchestration script) with an already-loaded model,
     or via the CLI main() which loads the model itself.
     """
-    method_key = f"top_p{top_p}" if method == "top_p" else method
+    if method == "top_p":
+        method_key = f"top_p{top_p}"
+    elif method == "split":
+        method_key = f"split_{sampler_think}_t{temp_think}_{sampler_code}_t{temp_code}"
+    else:
+        method_key = method
+    if enable_thinking:
+        method_key = f"{method_key}_think"
     if post_temperature is not None:
         method_key = f"{method_key}_pt{post_temperature}"
     out_path = get_output_path(results_dir, model_id, method_key, temperature, benchmark="humaneval")
@@ -91,7 +120,11 @@ def run_benchmark(
         remaining = remaining[:max_problems]
     print(f"  Problems remaining: {len(remaining)} / {len(dataset)}")
 
-    if method not in ("temp", "top_p"):
+    if method == "split":
+        sampler_fn_think = SPLIT_SAMPLERS[sampler_think]
+        sampler_fn_code = SPLIT_SAMPLERS[sampler_code]
+        sampler_fn = None
+    elif method not in ("temp", "top_p"):
         if post_temperature is not None:
             sampler_fn = make_pless_post_temp_sampler(post_temperature)
         else:
@@ -103,7 +136,8 @@ def run_benchmark(
         task_id = task["task_id"]
         try:
             if instruct:
-                prompt_text, code_prefix = format_prompt_instruct(task, tokenizer)
+                prompt_text, code_prefix = format_prompt_instruct(
+                    task, tokenizer, enable_thinking=enable_thinking)
             else:
                 prompt_text, code_prefix = format_prompt_base(task)
 
@@ -118,6 +152,19 @@ def run_benchmark(
                     stop_strings=stop_strings,
                     top_p=top_p if method == "top_p" else 1.0,
                 )
+            elif method == "split":
+                raw_samples = generate_samples_split(
+                    model=model,
+                    tokenizer=tokenizer,
+                    prompt_text=prompt_text,
+                    sampler_fn_think=sampler_fn_think,
+                    sampler_fn_code=sampler_fn_code,
+                    n_samples=n_samples,
+                    max_new_tokens=max_new_tokens,
+                    temperature_think=temp_think,
+                    temperature_code=temp_code,
+                    stop_strings=stop_strings,
+                )
             else:
                 raw_samples = generate_samples(
                     model=model,
@@ -130,7 +177,11 @@ def run_benchmark(
                     stop_strings=stop_strings,
                 )
 
-            samples = [code_prefix + s for s in raw_samples]
+            samples_with_think = [code_prefix + s for s in raw_samples]
+            if enable_thinking:
+                samples = [_strip_think_content(s) for s in samples_with_think]
+            else:
+                samples = samples_with_think
 
             record = {
                 "model": model_id,
@@ -143,8 +194,15 @@ def run_benchmark(
                 "entry_point": task["entry_point"],
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
+            if enable_thinking:
+                record["samples_with_thinking"] = samples_with_think
             if method == "top_p":
                 record["top_p"] = top_p
+            if method == "split":
+                record["sampler_think"] = sampler_think
+                record["sampler_code"] = sampler_code
+                record["temp_think"] = temp_think
+                record["temp_code"] = temp_code
             if post_temperature is not None:
                 record["post_temperature"] = post_temperature
             append_result(out_path, record)
@@ -178,6 +236,11 @@ def main():
         task_ids=args.task_ids,
         top_p=args.top_p,
         post_temperature=args.post_temperature,
+        enable_thinking=args.enable_thinking,
+        temp_think=args.temp_think,
+        temp_code=args.temp_code,
+        sampler_think=args.sampler_think,
+        sampler_code=args.sampler_code,
     )
 
 
