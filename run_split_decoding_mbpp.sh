@@ -34,11 +34,13 @@ export CUDA_VISIBLE_DEVICES="$GPU_ID"
 MODEL="Qwen/Qwen3-8B"
 RESULTS_DIR="results/pless_full_mbpp_results"
 N_SAMPLES=10
-MAX_TOKENS=2048  # thinking can produce 1000+ tokens
+MAX_TOKENS_NO_THINK=512   # standard budget for code-only generation
+MAX_TOKENS_THINK=2048     # thinking can produce 1000+ tokens before code
 MBPP_CONFIG="full"
 
 echo "=== Split decoding experiment on Qwen3-8B ==="
-echo "    GPU: $GPU_ID | n_samples: $N_SAMPLES | max_tokens: $MAX_TOKENS"
+echo "    GPU: $GPU_ID | n_samples: $N_SAMPLES"
+echo "    max_tokens: $MAX_TOKENS_NO_THINK (no-think) / $MAX_TOKENS_THINK (think)"
 $DRY_RUN && echo "    (DRY RUN)"
 
 # ---------------------------------------------------------------------------
@@ -83,7 +85,7 @@ run_cmd uv run python -m bench \
   --method temp \
   --temperature 0.7 \
   --n-samples "$N_SAMPLES" \
-  --max-new-tokens "$MAX_TOKENS" \
+  --max-new-tokens "$MAX_TOKENS_NO_THINK" \
   --mbpp-config "$MBPP_CONFIG" \
   --results-dir "$RESULTS_DIR"
 
@@ -99,7 +101,7 @@ run_cmd uv run python -m bench \
   --method pless \
   --temperature 0.7 \
   --n-samples "$N_SAMPLES" \
-  --max-new-tokens "$MAX_TOKENS" \
+  --max-new-tokens "$MAX_TOKENS_NO_THINK" \
   --mbpp-config "$MBPP_CONFIG" \
   --results-dir "$RESULTS_DIR"
 
@@ -116,7 +118,7 @@ run_cmd uv run python -m bench \
   --temperature 0.6 \
   --enable-thinking \
   --n-samples "$N_SAMPLES" \
-  --max-new-tokens "$MAX_TOKENS" \
+  --max-new-tokens "$MAX_TOKENS_THINK" \
   --mbpp-config "$MBPP_CONFIG" \
   --results-dir "$RESULTS_DIR"
 
@@ -133,7 +135,7 @@ run_cmd uv run python -m bench \
   --temperature 0.6 \
   --enable-thinking \
   --n-samples "$N_SAMPLES" \
-  --max-new-tokens "$MAX_TOKENS" \
+  --max-new-tokens "$MAX_TOKENS_THINK" \
   --mbpp-config "$MBPP_CONFIG" \
   --results-dir "$RESULTS_DIR"
 
@@ -150,7 +152,7 @@ run_cmd uv run python -m bench \
   --temperature 0.6 \
   --enable-thinking \
   --n-samples "$N_SAMPLES" \
-  --max-new-tokens "$MAX_TOKENS" \
+  --max-new-tokens "$MAX_TOKENS_THINK" \
   --mbpp-config "$MBPP_CONFIG" \
   --results-dir "$RESULTS_DIR"
 
@@ -170,7 +172,7 @@ run_cmd uv run python -m bench \
   --temp-code 0.6 \
   --enable-thinking \
   --n-samples "$N_SAMPLES" \
-  --max-new-tokens "$MAX_TOKENS" \
+  --max-new-tokens "$MAX_TOKENS_THINK" \
   --mbpp-config "$MBPP_CONFIG" \
   --results-dir "$RESULTS_DIR"
 
@@ -190,7 +192,7 @@ run_cmd uv run python -m bench \
   --temp-code 0.6 \
   --enable-thinking \
   --n-samples "$N_SAMPLES" \
-  --max-new-tokens "$MAX_TOKENS" \
+  --max-new-tokens "$MAX_TOKENS_THINK" \
   --mbpp-config "$MBPP_CONFIG" \
   --results-dir "$RESULTS_DIR"
 
