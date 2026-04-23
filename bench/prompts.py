@@ -170,8 +170,10 @@ def format_prompt_instruct(task: dict, tokenizer, enable_thinking: bool = False)
     is empty since the model generates the complete function.
 
     Args:
-        enable_thinking: Pass enable_thinking=True to the chat template (Qwen3 thinking mode).
-                         Only passed when True to avoid sending unknown kwargs to non-Qwen3 tokenizers.
+        enable_thinking: Pass enable_thinking to the chat template (Qwen3 thinking mode).
+                         Always passed explicitly — Qwen3 defaults to thinking ON, so we
+                         must send False to suppress it when not wanted.  Non-Qwen3
+                         templates silently ignore the unknown kwarg (Jinja passthrough).
     """
     test_lines = "\n".join(task["test_list"])
     user_msg = (
@@ -184,7 +186,7 @@ def format_prompt_instruct(task: dict, tokenizer, enable_thinking: bool = False)
         {"role": "system", "content": "You are a helpful coding assistant. Write clean, correct Python code."},
         {"role": "user", "content": user_msg},
     ]
-    extra_kwargs = {"enable_thinking": True} if enable_thinking else {}
+    extra_kwargs = {"enable_thinking": enable_thinking}
     # Most tokenizers handle special tokens correctly when encoding the
     # template string, so default to the text path (preserves BOS behaviour).
     # Old Qwen tokenizers are the exception: <|im_start|>/<|im_end|> get
