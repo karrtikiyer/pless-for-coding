@@ -143,7 +143,8 @@ for entry in "${MODELS[@]}"; do
     --model "$MODEL_ID" \
     --method temp \
     --temperature "$TEMP" \
-    --mbpp-config full
+    --mbpp-config full \
+    --results-dir results/pless_full_mbpp_results
 
   # --- Top-p (temperature=1.0, matching paper's generate.py) ---
   echo ""
@@ -153,7 +154,8 @@ for entry in "${MODELS[@]}"; do
     --method top_p \
     --top-p "$TOP_P" \
     --temperature 1.0 \
-    --mbpp-config full
+    --mbpp-config full \
+    --results-dir results/pless_full_mbpp_results
 
   # --- Top-k (temperature=1.0, matching paper's generate.py) ---
   echo ""
@@ -163,7 +165,8 @@ for entry in "${MODELS[@]}"; do
     --method top_k \
     --top-k "$TOP_K" \
     --temperature 1.0 \
-    --mbpp-config full
+    --mbpp-config full \
+    --results-dir results/pless_full_mbpp_results
 
 done
 
