@@ -35,7 +35,7 @@ MODEL="Qwen/Qwen3-8B"
 RESULTS_DIR="results/pless_full_mbpp_results"
 N_SAMPLES=10
 MAX_TOKENS_NO_THINK=512   # standard budget for code-only generation
-MAX_TOKENS_THINK=4096     # generous ceiling: don't truncate long reasoning chains
+MAX_TOKENS_THINK=8192     # generous ceiling: 4096 truncated ~23% of samples; 8192 covers p99
 MBPP_CONFIG="full"
 
 echo "=== Split decoding experiment on Qwen3-8B ==="
