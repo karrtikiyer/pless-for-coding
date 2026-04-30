@@ -50,7 +50,12 @@ def make_temperature_sampler(top_p: float = 0.95, top_k: int = 20):
 SPLIT_SAMPLERS = {
     "pless": p_less_decode,
     "pless_norm": p_less_norm_decode,
+    # temp_standard: temperature + nucleus(0.95) + top-k(20). Matches Qwen3's
+    # recommended generation config; the filter is meaningful at high temp.
     "temp_standard": make_temperature_sampler(),
+    # temp_pure: pure temperature scaling, no top-p / top-k truncation.
+    # Use when a clean temperature ablation is needed.
+    "temp_pure": make_temperature_sampler(top_p=1.0, top_k=0),
 }
 
 

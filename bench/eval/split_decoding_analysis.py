@@ -11,6 +11,7 @@ Usage:
 import argparse
 import json
 from collections import OrderedDict
+from datetime import date
 from pathlib import Path
 
 import matplotlib
@@ -21,28 +22,177 @@ from human_eval.evaluation import estimate_pass_at_k
 
 
 # ── Config definitions ────────────────────────────────────────────────────────
+# Token budgets:
+#   - A, B (no thinking): 512
+#   - C, D, E, F, G (original 7-config phase, thinking): 4096
+#   - H1-H9, R1-R9 (sweep, post-fix): 8192
 CONFIGS = OrderedDict([
     ("A", {"file": "temp_t0.7.jsonl",
            "label": "temp 0.7", "thinking": False, "split": False,
+           "max_tokens": 512,
            "color": "#78909C"}),
     ("B", {"file": "pless_t0.7.jsonl",
            "label": "pless 0.7", "thinking": False, "split": False,
+           "max_tokens": 512,
            "color": "#546E7A"}),
     ("C", {"file": "temp_think_t0.6.jsonl",
            "label": "temp_think 0.6", "thinking": True, "split": False,
+           "max_tokens": 4096,
            "color": "#2196F3"}),
     ("D", {"file": "pless_think_t0.6.jsonl",
            "label": "pless_think 0.6", "thinking": True, "split": False,
+           "max_tokens": 4096,
            "color": "#4CAF50"}),
     ("E", {"file": "pless_norm_think_t0.6.jsonl",
            "label": "pless_norm_think 0.6", "thinking": True, "split": False,
+           "max_tokens": 4096,
            "color": "#8BC34A"}),
     ("F", {"file": "split_temp_standard_t0.6_pless_t0.6_think_t1.0.jsonl",
            "label": "split: temp→pless", "thinking": True, "split": True,
+           "max_tokens": 4096,
            "color": "#FF9800"}),
     ("G", {"file": "split_temp_standard_t0.6_pless_norm_t0.6_think_t1.0.jsonl",
            "label": "split: temp→pless_norm", "thinking": True, "split": True,
+           "max_tokens": 4096,
            "color": "#FF5722"}),
+
+    # ── Direction 1 sweep: temp think → pless code ────────────────────────
+    # temp-think ∈ {0.7, 0.8, 1.5}, pless temp-code ∈ {1.0, 1.5, 2.0}
+    # (t_think=0.9 was skipped after H1-H6 plateaued; jumped to 1.5 to
+    # flatten the thinking distribution more aggressively.)
+    # Oranges/reds gradient (pless-code phase emphasis)
+    ("H1", {"file": "split_temp_standard_t0.7_pless_t1.0_think_t1.0.jsonl",
+            "label": "split: temp 0.7 → pless 1.0",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#FFCC80"}),
+    ("H2", {"file": "split_temp_standard_t0.7_pless_t1.5_think_t1.0.jsonl",
+            "label": "split: temp 0.7 → pless 1.5",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#FFB74D"}),
+    ("H3", {"file": "split_temp_standard_t0.7_pless_t2.0_think_t1.0.jsonl",
+            "label": "split: temp 0.7 → pless 2.0",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#FFA726"}),
+    ("H4", {"file": "split_temp_standard_t0.8_pless_t1.0_think_t1.0.jsonl",
+            "label": "split: temp 0.8 → pless 1.0",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#FF8A65"}),
+    ("H5", {"file": "split_temp_standard_t0.8_pless_t1.5_think_t1.0.jsonl",
+            "label": "split: temp 0.8 → pless 1.5",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#FF7043"}),
+    ("H6", {"file": "split_temp_standard_t0.8_pless_t2.0_think_t1.0.jsonl",
+            "label": "split: temp 0.8 → pless 2.0",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#F4511E"}),
+    ("H7", {"file": "split_temp_standard_t1.5_pless_t1.0_think_t1.0.jsonl",
+            "label": "split: temp 1.5 → pless 1.0",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#E64A19"}),
+    ("H8", {"file": "split_temp_standard_t1.5_pless_t1.5_think_t1.0.jsonl",
+            "label": "split: temp 1.5 → pless 1.5",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#D84315"}),
+    ("H9", {"file": "split_temp_standard_t1.5_pless_t2.0_think_t1.0.jsonl",
+            "label": "split: temp 1.5 → pless 2.0",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#BF360C"}),
+
+    # ── Uniform-temp-1.5 baseline (isolates pless contribution at t_think=1.5)
+    # Same code path as H7-H9 (--method split, 8192 token budget) but with
+    # temp on both phases. Purpose: do H7-H9's diversity gains come from
+    # pless on the code side, or just from raising t_think to 1.5?
+    ("T15", {"file": "split_temp_standard_t1.5_temp_standard_t1.5_think_t1.0.jsonl",
+             "label": "split: temp 1.5 → temp 1.5 (baseline)",
+             "thinking": True, "split": True, "max_tokens": 8192,
+             "color": "#37474F"}),
+
+    # ── Native-HF and uniform-pless thinking baselines at temp 1.5 ────────
+    # T15N: uniform temp 1.5 with thinking ON via the native HF path
+    # (generate_samples_standard) — bypasses split-path's 1e-3 pless smoothing.
+    # P15: uniform pless decoding at temp 1.5 with thinking ON — single sampler
+    # throughout. Probes whether the temp→pless split adds anything over pless-everywhere.
+    ("T15N", {"file": "temp_think_t1.5.jsonl",
+              "label": "uniform temp 1.5 (native, thinking)",
+              "thinking": True, "split": False, "max_tokens": 8192,
+              "color": "#546E7A"}),
+    ("P15", {"file": "pless_think_t1.5.jsonl",
+             "label": "uniform pless 1.5 (thinking)",
+             "thinking": True, "split": False, "max_tokens": 8192,
+             "color": "#6A1B9A"}),
+
+    # ── H10: extends H batch one rung past H9 (temp_code 2.0 → 3.0) ───────
+    # Tests whether pless degrades gracefully or cliffs at very high code-phase temp.
+    ("H10", {"file": "split_temp_standard_t1.5_pless_t3.0_think_t1.0.jsonl",
+             "label": "split: temp 1.5 → pless 3.0",
+             "thinking": True, "split": True, "max_tokens": 8192,
+             "color": "#5D4037"}),
+
+    # ── Pure-temperature re-runs of the 5 high-temp split configs ─────────
+    # These use SPLIT_SAMPLERS["temp_pure"] (top_p=1.0, top_k=0) instead of
+    # "temp_standard" (top_p=0.95, top_k=20). Probes whether the filter on the
+    # thinking phase was helping or hurting at temp_think=1.5. Pair each *P
+    # entry with its filtered counterpart for filtered-vs-pure comparison.
+    ("H7P", {"file": "split_temp_pure_t1.5_pless_t1.0_think_t1.0.jsonl",
+             "label": "split: temp(pure) 1.5 → pless 1.0",
+             "thinking": True, "split": True, "max_tokens": 8192,
+             "color": "#FFAB91"}),
+    ("H8P", {"file": "split_temp_pure_t1.5_pless_t1.5_think_t1.0.jsonl",
+             "label": "split: temp(pure) 1.5 → pless 1.5",
+             "thinking": True, "split": True, "max_tokens": 8192,
+             "color": "#FF8A65"}),
+    ("H9P", {"file": "split_temp_pure_t1.5_pless_t2.0_think_t1.0.jsonl",
+             "label": "split: temp(pure) 1.5 → pless 2.0",
+             "thinking": True, "split": True, "max_tokens": 8192,
+             "color": "#E64A19"}),
+    ("H10P", {"file": "split_temp_pure_t1.5_pless_t3.0_think_t1.0.jsonl",
+              "label": "split: temp(pure) 1.5 → pless 3.0",
+              "thinking": True, "split": True, "max_tokens": 8192,
+              "color": "#BF360C"}),
+    ("T15P", {"file": "split_temp_pure_t1.5_temp_pure_t1.5_think_t1.0.jsonl",
+              "label": "split: temp(pure) 1.5 → temp(pure) 1.5",
+              "thinking": True, "split": True, "max_tokens": 8192,
+              "color": "#263238"}),
+
+    # ── Direction 2 sweep: pless think → temp code ────────────────────────
+    # pless temp-think ∈ {1.0, 1.5, 2.0}, temp-code ∈ {0.7, 0.8, 0.9}
+    # Blues/purples gradient (pless-think phase emphasis)
+    ("R1", {"file": "split_pless_t1.0_temp_standard_t0.7_think_t1.0.jsonl",
+            "label": "split: pless 1.0 → temp 0.7",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#90CAF9"}),
+    ("R2", {"file": "split_pless_t1.0_temp_standard_t0.8_think_t1.0.jsonl",
+            "label": "split: pless 1.0 → temp 0.8",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#64B5F6"}),
+    ("R3", {"file": "split_pless_t1.0_temp_standard_t0.9_think_t1.0.jsonl",
+            "label": "split: pless 1.0 → temp 0.9",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#42A5F5"}),
+    ("R4", {"file": "split_pless_t1.5_temp_standard_t0.7_think_t1.0.jsonl",
+            "label": "split: pless 1.5 → temp 0.7",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#1E88E5"}),
+    ("R5", {"file": "split_pless_t1.5_temp_standard_t0.8_think_t1.0.jsonl",
+            "label": "split: pless 1.5 → temp 0.8",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#1976D2"}),
+    ("R6", {"file": "split_pless_t1.5_temp_standard_t0.9_think_t1.0.jsonl",
+            "label": "split: pless 1.5 → temp 0.9",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#1565C0"}),
+    ("R7", {"file": "split_pless_t2.0_temp_standard_t0.7_think_t1.0.jsonl",
+            "label": "split: pless 2.0 → temp 0.7",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#7B1FA2"}),
+    ("R8", {"file": "split_pless_t2.0_temp_standard_t0.8_think_t1.0.jsonl",
+            "label": "split: pless 2.0 → temp 0.8",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#6A1B9A"}),
+    ("R9", {"file": "split_pless_t2.0_temp_standard_t0.9_think_t1.0.jsonl",
+            "label": "split: pless 2.0 → temp 0.9",
+            "thinking": True, "split": True, "max_tokens": 8192,
+            "color": "#4A148C"}),
 ])
 
 
@@ -210,6 +360,7 @@ def main():
             "thinking": cfg["thinking"],
             "split": cfg["split"],
             "color": cfg["color"],
+            "max_tokens": cfg.get("max_tokens"),
             "pass_at_k": pak,
             "correct_tasks": correct_tasks,
             "total_correct": total_correct,
@@ -226,13 +377,13 @@ def main():
 
     lines = []
     lines.append(f"# Qwen3-8B Split Decoding — {status} Analysis ({len(common_ids)} common tasks)\n")
-    lines.append(f"**Date:** 2026-04-27  ")
+    lines.append(f"**Date:** {date.today().isoformat()}  ")
     lines.append(f"**Dataset:** MBPP-full  ")
     lines.append(f"**Tasks compared:** {len(common_ids)} / 500 (common across all configs)\n")
 
     lines.append("## Comparison Table\n")
-    lines.append("| Config | Method | Think | Split | pass@1 | pass@3 | pass@5 | pass@10 | Solved | Trunc% |")
-    lines.append("|--------|--------|-------|-------|--------|--------|--------|---------|--------|--------|")
+    lines.append("| Config | Method | Think | Split | Tokens | pass@1 | pass@3 | pass@5 | pass@10 | Solved | Trunc% |")
+    lines.append("|--------|--------|-------|-------|--------|--------|--------|--------|---------|--------|--------|")
 
     # Sort by pass@1 descending
     sorted_keys = sorted(summary.keys(),
@@ -245,8 +396,10 @@ def main():
         trunc_pct = f"{s['trunc']['truncation_rate']*100:.1f}%" if s["trunc"] else "—"
         think = "Yes" if s["thinking"] else "No"
         split = "Yes" if s["split"] else "No"
+        tokens = s.get("max_tokens") or "—"
         lines.append(
             f"| **{key}** | {s['label']} | {think} | {split} "
+            f"| {tokens} "
             f"| {pak.get('1',0):.4f} | {pak.get('3',0):.4f} "
             f"| {pak.get('5',0):.4f} | {pak.get('10',0):.4f} "
             f"| {s['correct_tasks']}/{s['n_tasks']} | {trunc_pct} |"
@@ -262,6 +415,10 @@ def main():
         ("E", "G", "Does temp for thinking help vs uniform pless_norm?"),
         ("A", "C", "How much does thinking help for temp?"),
         ("B", "D", "How much does thinking help for pless?"),
+        ("F", "H1", "Does raising temp-think (0.6→0.7) and pless temp-code (0.6→1.0) help?"),
+        ("H1", "H2", "Effect of increasing pless temp-code 1.0 → 1.5 (more permissive pless)"),
+        ("H2", "H3", "Effect of increasing pless temp-code 1.5 → 2.0 (most permissive pless)"),
+        ("C", "H1", "Best uniform-temp baseline vs new sweep top (temp 0.7 → pless 1.0)"),
     ]
 
     for key_a, key_b, question in comparisons:
@@ -288,15 +445,20 @@ def main():
 
     # ── Truncation comparison ─────────────────────────────────────────────
     lines.append("## Truncation Analysis (thinking configs only)\n")
-    lines.append("| Config | Method | Truncated | Rate | All-trunc tasks |")
-    lines.append("|--------|--------|-----------|------|-----------------|")
-    for key in ["C", "D", "E", "F", "G"]:
+    lines.append("| Config | Method | Tokens | Truncated | Rate | All-trunc tasks |")
+    lines.append("|--------|--------|--------|-----------|------|-----------------|")
+    trunc_keys = ["C", "D", "E", "F", "G"] + \
+                 [f"H{i}" for i in range(1, 10)] + \
+                 [f"R{i}" for i in range(1, 10)]
+    for key in trunc_keys:
         if key not in summary or not summary[key]["trunc"]:
             continue
         s = summary[key]
         t = s["trunc"]
+        tokens = s.get("max_tokens") or "—"
         lines.append(
-            f"| {key} | {s['label']} | {t['truncated']}/{t['total_samples']} "
+            f"| {key} | {s['label']} | {tokens} "
+            f"| {t['truncated']}/{t['total_samples']} "
             f"| {t['truncation_rate']*100:.1f}% | {t['tasks_all_trunc']} |"
         )
 
@@ -389,6 +551,27 @@ def main():
             f"6. **Thinking is the dominant factor:** "
             f"+{(c_p1-a_p1)*100:.1f}pp pass@1 (A→C)")
 
+    if "H1" in summary and "C" in summary and summary["H1"]["trunc"] and summary["C"]["trunc"]:
+        h1 = summary["H1"]
+        c = summary["C"]
+        delta = (h1["pass_at_k"]["1"] - c["pass_at_k"]["1"]) * 100
+        h1_trunc = h1["trunc"]["truncation_rate"] * 100
+        c_trunc = c["trunc"]["truncation_rate"] * 100
+        lines.append(
+            f"7. **Sweep configs (H1–H3) leap ahead by ~+{delta:.1f}pp pass@1 over C** — "
+            f"but **confounded with token budget**: H1–H3 used 8192 tokens "
+            f"({h1_trunc:.1f}% truncation), C used 4096 ({c_trunc:.1f}%). "
+            f"Re-running C/F at 8192 is required to isolate the temp/pless effect.")
+
+    h_keys = [k for k in ("H1", "H2", "H3") if k in summary]
+    if len(h_keys) == 3:
+        h_p1s = [summary[k]["pass_at_k"]["1"] for k in h_keys]
+        spread = (max(h_p1s) - min(h_p1s)) * 100
+        lines.append(
+            f"8. **pless temp-code (1.0/1.5/2.0) barely moves pass@1 at temp-think=0.7:** "
+            f"spread of {spread:.2f}pp across H1–H3. Diversity is also flat — "
+            f"the threshold p = Σ probs² is mostly insensitive in this range.")
+
     if not all_complete:
         incomplete = {k: len(v["records"]) for k, v in config_data.items()
                       if len(v["records"]) < 500}
@@ -446,6 +629,8 @@ def main():
         lbl = summary[k]["label"]
         # Wrap long split labels
         lbl = lbl.replace("split: temp→", "split:\ntemp→")
+        # Wrap H/R sweep labels (e.g. "split: temp 0.7 → pless 1.0")
+        lbl = lbl.replace(" → ", "\n→ ")
         short_labels.append(f"{k}\n{lbl}")
     ax.set_xticks(x)
     ax.set_xticklabels(short_labels, fontsize=8, ha="center")
@@ -472,11 +657,14 @@ def main():
     print(f"Chart: {chart_path}")
 
     # ── Scatter: diversity vs accuracy ────────────────────────────────────
-    # Manual label offsets to avoid overlap in the C/F/G cluster
+    # Manual label offsets to avoid overlap in clusters
     LABEL_OFFSETS = {
         "C": (8, 8),
         "F": (8, -12),
         "G": (-90, -14),
+        "H1": (-130, 8),
+        "H2": (8, 4),
+        "H3": (-130, -10),
     }
     DEFAULT_OFFSET = (8, 4)
 
