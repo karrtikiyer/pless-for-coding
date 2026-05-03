@@ -15,6 +15,7 @@ from datetime import date
 from pathlib import Path
 
 import matplotlib
+import matplotlib.patheffects as pe
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -153,6 +154,19 @@ CONFIGS = OrderedDict([
               "label": "split: temp(pure) 1.5 → temp(pure) 1.5",
               "thinking": True, "split": True, "max_tokens": 8192,
               "color": "#263238"}),
+
+    # ── H11P, H12P: extend the pure-temp series past T15P at higher think-T ──
+    # temp_think ∈ {2.0, 2.5} paired with pless code 3.0 (the highest pless rung).
+    # Probes whether further flattening the thinking phase keeps adding diversity
+    # and how it trades off accuracy against H10P (temp_think=1.5 → pless 3.0).
+    ("H11P", {"file": "split_temp_pure_t2.0_pless_t3.0_think_t1.0.jsonl",
+              "label": "split: temp(pure) 2.0 → pless 3.0",
+              "thinking": True, "split": True, "max_tokens": 8192,
+              "color": "#8D2A00"}),
+    ("H12P", {"file": "split_temp_pure_t2.5_pless_t3.0_think_t1.0.jsonl",
+              "label": "split: temp(pure) 2.5 → pless 3.0",
+              "thinking": True, "split": True, "max_tokens": 8192,
+              "color": "#5A1900"}),
 
     # ── Direction 2 sweep: pless think → temp code ────────────────────────
     # pless temp-think ∈ {1.0, 1.5, 2.0}, temp-code ∈ {0.7, 0.8, 0.9}
@@ -588,20 +602,21 @@ def main():
     print(f"\nReport: {report_path}")
 
     # ── Grouped bar chart: pass@1 and pass@10 together ─────────────────
-    fig, ax = plt.subplots(figsize=(12, 6))
-
     keys = sorted_keys
-    x = np.arange(len(keys))
-    bar_w = 0.35
+    n = len(keys)
+    # Scale figure width with config count so labels have room to breathe
+    fig_w = max(14, 0.7 * n)
+    fig, ax = plt.subplots(figsize=(fig_w, 8))
+
+    x = np.arange(n)
+    bar_w = 0.38
 
     p1_vals = [summary[k]["pass_at_k"].get("1", 0) for k in keys]
     p10_vals = [summary[k]["pass_at_k"].get("10", 0) for k in keys]
     colors = [summary[k]["color"] for k in keys]
 
-    # pass@1 bars (left) — full color
     bars1 = ax.bar(x - bar_w / 2, p1_vals, bar_w, color=colors,
                    edgecolor="white", linewidth=0.5, label="pass@1")
-    # pass@10 bars (right) — same color, lighter (alpha)
     bars10 = ax.bar(x + bar_w / 2, p10_vals, bar_w, color=colors,
                     edgecolor="white", linewidth=0.5, alpha=0.55, label="pass@10")
 
@@ -609,47 +624,58 @@ def main():
     for i, k in enumerate(keys):
         if summary[k]["split"]:
             bars1[i].set_edgecolor("#E91E63")
-            bars1[i].set_linewidth(2.5)
+            bars1[i].set_linewidth(2.0)
             bars10[i].set_edgecolor("#E91E63")
-            bars10[i].set_linewidth(2.5)
+            bars10[i].set_linewidth(2.0)
 
-    # Value labels
+    # Y-axis: include 0 floor so collapsed configs (H11P/H12P) render correctly
+    y_min = min(min(p1_vals), min(p10_vals))
+    y_max = max(p10_vals)
+    ax.set_ylim(max(0, y_min - 0.08), min(1.0, y_max + 0.08))
+
+    # Value labels — place pass@1 below bar top, pass@10 above bar top to avoid overlap
     for bar, val in zip(bars1, p1_vals):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.004,
-                f"{val:.3f}", ha="center", va="bottom", fontsize=7.5,
-                fontweight="bold")
+        ax.text(bar.get_x() + bar.get_width() / 2, val - 0.012,
+                f"{val:.3f}", ha="center", va="top", fontsize=7,
+                fontweight="bold", color="white",
+                path_effects=[pe.withStroke(linewidth=2, foreground="black")])
     for bar, val in zip(bars10, p10_vals):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.004,
-                f"{val:.3f}", ha="center", va="bottom", fontsize=7.5,
+        ax.text(bar.get_x() + bar.get_width() / 2, val + 0.005,
+                f"{val:.3f}", ha="center", va="bottom", fontsize=7,
                 fontweight="bold", fontstyle="italic")
 
-    # X-axis: config letter on first line, short label on second
-    short_labels = []
-    for k in keys:
-        lbl = summary[k]["label"]
-        # Wrap long split labels
-        lbl = lbl.replace("split: temp→", "split:\ntemp→")
-        # Wrap H/R sweep labels (e.g. "split: temp 0.7 → pless 1.0")
-        lbl = lbl.replace(" → ", "\n→ ")
-        short_labels.append(f"{k}\n{lbl}")
+    # X-axis: tag on top, short method label rotated below — no multiline cramming
     ax.set_xticks(x)
-    ax.set_xticklabels(short_labels, fontsize=8, ha="center")
-    ax.set_ylabel("Score")
-    ax.set_ylim(0.5, min(1.0, max(p10_vals) + 0.06))
-    ax.grid(axis="y", alpha=0.3)
+    ax.set_xticklabels(keys, fontsize=10, fontweight="bold")
 
-    # Legend distinguishing pass@1 (solid) vs pass@10 (faded)
+    # Add a second-row label below each tick rotated 45° so descriptions are legible
+    ymin_lim = ax.get_ylim()[0]
+    label_y = ymin_lim - (ax.get_ylim()[1] - ymin_lim) * 0.04
+    for xi, k in enumerate(keys):
+        lbl = summary[k]["label"]
+        ax.text(xi, label_y, lbl, ha="right", va="top",
+                fontsize=7.5, rotation=35, rotation_mode="anchor",
+                color="#444444")
+
+    ax.set_ylabel("Score", fontsize=11)
+    ax.grid(axis="y", alpha=0.3)
+    ax.set_axisbelow(True)
+
     from matplotlib.patches import Patch
     ax.legend(handles=[
         Patch(facecolor="grey", edgecolor="white", label="pass@1"),
         Patch(facecolor="grey", alpha=0.55, edgecolor="white", label="pass@10"),
-    ], loc="lower left", fontsize=9)
+        Patch(facecolor="white", edgecolor="#E91E63", linewidth=2,
+              label="split decoding"),
+    ], loc="upper right", fontsize=9, framealpha=0.95)
 
     ax.set_title(
         f"Qwen3-8B Split Decoding — pass@1 & pass@10, "
         f"{len(common_ids)} MBPP tasks",
-        fontsize=13, fontweight="bold")
-    plt.tight_layout()
+        fontsize=13, fontweight="bold", pad=12)
+
+    # Reserve more bottom space for the rotated labels
+    plt.subplots_adjust(bottom=0.28, top=0.93)
 
     chart_path = args.output_dir / f"split_decoding_{suffix}_chart.png"
     plt.savefig(chart_path, dpi=150, bbox_inches="tight")
@@ -657,23 +683,15 @@ def main():
     print(f"Chart: {chart_path}")
 
     # ── Scatter: diversity vs accuracy ────────────────────────────────────
-    # Manual label offsets to avoid overlap in clusters
-    LABEL_OFFSETS = {
-        "C": (8, 8),
-        "F": (8, -12),
-        "G": (-90, -14),
-        "H1": (-130, 8),
-        "H2": (8, 4),
-        "H3": (-130, -10),
-    }
-    DEFAULT_OFFSET = (8, 4)
+    from adjustText import adjust_text
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(20, 10))
 
     for ax, (div_key, div_label) in zip(axes, [
         ("struct_div", "Structural Diversity (tree-edit)"),
         ("codebleu_div", "CodeBLEU Diversity"),
     ]):
+        texts = []
         for key in sorted_keys:
             s = summary[key]
             div_val = s.get(div_key)
@@ -682,35 +700,53 @@ def main():
             p1 = s["pass_at_k"].get("1", 0)
 
             marker = "D" if s["split"] else ("^" if s["thinking"] else "o")
-            size = 120 if s["split"] else 80
+            size = 140 if s["split"] else 90
             edgecolor = "#E91E63" if s["split"] else "white"
             linewidth = 2.0 if s["split"] else 0.8
 
             ax.scatter(p1, div_val, c=s["color"], marker=marker,
                        s=size, edgecolors=edgecolor, linewidths=linewidth,
                        zorder=3)
-            offset = LABEL_OFFSETS.get(key, DEFAULT_OFFSET)
-            ax.annotate(f"{key}: {s['label']}", (p1, div_val),
-                        textcoords="offset points", xytext=offset,
-                        fontsize=7.5, color=s["color"], fontweight="bold")
+            # Compact label: just the tag — full method name is in the report table
+            texts.append(ax.text(
+                p1, div_val, key,
+                fontsize=10, color=s["color"], fontweight="bold",
+                ha="center", va="center", zorder=4,
+                path_effects=[pe.withStroke(linewidth=2.5, foreground="white")],
+            ))
 
-        ax.set_xlabel("pass@1")
-        ax.set_ylabel(div_label)
-        ax.set_title(f"Accuracy vs {div_label}")
+        # Pad axes so labels at edges don't get clipped
+        ax.margins(x=0.08, y=0.10)
+
+        # Repel labels until none overlap; draw thin connectors back to points
+        adjust_text(
+            texts, ax=ax,
+            arrowprops=dict(arrowstyle="-", color="grey", lw=0.6, alpha=0.6),
+            expand_points=(1.4, 1.6),
+            expand_text=(1.2, 1.4),
+            force_points=0.4,
+            force_text=0.6,
+        )
+
+        ax.set_xlabel("pass@1", fontsize=11)
+        ax.set_ylabel(div_label, fontsize=11)
+        ax.set_title(f"Accuracy vs {div_label}", fontsize=12, fontweight="bold")
         ax.grid(True, alpha=0.3)
+        ax.set_axisbelow(True)
 
-    # Legend for marker shapes
     from matplotlib.lines import Line2D
     legend_elems = [
         Line2D([0], [0], marker="o", color="grey", linestyle="None",
-               markersize=8, label="No thinking"),
+               markersize=10, label="No thinking"),
         Line2D([0], [0], marker="^", color="grey", linestyle="None",
-               markersize=8, label="Thinking (uniform)"),
+               markersize=10, label="Thinking (uniform)"),
         Line2D([0], [0], marker="D", color="grey", linestyle="None",
-               markersize=8, markeredgecolor="#E91E63", markeredgewidth=1.5,
+               markersize=10, markeredgecolor="#E91E63", markeredgewidth=1.5,
                label="Split decoding"),
     ]
-    axes[1].legend(handles=legend_elems, loc="upper left", fontsize=8)
+    # Place legend outside the data area so it can't sit on top of points
+    axes[1].legend(handles=legend_elems, loc="lower right", fontsize=10,
+                   framealpha=0.95)
 
     plt.suptitle(
         f"Diversity vs Accuracy — Qwen3-8B, {len(common_ids)} MBPP tasks",
