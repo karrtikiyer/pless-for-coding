@@ -52,6 +52,26 @@ _MODEL_SHORT_NAMES = {
 }
 
 
+_DIVERSITY_LABELS = {
+    "codebleu_diversity": "CodeBLEU Diversity",
+    "ngram_match_diversity": "N-gram Diversity",
+    "weighted_ngram_match_diversity": "Weighted N-gram Diversity",
+    "syntax_match_diversity": "Syntax Match Diversity",
+    "dataflow_match_diversity": "Dataflow Diversity",
+}
+
+_SUBCOMPONENT_PARETOS = [
+    ("ngram_match_diversity",          "pareto_ngram_diversity.png"),
+    ("weighted_ngram_match_diversity", "pareto_weighted_ngram_diversity.png"),
+    ("syntax_match_diversity",         "pareto_syntax_diversity.png"),
+    ("dataflow_match_diversity",       "pareto_dataflow_diversity.png"),
+]
+
+_TEMP_MARKERS = {
+    0.7: "o", 1.0: "s", 1.5: "^", 2.0: "v", 2.5: "D", 3.0: "P",
+}
+
+
 def _short_model(model: str) -> str:
     return _MODEL_SHORT_NAMES.get(model, model.split("/")[-1])
 
@@ -90,6 +110,11 @@ def write_csv(metrics_list: list[dict], output_path: Path) -> None:
         "pass@1", "pass@3", "pass@5", "pass@10",
         "cover@0.5", "cover@0.7",
         "structural_diversity",
+        "codebleu_diversity",
+        "syntax_match_diversity",
+        "dataflow_match_diversity",
+        "ngram_match_diversity",
+        "weighted_ngram_match_diversity",
     ]
     rows = []
     for m in metrics_list:
@@ -104,6 +129,11 @@ def write_csv(metrics_list: list[dict], output_path: Path) -> None:
             "cover@0.5": f"{m['cover_at_t'].get('0.5', 0):.1f}",
             "cover@0.7": f"{m['cover_at_t'].get('0.7', 0):.1f}",
             "structural_diversity": f"{m.get('structural_diversity', 0):.4f}",
+            "codebleu_diversity": f"{m.get('codebleu_diversity', 0):.4f}",
+            "syntax_match_diversity": f"{m.get('syntax_match_diversity', 0):.4f}",
+            "dataflow_match_diversity": f"{m.get('dataflow_match_diversity', 0):.4f}",
+            "ngram_match_diversity": f"{m.get('ngram_match_diversity', 0):.4f}",
+            "weighted_ngram_match_diversity": f"{m.get('weighted_ngram_match_diversity', 0):.4f}",
         })
 
     # Sort by model, method, temperature
@@ -451,6 +481,194 @@ def plot_pass_at_k_curves_by_temperature(metrics_list: list[dict], output_dir: P
 
 
 # ---------------------------------------------------------------------------
+# Per-model plots
+# ---------------------------------------------------------------------------
+
+def plot_pareto_scatter(
+    model_metrics: list[dict], model_name: str,
+    output_path: Path, diversity_key: str = "codebleu_diversity",
+) -> None:
+    """Pareto scatter: pass@1 vs diversity for a single model's configs."""
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Patch
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    # Collect points
+    points: list[tuple[float, float, str, str, str]] = []
+    for m in model_metrics:
+        p1 = m["pass_at_k"].get("1", 0) * 100
+        div = m.get(diversity_key, 0)
+        # Skip 0/0 garbage points (extreme temps producing nothing)
+        if p1 < 0.05 and div < 0.001:
+            continue
+        method = _method_base(m["method"])
+        temp = m["temperature"]
+        label = f"{method} T={temp}"
+        color = _METHOD_COLORS.get(method, "#888888")
+        marker = _TEMP_MARKERS.get(temp, "x")
+        points.append((p1, div, label, color, marker))
+
+    if not points:
+        plt.close(fig)
+        return
+
+    for p1, div, _lbl, color, marker in points:
+        ax.scatter(p1, div, s=140, color=color, marker=marker,
+                   edgecolors="black", linewidth=0.6, zorder=3)
+
+    # Pareto frontier
+    pts_sorted = sorted([(p1, div) for p1, div, *_ in points], key=lambda p: p[0])
+    frontier_x, frontier_y = [], []
+    max_div = -1
+    for x, y in pts_sorted:
+        if y > max_div:
+            frontier_x.append(x)
+            frontier_y.append(y)
+            max_div = y
+    if len(frontier_x) > 1:
+        ax.plot(frontier_x, frontier_y, "--", color="gray", alpha=0.4, linewidth=1)
+
+    # De-overlap labels
+    label_entries = sorted(
+        [(p1, div, lbl) for p1, div, lbl, _c, _m in points],
+        key=lambda t: t[1],
+    )
+    all_x = [p1 for p1, *_ in points]
+    all_y = [div for _, div, *_ in points]
+    y_min_data, y_max_data = min(all_y), max(all_y)
+    x_min_data, x_max_data = min(all_x), max(all_x)
+    y_range = y_max_data - y_min_data if len(all_y) > 1 else 1.0
+    x_range = x_max_data - x_min_data if len(all_x) > 1 else 1.0
+    min_gap = y_range * 0.045
+    x_proximity = max(x_range * 0.15, 2.0)
+
+    label_ys = [py for _px, py, _lbl in label_entries]
+    label_xs = [px for px, _py, _lbl in label_entries]
+
+    for _iteration in range(50):
+        moved = False
+        for i in range(len(label_ys)):
+            for j in range(i + 1, len(label_ys)):
+                if abs(label_xs[i] - label_xs[j]) > x_proximity:
+                    continue
+                dy = label_ys[j] - label_ys[i]
+                if abs(dy) < min_gap:
+                    push = (min_gap - abs(dy)) / 2 + 0.001
+                    label_ys[i] -= push
+                    label_ys[j] += push
+                    moved = True
+        if not moved:
+            break
+
+    # Clamp labels within data bounds (with padding) so they don't
+    # drift far outside the visible area, then re-deoverlap briefly
+    y_clamp_lo = y_min_data - y_range * 0.06
+    y_clamp_hi = y_max_data + y_range * 0.08
+    for i in range(len(label_ys)):
+        label_ys[i] = max(y_clamp_lo, min(y_clamp_hi, label_ys[i]))
+    for _iteration in range(20):
+        moved = False
+        for i in range(len(label_ys)):
+            for j in range(i + 1, len(label_ys)):
+                if abs(label_xs[i] - label_xs[j]) > x_proximity:
+                    continue
+                dy = label_ys[j] - label_ys[i]
+                if abs(dy) < min_gap:
+                    push = (min_gap - abs(dy)) / 2 + 0.001
+                    if label_ys[i] - push >= y_clamp_lo:
+                        label_ys[i] -= push
+                    if label_ys[j] + push <= y_clamp_hi:
+                        label_ys[j] += push
+                    moved = True
+        if not moved:
+            break
+
+    x_offset = max(x_range * 0.02, 1.0)
+    for idx, (px, py, lbl) in enumerate(label_entries):
+        ly = label_ys[idx]
+        ax.annotate(lbl, (px, py), xytext=(px + x_offset, ly),
+                    textcoords="data", fontsize=5.5, alpha=0.7,
+                    arrowprops=dict(arrowstyle="-", color="gray",
+                                    alpha=0.3, linewidth=0.5)
+                    if abs(ly - py) > min_gap * 0.4 else None)
+
+    div_label = _DIVERSITY_LABELS.get(diversity_key, diversity_key)
+    ax.set_xlabel("pass@1 (%)", fontsize=11)
+    ax.set_ylabel(div_label, fontsize=11)
+    ax.set_title(f"HumanEval: Correctness vs {div_label} — {model_name}", fontsize=12)
+    ax.grid(alpha=0.3)
+
+    # Legend: method colors + temperature markers
+    legend_items = [
+        Patch(color=_METHOD_COLORS["pless"], label="P-less"),
+        Patch(color=_METHOD_COLORS["pless_norm"], label="P-less norm"),
+        Patch(color=_METHOD_COLORS["temp"], label="Temperature"),
+        Patch(color="none", label=""),
+    ]
+    for temp, mk in _TEMP_MARKERS.items():
+        legend_items.append(
+            Line2D([0], [0], marker=mk, color="gray", linestyle="None",
+                   markersize=7, label=f"T={temp}")
+        )
+    # Auto-select legend corner with fewest data points
+    mid_x = (x_min_data + x_max_data) / 2
+    mid_y = (y_min_data + y_max_data) / 2
+    corner_counts = {
+        "upper left": sum(1 for p1, div, *_ in points if p1 < mid_x and div > mid_y),
+        "upper right": sum(1 for p1, div, *_ in points if p1 >= mid_x and div > mid_y),
+        "lower left": sum(1 for p1, div, *_ in points if p1 < mid_x and div <= mid_y),
+        "lower right": sum(1 for p1, div, *_ in points if p1 >= mid_x and div <= mid_y),
+    }
+    best_loc = min(corner_counts, key=corner_counts.get)
+    ax.legend(handles=legend_items, loc=best_loc, fontsize=8,
+              frameon=True, framealpha=0.9)
+
+    fig.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Plot: {output_path}")
+
+
+def plot_pass_at_1_bars(
+    model_metrics: list[dict], model_name: str, output_path: Path,
+) -> None:
+    """Horizontal bar chart: all configs for one model ranked by pass@1."""
+    from matplotlib.patches import Patch
+
+    sorted_metrics = sorted(model_metrics, key=lambda m: m["pass_at_k"].get("1", 0))
+    labels = [f"{_method_base(m['method'])} T={m['temperature']}" for m in sorted_metrics]
+    values = [m["pass_at_k"].get("1", 0) * 100 for m in sorted_metrics]
+    colors = [_METHOD_COLORS.get(_method_base(m["method"]), "#888888") for m in sorted_metrics]
+
+    fig, ax = plt.subplots(figsize=(11, max(5, len(labels) * 0.4)))
+    bars = ax.barh(range(len(labels)), values, color=colors, edgecolor="white", height=0.7)
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels(labels, fontsize=8)
+    ax.set_xlabel("pass@1 (%)", fontsize=11)
+    ax.set_title(f"HumanEval pass@1: {model_name}", fontsize=12)
+    ax.grid(axis="x", alpha=0.3)
+
+    for bar, val in zip(bars, values):
+        ax.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2,
+                f"{val:.1f}%", va="center", fontsize=7)
+
+    legend_items = [
+        Patch(color=_METHOD_COLORS["pless"], label="P-less"),
+        Patch(color=_METHOD_COLORS["pless_norm"], label="P-less norm"),
+        Patch(color=_METHOD_COLORS["temp"], label="Temperature"),
+    ]
+    ax.legend(handles=legend_items, loc="lower right", fontsize=8)
+
+    fig.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Plot: {output_path}")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -486,6 +704,24 @@ def main():
 
     plot_pass_at_k_curves_by_temperature(metrics_list, FIGURES_DIR)
     print(f"  → {FIGURES_DIR / 'pass_at_k_by_temperature.png'}")
+
+    # Per-model analysis: pareto scatters + bar charts
+    print("\nGenerating per-model plots...")
+    by_model = _group_by_model(metrics_list)
+    for model, model_metrics in by_model.items():
+        model_dir = model.replace("/", "--")
+        model_figures = RESULTS_ROOT / "analysis" / model_dir / "figures"
+        short = _short_model(model)
+        print(f"\n  {short}:")
+
+        plot_pass_at_1_bars(model_metrics, short,
+                            model_figures / "pass_at_1_comparison.png")
+
+        plot_pareto_scatter(model_metrics, short,
+                            model_figures / "pareto_correctness_diversity.png")
+        for div_key, filename in _SUBCOMPONENT_PARETOS:
+            plot_pareto_scatter(model_metrics, short,
+                                model_figures / filename, diversity_key=div_key)
 
     print("\nDone!")
 

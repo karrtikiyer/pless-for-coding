@@ -38,10 +38,7 @@ FIGURES_DIR = OUTPUT_DIR / "figures"
 INSTRUCT_METRICS_DIR = Path(
     "results/full_mbpp_pre_post_temp_pless/Qwen--Qwen2.5-Coder-3B-Instruct/metrics"
 )
-# Use the base model T1/T2 metrics as reference for cross-model comparison
-BASE_T1T2_METRICS_DIR = T1T2_METRICS_DIR
-BASE_CONSOLIDATED_DIR = BASELINE_METRICS_DIR
-INSTRUCT_OUTPUT_DIR = Path("results/full_mbpp_pre_post_temp_pless/analysis/instruct")
+INSTRUCT_OUTPUT_DIR = Path("results/full_mbpp_pre_post_temp_pless/analysis/Qwen--Qwen2.5-Coder-3B-Instruct")
 INSTRUCT_FIGURES_DIR = INSTRUCT_OUTPUT_DIR / "figures"
 
 # ---------------------------------------------------------------------------
@@ -596,14 +593,11 @@ def plot_t2_effect_heatmap(rows: list[dict], output_path: Path) -> None:
 # ---------------------------------------------------------------------------
 def load_instruct_metrics(
     instruct_metrics_dir: Path | None = None,
-    base_metrics_dir: Path | None = None,
 ) -> list[dict]:
-    """Load instruct experiment metrics plus base model references."""
+    """Load instruct experiment metrics."""
     metrics_dir = instruct_metrics_dir or INSTRUCT_METRICS_DIR
-    base_dir = base_metrics_dir or BASE_CONSOLIDATED_DIR
     rows = []
 
-    # Instruct experiment configs
     if metrics_dir.exists():
         for f in sorted(metrics_dir.glob("*_metrics.json")):
             m = json.loads(f.read_text())
@@ -618,19 +612,6 @@ def load_instruct_metrics(
     else:
         print(f"WARNING: {metrics_dir} does not exist")
 
-    # Base model consolidated baselines (pless t=0.6/1.0, temp t=0.7, top_p)
-    if base_dir.exists():
-        for f in sorted(base_dir.glob("*_metrics.json")):
-            m = json.loads(f.read_text())
-            stem = f.stem.replace("_metrics", "")
-            method, t1, t2 = _parse_t1_t2(stem)
-            m["_method"] = method
-            m["_t1"] = t1
-            m["_t2"] = t2
-            m["_group"] = "base"
-            m["_stem"] = stem
-            rows.append(m)
-
     return rows
 
 
@@ -639,8 +620,7 @@ def load_instruct_metrics(
 # ---------------------------------------------------------------------------
 def generate_instruct_report(rows: list[dict], model_name: str = "Qwen2.5-Coder-3B-Instruct") -> str:
     """Build the instruct model analysis report."""
-    instruct_rows = [r for r in rows if r["_group"] == "instruct"]
-    base_rows = [r for r in rows if r["_group"] == "base"]
+    instruct_rows = rows  # all rows are instruct now
     lines = []
 
     lines.append("# P-less High-T1 on Instruct Model: MBPP Analysis")
@@ -665,11 +645,11 @@ def generate_instruct_report(rows: list[dict], model_name: str = "Qwen2.5-Coder-
     lines.append("## Full Metrics Comparison")
     lines.append("")
     lines.append(
-        "| # | Config | Group | T1 | T2 | pass@1 | pass@3 | pass@5 | pass@10 | "
+        "| # | Config | T1 | T2 | pass@1 | pass@3 | pass@5 | pass@10 | "
         "cover@0.7 | struct_div | codebleu_div |"
     )
     lines.append(
-        "|---|--------|-------|----|----|--------|--------|--------|---------|"
+        "|---|--------|----|----|--------|--------|--------|---------|"
         "-----------|------------|--------------|"
     )
 
@@ -679,12 +659,11 @@ def generate_instruct_report(rows: list[dict], model_name: str = "Qwen2.5-Coder-
         c07 = r["cover_at_t"].get("0.7", 0) if r.get("cover_at_t") else 0
         sdiv = r.get("structural_diversity", 0)
         cbdiv = r.get("codebleu_diversity", 0)
-        group_label = "**instruct**" if r["_group"] == "instruct" else "base"
         pk3 = f"{pk['3']*100:.1f}" if "3" in pk else "—"
         pk5 = f"{pk['5']*100:.1f}" if "5" in pk else "—"
         pk10 = f"{pk['10']*100:.1f}" if "10" in pk else "—"
         lines.append(
-            f"| {i} | {_display_name(r)} | {group_label} | {r['_t1']} | {r['_t2']} | "
+            f"| {i} | {_display_name(r)} | {r['_t1']} | {r['_t2']} | "
             f"{pk['1']*100:.1f} | {pk3} | {pk5} | {pk10} | "
             f"{c07:.1f} | {sdiv:.4f} | {cbdiv:.4f} |"
         )
@@ -989,13 +968,6 @@ def plot_instruct_t1_sweep(rows: list[dict], output_path: Path) -> None:
 
     # Panel 1: pass@1 vs T1
     ax1.plot(t1_vals, pass1_vals, "o-", color="#2B6CB0", linewidth=2, markersize=8, label="P-less (instruct)")
-    # Add temperature baselines as horizontal lines
-    for r in rows:
-        if r["_group"] == "instruct" and r["_method"] == "temp":
-            ax1.axhline(y=r["pass_at_k"]["1"] * 100, color="#E53E3E", linestyle="--",
-                        alpha=0.5, linewidth=1)
-            ax1.text(max(t1_vals) + 0.05, r["pass_at_k"]["1"] * 100,
-                     f"temp t={r['_t1']}", fontsize=7, va="center", color="#E53E3E")
     ax1.set_xlabel("T1 (pre-truncation temperature)", fontsize=11)
     ax1.set_ylabel("pass@1 (%)", fontsize=11)
     ax1.set_title("Correctness: P-less T1 Sweep", fontsize=12)
@@ -1004,11 +976,6 @@ def plot_instruct_t1_sweep(rows: list[dict], output_path: Path) -> None:
     # Panel 2: diversity vs T1
     ax2.plot(t1_vals, sdiv_vals, "s-", color="#38A169", linewidth=2, markersize=8, label="struct_div")
     ax2.plot(t1_vals, cbdiv_vals, "D-", color="#805AD5", linewidth=2, markersize=8, label="codebleu_div")
-    # Add temp baselines
-    for r in rows:
-        if r["_group"] == "instruct" and r["_method"] == "temp":
-            ax2.axhline(y=r.get("structural_diversity", 0), color="#E53E3E", linestyle=":",
-                        alpha=0.3, linewidth=1)
     ax2.set_xlabel("T1 (pre-truncation temperature)", fontsize=11)
     ax2.set_ylabel("Diversity", fontsize=11)
     ax2.set_title("Diversity: P-less T1 Sweep", fontsize=12)
@@ -1026,17 +993,10 @@ def plot_instruct_t1_sweep(rows: list[dict], output_path: Path) -> None:
 
 
 def plot_instruct_pass_at_1_bars(rows: list[dict], output_path: Path) -> None:
-    """Horizontal bar chart: all instruct configs + greyed base model refs."""
-    instruct_rows = [r for r in rows if r["_group"] == "instruct"]
-    base_rows = [r for r in rows if r["_group"] == "base"]
+    """Horizontal bar chart: all instruct configs."""
+    all_rows = sorted(rows, key=lambda r: r["pass_at_k"]["1"])
 
-    # Exclude pless_norm from base (not part of this experiment)
-    base_rows = [r for r in base_rows if r["_method"] != "pless_norm"]
-
-    all_rows = sorted(instruct_rows + base_rows, key=lambda r: r["pass_at_k"]["1"])
-
-    labels = [f"{_display_name(r)} {'(instruct)' if r['_group'] == 'instruct' else '(base)'}"
-              for r in all_rows]
+    labels = [_display_name(r) for r in all_rows]
     values = [r["pass_at_k"]["1"] * 100 for r in all_rows]
 
     METHOD_COLORS = {
@@ -1047,13 +1007,7 @@ def plot_instruct_pass_at_1_bars(rows: list[dict], output_path: Path) -> None:
         "greedy": "#2F855A",
     }
 
-    colors = []
-    for r in all_rows:
-        base_color = METHOD_COLORS.get(r["_method"], "#888888")
-        if r["_group"] == "base":
-            colors.append("#C0C0C0")  # grey for base model refs
-        else:
-            colors.append(base_color)
+    colors = [METHOD_COLORS.get(r["_method"], "#888888") for r in all_rows]
 
     fig, ax = plt.subplots(figsize=(11, max(7, len(labels) * 0.4)))
     bars = ax.barh(range(len(labels)), values, color=colors, edgecolor="white", height=0.7)
@@ -1071,13 +1025,10 @@ def plot_instruct_pass_at_1_bars(rows: list[dict], output_path: Path) -> None:
 
     from matplotlib.patches import Patch
     legend_items = [
-        Patch(color="none", label="$\\bf{Instruct\\ experiment}$"),
         Patch(color=METHOD_COLORS["pless"], label="P-less"),
         Patch(color=METHOD_COLORS["temp"], label="Temperature"),
         Patch(color=METHOD_COLORS["top_p0.95"], label="Top-p"),
         Patch(color=METHOD_COLORS["greedy"], label="Greedy"),
-        Patch(color="none", label=""),
-        Patch(color="#C0C0C0", label="Base model reference"),
     ]
     ax.legend(handles=legend_items, loc="lower right", fontsize=8)
 
@@ -1091,7 +1042,7 @@ def plot_instruct_pareto(
     rows: list[dict], output_path: Path,
     diversity_key: str = "codebleu_diversity",
 ) -> None:
-    """Pareto scatter: pass@1 vs diversity — instruct primary, base greyed."""
+    """Pareto scatter: pass@1 vs diversity for instruct configs."""
     from matplotlib.lines import Line2D
     from matplotlib.patches import Patch
 
@@ -1102,31 +1053,58 @@ def plot_instruct_pareto(
         "top_p0.9": "#805AD5", "greedy": "#2F855A",
     }
 
+    # Collect points, then plot with de-overlapped labels
+    points: list[tuple[float, float, str, str, str]] = []  # (x, y, label, color, marker)
     for r in rows:
         if r["_method"] == "pless_norm":
             continue
         p1 = r["pass_at_k"]["1"] * 100
         div = r.get(diversity_key, 0)
+        color = METHOD_COLORS.get(r["_method"], "#888888")
+        marker = "o" if r["_t2"] == "—" else "s"
+        points.append((p1, div, _display_name(r), color, marker))
 
-        if r["_group"] == "instruct":
-            color = METHOD_COLORS.get(r["_method"], "#888888")
-            marker = "o" if r["_t2"] == "—" else "s"
-            size = 140
-            alpha = 1.0
-        else:
-            color = "#C0C0C0"
-            marker = "^"
-            size = 80
-            alpha = 0.6
+    for p1, div, _lbl, color, marker in points:
+        ax.scatter(p1, div, s=140, color=color, marker=marker,
+                   edgecolors="black", linewidth=0.6, zorder=3)
 
-        ax.scatter(p1, div, s=size, color=color, marker=marker,
-                   edgecolors="black", linewidth=0.6, zorder=3, alpha=alpha)
+    # De-overlap labels: sort by y so we stack upward from the bottom
+    label_entries = sorted(
+        [(p1, div, lbl) for p1, div, lbl, _c, _m in points],
+        key=lambda t: t[1],  # sort by y (diversity)
+    )
+    all_y = [div for _, div, _, _, _ in points]
+    y_range = max(all_y) - min(all_y) if len(all_y) > 1 else 1.0
+    min_gap = y_range * 0.045  # minimum vertical separation between labels
+    x_proximity = 8.0  # labels within this x-range compete for vertical space
 
-        label = _display_name(r)
-        if r["_group"] == "base":
-            label = f"base: {label}"
-        ax.annotate(label, (p1, div), textcoords="offset points",
-                    xytext=(5, 5), fontsize=5.5, alpha=0.7)
+    # Initial label y-positions = data y
+    label_ys = [py for _px, py, _lbl in label_entries]
+    label_xs = [px for px, _py, _lbl in label_entries]
+
+    # Iteratively push overlapping labels apart
+    for _iteration in range(50):
+        moved = False
+        for i in range(len(label_ys)):
+            for j in range(i + 1, len(label_ys)):
+                if abs(label_xs[i] - label_xs[j]) > x_proximity:
+                    continue
+                dy = label_ys[j] - label_ys[i]
+                if abs(dy) < min_gap:
+                    push = (min_gap - abs(dy)) / 2 + 0.001
+                    label_ys[i] -= push
+                    label_ys[j] += push
+                    moved = True
+        if not moved:
+            break
+
+    for idx, (px, py, lbl) in enumerate(label_entries):
+        ly = label_ys[idx]
+        ax.annotate(lbl, (px, py), xytext=(px + 1.0, ly),
+                    textcoords="data", fontsize=5.5, alpha=0.7,
+                    arrowprops=dict(arrowstyle="-", color="gray",
+                                    alpha=0.3, linewidth=0.5)
+                    if abs(ly - py) > min_gap * 0.4 else None)
 
     div_label = _DIVERSITY_LABELS.get(diversity_key, diversity_key)
     ax.set_xlabel("pass@1 (%)", fontsize=11)
@@ -1138,13 +1116,11 @@ def plot_instruct_pareto(
     ax.grid(alpha=0.3)
 
     legend_items = [
-        Patch(color="none", label="$\\bf{Instruct}$"),
         Patch(color=METHOD_COLORS["pless"], label="P-less"),
         Patch(color=METHOD_COLORS["temp"], label="Temperature"),
         Patch(color=METHOD_COLORS["top_p0.95"], label="Top-p"),
         Patch(color=METHOD_COLORS["greedy"], label="Greedy"),
         Patch(color="none", label=""),
-        Patch(color="#C0C0C0", label="Base model ref"),
         Line2D([0], [0], marker="o", color="gray", linestyle="None", markersize=7, label="No T2"),
         Line2D([0], [0], marker="s", color="gray", linestyle="None", markersize=7, label="With T2"),
     ]
@@ -1156,20 +1132,20 @@ def plot_instruct_pareto(
     plt.close(fig)
 
 
-def plot_instruct_t2_at_high_t1(rows: list[dict], output_path: Path) -> None:
-    """Bar chart showing T2 impact at T1=2.0 on the instruct model."""
-    instruct_rows = [r for r in rows if r["_group"] == "instruct"]
-    t2_configs = [
-        r for r in instruct_rows
-        if r["_method"] == "pless" and abs(r["_t1"] - 2.0) < 0.01
+def plot_instruct_t2_effect(rows: list[dict], t1_val: float, output_path: Path) -> None:
+    """Bar chart showing T2 impact at a specific T1 value on the instruct model."""
+    # Collect all pless configs at this T1 (both with and without T2)
+    t1_configs = [
+        r for r in rows
+        if r["_method"] == "pless" and abs(r["_t1"] - t1_val) < 0.01
     ]
-    if not t2_configs:
+    if not t1_configs:
         return
 
-    t2_configs = sorted(t2_configs, key=lambda r: r["_t2"])
-    labels = [f"T2={r['_t2']}" for r in t2_configs]
-    pass1 = [r["pass_at_k"]["1"] * 100 for r in t2_configs]
-    sdiv = [r.get("structural_diversity", 0) for r in t2_configs]
+    t1_configs = sorted(t1_configs, key=lambda r: (r["_t2"] == "—", r["_t2"]))
+    labels = [f"T2={r['_t2']}" for r in t1_configs]
+    pass1 = [r["pass_at_k"]["1"] * 100 for r in t1_configs]
+    sdiv = [r.get("structural_diversity", 0) for r in t1_configs]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4.5))
 
@@ -1180,7 +1156,7 @@ def plot_instruct_t2_at_high_t1(rows: list[dict], output_path: Path) -> None:
     ax1.set_xticks(range(len(labels)))
     ax1.set_xticklabels(labels, fontsize=10)
     ax1.set_ylabel("pass@1 (%)", fontsize=11)
-    ax1.set_title("pass@1 at T1=2.0", fontsize=11)
+    ax1.set_title(f"pass@1 at T1={t1_val}", fontsize=11)
     for i, v in enumerate(pass1):
         ax1.text(i, v + 0.3, f"{v:.1f}%", ha="center", fontsize=9, fontweight="bold")
 
@@ -1188,12 +1164,12 @@ def plot_instruct_t2_at_high_t1(rows: list[dict], output_path: Path) -> None:
     ax2.set_xticks(range(len(labels)))
     ax2.set_xticklabels(labels, fontsize=10)
     ax2.set_ylabel("struct_div", fontsize=11)
-    ax2.set_title("Structural Diversity at T1=2.0", fontsize=11)
+    ax2.set_title(f"Structural Diversity at T1={t1_val}", fontsize=11)
     for i, v in enumerate(sdiv):
         ax2.text(i, v + 0.002, f"{v:.4f}", ha="center", fontsize=9, fontweight="bold")
 
     fig.suptitle(
-        "T2 Effect at High T1 (T1=2.0)",
+        f"T2 Effect at T1={t1_val}",
         fontsize=12, fontweight="bold",
     )
     fig.tight_layout(rect=[0, 0, 1, 0.92])
@@ -1201,62 +1177,6 @@ def plot_instruct_t2_at_high_t1(rows: list[dict], output_path: Path) -> None:
     fig.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
-
-def plot_instruct_vs_base(rows: list[dict], output_path: Path) -> None:
-    """Side-by-side bars for matched configs: instruct vs base."""
-    instruct_lookup = {
-        (r["_method"], r["_t1"]): r
-        for r in rows if r["_group"] == "instruct" and r["_t2"] == "—"
-    }
-    base_lookup = {
-        (r["_method"], r["_t1"]): r
-        for r in rows if r["_group"] == "base" and r["_t2"] == "—"
-    }
-
-    # Find matched pairs
-    pairs = []
-    for key in [("pless", 0.6), ("pless", 1.0), ("temp", 0.7)]:
-        ir = instruct_lookup.get(key)
-        # For temp on instruct, try matching temperature
-        if key[0] == "temp" and ir is None:
-            # Instruct has temp at 0.6, not 0.7 — skip if no match
-            continue
-        br = base_lookup.get(key)
-        if ir and br:
-            pairs.append((key, ir, br))
-
-    if not pairs:
-        return
-
-    labels = [f"{m} t={t}" for (m, t), _, _ in pairs]
-    instruct_vals = [ir["pass_at_k"]["1"] * 100 for _, ir, _ in pairs]
-    base_vals = [br["pass_at_k"]["1"] * 100 for _, _, br in pairs]
-
-    x = np.arange(len(labels))
-    width = 0.35
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    bars1 = ax.bar(x - width / 2, instruct_vals, width, label="Instruct", color="#2B6CB0")
-    bars2 = ax.bar(x + width / 2, base_vals, width, label="Base", color="#C0C0C0")
-
-    ax.set_ylabel("pass@1 (%)", fontsize=11)
-    ax.set_title("Instruct vs Base: Matched Configs (MBPP-full)", fontsize=12)
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontsize=10)
-    ax.legend(fontsize=10)
-    ax.grid(axis="y", alpha=0.3)
-
-    for bar, val in zip(bars1, instruct_vals):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.3,
-                f"{val:.1f}%", ha="center", fontsize=9, fontweight="bold")
-    for bar, val in zip(bars2, base_vals):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.3,
-                f"{val:.1f}%", ha="center", fontsize=9, fontweight="bold")
-
-    fig.tight_layout()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=150, bbox_inches="tight")
-    plt.close(fig)
 
 
 # ---------------------------------------------------------------------------
@@ -1288,13 +1208,11 @@ def main():
             model_display = "Qwen2.5-Coder-3B-Instruct"
         figures_dir = output_dir / "figures"
 
-        print(f"Loading instruct + base reference metrics for {model_display}...")
+        print(f"Loading instruct metrics for {model_display}...")
         rows = load_instruct_metrics(
             instruct_metrics_dir=instruct_metrics,
         )
-        n_instruct = sum(1 for r in rows if r["_group"] == "instruct")
-        n_base = sum(1 for r in rows if r["_group"] == "base")
-        print(f"  Loaded {len(rows)} configs ({n_instruct} instruct, {n_base} base references)")
+        print(f"  Loaded {len(rows)} configs")
 
         # Generate report
         report = generate_instruct_report(rows, model_name=model_display)
@@ -1318,11 +1236,15 @@ def main():
             plot_instruct_pareto(rows, figures_dir / filename, diversity_key=div_key)
             print(f"Plot: {figures_dir / filename}")
 
-        plot_instruct_t2_at_high_t1(rows, figures_dir / "t2_effect_at_high_t1.png")
-        print(f"Plot: {figures_dir / 't2_effect_at_high_t1.png'}")
-
-        plot_instruct_vs_base(rows, figures_dir / "instruct_vs_base.png")
-        print(f"Plot: {figures_dir / 'instruct_vs_base.png'}")
+        # Generate one T2 effect plot per T1 that has T2 configs
+        t2_by_t1: dict[float, list] = {}
+        for r in rows:
+            if r["_method"] == "pless" and r["_t2"] != "—":
+                t2_by_t1.setdefault(r["_t1"], []).append(r)
+        for t1_val in sorted(t2_by_t1.keys()):
+            fname = f"t2_effect_at_t1_{t1_val}.png"
+            plot_instruct_t2_effect(rows, t1_val, figures_dir / fname)
+            print(f"Plot: {figures_dir / fname}")
 
     else:
         print("Loading metrics...")

@@ -48,7 +48,8 @@ OUR_METHOD_NAMES = {
     "pless": "P-Less",
     "pless_norm": "P-Less Norm",
     "temp": "Temperature",
-    "top_p": "Top-p (ours)",
+    "top_p": "Top-p",
+    "top_k": "Top-k",
 }
 
 # ---------------------------------------------------------------------------

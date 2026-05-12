@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -71,6 +72,133 @@ _METHOD_DISPLAY_NAMES: dict[str, str] = {
 }
 
 
+def _config_key(m: dict) -> str:
+    """Composite identifier for a sampler configuration.
+
+    Two metrics dicts that share this key represent the same (method,
+    temperature, top_p, top_k) tuple. Used to give each paper-baseline
+    variant a distinct color and legend entry, instead of collapsing
+    e.g. ``temp@0.3`` and ``temp@0.7`` under a single ``temp`` entry.
+    """
+    parts = [m["method"]]
+    p = m.get("top_p")
+    k = m.get("top_k")
+    t = m.get("temperature")
+    if p is not None:
+        parts.append(f"p{p}")
+    if k is not None:
+        parts.append(f"k{k}")
+    if t is not None:
+        parts.append(f"t{t}")
+    return "_".join(parts)
+
+
+def _config_display(m: dict) -> str:
+    """Human-readable legend label for a sampler configuration."""
+    method = m["method"]
+    t = m.get("temperature")
+    p = m.get("top_p")
+    k = m.get("top_k")
+    if method == "greedy":
+        return "greedy"
+    if method.startswith("beam"):
+        return method
+    if method == "top_p":
+        return f"top-p (p={p}, t={t})"
+    if method == "top_k":
+        return f"top-k (k={k}, t={t})"
+    if method == "pless":
+        return f"p-less (t={t})"
+    if method == "pless_norm":
+        return f"p-less-norm (t={t})"
+    if method == "temp":
+        return f"temp (t={t})"
+    return method
+
+
+def _build_config_palette(metrics_list: list[dict]) -> dict[str, str]:
+    """Assign a distinct color to each unique sampler configuration.
+
+    Configs are ordered by first appearance in ``metrics_list`` so the
+    same input always produces the same color assignment.
+    """
+    import matplotlib.colors as mcolors
+
+    keys = list(dict.fromkeys(_config_key(m) for m in metrics_list))
+    cmap = plt.get_cmap("tab20")
+    return {k: mcolors.to_hex(cmap(i % 20)) for i, k in enumerate(keys)}
+
+
+def _family_key(m: dict) -> str:
+    """Coarser palette key than ``_config_key``: collapses paper-baseline
+    families (temp, top_p, top_k, beam) and the p-less / p-less-norm
+    families to one color each. Temperature is *not* encoded in the color.
+
+    Used for headline figures where the story is "p-less vs the paper's
+    per-model recommended config" — within-family T-trajectory is read off
+    the two same-color points per model.
+    """
+    method = m["method"]
+    if method in ("pless", "p_less"):
+        return "pless"
+    if method in ("pless_norm", "p_less_norm"):
+        return "pless_norm"
+    if method.startswith("beam"):
+        return "beam"
+    return method
+
+
+def _family_display(key: str) -> str:
+    """Human-readable legend label for ``_family_key`` outputs."""
+    if key == "beam":
+        return "beam (4, 8)"
+    if key == "top_p":
+        return "top-p"
+    if key == "top_k":
+        return "top-k"
+    if key == "temp":
+        return "temp"
+    if key == "greedy":
+        return "greedy"
+    if key == "pless":
+        return "p-less (t=0.6, 1.0)"
+    if key == "pless_norm":
+        return "p-less-norm (t=0.6, 1.0)"
+    return key
+
+
+def _build_family_palette(metrics_list: list[dict]) -> dict[str, str]:
+    """Assign a distinct color per family key (see ``_family_key``)."""
+    import matplotlib.colors as mcolors
+
+    keys = list(dict.fromkeys(_family_key(m) for m in metrics_list))
+    cmap = plt.get_cmap("tab10")
+    return {k: mcolors.to_hex(cmap(i % 10)) for i, k in enumerate(keys)}
+
+
+_TOP_P_FILENAME_RE = re.compile(r"top_p(\d+(?:\.\d+)?)")
+_TOP_K_FILENAME_RE = re.compile(r"top_k(\d+)")
+
+
+def _backfill_truncation_params(m: dict, source_path: Path) -> None:
+    """Recover ``top_p``/``top_k`` from the source filename when missing in JSON.
+
+    Older runs wrote metrics JSONs with these fields nulled even when the
+    filename clearly encodes the value (e.g. ``top_p0.9_t1.0_metrics.json``).
+    Backfilling here keeps ``_config_key`` and the legend correct without
+    needing to regenerate the JSONs.
+    """
+    stem = source_path.stem
+    if m["method"] == "top_p" and m.get("top_p") is None:
+        match = _TOP_P_FILENAME_RE.search(stem)
+        if match:
+            m["top_p"] = float(match.group(1))
+    if m["method"] == "top_k" and m.get("top_k") is None:
+        match = _TOP_K_FILENAME_RE.search(stem)
+        if match:
+            m["top_k"] = int(match.group(1))
+
+
 def load_metrics(paths: list[Path]) -> list[dict]:
     results = []
     for p in paths:
@@ -79,6 +207,7 @@ def load_metrics(paths: list[Path]) -> list[dict]:
         # Normalize model names: directory-style "org--model" → HF-style "org/model"
         if "model" in m:
             m["model"] = m["model"].replace("--", "/", 1)
+        _backfill_truncation_params(m, Path(p))
         results.append(m)
     return results
 
@@ -428,38 +557,46 @@ def plot_structural_diversity_bars(
     output_path: Path,
     dataset_name: str = "MBPP",
 ) -> None:
-    """Grouped bar chart of structural diversity per model×method."""
-    # Group by model
+    """Grouped bar chart of structural diversity per model × sampler config.
+
+    One bar per unique (method, temperature, top_p, top_k) tuple — paper-
+    baseline variants like ``temp@0.3`` and ``temp@0.7`` get separate
+    bars instead of being silently collapsed to whichever appears first.
+    """
     models_order = list(dict.fromkeys(m["model"] for m in metrics_list))
-    methods_order = list(dict.fromkeys(m["method"] for m in metrics_list))
+    config_order = list(dict.fromkeys(_config_key(m) for m in metrics_list))
+    config_palette = _build_config_palette(metrics_list)
+    config_display = {_config_key(m): _config_display(m) for m in metrics_list}
 
     fig, ax = plt.subplots(figsize=(max(8, len(models_order) * 2.5), 5))
 
-    bar_width = 0.8 / max(len(methods_order), 1)
+    bar_width = 0.8 / max(len(config_order), 1)
     x = np.arange(len(models_order))
 
-    for i, method in enumerate(methods_order):
+    for i, ck in enumerate(config_order):
         values = []
         for model in models_order:
-            match = [m for m in metrics_list if m["model"] == model and m["method"] == method]
-            if match and "structural_diversity" in match[0]:
-                values.append(match[0]["structural_diversity"])
-            else:
-                values.append(0.0)
+            match = [
+                m for m in metrics_list
+                if m["model"] == model and _config_key(m) == ck
+                and "structural_diversity" in m
+            ]
+            values.append(match[0]["structural_diversity"] if match else 0.0)
 
-        color = _METHOD_COLORS.get(method, "#333333")
-        offset = (i - len(methods_order) / 2 + 0.5) * bar_width
-        label = _METHOD_DISPLAY_NAMES.get(method, method)  # Fix C
-        ax.bar(x + offset, values, bar_width * 0.9, label=label, color=color, alpha=0.85)
+        offset = (i - len(config_order) / 2 + 0.5) * bar_width
+        ax.bar(
+            x + offset, values, bar_width * 0.9,
+            label=config_display[ck], color=config_palette[ck], alpha=0.85,
+        )
 
     ax.set_xlabel("Model")
     ax.set_ylabel("Structural Diversity\n(mean pairwise AST edit distance)")
-    ax.set_title(f"{dataset_name}: Structural Diversity by Model & Method")
+    ax.set_title(f"{dataset_name}: Structural Diversity by Model & Sampler")
     ax.set_xticks(x)
     short_models = [m.split("/")[-1] if "/" in m else m for m in models_order]
     ax.set_xticklabels(short_models, rotation=20, ha="right", fontsize=8)
     ax.set_ylim(0, 1.0)
-    ax.legend(fontsize=8)
+    ax.legend(fontsize=7, ncol=2 if len(config_order) > 8 else 1)
     ax.grid(axis="y", alpha=0.3)
     fig.tight_layout()
 
@@ -660,7 +797,9 @@ def plot_diversity_metrics_bars(
         return
 
     models_order = list(dict.fromkeys(m["model"] for m in filtered))
-    methods_order = [m for m in methods if any(f["method"] == m for f in filtered)]
+    config_order = list(dict.fromkeys(_config_key(m) for m in filtered))
+    config_palette = _build_config_palette(filtered)
+    config_display = {_config_key(m): _config_display(m) for m in filtered}
 
     diversity_keys = [
         ("structural_diversity", "AST Edit Distance"),
@@ -673,22 +812,23 @@ def plot_diversity_metrics_bars(
 
     for col, (key, title) in enumerate(diversity_keys):
         ax = axes[0, col]
-        bar_width = 0.8 / max(len(methods_order), 1)
+        bar_width = 0.8 / max(len(config_order), 1)
         x = np.arange(len(models_order))
 
-        for i, method in enumerate(methods_order):
+        for i, ck in enumerate(config_order):
             values = []
             for model in models_order:
-                match = [m for m in filtered if m["model"] == model and m["method"] == method]
-                if match and key in match[0]:
-                    values.append(match[0][key])
-                else:
-                    values.append(0.0)
+                match = [
+                    m for m in filtered
+                    if m["model"] == model and _config_key(m) == ck and key in m
+                ]
+                values.append(match[0][key] if match else 0.0)
 
-            color = _METHOD_COLORS.get(method, "#333333")
-            offset = (i - len(methods_order) / 2 + 0.5) * bar_width
-            label = _METHOD_DISPLAY_NAMES.get(method, method)
-            ax.bar(x + offset, values, bar_width * 0.9, label=label, color=color, alpha=0.85)
+            offset = (i - len(config_order) / 2 + 0.5) * bar_width
+            ax.bar(
+                x + offset, values, bar_width * 0.9,
+                label=config_display[ck], color=config_palette[ck], alpha=0.85,
+            )
 
         ax.set_title(title, fontsize=10)
         short_models = [m.split("/")[-1] if "/" in m else m for m in models_order]
@@ -698,10 +838,10 @@ def plot_diversity_metrics_bars(
         ax.grid(axis="y", alpha=0.3)
         if col == 0:
             ax.set_ylabel("Diversity Score")
-            ax.legend(fontsize=7)
+            ax.legend(fontsize=7, ncol=2 if len(config_order) > 8 else 1)
 
     fig.suptitle(
-        f"{dataset_name}: Diversity Metrics by Model & Method",
+        f"{dataset_name}: Diversity Metrics by Model & Sampler",
         fontsize=13,
     )
     fig.tight_layout(rect=[0, 0, 1, 0.95])
@@ -724,6 +864,9 @@ def plot_pareto_scatter(
     methods: list[str] | None = None,
     diversity_key: str = "codebleu_diversity",
     diversity_fallback: str = "structural_diversity",
+    config_keys: list[str] | None = None,
+    show_trajectories: bool = True,
+    family_palette: bool = False,
 ) -> None:
     """Aggregate Pareto scatter: pass@1 vs mean diversity, one point per (model, method).
 
@@ -734,6 +877,9 @@ def plot_pareto_scatter(
         methods = list(dict.fromkeys(m["method"] for m in metrics_list))
 
     filtered = [m for m in metrics_list if m["method"] in methods]
+    if config_keys is not None:
+        wanted = set(config_keys)
+        filtered = [m for m in filtered if _config_key(m) in wanted]
     if not filtered:
         return
 
@@ -744,6 +890,16 @@ def plot_pareto_scatter(
     models_order = list(dict.fromkeys(m["model"] for m in filtered))
     model_marker = {name: _MODEL_MARKERS[i % len(_MODEL_MARKERS)] for i, name in enumerate(models_order)}
 
+    if family_palette:
+        palette = _build_family_palette(filtered)
+        key_fn = _family_key
+        display_map = {_family_key(m): _family_display(_family_key(m)) for m in filtered}
+    else:
+        palette = _build_config_palette(filtered)
+        key_fn = _config_key
+        display_map = {_config_key(m): _config_display(m) for m in filtered}
+    key_order = list(dict.fromkeys(key_fn(m) for m in filtered))
+
     import matplotlib.patches as mpatches
     from matplotlib.lines import Line2D
 
@@ -753,12 +909,11 @@ def plot_pareto_scatter(
     all_points: list[tuple[str, float, float]] = []
 
     for m in filtered:
-        method = m["method"]
         model = m["model"]
         pass1 = m.get("pass_at_k", {}).get("1", 0.0)
         div = m.get(active_key, 0.0)
 
-        color = _METHOD_COLORS.get(method, "#333333")
+        color = palette[key_fn(m)]
         marker = model_marker[model]
 
         ax.scatter(
@@ -773,24 +928,22 @@ def plot_pareto_scatter(
         all_points.append((model, pass1, div))
 
     # Per-model connecting lines: show within-model trade-off trajectory
-    for model in models_order:
-        model_pts = [(p1, d) for (m_model, p1, d) in all_points if m_model == model]
-        if len(model_pts) < 2:
-            continue
-        model_pts.sort(key=lambda p: p[0])
-        mx, my = zip(*model_pts)
-        ax.plot(mx, my, "-", color="gray", alpha=0.3, linewidth=1.0, zorder=1)
+    if show_trajectories:
+        for model in models_order:
+            model_pts = [(p1, d) for (m_model, p1, d) in all_points if m_model == model]
+            if len(model_pts) < 2:
+                continue
+            model_pts.sort(key=lambda p: p[0])
+            mx, my = zip(*model_pts)
+            ax.plot(mx, my, "-", color="gray", alpha=0.3, linewidth=1.0, zorder=1)
 
     # --- Two separate legends with section titles ---
-    # Method legend (color)
+    # Method legend (color) — one entry per (method, temperature, top_p, top_k)
     method_handles: list[mpatches.Patch | Line2D] = [
-        Line2D([0], [0], color="none", label="$\\bf{Method}$"),  # section title
+        Line2D([0], [0], color="none", label="$\\bf{Sampler}$"),
     ]
-    for method in methods:
-        if any(m["method"] == method for m in filtered):
-            display = _METHOD_DISPLAY_NAMES.get(method, method)
-            color = _METHOD_COLORS.get(method, "#333333")
-            method_handles.append(mpatches.Patch(color=color, label=display))
+    for ck in key_order:
+        method_handles.append(mpatches.Patch(color=palette[ck], label=display_map[ck]))
 
     # Model legend (marker shape)
     model_handles: list[Line2D] = [
@@ -928,85 +1081,164 @@ def plot_method_heatmaps(
     plt.close(fig)
 
 
-def plot_pass_at_1_comparison(
+def _model_family_rank(model: str) -> tuple[int, int, str]:
+    """Sort key that groups rows by model family for the heatmap.
+
+    Lower tuples sort first. The family priority surfaces base→chat
+    pairings (Llama-2 → CodeLlama → Qwen-7B → Qwen2.5-Coder →
+    OpenCodeInterpreter), with sub-rank distinguishing base from
+    chat/instruct variants.
+    """
+    short = model.split("/")[-1] if "/" in model else model
+    s = short.lower()
+
+    if "llama-2" in s:
+        return (0, 1 if ("chat" in s or "instruct" in s) else 0, short)
+    if "codellama" in s:
+        return (1, 1 if ("instruct" in s or "chat" in s) else 0, short)
+    if "qwen-7b" in s or s.startswith("qwen-7b"):
+        return (2, 1 if ("chat" in s or "instruct" in s) else 0, short)
+    if "qwen2.5-coder" in s:
+        if "1.5b" in s:
+            return (3, 0, short)
+        if "3b" in s:
+            return (3, 1, short)
+        if "7b" in s:
+            return (3, 2 if ("instruct" in s or "chat" in s) else 1, short)
+        return (3, 9, short)
+    if "opencodeinterpreter" in s:
+        return (4, 1 if ("instruct" in s or "chat" in s) else 0, short)
+    return (5, 0, short)
+
+
+def plot_pass_at_1_heatmap(
     metrics_list: list[dict],
     output_path: Path,
     dataset_name: str = "MBPP",
+    sort_columns_by: str = "mean_rank",
+    group_rows_by_family: bool = True,
 ) -> None:
-    """Horizontal bar chart ranking methods by pass@1, one subplot per model."""
-    from matplotlib.patches import Patch
+    """Single-panel heatmap of pass@1 across (model, sampler).
 
-    models_order = list(dict.fromkeys(m["model"] for m in metrics_list))
-    n_models = len(models_order)
-    if n_models == 0:
+    Rows are models, columns are sampler configurations. Cells are
+    annotated with the pass@1 percentage; missing combinations render
+    "—". The per-row best sampler gets a bold annotation and a black
+    rectangular border. Designed to replace a multi-panel bar grid that
+    fails to scale to paper-page width.
+    """
+    from matplotlib.patches import Rectangle
+
+    if not metrics_list:
         return
 
-    by_model: dict[str, list[dict]] = {model: [] for model in models_order}
-    for m in metrics_list:
-        by_model[m["model"]].append(m)
+    models_order = list(dict.fromkeys(m["model"] for m in metrics_list))
+    if group_rows_by_family:
+        models_order.sort(key=_model_family_rank)
+    else:
+        models_order.sort(key=lambda m: (m.split("/")[-1] if "/" in m else m).lower())
 
-    fig, axes = plt.subplots(
-        1, n_models, figsize=(8 * n_models, max(5, 0.4 * max(
-            len(v) for v in by_model.values()
-        ))), squeeze=False,
+    config_keys_seen: list[str] = []
+    config_display: dict[str, str] = {}
+    for m in metrics_list:
+        k = _config_key(m)
+        if k not in config_display:
+            config_keys_seen.append(k)
+            config_display[k] = _config_display(m)
+
+    matrix: dict[tuple[str, str], float] = {}
+    for m in metrics_list:
+        p1 = m.get("pass_at_k", {}).get("1")
+        if p1 is None:
+            continue
+        matrix[(m["model"], _config_key(m))] = p1 * 100.0
+
+    if sort_columns_by == "mean_rank":
+        means = {}
+        for ck in config_keys_seen:
+            vals = [matrix[(model, ck)] for model in models_order if (model, ck) in matrix]
+            means[ck] = float(np.mean(vals)) if vals else float("-inf")
+        config_keys_order = sorted(config_keys_seen, key=lambda k: means[k], reverse=True)
+    elif sort_columns_by == "alpha":
+        config_keys_order = sorted(config_keys_seen, key=lambda k: config_display[k].lower())
+    else:
+        config_keys_order = list(config_keys_seen)
+
+    n_rows = len(models_order)
+    n_cols = len(config_keys_order)
+
+    data = np.full((n_rows, n_cols), np.nan, dtype=float)
+    for i, model in enumerate(models_order):
+        for j, ck in enumerate(config_keys_order):
+            v = matrix.get((model, ck))
+            if v is not None:
+                data[i, j] = v
+
+    fig_w = max(10.0, 0.55 * n_cols + 4)
+    fig_h = max(4.0, 0.6 * n_rows + 1.5)
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
+
+    cmap = plt.get_cmap("viridis")
+    masked = np.ma.masked_invalid(data)
+    im = ax.imshow(masked, cmap=cmap, vmin=0.0, vmax=100.0, aspect="auto")
+    cmap.set_bad(color="#E2E8F0")
+
+    cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.02)
+    cbar.set_label("pass@1 (%)", fontsize=9)
+
+    ax.set_xticks(np.arange(n_cols))
+    ax.set_xticklabels(
+        [config_display[k] for k in config_keys_order],
+        rotation=30, ha="right", fontsize=8,
+    )
+    ax.set_yticks(np.arange(n_rows))
+    ax.set_yticklabels(
+        [(m.split("/")[-1] if "/" in m else m) for m in models_order],
+        fontsize=9,
     )
 
-    for col, model in enumerate(models_order):
-        ax = axes[0, col]
-        configs = by_model[model]
+    ax.set_xticks(np.arange(-0.5, n_cols, 1), minor=True)
+    ax.set_yticks(np.arange(-0.5, n_rows, 1), minor=True)
+    ax.grid(which="minor", color="white", linewidth=0.5)
+    ax.tick_params(which="minor", bottom=False, left=False)
 
-        # Extract pass@1 and sort descending
-        rows = []
-        for m in configs:
-            p1 = m.get("pass_at_k", {}).get("1")
-            if p1 is None:
-                continue
-            label = _METHOD_DISPLAY_NAMES.get(m["method"], m["method"])
-            rows.append((label, p1 * 100, m["method"]))
-        rows.sort(key=lambda r: r[1], reverse=True)
-
-        if not rows:
+    row_winners: dict[int, int] = {}
+    for i in range(n_rows):
+        row = data[i]
+        if np.all(np.isnan(row)):
             continue
+        row_winners[i] = int(np.nanargmax(row))
 
-        methods = [r[0] for r in rows]
-        scores = [r[1] for r in rows]
-        method_keys = [r[2] for r in rows]
-
-        colors = [_METHOD_COLORS.get(mk, "#A0AEC0") for mk in method_keys]
-
-        y_pos = np.arange(len(methods))
-        bars = ax.barh(y_pos, scores, color=colors, edgecolor=[
-            _darken(c) for c in colors
-        ], linewidth=0.5)
-
-        ax.set_yticks(y_pos)
-        ax.set_yticklabels(methods, fontsize=8)
-        ax.invert_yaxis()
-        ax.set_xlabel("pass@1 (%)")
-        short_model = model.split("/")[-1] if "/" in model else model
-        ax.set_title(short_model, fontsize=11)
-        ax.grid(axis="x", alpha=0.3)
-
-        for bar, score in zip(bars, scores):
+    for i in range(n_rows):
+        for j in range(n_cols):
+            v = data[i, j]
+            if np.isnan(v):
+                ax.text(j, i, "—", ha="center", va="center",
+                        color="#4A5568", fontsize=8)
+                continue
+            text_color = "white" if v < 50.0 else "black"
+            is_winner = row_winners.get(i) == j
             ax.text(
-                bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2,
-                f"{score:.1f}", va="center", fontsize=7,
+                j, i, f"{v:.1f}",
+                ha="center", va="center",
+                color=text_color,
+                fontsize=8,
+                fontweight="bold" if is_winner else "normal",
             )
+            if is_winner:
+                ax.add_patch(Rectangle(
+                    (j - 0.5, i - 0.5), 1, 1,
+                    fill=False, edgecolor="black", linewidth=1.8,
+                ))
 
-    fig.suptitle(f"{dataset_name}: pass@1 Comparison", fontsize=13)
+    ax.set_title(
+        f"{dataset_name}: pass@1 (%) — model × sampler",
+        fontsize=11,
+    )
     fig.tight_layout()
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
-
-
-def _darken(hex_color: str, factor: float = 0.7) -> str:
-    """Darken a hex colour for bar edges."""
-    hex_color = hex_color.lstrip("#")
-    r, g, b = (int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-    r, g, b = int(r * factor), int(g * factor), int(b * factor)
-    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 def plot_metrics_overview(
@@ -1148,6 +1380,34 @@ def parse_args():
         "--methods", nargs="+",
         help="Filter to specific methods (e.g. pless pless_norm temp top_p0.9)",
     )
+    parser.add_argument(
+        "--config-keys", nargs="+",
+        help="Filter the headline Pareto scatter to specific config keys "
+             "(e.g. pless_t0.6 temp_t0.3 top_p_p0.8_t1.0). "
+             "Format: method[_p<top_p>][_k<top_k>][_t<temperature>].",
+    )
+    parser.add_argument(
+        "--models", nargs="+",
+        help="Filter to specific models by HF id (e.g. Qwen/Qwen-7B meta-llama/Llama-2-7b-hf).",
+    )
+    parser.add_argument(
+        "--no-trajectories", action="store_true",
+        help="Suppress per-model gray trajectory lines in the headline Pareto scatter.",
+    )
+    parser.add_argument(
+        "--pareto-only", action="store_true",
+        help="Only generate the headline Pareto scatter; skip aggregate lines, "
+             "heatmaps, bars, and sub-component paretos.",
+    )
+    parser.add_argument(
+        "--pareto-output-name", default="pareto_correctness_diversity.png",
+        help="Filename for the headline Pareto PNG (default: pareto_correctness_diversity.png).",
+    )
+    parser.add_argument(
+        "--family-palette", action="store_true",
+        help="Collapse temp/top_p/top_k/beam variants to one color per family in the "
+             "headline Pareto scatter; p-less variants stay distinct by temperature.",
+    )
     return parser.parse_args()
 
 
@@ -1159,46 +1419,58 @@ def main():
         allowed = set(args.methods)
         metrics_list = [m for m in metrics_list if m["method"] in allowed]
 
+    if args.models:
+        allowed_models = set(args.models)
+        metrics_list = [m for m in metrics_list if m["model"] in allowed_models]
+
     out = args.output_dir
     out.mkdir(parents=True, exist_ok=True)
 
     # Determine how many distinct models are present
     n_models = len(dict.fromkeys(m["model"] for m in metrics_list))
 
-    if n_models > 2:
-        # Many configs — use the faceted (one-row-per-model) layout
-        plot_aggregate_lines_faceted(
-            metrics_list, out / "aggregate_lines_all.png", dataset_name=args.dataset,
-        )
-        print(f"Saved {out / 'aggregate_lines_all.png'}")
-
-        # Also produce a pless-only faceted plot (Fix F: use faceted layout, not flat)
-        pless_only = [
-            m for m in metrics_list
-            if m["method"] in ("pless", "pless_norm", "p_less", "p_less_norm")
-        ]
-        if pless_only:
+    if not args.pareto_only:
+        if n_models > 2:
+            # Many configs — use the faceted (one-row-per-model) layout
             plot_aggregate_lines_faceted(
-                pless_only, out / "aggregate_lines_pless.png", dataset_name=args.dataset,
+                metrics_list, out / "aggregate_lines_all.png", dataset_name=args.dataset,
             )
-            print(f"Saved {out / 'aggregate_lines_pless.png'}")
-    else:
-        plot_aggregate_lines(
-            metrics_list, out / "aggregate_lines.png", dataset_name=args.dataset,
+            print(f"Saved {out / 'aggregate_lines_all.png'}")
+
+            # Also produce a pless-only faceted plot (Fix F: use faceted layout, not flat)
+            pless_only = [
+                m for m in metrics_list
+                if m["method"] in ("pless", "pless_norm", "p_less", "p_less_norm")
+            ]
+            if pless_only:
+                plot_aggregate_lines_faceted(
+                    pless_only, out / "aggregate_lines_pless.png", dataset_name=args.dataset,
+                )
+                print(f"Saved {out / 'aggregate_lines_pless.png'}")
+        else:
+            plot_aggregate_lines(
+                metrics_list, out / "aggregate_lines.png", dataset_name=args.dataset,
+            )
+            print(f"Saved {out / 'aggregate_lines.png'}")
+
+        plot_correctness_vs_diversity(
+            metrics_list, out / "correctness_vs_diversity.png", dataset_name=args.dataset,
         )
-        print(f"Saved {out / 'aggregate_lines.png'}")
+        print(f"Saved {out / 'correctness_vs_diversity.png'}")
 
-    plot_correctness_vs_diversity(
-        metrics_list, out / "correctness_vs_diversity.png", dataset_name=args.dataset,
-    )
-    print(f"Saved {out / 'correctness_vs_diversity.png'}")
-
-    # Primary: Pareto scatter — aggregate correctness vs diversity trade-off
+    # Primary: Pareto scatter — aggregate correctness vs diversity trade-off.
+    # Headline figure honors --config-keys and --no-trajectories.
     plot_pareto_scatter(
-        metrics_list, out / "pareto_correctness_diversity.png",
+        metrics_list, out / args.pareto_output_name,
         dataset_name=args.dataset,
+        config_keys=args.config_keys,
+        show_trajectories=not args.no_trajectories,
+        family_palette=args.family_palette,
     )
-    print(f"Saved {out / 'pareto_correctness_diversity.png'}")
+    print(f"Saved {out / args.pareto_output_name}")
+
+    if args.pareto_only:
+        return
 
     # Per-subcomponent CodeBLEU pareto plots
     _SUBCOMPONENT_PARETOS = [
@@ -1246,8 +1518,8 @@ def main():
         )
         print(f"Saved {out / 'diversity_metrics_comparison.png'}")
 
-    # pass@1 comparison bar chart (ranked horizontal bars per model)
-    plot_pass_at_1_comparison(
+    # pass@1 comparison heatmap (model × sampler, single panel)
+    plot_pass_at_1_heatmap(
         metrics_list, out / "pass_at_1_comparison.png", dataset_name=args.dataset,
     )
     print(f"Saved {out / 'pass_at_1_comparison.png'}")

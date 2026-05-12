@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -58,10 +59,47 @@ _OUR_METHOD_NAMES = {
     "pless": "P-Less",
     "pless_norm": "P-Less Norm",
     "temp": "Temperature",
-    "greedy": "Greedy (ours)",
+    "greedy": "Greedy",
     "beam4": "Beam-4",
     "beam8": "Beam-8",
+    "top_p": "Top-p",
+    "top_k": "Top-k",
 }
+
+# Source classification: "Ours" = novel method or our hyperparameter choice,
+# "Repro" = reproducing paper's exact configuration.
+_OUR_TEMP_VALUES = {0.7, 1.0}   # temperatures we chose (not from paper tables)
+_OUR_TOP_P_VALUES = {0.9}        # top-p values we chose
+_ALWAYS_REPRO = {"greedy", "beam4", "beam8", "top_k"}
+
+
+def _extract_param_from_stem(stem: str, param: str) -> float | int | None:
+    """Extract a numeric parameter value from the _stem field.
+
+    Examples:
+        _extract_param_from_stem("top_p0.8_t1.0", "top_p") → 0.8
+        _extract_param_from_stem("top_k5_t1.0", "top_k") → 5
+    """
+    match = re.search(rf"{param}([\d.]+)", stem)
+    if match:
+        val = match.group(1)
+        return float(val) if "." in val else int(val)
+    return None
+
+
+def _classify_source(m: dict) -> str:
+    """Classify a metrics dict as 'Ours' or 'Repro'."""
+    method = m["method"]
+    if method in ("pless", "pless_norm"):
+        return "Ours"
+    if method in _ALWAYS_REPRO:
+        return "Repro"
+    if method == "temp":
+        return "Ours" if m.get("temperature") in _OUR_TEMP_VALUES else "Repro"
+    if method == "top_p":
+        top_p_val = m.get("top_p") or _extract_param_from_stem(m.get("_stem", ""), "top_p")
+        return "Ours" if top_p_val in _OUR_TOP_P_VALUES else "Repro"
+    return "Ours"
 
 # Model directory name → paper model key
 _MODEL_KEY_MAP = {
@@ -122,13 +160,24 @@ def build_comparison_rows(
     # Our methods
     for m in our_metrics:
         base_name = our_method_names.get(m["method"], m["method"])
+        # Include top_p/top_k parameter value to distinguish variants
+        stem = m.get("_stem", "")
+        if m["method"] == "top_p":
+            pval = m.get("top_p") or _extract_param_from_stem(stem, "top_p")
+            if pval is not None:
+                base_name = f"{base_name} {pval}"
+        elif m["method"] == "top_k":
+            kval = m.get("top_k") or _extract_param_from_stem(stem, "top_k")
+            if kval is not None:
+                base_name = f"{base_name} {kval}"
         temp = m.get("temperature")
         method_name = f"{base_name} (t={temp})" if temp is not None else base_name
+        source = _classify_source(m)
         pass_at_1 = m["pass_at_k"].get("1")
         if pass_at_1 is not None:
             rows.append({
                 "method": method_name,
-                "source": "Ours",
+                "source": source,
                 "pass_at_1": pass_at_1 * 100,  # stored as fraction
             })
 
@@ -350,8 +399,10 @@ def plot_comparison(
         scores = [r["pass_at_1"] for r in rows]
         sources = [r["source"] for r in rows]
 
-        colors = ["#6B46C1" if s == "Ours" else "#A0AEC0" for s in sources]
-        edgecolors = ["#4C1D95" if s == "Ours" else "#718096" for s in sources]
+        _COLOR = {"Ours": "#6B46C1", "Repro": "#3182CE", "Paper": "#A0AEC0"}
+        _EDGE = {"Ours": "#4C1D95", "Repro": "#2B6CB0", "Paper": "#718096"}
+        colors = [_COLOR.get(s, "#A0AEC0") for s in sources]
+        edgecolors = [_EDGE.get(s, "#718096") for s in sources]
 
         y_pos = np.arange(len(methods))
         bars = ax.barh(y_pos, scores, color=colors, edgecolor=edgecolors, linewidth=0.5)
@@ -373,6 +424,7 @@ def plot_comparison(
     # Legend
     legend_elements = [
         Patch(facecolor="#A0AEC0", edgecolor="#718096", label="Paper"),
+        Patch(facecolor="#3182CE", edgecolor="#2B6CB0", label="Repro"),
         Patch(facecolor="#6B46C1", edgecolor="#4C1D95", label="Ours"),
     ]
     axes[0, -1].legend(handles=legend_elements, loc="lower right", fontsize=9)
