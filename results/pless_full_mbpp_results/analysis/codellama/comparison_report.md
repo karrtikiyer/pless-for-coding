@@ -8,57 +8,63 @@ Comparison of p-less sampling against decoding methods from "A Thorough Examinat
 
 | Rank | Method | Source | pass@1 (%) |
 | ---: | ------ | ------ | ---------: |
-| 1 | beam8 (t=1.0) **←** | Ours | 46.6 |
-| 2 | beam4 (t=1.0) **←** | Ours | 46.4 |
+| 1 | beam8 (t=1.0) | Repro | 46.6 |
+| 2 | beam4 (t=1.0) | Repro | 46.4 |
 | 3 | P-Less Norm (t=0.6) **←** | Ours | 41.7 |
 | 4 | P-Less (t=0.6) **←** | Ours | 41.7 |
 | 5 | P-Less Norm (t=1.0) **←** | Ours | 41.5 |
 | 6 | P-Less Norm (t=0.7) **←** | Ours | 41.5 |
 | 7 | P-Less (t=1.0) **←** | Ours | 41.4 |
 | 8 | P-Less (t=0.7) **←** | Ours | 41.0 |
-| 9 | greedy (t=1.0) **←** | Ours | 41.0 |
+| 9 | greedy (t=1.0) | Repro | 41.0 |
 | 10 | FSD-d | Paper | 39.6 |
-| 11 | FSD | Paper | 37.0 |
-| 12 | Temperature (t=0.7) **←** | Ours | 36.8 |
-| 13 | Contrastive Search | Paper | 36.0 |
-| 14 | Greedy | Paper | 35.4 |
-| 15 | Diverse Beam Search | Paper | 35.0 |
-| 16 | Temperature | Paper | 35.0 |
-| 17 | Top-p (ours) (t=1.0) **←** | Ours | 34.6 |
-| 18 | Beam Search | Paper | 34.2 |
-| 19 | Top-p | Paper | 32.8 |
-| 20 | Typical | Paper | 31.8 |
-| 21 | Top-k | Paper | 25.4 |
-| 22 | η-Sampling | Paper | 23.6 |
-| 23 | Mirostat | Paper | 21.2 |
+| 11 | Top-p 0.8 (t=1.0) | Repro | 38.4 |
+| 12 | Temperature (t=0.6) | Repro | 37.9 |
+| 13 | FSD | Paper | 37.0 |
+| 14 | Temperature (t=0.7) **←** | Ours | 36.8 |
+| 15 | Contrastive Search | Paper | 36.0 |
+| 16 | Greedy | Paper | 35.4 |
+| 17 | Diverse Beam Search | Paper | 35.0 |
+| 18 | Temperature | Paper | 35.0 |
+| 19 | Top-p 0.9 (t=1.0) **←** | Ours | 34.6 |
+| 20 | Beam Search | Paper | 34.2 |
+| 21 | Top-p | Paper | 32.8 |
+| 22 | Typical | Paper | 31.8 |
+| 23 | Top-k 5 (t=1.0) | Repro | 31.1 |
+| 24 | Top-k | Paper | 25.4 |
+| 25 | η-Sampling | Paper | 23.6 |
+| 26 | Mirostat | Paper | 21.2 |
 
 ### CodeLlama-7B-Instruct
 
 | Rank | Method | Source | pass@1 (%) |
 | ---: | ------ | ------ | ---------: |
-| 1 | beam4 (t=1.0) **←** | Ours | 44.0 |
-| 2 | beam8 (t=1.0) **←** | Ours | 43.4 |
-| 3 | greedy (t=1.0) **←** | Ours | 42.2 |
+| 1 | beam4 (t=1.0) | Repro | 44.0 |
+| 2 | beam8 (t=1.0) | Repro | 43.4 |
+| 3 | greedy (t=1.0) | Repro | 42.2 |
 | 4 | P-Less (t=0.7) **←** | Ours | 42.2 |
 | 5 | P-Less Norm (t=0.7) **←** | Ours | 42.1 |
 | 6 | P-Less (t=1.0) **←** | Ours | 41.6 |
 | 7 | Diverse Beam Search | Paper | 41.6 |
 | 8 | P-Less Norm (t=1.0) **←** | Ours | 41.4 |
-| 9 | P-Less (t=0.6) **←** | Ours | 41.2 |
-| 10 | P-Less Norm (t=0.6) **←** | Ours | 41.1 |
-| 11 | Beam Search | Paper | 40.8 |
-| 12 | Temperature | Paper | 39.0 |
-| 13 | Temperature (t=0.7) **←** | Ours | 38.3 |
-| 14 | Top-p (ours) (t=1.0) **←** | Ours | 38.3 |
-| 15 | Typical | Paper | 38.2 |
-| 16 | Top-p | Paper | 37.6 |
-| 17 | FSD | Paper | 37.2 |
-| 18 | Contrastive Search | Paper | 37.0 |
-| 19 | Greedy | Paper | 36.8 |
-| 20 | FSD-d | Paper | 36.6 |
-| 21 | Top-k | Paper | 35.6 |
-| 22 | η-Sampling | Paper | 35.4 |
-| 23 | Mirostat | Paper | 34.4 |
+| 9 | Temperature (t=0.3) | Repro | 41.4 |
+| 10 | P-Less (t=0.6) **←** | Ours | 41.2 |
+| 11 | P-Less Norm (t=0.6) **←** | Ours | 41.1 |
+| 12 | Beam Search | Paper | 40.8 |
+| 13 | Top-p 0.8 (t=1.0) | Repro | 39.4 |
+| 14 | Temperature | Paper | 39.0 |
+| 15 | Temperature (t=0.7) **←** | Ours | 38.3 |
+| 16 | Top-p 0.9 (t=1.0) **←** | Ours | 38.3 |
+| 17 | Typical | Paper | 38.2 |
+| 18 | Top-p | Paper | 37.6 |
+| 19 | FSD | Paper | 37.2 |
+| 20 | Contrastive Search | Paper | 37.0 |
+| 21 | Greedy | Paper | 36.8 |
+| 22 | FSD-d | Paper | 36.6 |
+| 23 | Top-k 5 (t=1.0) | Repro | 36.6 |
+| 24 | Top-k | Paper | 35.6 |
+| 25 | η-Sampling | Paper | 35.4 |
+| 26 | Mirostat | Paper | 34.4 |
 
 
 ## Extended Metrics (Our Methods Only)
@@ -76,8 +82,11 @@ Comparison of p-less sampling against decoding methods from "A Thorough Examinat
 | P-Less (t=0.6) | 41.7 | 46.5 | 48.2 | 49.4 | 49.4 | 49.4 | 46.4 | 4.6 | 41.8 | 0.4 | 39.2 | 0.0 |
 | P-Less (t=0.7) | 41.0 | 46.9 | 49.1 | 51.2 | 51.2 | 51.2 | 46.2 | 8.6 | 41.0 | 1.0 | 37.2 | 0.2 |
 | P-Less (t=1.0) | 41.4 | 50.3 | 53.6 | 57.2 | 57.2 | 57.2 | 48.8 | 22.4 | 42.2 | 4.8 | 36.8 | 1.6 |
+| Temperature (t=0.6) | 37.9 | 52.8 | 58.8 | 65.8 | 65.8 | 65.8 | 49.2 | 44.4 | 39.2 | 23.4 | 30.2 | 9.0 |
 | Temperature (t=0.7) | 36.8 | 52.9 | 58.9 | 65.2 | 65.2 | 65.2 | 48.8 | 45.6 | 39.4 | 26.2 | 29.0 | 8.4 |
-| Top-p (ours) (t=1.0) | 34.6 | 52.1 | 59.5 | 68.2 | 68.2 | 68.2 | 47.6 | 45.0 | 35.0 | 28.8 | 25.6 | 13.8 |
+| Top-k (t=1.0) | 31.1 | 49.1 | 56.3 | 64.8 | 64.8 | 64.8 | 44.6 | 43.2 | 32.8 | 25.4 | 22.4 | 9.6 |
+| Top-p (t=1.0) | 38.4 | 54.2 | 60.4 | 67.4 | 67.4 | 67.4 | 51.0 | 46.0 | 38.8 | 28.2 | 30.4 | 12.6 |
+| Top-p (t=1.0) | 34.6 | 52.1 | 59.5 | 68.2 | 68.2 | 68.2 | 47.6 | 45.0 | 35.0 | 28.8 | 25.6 | 13.8 |
 
 *pass@k as %; cover@t = % of tasks where ≥t fraction of samples are correct; (dist) = distinct correct samples only.*
 
@@ -94,8 +103,11 @@ Comparison of p-less sampling against decoding methods from "A Thorough Examinat
 | P-Less (t=0.6) | 41.2 | 41.7 | 42.0 | 42.2 | 42.2 | 0.0 | 41.6 | 0.0 | 41.2 | 0.0 | 41.0 | 0.0 |
 | P-Less (t=0.7) | 42.2 | 42.8 | 42.9 | 43.0 | 43.0 | 0.0 | 42.8 | 0.0 | 42.6 | 0.0 | 41.4 | 0.0 |
 | P-Less (t=1.0) | 41.6 | 43.4 | 43.8 | 44.2 | 44.2 | 0.2 | 43.4 | 0.0 | 42.4 | 0.0 | 40.2 | 0.0 |
+| Temperature (t=0.3) | 41.4 | 45.7 | 47.5 | 50.2 | 50.2 | 3.6 | 43.6 | 0.0 | 42.4 | 0.0 | 39.8 | 0.0 |
 | Temperature (t=0.7) | 38.3 | 48.2 | 51.6 | 55.2 | 55.2 | 22.2 | 47.4 | 0.0 | 39.4 | 0.0 | 34.4 | 0.0 |
-| Top-p (ours) (t=1.0) | 38.3 | 49.4 | 53.7 | 59.0 | 59.0 | 32.0 | 46.0 | 1.0 | 39.8 | 0.0 | 33.8 | 0.0 |
+| Top-k (t=1.0) | 36.6 | 49.7 | 54.3 | 59.6 | 59.6 | 37.6 | 47.4 | 1.6 | 39.4 | 0.2 | 32.2 | 0.0 |
+| Top-p (t=1.0) | 39.4 | 48.8 | 52.2 | 56.0 | 56.0 | 14.6 | 47.0 | 0.2 | 40.8 | 0.0 | 34.6 | 0.0 |
+| Top-p (t=1.0) | 38.3 | 49.4 | 53.7 | 59.0 | 59.0 | 32.0 | 46.0 | 1.0 | 39.8 | 0.0 | 33.8 | 0.0 |
 
 *pass@k as %; cover@t = % of tasks where ≥t fraction of samples are correct; (dist) = distinct correct samples only.*
 
@@ -103,33 +115,27 @@ Comparison of p-less sampling against decoding methods from "A Thorough Examinat
 
 ### CodeLlama-7B (base)
 
-- **beam8 (t=1.0)**: rank 1/23
-- **beam4 (t=1.0)**: rank 2/23
-- **P-Less Norm (t=0.6)**: rank 3/23
-- **P-Less (t=0.6)**: rank 4/23
-- **P-Less Norm (t=1.0)**: rank 5/23
-- **P-Less Norm (t=0.7)**: rank 6/23
-- **P-Less (t=1.0)**: rank 7/23
-- **P-Less (t=0.7)**: rank 8/23
-- **greedy (t=1.0)**: rank 9/23
-- **Temperature (t=0.7)**: rank 12/23
-- **Top-p (ours) (t=1.0)**: rank 17/23
+- **P-Less Norm (t=0.6)**: rank 3/26
+- **P-Less (t=0.6)**: rank 4/26
+- **P-Less Norm (t=1.0)**: rank 5/26
+- **P-Less Norm (t=0.7)**: rank 6/26
+- **P-Less (t=1.0)**: rank 7/26
+- **P-Less (t=0.7)**: rank 8/26
+- **Temperature (t=0.7)**: rank 14/26
+- **Top-p 0.9 (t=1.0)**: rank 19/26
 - Best P-Less vs paper's Temperature sampling: 6.7pp above (41.7% vs 35.0%)
 - Our temp_0.7 vs paper's Temperature: 36.8% vs 35.0% (Δ=+1.8pp — sanity check for setup alignment)
 
 ### CodeLlama-7B-Instruct
 
-- **beam4 (t=1.0)**: rank 1/23
-- **beam8 (t=1.0)**: rank 2/23
-- **greedy (t=1.0)**: rank 3/23
-- **P-Less (t=0.7)**: rank 4/23
-- **P-Less Norm (t=0.7)**: rank 5/23
-- **P-Less (t=1.0)**: rank 6/23
-- **P-Less Norm (t=1.0)**: rank 8/23
-- **P-Less (t=0.6)**: rank 9/23
-- **P-Less Norm (t=0.6)**: rank 10/23
-- **Temperature (t=0.7)**: rank 13/23
-- **Top-p (ours) (t=1.0)**: rank 14/23
+- **P-Less (t=0.7)**: rank 4/26
+- **P-Less Norm (t=0.7)**: rank 5/26
+- **P-Less (t=1.0)**: rank 6/26
+- **P-Less Norm (t=1.0)**: rank 8/26
+- **P-Less (t=0.6)**: rank 10/26
+- **P-Less Norm (t=0.6)**: rank 11/26
+- **Temperature (t=0.7)**: rank 15/26
+- **Top-p 0.9 (t=1.0)**: rank 16/26
 - Best P-Less vs paper's Temperature sampling: 3.2pp above (42.2% vs 39.0%)
 - Our temp_0.7 vs paper's Temperature: 38.3% vs 39.0% (Δ=-0.7pp — sanity check for setup alignment)
 
