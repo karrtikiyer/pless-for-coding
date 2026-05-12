@@ -107,7 +107,8 @@ def _load_summary() -> dict:
     return json.loads(SUMMARY_PATH.read_text())
 
 
-def _write_markdown(joined: list[dict], out_path: Path) -> None:
+def _write_markdown(joined: list[dict], out_path: Path,
+                    pending: list[str] | None = None) -> None:
     joined_sorted = sorted(joined, key=lambda r: -r["NAUADC"])
     lines = [
         "# algosim Diversity Report — Qwen3-8B Split Decoding",
@@ -116,6 +117,21 @@ def _write_markdown(joined: list[dict], out_path: Path) -> None:
         "joined with our existing structural / CodeBLEU / pass@k metrics. "
         "Sorted by NAUADC descending.",
         "",
+        "Scope: baseline configs (no thinking, thinking, uniform pless) plus the "
+        "**pure-temp** split-decoding series (`temp_pure` on the `<think>` phase). "
+        "`temp_standard` (top_p=0.95, top_k=20) configs are deliberately excluded "
+        "to keep the comparison clean.",
+        "",
+    ]
+    if pending:
+        lines += [
+            f"> **Pending:** {len(pending)} config(s) listed in `algosim_data/manifest.json` "
+            f"do not yet have a response parquet — algosim clustering has not been run "
+            f"on them: **{', '.join(pending)}**. Until they land, the table below shows "
+            f"{len(joined)} configs only.",
+            "",
+        ]
+    lines += [
         "| Config | Label | pass@1 | pass@10 | struct_div | codebleu_div | NAUADC | EA | DA@10 | n_problems |",
         "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
@@ -163,6 +179,16 @@ def main() -> None:
     if not algo_metrics:
         raise SystemExit(f"No parquet files found in {args.responses_dir}")
 
+    # Detect which configs from the manifest haven't been clustered yet.
+    pending: list[str] = []
+    manifest_path = args.responses_dir.parent / "manifest.json"
+    if manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text())
+        expected = [c["config"] for c in manifest.get("configs", [])]
+        pending = [c for c in expected if c not in algo_metrics]
+        if pending:
+            print(f"[algosim_report] pending (no response parquet): {', '.join(pending)}")
+
     joined = []
     for cfg, metrics in algo_metrics.items():
         if cfg not in summary:
@@ -184,7 +210,7 @@ def main() -> None:
 
     args.analysis_dir.mkdir(parents=True, exist_ok=True)
     md_path = args.analysis_dir / "algosim_report.md"
-    _write_markdown(joined, md_path)
+    _write_markdown(joined, md_path, pending=pending)
     print(f"[algosim_report] wrote {md_path}")
 
     raw_path = args.analysis_dir / "algosim_per_config.json"

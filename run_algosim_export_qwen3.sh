@@ -7,7 +7,7 @@
 # there.
 set -euo pipefail
 
-CONFIGS="${CONFIGS:-A,C,T15,P15,H7P,H8P,H9P,H10,H11P,H12P}"
+CONFIGS="${CONFIGS:-A,C,P15,T15P,H7P,H8P,H9P,H10P,H11P,H12P}"
 OUT_DIR="${OUT_DIR:-algosim_data/requests}"
 
 uv run python -m bench.eval.algosim_export \

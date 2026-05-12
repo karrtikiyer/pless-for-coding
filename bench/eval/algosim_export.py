@@ -119,8 +119,9 @@ def main() -> None:
     parser.add_argument(
         "--configs",
         type=str,
-        default="A,C,T15,P15,H7P,H8P,H9P,H10,H11P,H12P",
-        help="Comma-separated config keys to export.",
+        default="A,C,P15,T15P,H7P,H8P,H9P,H10P,H11P,H12P",
+        help="Comma-separated config keys to export. Default: baselines + the "
+             "pure-temp series (no temp_standard configs).",
     )
     parser.add_argument(
         "--output-dir",
