@@ -54,9 +54,10 @@ nvidia-smi --query-gpu=name,memory.free,memory.total --format=csv,noheader
 # ── Bootstrap algosim env ─────────────────────────────────────────────────────
 if [ ! -d "$ALGOSIM_VENV" ]; then
   echo "[bootstrap] creating $ALGOSIM_VENV (Python 3.10 + algosim requirements)..."
+  # `uv venv` does not install pip by default; use `uv pip install --python <venv>`
+  # to install into the venv from outside.
   uv venv "$ALGOSIM_VENV" --python 3.10
-  "$ALGOSIM_VENV/bin/pip" install --upgrade pip
-  "$ALGOSIM_VENV/bin/pip" install -r algosim/requirements.txt
+  uv pip install --python "$ALGOSIM_VENV/bin/python" -r algosim/requirements.txt
 else
   echo "[bootstrap] reusing existing $ALGOSIM_VENV"
 fi
