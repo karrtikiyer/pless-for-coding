@@ -1,0 +1,13 @@
+diff --git infer_algosim.py infer_algosim.py
+index 891218f..2443d11 100644
+--- infer_algosim.py
++++ infer_algosim.py
+@@ -59,7 +59,7 @@ class AlgoSim:
+             else:
+                 outputs.append(False)
+         assert len(outputs) == len(responses)
+-        return outputs, completions
++        return outputs, [r.text for r in responses]
+ 
+ parser = argparse.ArgumentParser()
+ parser.add_argument("--input_file", type=str, required=True)

@@ -51,6 +51,19 @@ if ! command -v nvidia-smi >/dev/null 2>&1; then
 fi
 nvidia-smi --query-gpu=name,memory.free,memory.total --format=csv,noheader
 
+# ── Patch upstream algosim bugs ───────────────────────────────────────────────
+# infer_algosim.py:62 returns an undefined `completions` variable. See
+# algosim_patches/. Apply idempotently — `git apply --check` skips if already applied.
+for patch in algosim_patches/*.patch; do
+  [ -e "$patch" ] || continue
+  if (cd algosim && git apply --check "../$patch" 2>/dev/null); then
+    echo "[patch] applying $patch"
+    (cd algosim && git apply "../$patch")
+  else
+    echo "[patch] $patch already applied (or no longer applicable); skipping"
+  fi
+done
+
 # ── Bootstrap algosim env ─────────────────────────────────────────────────────
 if [ ! -d "$ALGOSIM_VENV" ]; then
   echo "[bootstrap] creating $ALGOSIM_VENV (Python 3.10 + algosim requirements)..."
