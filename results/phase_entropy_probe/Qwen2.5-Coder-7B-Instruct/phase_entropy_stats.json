@@ -1,0 +1,133 @@
+{
+  "total_tokens": 87360,
+  "per_phase": {
+    "signature": {
+      "count": 15279,
+      "mean": 0.1389804529743514,
+      "median": 0.0005995042156428099,
+      "std": 0.31526698744913717,
+      "p5": 2.3746622900944203e-05,
+      "p25": 9.682346717454493e-05,
+      "p75": 0.009488802403211594,
+      "p95": 0.8519092202186584
+    },
+    "body": {
+      "count": 57514,
+      "mean": 0.05251211059018904,
+      "median": 9.489138756180182e-05,
+      "std": 0.16942336513271405,
+      "p5": 2.9384150366240647e-06,
+      "p25": 1.9574688849388622e-05,
+      "p75": 0.0020176597172394395,
+      "p95": 0.4463048279285431
+    },
+    "docstring": {
+      "count": 7070,
+      "mean": 0.045708785367037506,
+      "median": 7.632540655322373e-05,
+      "std": 0.17093208731388113,
+      "p5": 3.7408381103887223e-06,
+      "p25": 1.8474074749974534e-05,
+      "p75": 0.0007558963261544704,
+      "p95": 0.3224624693393707
+    },
+    "operator": {
+      "count": 7497,
+      "mean": 0.1524698508032923,
+      "median": 0.005074163433164358,
+      "std": 0.30618057538662263,
+      "p5": 6.86749644955853e-06,
+      "p25": 6.288304575718939e-05,
+      "p75": 0.15035445988178253,
+      "p95": 0.8082146048545837
+    }
+  },
+  "pairwise_cohens_d": {
+    "signature_vs_body": 0.4144,
+    "signature_vs_docstring": 0.3357,
+    "signature_vs_operator": 0.0432,
+    "body_vs_docstring": 0.0401,
+    "body_vs_operator": 0.5253,
+    "docstring_vs_operator": 0.4273
+  },
+  "pairwise_ks_pvalue": {
+    "signature_vs_body": 0.0,
+    "signature_vs_docstring": 0.0,
+    "signature_vs_operator": 4.594098876789517e-219,
+    "body_vs_docstring": 1.0039676102195398e-19,
+    "body_vs_operator": 0.0,
+    "docstring_vs_operator": 0.0
+  },
+  "conditional_entropy_bins": [
+    {
+      "bin": "0.0-0.3",
+      "signature": 12654,
+      "body": 53573,
+      "docstring": 6691,
+      "operator": 6282
+    },
+    {
+      "bin": "0.3-0.6",
+      "signature": 806,
+      "body": 2036,
+      "docstring": 164,
+      "operator": 488
+    },
+    {
+      "bin": "0.6-0.9",
+      "signature": 1148,
+      "body": 1412,
+      "docstring": 147,
+      "operator": 421
+    },
+    {
+      "bin": "0.9-1.2",
+      "signature": 383,
+      "body": 383,
+      "docstring": 37,
+      "operator": 141
+    },
+    {
+      "bin": "1.2-1.5",
+      "signature": 161,
+      "body": 89,
+      "docstring": 26,
+      "operator": 85
+    },
+    {
+      "bin": "1.5-1.8",
+      "signature": 100,
+      "body": 7,
+      "docstring": 2,
+      "operator": 60
+    },
+    {
+      "bin": "1.8-2.1",
+      "signature": 27,
+      "body": 7,
+      "docstring": 2,
+      "operator": 18
+    },
+    {
+      "bin": "2.1-2.4",
+      "signature": 0,
+      "body": 7,
+      "docstring": 1,
+      "operator": 1
+    },
+    {
+      "bin": "2.4-2.7",
+      "signature": 0,
+      "body": 0,
+      "docstring": 0,
+      "operator": 0
+    },
+    {
+      "bin": "2.7-3.0",
+      "signature": 0,
+      "body": 0,
+      "docstring": 0,
+      "operator": 1
+    }
+  ]
+}
