@@ -4,13 +4,15 @@ AlgoSim NAUADC / EA / DA@10 (Llama-3.1-8B-Instruct judge, correct samples only) 
 
 Scope: baseline configs (no thinking, thinking, uniform pless) plus the **pure-temp** split-decoding series (`temp_pure` on the `<think>` phase). `temp_standard` (top_p=0.95, top_k=20) configs are deliberately excluded to keep the comparison clean.
 
-> **Pending:** 2 config(s) listed in `algosim_data/manifest.json` do not yet have a response parquet — algosim clustering has not been run on them: **T15P, H10P**. Until they land, the table below shows 8 configs only.
+> **Pending:** 4 config(s) listed in `algosim_data/manifest.json` do not yet have a response parquet — algosim clustering has not been run on them: **B, D, E, T15N**. Until they land, the table below shows 10 configs only.
 
 | Config | Label | pass@1 | pass@10 | struct_div | codebleu_div | NAUADC | EA | DA@10 | n_problems |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
 | **H8P** | split: temp(pure) 1.5 → pless 1.5 | 0.811 | 0.898 | 0.206 | 0.384 | **1.322** | 1.229 | 1.365 | 449 |
 | **H9P** | split: temp(pure) 1.5 → pless 2.0 | 0.807 | 0.908 | 0.217 | 0.401 | **1.319** | 1.235 | 1.359 | 454 |
 | **H7P** | split: temp(pure) 1.5 → pless 1.0 | 0.805 | 0.910 | 0.214 | 0.398 | **1.312** | 1.218 | 1.354 | 455 |
+| **T15P** | split: temp(pure) 1.5 → temp(pure) 1.5 | 0.801 | 0.882 | 0.208 | 0.390 | **1.303** | 1.215 | 1.342 | 441 |
+| **H10P** | split: temp(pure) 1.5 → pless 3.0 | 0.803 | 0.906 | 0.202 | 0.389 | **1.283** | 1.205 | 1.318 | 453 |
 | **C** | temp_think 0.6 | 0.738 | 0.834 | 0.167 | 0.354 | **1.234** | 1.166 | 1.264 | 417 |
 | **P15** | uniform pless 1.5 (thinking) | 0.824 | 0.898 | 0.159 | 0.296 | **1.222** | 1.159 | 1.252 | 449 |
 | **H11P** | split: temp(pure) 2.0 → pless 3.0 | 0.458 | 0.802 | 0.201 | 0.370 | **1.198** | 1.157 | 1.214 | 401 |
