@@ -71,7 +71,12 @@ def load_apps(
     """
     from datasets import load_dataset
 
-    ds = load_dataset("codeparrot/apps", split="test", trust_remote_code=False)
+    # codeparrot/apps ships as a script-based dataset (loading_script: apps.py).
+    # `datasets` 3.x requires explicit `trust_remote_code=True` to execute it;
+    # `datasets` 4.x removed script support entirely (hence our datasets<4 pin
+    # in pyproject.toml). The script just unpacks the parquet shards and
+    # exposes them — we've read it and it's safe.
+    ds = load_dataset("codeparrot/apps", split="test", trust_remote_code=True)
     yielded = 0
     for row in ds:
         src = url_to_source(row["url"])
