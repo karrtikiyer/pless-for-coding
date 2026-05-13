@@ -1,0 +1,22 @@
+{
+  "label_a": "Qwen2.5-Coder-7B-Instruct",
+  "label_b": "Qwen2.5-Coder-7B (base)",
+  "n_layers_a": 28,
+  "n_layers_b": 28,
+  "headline_a": {
+    "final_layer_entropy_mean": 0.07333569422514766,
+    "penultimate_layer_entropy_mean": 0.09447671843744987,
+    "penult_minus_final_entropy_gap": 0.021141024212302212,
+    "penultimate_top1_agreement_with_final": 0.9794512814722818
+  },
+  "headline_b": {
+    "final_layer_entropy_mean": 0.20881140600753706,
+    "penultimate_layer_entropy_mean": 0.18897316509588952,
+    "penult_minus_final_entropy_gap": -0.019838240911647542,
+    "penultimate_top1_agreement_with_final": 0.9538877235396594
+  },
+  "rlhf_layer_signature": {
+    "delta_penult_final_gap": 0.040979265123949754,
+    "interpretation": "\u0394 > 0 means run_a's penultimate layer is markedly more diverse than its final layer relative to run_b \u2014 consistent with the hypothesis that RLHF sharpens the last 1-2 layers."
+  }
+}
