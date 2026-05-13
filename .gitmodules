@@ -3,4 +3,6 @@
 	url = https://github.com/ryttry/p-less-sampling.git
 [submodule "algosim"]
 	path = algosim
-	url = https://github.com/sh0416/algosim.git
+	url = https://github.com/karrtikiyer/algosim.git
+	# Fork of sh0416/algosim with our vendored fixes committed in-tree.
+	# Upstream remote is added inside the submodule as `upstream` for future merges.
