@@ -8,13 +8,13 @@ NAUADC values are shown only where algosim has been run; remaining configs are m
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | **No-thinking baselines** |||||||||
 | A | temp 0.7 | 0.662 | 0.704 | 0.719 | 0.734 | 0.057 | 0.137 | **1.096** |
-| B | pless 0.7 | 0.669 | 0.673 | 0.674 | 0.674 | 0.007 | 0.015 | — |
+| B | pless 0.7 | 0.669 | 0.673 | 0.674 | 0.674 | 0.007 | 0.015 | **1.015** |
 | **Thinking-only baselines (no split)** |||||||||
 | C | temp_think 0.6 | 0.738 | 0.799 | 0.817 | 0.834 | 0.167 | 0.354 | **1.234** |
-| D | pless_think 0.6 | 0.718 | 0.777 | 0.795 | 0.816 | 0.131 | 0.256 | — |
-| E | pless_norm_think 0.6 | 0.719 | 0.784 | 0.802 | 0.822 | 0.124 | 0.245 | — |
+| D | pless_think 0.6 | 0.718 | 0.777 | 0.795 | 0.816 | 0.131 | 0.256 | **1.156** |
+| E | pless_norm_think 0.6 | 0.719 | 0.784 | 0.802 | 0.822 | 0.124 | 0.245 | **1.151** |
 | **Uniform high-temp thinking (no split)** |||||||||
-| T15N | uniform temp 1.5 (native, thinking) | 0.799 | 0.857 | 0.872 | 0.888 | 0.200 | 0.384 | — |
+| T15N | uniform temp 1.5 (native, thinking) | 0.799 | 0.857 | 0.872 | 0.888 | 0.200 | 0.384 | **1.277** |
 | P15 | uniform pless 1.5 (thinking) | 0.824 | 0.872 | 0.885 | 0.898 | 0.159 | 0.296 | **1.222** |
 | **Pure-temp split baseline (no pless)** |||||||||
 | T15P | split: temp(pure) 1.5 → temp(pure) 1.5 | 0.801 | 0.855 | 0.868 | 0.882 | 0.208 | 0.390 | **1.303** |
