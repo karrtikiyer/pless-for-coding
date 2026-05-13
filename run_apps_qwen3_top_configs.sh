@@ -39,6 +39,10 @@ run_one() {
   local cfg="$1"; shift
   echo
   echo "──── $cfg on $SOURCE/$DIFFICULTY ────"
+  # PYTHONPATH="$PWD" ensures the source tree wins over any partial install
+  # that uv may have placed in the venv's site-packages (saw cases where
+  # bench.checkpointing was missing from an installed copy on a fresh pod).
+  PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}" \
   uv run python -m bench.apps \
     --model "$MODEL" \
     --source "$SOURCE" --difficulty "$DIFFICULTY" \
