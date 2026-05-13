@@ -13,12 +13,12 @@
 #
 # Outputs:
 #   algosim_data/responses/  — per-config clustering parquet files
-#   algosim_data/algosim_metrics.json — DA@K / EA / NAUADC under the "ATCODER" bucket
+#                              (metric computation runs downstream on the Mac
+#                              via bench/eval/algosim_report{,_apps}.py)
 set -euo pipefail
 
 REQUESTS_DIR="${REQUESTS_DIR:-algosim_data/requests}"
 RESPONSES_DIR="${RESPONSES_DIR:-algosim_data/responses}"
-METRICS_PATH="${METRICS_PATH:-algosim_data/algosim_metrics.json}"
 ALGOSIM_VENV="${ALGOSIM_VENV:-.venv-algosim}"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
@@ -76,26 +76,27 @@ PYEOF
 export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
 
-mkdir -p "$RESPONSES_DIR" "$(dirname "$METRICS_PATH")"
+mkdir -p "$RESPONSES_DIR"
 
 # ── Clustering (vLLM judge: Llama-3.1-8B-Instruct) ────────────────────────────
+# We only run algosim's clustering step here. Metric computation
+# (DA@K / EA / NAUADC) is done downstream on the Mac via our own
+# bench/eval/algosim_report.py and bench/eval/algosim_report_apps.py
+# modules — algosim's compute_metrics.py is skipped because (a) it
+# imports a separate execution_engine module that isn't part of the
+# public repo, and (b) it pools by problem-id prefix into a single
+# ATCODER/CODEFORCES bucket, which loses our per-config granularity.
 echo "[clustering] running algosim/clustering_solutions.py ..."
 "$PY" algosim/clustering_solutions.py \
   --input_dir  "$REQUESTS_DIR" \
   --output_dir "$RESPONSES_DIR"
 
-# ── Metrics (DA@K / EA / NAUADC) ──────────────────────────────────────────────
-echo "[metrics] running algosim/compute_metrics.py ..."
-"$PY" algosim/compute_metrics.py \
-  --clustering_response_dir "$RESPONSES_DIR" \
-  --metrics_path "$METRICS_PATH"
-
 cat <<EOF
 
-Judge + metrics complete.
+Judge clustering complete.
   responses → $RESPONSES_DIR
-  metrics   → $METRICS_PATH
 
-Next: scp $METRICS_PATH back to the Mac and run
-  uv run python -m bench.eval.algosim_report
+Next: scp the response parquets back to the Mac and run
+  uv run python -m bench.eval.algosim_report       # MBPP-style
+  uv run python -m bench.eval.algosim_report_apps  # APPS-style (bucketed by source x difficulty)
 EOF
