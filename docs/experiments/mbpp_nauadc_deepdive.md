@@ -187,6 +187,171 @@ more varied algorithms — but **single-task readings are noisy**. The
 aggregate metric is meaningful precisely because the noise averages
 out across hundreds of problems.
 
+## 3b. Sample-level audit: H8P vs T15N — does split decoding earn its +0.045 NAUADC?
+
+T15N is the closest no-split control to H8P: same nominal sampler
+(`temp @ 1.5`) on both phases, but routed through HF's native
+`model.generate()` instead of the split-decoding manual loop, and *no*
+pless on the code phase. H8P beats T15N by **+0.045 NAUADC** (1.322 vs
+1.277). Is that gap real diversity, or judge artefact?
+
+Aggregate over the **438 common tasks** (H8P-T15N intersection of
+correctly-solved problems): H8P produces more clusters than T15N on
+**72 (16%)**, ties on **310 (71%)**, and *fewer* on **56 (13%)**.
+Mean clusters/task: H8P 1.363 vs T15N 1.317 — almost exactly the
++0.046 mean-cluster delta that yields the +0.045 NAUADC gap.
+
+Three picks: two clean H8P wins, one task where T15N *nominally* has
+more clusters but the count is misleading.
+
+### Task 172 — H8P discovers the built-in (clean win)
+
+> *Write a function to find the occurrence of characters 'std' in the
+> given string.*
+
+**H8P** found 3 clusters from 10 samples:
+
+```python
+# H8P cluster 0 (n=8) — explicit loop with substring slicing
+def count_occurance(s):
+    count = 0
+    for i in range(len(s) - 2):
+        if s[i:i+3] == 'std':
+            count += 1
+    return count
+```
+
+```python
+# H8P cluster 1 (n=1) — the built-in
+def count_occurance(s):
+    return s.count('std')
+```
+
+```python
+# H8P cluster 2 (n=1) — explicit char-by-char comparison
+def count_occurance(s):
+    count = 0
+    for i in range(len(s) - 2):
+        if s[i] == 's' and s[i+1] == 't' and s[i+2] == 'd':
+            count += 1
+    return count
+```
+
+**T15N:** all 10 samples in **1 cluster** (the slicing variant — cluster 0).
+
+Judge call on cluster-0 vs cluster-1 boundary, decision line: *"Instead
+of using a for loop to manually check every substring, it leverages a
+built-in method specifically designed to count occurrences of a
+substring in a string. … Decision: a novel approach."*
+
+**My read.** Faithful win. The `s.count('std')` one-liner delegates to
+a C-implemented built-in — algorithmically distinct from the
+hand-rolled scan, and a different *engineering* choice a code reviewer
+would notice. T15N missed it entirely.
+
+### Task 181 — H8P discovers pairwise reduction (clean win)
+
+> *Write a function to find the longest common prefix in the given set
+> of strings.*
+
+**H8P** found 3 clusters:
+
+```python
+# H8P cluster 0 (n=7) — column-by-column scan
+def common_prefix(strings, n):
+    if n == 0 or not strings: return ''
+    substrings = strings[:n]
+    min_len = min(len(s) for s in substrings)
+    prefix = ''
+    for i in range(min_len):
+        current_char = substrings[0][i]
+        for s in substrings[1:]:
+            if s[i] != current_char: return prefix
+        prefix += current_char
+    return prefix
+```
+
+```python
+# H8P cluster 1 (n=1) — pairwise REDUCTION: intersect with each next string
+def common_prefix(strings, n):
+    n_strings = strings[:n]
+    if not n_strings: return ''
+    common = n_strings[0]
+    for s in n_strings[1:]:
+        min_len = min(len(common), len(s))
+        i = 0
+        while i < min_len and common[i] == s[i]:
+            i += 1
+        common = common[:i]
+        if not common: break
+    return common
+```
+
+Cluster 2 (n=1) is a stylistic variant of cluster 0 (list-append + `''.join`
+instead of string concatenation).
+
+**T15N:** all 10 samples in **1 cluster** (column-scan only).
+
+**My read.** Faithful win. Cluster 1 is a **fundamentally different
+algorithm** — reduction over strings (`common = common ∩ s_i`) instead
+of column-major scan. Both are O(N·min_len) but they organise the work
+differently and lead to different code structure downstream (e.g.,
+early termination semantics). T15N collapsed everything to the
+column-scan; H8P found the reduction.
+
+### Task 402 — more clusters ≠ more real algorithms
+
+> *Write a function to compute the value of nCr mod p.*
+
+**H8P** found 2 clusters from 6 correct samples:
+
+```python
+# H8P cluster 0 (n=5) — built-in math.comb
+import math
+def ncr_modp(n, r, p):
+    return math.comb(n, r) % p
+```
+
+```python
+# H8P cluster 1 (n=1) — hand-rolled iterative product
+def ncr_modp(n, r, p):
+    if r > n: return 0
+    result = 1
+    for i in range(1, r + 1):
+        result = result * (n - r + i) // i
+    return result % p
+```
+
+Judge: *"the given solution uses a manual approach to calculate the
+binomial coefficient, whereas the previous solution uses a built-in
+function. … Decision: a novel approach."*
+
+**T15N** found **3 clusters** — *more than H8P* — but all 3 are
+iterative-product variants that differ only in optimisation details
+(`r = min(r, n-r)` vs the same as a one-liner, different loop body
+structures). T15N never produced the `math.comb` built-in at all.
+
+**My read.** H8P actually wins on *real* algorithmic diversity here
+despite T15N having a higher cluster count. The two H8P clusters
+capture a meaningful split (delegate to C-implemented combinatorics
+vs implement it yourself); T15N's three clusters are the same
+algorithm split by surface-level variation in the iterative loop
+body. This is a clean example of why cluster count alone can mislead
+— and a counterpoint to the H8P=1, T15N=2 "P15 nominally wins" task
+11 case from §3.
+
+### Aggregate verdict on the three picks
+
+NAUADC's verdict was **faithful on 2 of 3** (tasks 172, 181 — H8P
+captured genuinely distinct algorithms T15N missed), and **right but
+*understated* on 1** (task 402 — H8P actually has the more
+algorithmically diverse pair, but cluster counting gave T15N the
+nominal edge there). Direction is consistently with H8P. Pattern is
+also consistent with the parent doc's "T15N → H8P bundles two effects
+together" caveat — both pless-on-code (built-ins and hand-rolled
+alternatives showing up in H8P's output) and the split-decoding code
+path are presumably contributing to the +0.045 NAUADC gap.
+
 ## 4. Does NAUADC measure something different from CodeBLEU diversity?
 
 Pearson correlations against NAUADC across all 14 final MBPP configs:
@@ -243,9 +408,18 @@ matter precisely at the configurations we'd most want to differentiate.
   The two metric families agree at config-level granularity.
 - **Sample-level NAUADC is noisy** — the random initialisation of the
   clustering algorithm and the LLM judge's inconsistency on near-duplicate
-  code can split identical samples and merge different algorithms on
-  the same task. The metric is useful in aggregate, not for single-task
-  case studies.
+  code can split identical samples (task 167, 11, 44) and merge
+  different algorithms on the same task. **The metric is useful in
+  aggregate, not for single-task case studies.** Cluster count alone
+  can also mislead (task 402: T15N had more clusters than H8P but
+  H8P had more *real* algorithmic diversity).
+- **H8P captures algorithms the alternative configurations miss.** Across
+  both H8P-vs-P15 and H8P-vs-T15N audits, the clearest wins are tasks
+  where H8P found a *built-in* or a *fundamentally different
+  algorithmic strategy* (the `Counter` count on task 350, the
+  `s.count` built-in on 172, the pairwise reduction on 181, the
+  `math.comb` built-in on 402) that the other configuration collapsed
+  to a single column-scan or hand-rolled loop.
 - **The clearest cross-metric divergence is H10P** — surface metrics
   miss the algorithmic-collapse-at-high-code-temperature finding that
   NAUADC picks up. That's the main empirical value-add of running
