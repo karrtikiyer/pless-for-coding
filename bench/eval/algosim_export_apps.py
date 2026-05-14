@@ -49,8 +49,14 @@ CONFIG_FILE_PATTERNS = {
     "H8P":  "split_temp_pure_t1.5_pless_t1.5_think_t*.jsonl",
     "H9P":  "split_temp_pure_t1.5_pless_t2.0_think_t*.jsonl",
     "T15P": "split_temp_pure_t1.5_temp_pure_t1.5_think_t*.jsonl",
-    "T15N": "temp_think_t1.5.jsonl",
-    "P15":  "pless_think_t1.5.jsonl",
+    # T15N / P15 are the non-split (thinking-on) configs. The APPS runner's
+    # _method_key appends "_think_t{args.temperature}" when --enable-thinking
+    # is set, and _output_path further appends "_t{temperature}.jsonl", which
+    # produces filenames like "temp_think_t1.5_t1.5.jsonl" (the trailing
+    # _t1.5 is redundant but preserved for filename-compatibility with the
+    # MBPP runner). Use wildcards on the trailing suffix so we match either form.
+    "T15N": "temp_think_t1.5_t*.jsonl",
+    "P15":  "pless_think_t1.5_t*.jsonl",
 }
 
 
