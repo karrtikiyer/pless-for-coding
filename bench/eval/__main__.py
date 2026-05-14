@@ -1,5 +1,6 @@
 import argparse
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 from bench.eval.executor import evaluate_all
@@ -16,7 +17,7 @@ def parse_args():
         help="Path to JSONL results file",
     )
     parser.add_argument(
-        "--dataset", required=True, choices=["mbpp", "humaneval"],
+        "--dataset", required=True, choices=["mbpp", "humaneval", "apps"],
         help="Dataset type (determines test program builder)",
     )
     parser.add_argument(
@@ -91,7 +92,55 @@ def main():
 
     # Evaluate
     print(f"Evaluating samples (workers={args.workers}, timeout={args.timeout}s)...")
-    task_results = evaluate_all(records, args.dataset, args.timeout, args.workers)
+    extraction_diag = None
+    execution_diag = None
+    if args.dataset == "apps":
+        from bench.apps.dataset import load_apps_test_map
+        from bench.eval.apps_executor import evaluate_all_apps
+
+        # Determine the (source, difficulty) bucket from the JSONL records so
+        # we only load the slice of APPS we need (a few hundred problems vs
+        # all 5K).
+        first = records[0]
+        source = first.get("source")
+        difficulty = first.get("difficulty")
+        if not source or not difficulty:
+            raise SystemExit(
+                "APPS JSONL records must carry 'source' and 'difficulty' fields. "
+                "Was this generated with bench.apps.runner?"
+            )
+        print(f"Loading APPS test data for source={source}, difficulty={difficulty}")
+        problems_by_id = load_apps_test_map(source=source, difficulty=difficulty)
+        print(f"Loaded {len(problems_by_id)} APPS problems with tests")
+
+        apps_results, extraction_diag, execution_diag = evaluate_all_apps(
+            records, problems_by_id,
+            per_test_timeout=args.timeout,
+            workers=args.workers,
+        )
+        # Convert dataclass results to dicts shaped like MBPP's evaluate_all
+        # output so build_metrics_output works unchanged. Per-task APPS-only
+        # fields (statuses, n_tests_total, etc.) are preserved as extra keys.
+        task_results = [asdict(r) for r in apps_results]
+
+        # For diversity metrics: replace records' raw samples with the
+        # APPS-extracted code so AST fingerprints / CodeBLEU operate on
+        # clean compilable code instead of raw thinking-laced output.
+        # Preserves order and length.
+        results_by_id = {r.task_id: r for r in apps_results}
+        for rec in records:
+            tid = int(rec["task_id"])
+            if tid in results_by_id:
+                extracted = results_by_id[tid].extracted_codes
+                # Fall back to original sample if extraction yielded empty
+                # (lets the diversity helpers still attempt to fingerprint
+                # something rather than skip the sample silently).
+                rec["samples"] = [
+                    code if code else rec["samples"][i]
+                    for i, code in enumerate(extracted)
+                ]
+    else:
+        task_results = evaluate_all(records, args.dataset, args.timeout, args.workers)
 
     # Compute all metrics
     print("Computing AST fingerprints and structural diversity...")
@@ -109,6 +158,10 @@ def main():
         k_values=k_values,
         t_values=t_values,
     )
+    if extraction_diag is not None:
+        output["extraction_diagnostics"] = extraction_diag
+    if execution_diag is not None:
+        output["execution_diagnostics"] = execution_diag
 
     # Write output
     output_path = args.output or infer_output_path(args.results_file)
