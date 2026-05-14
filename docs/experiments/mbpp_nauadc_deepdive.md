@@ -1,17 +1,10 @@
 # MBPP NAUADC Deepdive — Sample-level Audit + Metric Correlation
 
-**Audience.** Internal team that's already read `algosim_qwen3_findings.md`
-and the algosim paper one-pager. This doc skips background and does two
-things the parent doc didn't: it (a) audits NAUADC's verdict at the
-sample level, and (b) examines whether NAUADC is measuring something
-genuinely different from our CodeBLEU diversity.
+
 
 ## 1. The 8-config MBPP comparison (recap, cleaned labels)
 
-Same data as the algosim-findings doc; only change: dropped the
-"_pure" qualifier from sampler labels in the table since all entries
-have top_p=1.0 / top_k=0 anyway. Implementation-path detail still
-lives in the "Decode path" column.
+
 
 | Config | Think phase | Code phase | Decode path | pass@1 | pass@10 | struct_div | codebleu_div | NAUADC |
 |---|---|---|---|---:|---:|---:|---:|---:|
@@ -56,7 +49,17 @@ Whether that distinction shows up empirically is §4.
 
 ## 3. Sample-level audit: H8P vs P15 on three MBPP tasks
 
-Across the 439 common tasks, H8P produces *more* algorithm clusters
+The comparison set is **439 common tasks**, derived from MBPP-full's 500:
+H8P produced ≥1 passing sample on 449 / 500 tasks, P15 also on 449 / 500
+(different missing tasks), and their intersection — the tasks where both
+configs had something for algosim to cluster — is 439. The remaining 61
+tasks split as 10 H8P-only-solvable, 10 P15-only-solvable, and 41 that
+neither config solved with 10 samples. Algosim clusters only correct
+samples (paper protocol; enforced at export by
+`bench/eval/algosim_export.py:78-92`), so tasks with zero correct samples
+drop out of that config's response parquet.
+
+Across those 439 common tasks, H8P produces *more* algorithm clusters
 than P15 on **88 tasks (20%)**, ties on **311 (71%)**, and *fewer* on
 **40 (9%)**. Mean clusters/task: H8P 1.371 vs P15 1.255 — the source of
 the +0.10 NAUADC gap.
