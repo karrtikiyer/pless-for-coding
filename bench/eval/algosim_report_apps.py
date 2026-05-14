@@ -192,10 +192,24 @@ def _write_markdown(rows: list[dict], output_path: Path) -> None:
         "pipeline). Paper-published Table 2 numbers are interleaved as `paper:` "
         "rows where known.",
         "",
-        "Sample-budget caveat: paper-baseline NAUADC is computed over 100 "
-        "samples/problem; our Qwen3-8B configs use 10/problem. DA@10 stays "
-        "directly comparable; NAUADC integrals span k=1..25 on different "
-        "sample budgets and should be read accordingly.",
+        "**Comparability caveats — read before quoting any number across blocks:**",
+        "",
+        "1. **Sample-budget asymmetry.** Paper-baseline NAUADC is computed over "
+        "100 samples/problem; our Qwen3-8B configs use 10/problem. DA@10 stays "
+        "directly comparable; NAUADC integrals span k=1..25 on different sample "
+        "budgets and should be read accordingly.",
+        "",
+        "2. **Sample-filter asymmetry.** Paper baselines were clustered after "
+        "filtering to functionally-correct samples (`status == \"Passed\"`). Our "
+        "Qwen3-8B configs are clustered without a correctness filter (we don't "
+        "run APPS execution at algosim-export time). On easy problems with high "
+        "pass rates this matters little; on competition difficulty, where most "
+        "Qwen3-8B samples are broken-in-different-ways, the unfiltered NAUADC "
+        "inflates because the judge sees those broken samples as distinct "
+        "\"algorithms\". The **relative ordering across our 6 configs** remains "
+        "informative; the **absolute comparison to paper baselines on the same "
+        "bucket** is only meaningful where pass rates are high enough that "
+        "filter vs no-filter would converge.",
         "",
     ]
     for source, difficulty in cells:
