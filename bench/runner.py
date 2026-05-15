@@ -34,6 +34,9 @@ def parse_args():
     parser.add_argument("--max-new-tokens", type=int, default=512, help="Max new tokens per sample")
     parser.add_argument("--results-dir", default="results", help="Output directory")
     parser.add_argument("--temperature", type=float, default=1.0, help="Temperature for logits")
+    parser.add_argument("--backend", choices=["hf", "vllm"], default="hf",
+                        help="Generation backend (default 'hf', zero regression). "
+                             "'vllm' routes through bench/generator_vllm.py and requires .venv-vllm.")
     parser.add_argument("--no-resume", action="store_true", help="Start fresh, delete existing results")
     parser.add_argument("--max-problems", type=int, default=None, help="Limit number of problems (for testing)")
     parser.add_argument("--no-stop", action="store_true", help="Disable stop sequences (for debugging)")
@@ -135,17 +138,28 @@ def main():
         dataset = dataset.map(lambda task: {"prompt": task["text"]})
 
     # Load model
-    print(f"Loading model: {args.model}")
-    model, tokenizer = load_model_and_tokenizer(args.model, dtype=args.dtype, attn_impl=args.attn_impl)
+    print(f"Loading model: {args.model} (backend={args.backend})")
+    if args.backend == "vllm":
+        if args.method in ("greedy", "beam"):
+            raise SystemExit(f"--backend vllm does not support --method {args.method} yet")
+        from bench.generator_vllm import load_engine
+        engine = load_engine(args.model, dtype=args.dtype)
+        model = engine
+        tokenizer = engine.get_tokenizer()
+    else:
+        model, tokenizer = load_model_and_tokenizer(args.model, dtype=args.dtype, attn_impl=args.attn_impl)
 
-    if args.method == "split":
-        sampler_fn_think = SPLIT_SAMPLERS[args.sampler_think]
-        sampler_fn_code = SPLIT_SAMPLERS[args.sampler_code]
-    elif args.method not in ("temp", "top_p", "top_k", "greedy", "beam"):
-        if args.post_temperature is not None:
-            sampler_fn = make_pless_post_temp_sampler(args.post_temperature)
-        else:
-            sampler_fn = SAMPLERS[args.method]
+    # Sampler resolution only needed for the HF backend (vLLM picks by name in its LogitsProcessor).
+    sampler_fn_think = sampler_fn_code = sampler_fn = None
+    if args.backend == "hf":
+        if args.method == "split":
+            sampler_fn_think = SPLIT_SAMPLERS[args.sampler_think]
+            sampler_fn_code = SPLIT_SAMPLERS[args.sampler_code]
+        elif args.method not in ("temp", "top_p", "top_k", "greedy", "beam"):
+            if args.post_temperature is not None:
+                sampler_fn = make_pless_post_temp_sampler(args.post_temperature)
+            else:
+                sampler_fn = SAMPLERS[args.method]
     instruct = is_instruct_model(args.model)
 
     # Stop sequences for base models only
@@ -179,7 +193,38 @@ def main():
             else:
                 prompt_text, code_prefix = format_prompt_base(task, n_shots=args.n_shots)
 
-            if args.method == "greedy":
+            if args.backend == "vllm":
+                from bench.generator_vllm import (
+                    generate_samples_split_vllm,
+                    generate_samples_standard_vllm,
+                    generate_samples_vllm,
+                )
+                if args.method in ("temp", "top_p", "top_k"):
+                    raw_samples = generate_samples_standard_vllm(
+                        engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
+                        temperature=args.temperature, stop_strings=stop_strings,
+                        top_p=args.top_p if args.method == "top_p" else 1.0,
+                        top_k=args.top_k if args.method == "top_k" else 0,
+                    )
+                elif args.method == "split":
+                    raw_samples = generate_samples_split_vllm(
+                        engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        sampler_fn_think=args.sampler_think,
+                        sampler_fn_code=args.sampler_code,
+                        n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
+                        temperature_think=args.temp_think,
+                        temperature_code=args.temp_code,
+                        stop_strings=stop_strings,
+                    )
+                else:
+                    raw_samples = generate_samples_vllm(
+                        engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        sampler_name=args.method,
+                        n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
+                        temperature=args.temperature, stop_strings=stop_strings,
+                    )
+            elif args.method == "greedy":
                 raw_samples = generate_samples_greedy(
                     model=model,
                     tokenizer=tokenizer,
@@ -242,6 +287,7 @@ def main():
 
             record = {
                 "model": args.model,
+                "backend": args.backend,
                 "method": args.method,
                 "temperature": args.temperature,
                 "task_id": task_id,

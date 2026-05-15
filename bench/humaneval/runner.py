@@ -27,6 +27,9 @@ def parse_args():
     parser.add_argument("--max-new-tokens", type=int, default=512, help="Max new tokens per sample")
     parser.add_argument("--results-dir", default="results", help="Output directory")
     parser.add_argument("--temperature", type=float, default=1.0, help="Temperature for sampling")
+    parser.add_argument("--backend", choices=["hf", "vllm"], default="hf",
+                        help="Generation backend (default 'hf', zero regression). "
+                             "'vllm' routes through bench/generator_vllm.py and requires .venv-vllm.")
     parser.add_argument("--no-resume", action="store_true", help="Start fresh, delete existing results")
     parser.add_argument("--max-problems", type=int, default=None, help="Limit number of problems (for testing)")
     parser.add_argument("--no-stop", action="store_true", help="Disable stop sequences (for debugging)")
@@ -79,11 +82,15 @@ def run_benchmark(
     temp_code: float | None = None,
     sampler_think: str | None = None,
     sampler_code: str | None = None,
+    backend: str = "hf",
 ):
     """Run HumanEval benchmark for a single (method, temperature) config.
 
     Can be called directly (from orchestration script) with an already-loaded model,
     or via the CLI main() which loads the model itself.
+
+    ``backend`` selects HF (default, model+tokenizer args) or vLLM (model arg is the
+    engine; tokenizer arg is taken from ``engine.get_tokenizer()``).
     """
     if method == "top_p":
         method_key = f"top_p{top_p}"
@@ -120,17 +127,16 @@ def run_benchmark(
         remaining = remaining[:max_problems]
     print(f"  Problems remaining: {len(remaining)} / {len(dataset)}")
 
-    if method == "split":
-        sampler_fn_think = SPLIT_SAMPLERS[sampler_think]
-        sampler_fn_code = SPLIT_SAMPLERS[sampler_code]
-        sampler_fn = None
-    elif method not in ("temp", "top_p"):
-        if post_temperature is not None:
-            sampler_fn = make_pless_post_temp_sampler(post_temperature)
-        else:
-            sampler_fn = SAMPLERS.get(method)
-    else:
-        sampler_fn = None
+    sampler_fn_think = sampler_fn_code = sampler_fn = None
+    if backend == "hf":
+        if method == "split":
+            sampler_fn_think = SPLIT_SAMPLERS[sampler_think]
+            sampler_fn_code = SPLIT_SAMPLERS[sampler_code]
+        elif method not in ("temp", "top_p"):
+            if post_temperature is not None:
+                sampler_fn = make_pless_post_temp_sampler(post_temperature)
+            else:
+                sampler_fn = SAMPLERS.get(method)
 
     for task in tqdm(remaining, desc=f"{method}_t{temperature}"):
         task_id = task["task_id"]
@@ -141,7 +147,35 @@ def run_benchmark(
             else:
                 prompt_text, code_prefix = format_prompt_base(task)
 
-            if method in ("temp", "top_p"):
+            if backend == "vllm":
+                from bench.generator_vllm import (
+                    generate_samples_split_vllm,
+                    generate_samples_standard_vllm,
+                    generate_samples_vllm,
+                )
+                if method in ("temp", "top_p"):
+                    raw_samples = generate_samples_standard_vllm(
+                        engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        n_samples=n_samples, max_new_tokens=max_new_tokens,
+                        temperature=temperature, stop_strings=stop_strings,
+                        top_p=top_p if method == "top_p" else 1.0, top_k=0,
+                    )
+                elif method == "split":
+                    raw_samples = generate_samples_split_vllm(
+                        engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        sampler_fn_think=sampler_think, sampler_fn_code=sampler_code,
+                        n_samples=n_samples, max_new_tokens=max_new_tokens,
+                        temperature_think=temp_think, temperature_code=temp_code,
+                        stop_strings=stop_strings,
+                    )
+                else:
+                    raw_samples = generate_samples_vllm(
+                        engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        sampler_name=method,
+                        n_samples=n_samples, max_new_tokens=max_new_tokens,
+                        temperature=temperature, stop_strings=stop_strings,
+                    )
+            elif method in ("temp", "top_p"):
                 raw_samples = generate_samples_standard(
                     model=model,
                     tokenizer=tokenizer,
@@ -185,6 +219,7 @@ def run_benchmark(
 
             record = {
                 "model": model_id,
+                "backend": backend,
                 "method": method,
                 "temperature": temperature,
                 "task_id": task_id,
@@ -218,8 +253,14 @@ def run_benchmark(
 def main():
     args = parse_args()
 
-    print(f"Loading model: {args.model}")
-    model, tokenizer = load_model_and_tokenizer(args.model)
+    print(f"Loading model: {args.model} (backend={args.backend})")
+    if args.backend == "vllm":
+        from bench.generator_vllm import load_engine
+        engine = load_engine(args.model)
+        model = engine
+        tokenizer = engine.get_tokenizer()
+    else:
+        model, tokenizer = load_model_and_tokenizer(args.model)
 
     run_benchmark(
         model=model,
@@ -241,6 +282,7 @@ def main():
         temp_code=args.temp_code,
         sampler_think=args.sampler_think,
         sampler_code=args.sampler_code,
+        backend=args.backend,
     )
 
 
