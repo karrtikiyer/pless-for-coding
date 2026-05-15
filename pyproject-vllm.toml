@@ -1,0 +1,51 @@
+# Separate project file for the .venv-vllm environment.
+#
+# Why a parallel pyproject: vLLM has aggressive CUDA/PyTorch version
+# pinning that conflicts with the main pyproject.toml. The .venv-vllm
+# is sync'd from this file on the GPU box only (vLLM has no Mac wheels).
+#
+# Usage (on the GPU box):
+#   uv venv .venv-vllm --python 3.12
+#   UV_PROJECT_ENVIRONMENT=.venv-vllm uv sync \
+#       --project pyproject-vllm.toml --no-install-package torch
+#   .venv-vllm/bin/python -m bench.apps.runner --backend vllm ...
+#
+# The main .venv stays untouched; all existing work (algosim, layer-
+# entropy probes, ad-hoc analysis) continues to run against it.
+
+[project]
+name = "pless-for-coding-vllm"
+version = "0.1.0"
+description = "vLLM backend overlay for the pless benchmarks. Only installed in .venv-vllm/."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "vllm==0.21.0",
+    # The rest mirror the main project's runner-side deps. vllm pulls torch + transformers itself.
+    "datasets<4",
+    "tqdm",
+    "accelerate",
+    "hf-transfer>=0.1.9",
+    "numpy",
+    "human-eval",
+    "matplotlib",
+    "tiktoken",
+    "einops",
+    "zss",
+    "sentencepiece",
+    "codebleu>=0.7.0",
+    "tree-sitter-python>=0.23,<0.24",
+    "scipy>=1.17.1",
+    "adjusttext>=1.3.0",
+    "pandas",
+    "pyarrow",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+# Note: no [[tool.uv.index]] for pytorch-cu124 here — vLLM ships its own
+# torch wheel pinning via PyPI dependency resolution. If vLLM and our
+# torch pin disagree on the GPU box, vLLM wins.

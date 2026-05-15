@@ -92,6 +92,10 @@ def parse_args():
                    help="Default 8192 to accommodate Qwen3 thinking.")
     p.add_argument("--results-dir", default="results/pless_apps_results")
     p.add_argument("--temperature", type=float, default=1.0)
+    p.add_argument("--backend", choices=["hf", "vllm"], default="hf",
+                   help="Generation backend. Default 'hf' (current behaviour, zero regression). "
+                        "'vllm' routes through bench/generator_vllm.py and requires the "
+                        ".venv-vllm environment (see pyproject-vllm.toml).")
     p.add_argument("--no-resume", action="store_true")
     p.add_argument("--max-problems", type=int, default=None,
                    help="Cap problems within the (source, difficulty) bucket (for smoke tests).")
@@ -137,22 +141,32 @@ def main():
     if completed_ids:
         print(f"Resuming: {len(completed_ids)} problems already completed at {out_path}")
 
-    print(f"Loading model: {args.model}")
-    model, tokenizer = load_model_and_tokenizer(
-        args.model, dtype=args.dtype, attn_impl=args.attn_impl,
-    )
+    print(f"Loading model: {args.model} (backend={args.backend})")
+    if args.backend == "vllm":
+        # Deferred import — only happens when --backend vllm is requested,
+        # so the apps runner is still importable in the main .venv (no vLLM).
+        from bench.generator_vllm import load_engine
+        engine = load_engine(args.model, dtype=args.dtype)
+        model = engine          # alias for downstream code that holds it
+        tokenizer = engine.get_tokenizer()
+    else:
+        model, tokenizer = load_model_and_tokenizer(
+            args.model, dtype=args.dtype, attn_impl=args.attn_impl,
+        )
 
-    # Resolve sampler(s)
+    # Resolve sampler(s) — only needed for the HF backend, since vLLM
+    # selects its sampler by name inside the LogitsProcessor.
     sampler_fn = None
     sampler_fn_think = sampler_fn_code = None
-    if args.method == "split":
-        sampler_fn_think = SPLIT_SAMPLERS[args.sampler_think]
-        sampler_fn_code = SPLIT_SAMPLERS[args.sampler_code]
-    elif args.method != "temp":
-        if args.post_temperature is not None:
-            sampler_fn = make_pless_post_temp_sampler(args.post_temperature)
-        else:
-            sampler_fn = SAMPLERS[args.method]
+    if args.backend == "hf":
+        if args.method == "split":
+            sampler_fn_think = SPLIT_SAMPLERS[args.sampler_think]
+            sampler_fn_code = SPLIT_SAMPLERS[args.sampler_code]
+        elif args.method != "temp":
+            if args.post_temperature is not None:
+                sampler_fn = make_pless_post_temp_sampler(args.post_temperature)
+            else:
+                sampler_fn = SAMPLERS[args.method]
 
     # Load APPS, filtered to the requested bucket.
     problems = list(load_apps(source=args.source, difficulty=args.difficulty))
@@ -173,7 +187,38 @@ def main():
                 problem, tokenizer, enable_thinking=args.enable_thinking,
             )
 
-            if args.method == "temp":
+            if args.backend == "vllm":
+                # vLLM dispatches by sampler name string, not callable.
+                from bench.generator_vllm import (
+                    generate_samples_split_vllm,
+                    generate_samples_standard_vllm,
+                    generate_samples_vllm,
+                )
+                if args.method == "temp":
+                    raw_samples = generate_samples_standard_vllm(
+                        engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
+                        temperature=args.temperature, stop_strings=None,
+                        top_p=1.0, top_k=0,
+                    )
+                elif args.method == "split":
+                    raw_samples = generate_samples_split_vllm(
+                        engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        sampler_fn_think=args.sampler_think,
+                        sampler_fn_code=args.sampler_code,
+                        n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
+                        temperature_think=args.temp_think,
+                        temperature_code=args.temp_code,
+                        stop_strings=None,
+                    )
+                else:
+                    raw_samples = generate_samples_vllm(
+                        engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        sampler_name=args.method,
+                        n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
+                        temperature=args.temperature, stop_strings=None,
+                    )
+            elif args.method == "temp":
                 raw_samples = generate_samples_standard(
                     model=model, tokenizer=tokenizer, prompt_text=prompt_text,
                     n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
@@ -206,6 +251,7 @@ def main():
 
             record = {
                 "model": args.model,
+                "backend": args.backend,
                 "method": args.method,
                 "temperature": args.temperature,
                 "task_id": problem.problem_id,
