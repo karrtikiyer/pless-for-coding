@@ -172,7 +172,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--responses-dir", type=Path, default=RESPONSES_DIR)
     parser.add_argument("--analysis-dir", type=Path, default=ANALYSIS_DIR)
+    parser.add_argument(
+        "--output-suffix", default="",
+        help="Suffix appended to output filenames "
+             "(e.g. '_claude' -> algosim_report_claude.md). "
+             "Use when running a second judge alongside the default Llama outputs.",
+    )
     args = parser.parse_args()
+    suf = args.output_suffix
 
     summary = _load_summary()
     algo_metrics = _gather_algosim_metrics(args.responses_dir)
@@ -209,24 +216,24 @@ def main() -> None:
         })
 
     args.analysis_dir.mkdir(parents=True, exist_ok=True)
-    md_path = args.analysis_dir / "algosim_report.md"
+    md_path = args.analysis_dir / f"algosim_report{suf}.md"
     _write_markdown(joined, md_path, pending=pending)
     print(f"[algosim_report] wrote {md_path}")
 
-    raw_path = args.analysis_dir / "algosim_per_config.json"
+    raw_path = args.analysis_dir / f"algosim_per_config{suf}.json"
     raw_path.write_text(json.dumps({"k_values": K_VALUES, "configs": joined,
                                     "raw": algo_metrics}, indent=2))
     print(f"[algosim_report] wrote {raw_path}")
 
     _scatter(joined, "struct_div", "NAUADC",
              "struct_div (ours)", "NAUADC (algosim)",
-             args.analysis_dir / "algosim_struct_vs_nauadc.png")
-    print(f"[algosim_report] wrote {args.analysis_dir / 'algosim_struct_vs_nauadc.png'}")
+             args.analysis_dir / f"algosim_struct_vs_nauadc{suf}.png")
+    print(f"[algosim_report] wrote {args.analysis_dir / f'algosim_struct_vs_nauadc{suf}.png'}")
 
     _scatter(joined, "pass@10", "NAUADC",
              "pass@10", "NAUADC (algosim)",
-             args.analysis_dir / "algosim_pass_vs_nauadc.png")
-    print(f"[algosim_report] wrote {args.analysis_dir / 'algosim_pass_vs_nauadc.png'}")
+             args.analysis_dir / f"algosim_pass_vs_nauadc{suf}.png")
+    print(f"[algosim_report] wrote {args.analysis_dir / f'algosim_pass_vs_nauadc{suf}.png'}")
 
 
 if __name__ == "__main__":
