@@ -21,14 +21,16 @@ from bench.prompts import (format_prompt_base, format_prompt_base_hybrid,
 MBPP_STOP_SEQUENCES = ["\n[DONE]"]
 # BigCode/InCoder zero-shot format: no format delimiters, stop on code-level boundaries.
 MBPP_BIGCODE_STOP_SEQUENCES = ["\nassert", "\nclass", "\nprint", '\n"""', "\nif __name__"]
-from bench.sampler_bridge import SAMPLERS, SPLIT_SAMPLERS, make_pless_post_temp_sampler
+from bench.sampler_bridge import (SAMPLERS, SPLIT_SAMPLERS,
+                                   make_pless_alpha_sampler,
+                                   make_pless_post_temp_sampler)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Benchmark pless samplers on MBPP")
     parser.add_argument("--model", required=True, help="HuggingFace model ID")
     parser.add_argument("--method", required=True,
-                        choices=list(SAMPLERS.keys()) + ["temp", "top_p", "top_k", "greedy", "beam", "split"],
+                        choices=list(SAMPLERS.keys()) + ["temp", "top_p", "top_k", "greedy", "beam", "split", "pless_alpha"],
                         help="Sampling method")
     parser.add_argument("--n-samples", type=int, default=10, help="Number of samples per problem")
     parser.add_argument("--max-new-tokens", type=int, default=512, help="Max new tokens per sample")
@@ -57,6 +59,11 @@ def parse_args():
     parser.add_argument("--post-temperature", type=float, default=None,
                         help="Post-truncation temperature (T₂) for p-less variants. "
                              "Applied after p-less threshold pruning to flatten survivor distribution.")
+    parser.add_argument("--alpha", type=float, default=None,
+                        help="Rényi exponent for --method pless_alpha. "
+                             "Threshold = Σpᵢ^α. α=2 reproduces standard pless; "
+                             "α>2 keeps more tokens at high-entropy positions; "
+                             "α<2 is stricter (falls back to argmax on non-peaked rows).")
     parser.add_argument("--dtype", choices=["bfloat16", "float16"], default="bfloat16",
                         help="Model dtype (default: bfloat16)")
     parser.add_argument("--attn-impl", choices=["sdpa", "eager"], default=None,
@@ -81,6 +88,10 @@ def parse_args():
         parser.error("--num-beams is required when --method is beam")
     if args.post_temperature is not None and args.method not in SAMPLERS:
         parser.error("--post-temperature only works with p-less methods")
+    if args.method == "pless_alpha" and args.alpha is None:
+        parser.error("--alpha is required when --method is pless_alpha")
+    if args.alpha is not None and args.method != "pless_alpha":
+        parser.error("--alpha only applies to --method pless_alpha")
     if args.method == "split":
         for arg_name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
             if getattr(args, arg_name) is None:
@@ -112,6 +123,8 @@ def main():
         method_key = f"{method_key}_bs"
     if args.post_temperature is not None:
         method_key = f"{method_key}_pt{args.post_temperature}"
+    if args.alpha is not None:
+        method_key = f"{method_key}_a{args.alpha}"
     if not is_instruct_model(args.model) and args.prompt_style == "bigcode":
         method_key = f"{method_key}_bigcode"
     if args.dtype != "bfloat16":
@@ -155,6 +168,8 @@ def main():
         if args.method == "split":
             sampler_fn_think = SPLIT_SAMPLERS[args.sampler_think]
             sampler_fn_code = SPLIT_SAMPLERS[args.sampler_code]
+        elif args.method == "pless_alpha":
+            sampler_fn = make_pless_alpha_sampler(args.alpha)
         elif args.method not in ("temp", "top_p", "top_k", "greedy", "beam"):
             if args.post_temperature is not None:
                 sampler_fn = make_pless_post_temp_sampler(args.post_temperature)

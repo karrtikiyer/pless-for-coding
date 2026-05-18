@@ -82,3 +82,45 @@ def make_pless_post_temp_sampler(post_temperature: float):
         next_token = torch.multinomial(probs, num_samples=1)
         return next_token
     return sampler
+
+
+def make_pless_alpha_sampler(alpha: float):
+    """Rényi-α-generalized p-less sampler.
+
+    Threshold ``= Σpᵢ^α`` (raw, no root — matches the unrooted ``Σpᵢ²`` in
+    the upstream p-less). α=2 reproduces ``p_less_decode`` exactly.
+    α > 2 keeps more tokens at high-entropy (semantic) positions while
+    preserving tightness at peaked (syntactic) ones. α < 2 is stricter
+    and may zero out the whole row at non-peaked positions — falls back
+    to argmax for those rows.
+
+    For α ≥ 2 the max-prob token always survives because
+    ``Σpᵢ^α ≤ max(pᵢ)^(α-1) ≤ max(pᵢ)``; the argmax fallback is a no-op.
+
+    See ``docs/research/position_aware_code_sampling.md`` for design rationale.
+    """
+    if alpha <= 0:
+        raise ValueError(f"alpha must be positive, got {alpha}")
+
+    def sampler(probs: torch.Tensor) -> torch.Tensor:
+        # Threshold = Σ pᵢ^α (raw, no root).
+        # Special-case α=2 to use the exact ``square()`` call from the
+        # upstream p-less, guaranteeing byte-identical behavior at α=2.
+        if alpha == 2.0:
+            threshold = probs.square().sum(dim=-1, keepdim=True)
+        else:
+            threshold = probs.pow(alpha).sum(dim=-1, keepdim=True)
+
+        mask = probs < threshold  # True ⇒ prune
+        # Fallback: if the mask would prune every token in a row (possible
+        # only when α < 2 on non-peaked distributions), unmask its argmax.
+        all_pruned = mask.all(dim=-1)
+        if all_pruned.any():
+            fallback_idx = probs[all_pruned].argmax(dim=-1, keepdim=True)
+            mask[all_pruned] = mask[all_pruned].scatter(-1, fallback_idx, False)
+
+        probs[mask] = 0.0
+        probs.div_(probs.sum(dim=-1, keepdim=True))
+        next_token = torch.multinomial(probs, num_samples=1)
+        return next_token
+    return sampler
