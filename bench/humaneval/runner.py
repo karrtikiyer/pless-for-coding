@@ -14,9 +14,11 @@ from bench.humaneval.prompts import (
     format_prompt_instruct,
     is_instruct_model,
 )
-from bench.sampler_bridge import SAMPLERS, SPLIT_SAMPLERS, make_pless_post_temp_sampler
+from bench.sampler_bridge import (SAMPLERS, SPLIT_SAMPLERS,
+                                   make_pless_alpha_sampler,
+                                   make_pless_post_temp_sampler)
 
-METHODS = list(SAMPLERS.keys()) + ["temp", "top_p", "split"]
+METHODS = list(SAMPLERS.keys()) + ["temp", "top_p", "split", "pless_alpha"]
 
 
 def parse_args():
@@ -39,6 +41,11 @@ def parse_args():
     parser.add_argument("--post-temperature", type=float, default=None,
                         help="Post-truncation temperature (T₂) for p-less variants. "
                              "Applied after p-less threshold pruning to flatten survivor distribution.")
+    parser.add_argument("--alpha", type=float, default=None,
+                        help="Rényi exponent for --method pless_alpha. "
+                             "Threshold = Σpᵢ^α. α=2 reproduces standard pless; "
+                             "α>2 keeps more tokens at high-entropy positions; "
+                             "α<2 is stricter (falls back to argmax on non-peaked rows).")
     parser.add_argument("--enable-thinking", action="store_true",
                         help="Enable thinking mode (<think> tags). Think content is stripped from "
                              "code samples; raw output with thinking is saved separately in JSONL.")
@@ -55,6 +62,10 @@ def parse_args():
         parser.error("--top-p is required when --method is top_p")
     if args.post_temperature is not None and args.method not in SAMPLERS:
         parser.error("--post-temperature only works with p-less methods")
+    if args.method == "pless_alpha" and args.alpha is None:
+        parser.error("--alpha is required when --method is pless_alpha")
+    if args.alpha is not None and args.method != "pless_alpha":
+        parser.error("--alpha only applies to --method pless_alpha")
     if args.method == "split":
         for arg_name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
             if getattr(args, arg_name) is None:
@@ -83,6 +94,7 @@ def run_benchmark(
     sampler_think: str | None = None,
     sampler_code: str | None = None,
     backend: str = "hf",
+    alpha: float | None = None,
 ):
     """Run HumanEval benchmark for a single (method, temperature) config.
 
@@ -102,6 +114,8 @@ def run_benchmark(
         method_key = f"{method_key}_think"
     if post_temperature is not None:
         method_key = f"{method_key}_pt{post_temperature}"
+    if alpha is not None:
+        method_key = f"{method_key}_a{alpha}"
     out_path = get_output_path(results_dir, model_id, method_key, temperature, benchmark="humaneval")
 
     if no_resume and out_path.exists():
@@ -132,6 +146,8 @@ def run_benchmark(
         if method == "split":
             sampler_fn_think = SPLIT_SAMPLERS[sampler_think]
             sampler_fn_code = SPLIT_SAMPLERS[sampler_code]
+        elif method == "pless_alpha":
+            sampler_fn = make_pless_alpha_sampler(alpha)
         elif method not in ("temp", "top_p"):
             if post_temperature is not None:
                 sampler_fn = make_pless_post_temp_sampler(post_temperature)
@@ -283,6 +299,7 @@ def main():
         sampler_think=args.sampler_think,
         sampler_code=args.sampler_code,
         backend=args.backend,
+        alpha=args.alpha,
     )
 
 
