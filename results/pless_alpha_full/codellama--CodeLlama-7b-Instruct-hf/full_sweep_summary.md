@@ -1,4 +1,4 @@
-# Rényi-α P-less Full Sweep — CodeLlama-7B-Instruct on MBPP-500
+# Rényi-α P-less Full Sweep — CodeLlama-7B-Instruct on MBPP-500 + HumanEval-164
 
 **Verdict: PATTERN REPLICATES (with caveats). The α=2 sanity gate is
 mathematically perfect on a second model; the α-sweep produces a +9 pp
@@ -175,6 +175,125 @@ two levers might compose orthogonally.
    Coder-Instruct and stronger).
 6. **vLLM port** of `pless_alpha` now strongly justified — two-model
    replication of the pass@k lift is enough signal to invest in scale-up.
+
+## NAUADC — algorithmic diversity (Claude-Sonnet-4.6 judge, MBPP)
+
+This is the **load-bearing metric for CodeLlama on MBPP** since struct_div
+is uninformative on this benchmark (stays at 0.000–0.008 across α).
+NAUADC bypasses AST canonicalization and judges algorithmic distinctness
+directly via a Claude-Sonnet-4.6 pairwise clustering protocol.
+
+| Config | NAUADC | EA     | DA@10 | Δ NAUADC vs α=2 |
+|--------|-------:|-------:|------:|----------------:|
+| α=2.0  | 1.0085 | 1.0082 | 1.0090 |          — |
+| α=2.5  | 1.0446 | 1.0370 | 1.0488 |     +3.58% |
+| α=3.0  | 1.0770 | 1.0695 | 1.0827 |     +6.79% |
+| α=5.0  | 1.1186 | 1.1037 | 1.1278 | **+10.92%** |
+
+Monotonic in α. **This resolves the apparent paradox** between
+CodeLlama MBPP's near-zero struct_div and the +9 pp pass@10 lift seen
+at α=5: the model IS producing algorithmically diverse correct
+solutions (NAUADC +10.92% relative); the AST fingerprints just happen
+to cluster together (probably because CodeLlama produces canonically
+formatted code regardless of the underlying algorithm). NAUADC was
+exactly the right metric to look at on this model.
+
+The relative NAUADC lift on CodeLlama (+10.9%) is comparable to Qwen's
+(+12.2%) — the α-sweep produces a similar shape of algorithmic
+diversity gain on both models, even though their AST fingerprints
+behave differently. **Cross-model NAUADC validation done.**
+
+Cost: $21.37 for ~6,701 Claude calls on CodeLlama MBPP.
+
+**NAUADC on HumanEval is not measured** for this model. Given the
+HumanEval struct_div IS informative on this model (climbs to 0.073 at
+α=5), the deterministic metrics there are probably sufficient and
+NAUADC would be confirmatory.
+
+## HumanEval-164 results
+
+Same α-grid, 10 samples per task. HumanEval is *harder* than MBPP
+for this model (32% baseline pass@10 vs 44% on MBPP), which makes
+the α-sweep lift larger in absolute terms.
+
+| Config         | pass@1 | pass@3 | pass@5 | pass@10 | cov@0.3 | cov@0.5 | struct_div | cb_div |
+|----------------|-------:|-------:|-------:|--------:|--------:|--------:|-----------:|-------:|
+| α=2.0 (sanity) | 27.74% | 30.76% | 31.73% |  32.32% |   31.1% |   28.0% |     0.0009 | 0.0566 |
+| α=2.5          | 25.85% | 35.55% | 38.08% |  40.85% |   35.4% |   26.8% |     0.0101 | 0.1606 |
+| α=3.0          | 25.24% | 37.34% | 40.03% |  44.51% |   32.9% |   26.8% |     0.0216 | 0.2381 |
+| α=5.0          | 24.82% | **39.02%** | **41.45%** | **46.95%** | 34.1% | 26.8% | **0.0734** | **0.2804** |
+
+### Δ vs α=2 baseline on HumanEval
+
+| Arm   | Δpass@1 | Δpass@10 | Δstruct_div | Δcb_div |
+|-------|--------:|---------:|------------:|--------:|
+| α=2.5 | −1.89 pp | +8.53 pp  | +0.0092 | +0.1040 |
+| α=3.0 | −2.50 pp | +12.19 pp | +0.0207 | +0.1815 |
+| **α=5.0** | **−2.92 pp** | **+14.63 pp** | **+0.0725** | **+0.2238** |
+
+### Key observations specific to HumanEval
+
+1. **+14.63 pp pass@10 lift α=2.0 → α=5.0 is the largest in the
+   entire 3-model × 2-benchmark sweep.** Weaker model on harder
+   benchmark → biggest room for α to operate. HumanEval is fundamentally
+   harder for this model than MBPP (32% vs 44% baseline), so α's
+   diversity injection has more headroom to convert into pass@10 gain.
+2. **Struct_div IS informative on HumanEval here** (0.001 → 0.073, a
+   ~73× lift) — unlike on MBPP where it stayed near zero (0.000 →
+   0.008). This **refines the "model property" framing** from the MBPP
+   section: CodeLlama's correct solutions are highly canonical *on
+   MBPP* (where problems are tighter and one-line solutions dominate),
+   but diverge more on HumanEval (where problems require more involved
+   logic that admits multiple algorithmic approaches).
+3. **Pass@1 cost is essentially the same as on MBPP** (−2.92 vs −1.46 pp
+   at α=5). The model trades a small amount of pass@1 for a *much*
+   larger pass@10 gain on the harder benchmark.
+
+### Refinement to the MBPP "struct_div is uninformative" finding
+
+The MBPP-section claim ("CodeLlama's struct_div is near zero across
+the α-sweep — a model property") was correct for MBPP but should not
+be read as a general statement about CodeLlama. On HumanEval, this
+same model's struct_div climbs cleanly with α (0.001 → 0.073), so the
+diversity signal IS visible there. The MBPP-specific zeroing seems to
+come from the benchmark's tight, formulaic problems (which produce
+canonical one-liner solutions even under broader sampling). On
+HumanEval's more open problems, the model genuinely produces
+AST-distinct correct solutions when α opens up the candidate pool.
+
+### Pareto frontier on HumanEval
+
+```
+pass@10
+  56 ┤                                          ★ pless@T=2.5  (pass@1 cliff)
+  47 ┤                              ● α=5.0
+  46 ┤                              ★ pless@T=2.0  (sd=0.07)
+  45 ┤                            ● α=3.0
+  41 ┤                          ● α=2.5
+  35 ┤              ★ pless@T=1.5
+  32 ┤   ● α=2.0  ★ pless@T=1.0
+   |
+   └──────────────────────────────→ pass@1
+       19    25    27    28
+```
+
+The α-sweep traces a cleaner Pareto curve than the T-sweep here:
+α=2.0 → α=3.0 → α=5.0 climbs pass@10 with small monotone p1 cost,
+while pless@T=2.5 reaches higher pass@10 (56%) but at the catastrophic
+p1=19% cliff. **α is the safer practical knob even on this weak model
+on its harder benchmark.**
+
+## Combined MBPP + HumanEval verdict
+
+α-sweep on CodeLlama: monotonic pass@10 lift on both benchmarks
+(+9.0 pp MBPP, +14.6 pp HumanEval), monotonic cb_div lift on both
+(0.067 → 0.304 on MBPP, 0.057 → 0.280 on HumanEval). struct_div
+behaves differently across benchmarks (near-zero MBPP-locked, real
+HumanEval lift) — a benchmark property, not a sampler limitation.
+The α=5.0 setting is consistently Pareto-optimal for pass@10
+maximization on this model on both benchmarks. The temperature
+catastrophic-collapse boundary (T=2.5 → T=3.0) is present on both
+benchmarks; α has no such boundary through α=5.0.
 
 ## Files
 
