@@ -100,6 +100,14 @@ def parse_args():
         parser.error("--alpha is required when --method is pless_alpha")
     if args.alpha is not None and args.method != "pless_alpha":
         parser.error("--alpha only applies to --method pless_alpha")
+    if args.log_entropy and args.method not in SAMPLERS and args.method != "pless_alpha":
+        parser.error(
+            "--log-entropy only works with --method pless / pless_norm / pless_alpha "
+            "(the generate_samples path). The entropy log captures the raw "
+            "post-softmax distribution before sampling, so the sampler choice "
+            "doesn't affect what is logged — pless@T=1.0 gives the same "
+            "per-position distribution as temp@T=1.0 would."
+        )
     if args.method == "split":
         for arg_name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
             if getattr(args, arg_name) is None:
@@ -203,6 +211,9 @@ def main():
 
     for task in tqdm(remaining, desc=f"{args.method} @ {args.model.split('/')[-1]}"):
         task_id = task["task_id"]
+        # Always defined for the sidecar code below; populated only for the
+        # generate_samples path when --log-entropy is set.
+        entropy_log = None
         try:
             if instruct:
                 prompt_text, code_prefix = format_prompt_instruct(
