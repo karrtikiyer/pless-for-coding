@@ -1,4 +1,5 @@
 import argparse
+import json
 from datetime import datetime, timezone
 
 from datasets import load_dataset
@@ -64,6 +65,13 @@ def parse_args():
                              "Threshold = Σpᵢ^α. α=2 reproduces standard pless; "
                              "α>2 keeps more tokens at high-entropy positions; "
                              "α<2 is stricter (falls back to argmax on non-peaked rows).")
+    parser.add_argument("--log-entropy", action="store_true",
+                        help="Log per-position next-token entropy stats "
+                             "(Σpᵢ², Σpᵢ³, Σpᵢ⁵, max(pᵢ), top-32) to a sidecar "
+                             "JSONL at <out_path>.entropy.jsonl. Only works with "
+                             "--method temp/pless/pless_norm/pless_alpha (the "
+                             "generate_samples path). For the bimodal-entropy "
+                             "measurement experiment.")
     parser.add_argument("--dtype", choices=["bfloat16", "float16"], default="bfloat16",
                         help="Model dtype (default: bfloat16)")
     parser.add_argument("--attn-impl", choices=["sdpa", "eager"], default=None,
@@ -282,6 +290,7 @@ def main():
                     stop_strings=stop_strings,
                 )
             else:
+                entropy_log = [] if args.log_entropy else None
                 raw_samples = generate_samples(
                     model=model,
                     tokenizer=tokenizer,
@@ -291,6 +300,7 @@ def main():
                     max_new_tokens=args.max_new_tokens,
                     temperature=args.temperature,
                     stop_strings=stop_strings,
+                    entropy_log=entropy_log,
                 )
 
             # Prepend the code prefix so each sample is complete, executable code
@@ -329,6 +339,15 @@ def main():
             if task.get("test_setup_code"):
                 record["test_setup_code"] = task["test_setup_code"]
             append_result(out_path, record)
+
+            # Write entropy-log sidecar (one row per (sample, position)).
+            if args.log_entropy and entropy_log is not None:
+                entropy_sidecar = out_path.with_suffix(out_path.suffix + ".entropy.jsonl")
+                with entropy_sidecar.open("a") as fh:
+                    for rec in entropy_log:
+                        rec_out = {"task_id": task_id, **rec}
+                        fh.write(json.dumps(rec_out) + "\n")
+
             tqdm.write(f"Completed task_id={task_id}")
 
         except Exception as e:

@@ -367,6 +367,49 @@ def _expand_past_key_values(past_key_values, n: int):
 _PLESS_SMOOTH_ALPHA = 1e-3
 
 
+def _log_entropy_batch(
+    entropy_log: list[dict],
+    probs: torch.Tensor,
+    next_tokens: torch.Tensor,
+    step: int,
+    finished: torch.Tensor,
+    tokenizer,
+    n_samples: int,
+) -> None:
+    """Append per-sample entropy stats to ``entropy_log``.
+
+    Computes the Rényi-α power sums (α∈{2,3,5}), max prob, and top-32
+    distribution for each (currently-unfinished) sample at this step.
+    No-op for samples whose ``finished`` flag is True.
+
+    ``probs`` has shape ``(N, vocab)`` and is the *raw, unsmoothed*
+    next-token distribution — i.e., before ``_PLESS_SMOOTH_ALPHA``
+    uniform-mixing is applied. We characterise the model's natural
+    output distribution, not the sampler's effective input.
+    """
+    sigma_p2 = probs.pow(2).sum(dim=-1)
+    sigma_p3 = probs.pow(3).sum(dim=-1)
+    sigma_p5 = probs.pow(5).sum(dim=-1)
+    top32_probs, top32_indices = probs.topk(32, dim=-1)
+    max_p, _ = probs.max(dim=-1)
+    for i in range(n_samples):
+        if finished[i].item():
+            continue
+        tok_id = int(next_tokens[i].item())
+        entropy_log.append({
+            "sample_id": i,
+            "position": step,
+            "token_id": tok_id,
+            "token_str": tokenizer.decode([tok_id]),
+            "sigma_p2": float(sigma_p2[i].item()),
+            "sigma_p3": float(sigma_p3[i].item()),
+            "sigma_p5": float(sigma_p5[i].item()),
+            "max_p":    float(max_p[i].item()),
+            "top32_probs":   top32_probs[i].cpu().tolist(),
+            "top32_indices": top32_indices[i].cpu().tolist(),
+        })
+
+
 def generate_samples(
     model,
     tokenizer,
@@ -376,8 +419,17 @@ def generate_samples(
     max_new_tokens: int,
     temperature: float,
     stop_strings: list[str] | None = None,
+    entropy_log: list[dict] | None = None,
 ) -> list[str]:
-    """Generate n_samples completions in parallel using batched decoding."""
+    """Generate n_samples completions in parallel using batched decoding.
+
+    If ``entropy_log`` is a list (not None), this function appends one
+    record per (sample, position) capturing per-position entropy stats
+    (Σpᵢ², Σpᵢ³, Σpᵢ⁵, max pᵢ, top-32) on the *raw* (unsmoothed,
+    pre-truncation) next-token distribution. Used for the bimodal-
+    entropy measurement experiment. No-op when ``entropy_log`` is None,
+    so the production path is unaffected.
+    """
     if isinstance(prompt_text, list):
         input_ids = torch.tensor([prompt_text], device=model.device)
     else:
@@ -415,6 +467,14 @@ def generate_samples(
     next_tokens = sampler_fn(probs_s)  # (N, 1)
     next_tokens = next_tokens.view(N)  # (N,)
 
+    # Log per-position entropy stats for step 0 if requested.
+    if entropy_log is not None:
+        initial_finished = torch.zeros(N, dtype=torch.bool, device=model.device)
+        _log_entropy_batch(
+            entropy_log, probs, next_tokens, step=0,
+            finished=initial_finished, tokenizer=tokenizer, n_samples=N,
+        )
+
     # Storage for generated token ids — pad with eos_id
     all_ids = torch.full((N, max_new_tokens), eos_id, dtype=torch.long, device=model.device)
     all_ids[:, 0] = next_tokens
@@ -450,6 +510,15 @@ def generate_samples(
                 probs = torch.softmax(logits, dim=-1)  # (N, vocab)
                 probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
                 next_tokens = sampler_fn(probs_s).view(N)  # (N,)
+
+                # Log per-position entropy BEFORE masking out finished samples.
+                # ``finished`` here reflects the previous step; samples that
+                # were already finished get skipped inside the logger.
+                if entropy_log is not None:
+                    _log_entropy_batch(
+                        entropy_log, probs, next_tokens, step=step,
+                        finished=finished, tokenizer=tokenizer, n_samples=N,
+                    )
 
                 # Only write tokens for unfinished sequences
                 next_tokens = torch.where(finished, torch.tensor(eos_id, device=model.device), next_tokens)
