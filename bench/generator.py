@@ -95,7 +95,15 @@ def load_model_and_tokenizer(
         attn_impl: Attention implementation — None (auto: sdpa, eager for old Qwen),
                    "sdpa", or "eager".
     """
-    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    # ``trust_remote_code`` is only needed for the legacy Qwen-7B / Qwen-7B-Chat
+    # models (which ship a custom modeling + tokenization file). For modern
+    # Qwen2.5+, CodeLlama, Llama, m-a-p, etc. it's a no-op when the HF repo
+    # has no remote code, but on recent transformers (≥5.3) some repos'
+    # updated remote code clashes with the cached fast-tokenizer files and
+    # raises "Unable to load vocabulary from file." Gate on the legacy flag.
+    is_old_qwen = model_id.startswith("Qwen/Qwen-7B")
+    trust_remote = is_old_qwen
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=trust_remote)
 
     # Detect broken byte-level BPE decoder.  transformers 5.x + LlamaTokenizer
     # overrides the ByteLevel decoder from tokenizer.json for DeepSeek-Coder /
@@ -104,12 +112,11 @@ def load_model_and_tokenizer(
     _test = "a b\nc"
     if tokenizer.decode(tokenizer.encode(_test), skip_special_tokens=True).strip() != _test:
         from transformers import PreTrainedTokenizerFast
-        tokenizer = PreTrainedTokenizerFast.from_pretrained(model_id, trust_remote_code=True)
+        tokenizer = PreTrainedTokenizerFast.from_pretrained(model_id, trust_remote_code=trust_remote)
         assert tokenizer.decode(tokenizer.encode(_test), skip_special_tokens=True).strip() == _test, \
             f"Tokenizer for {model_id} cannot round-trip whitespace"
 
     # Old Qwen-7B / Qwen-7B-Chat use custom attention that doesn't support SDPA.
-    is_old_qwen = model_id.startswith("Qwen/Qwen-7B")
     if attn_impl is None:
         attn_impl = "eager" if is_old_qwen else "sdpa"
     torch_dtype = torch.float16 if dtype == "float16" else torch.bfloat16
@@ -119,7 +126,7 @@ def load_model_and_tokenizer(
         device_map="auto",
         attn_implementation=attn_impl,
         use_cache=True,
-        trust_remote_code=True,
+        trust_remote_code=trust_remote,
     )
     model.eval()
     # torch.compile disabled: reduce-overhead mode conflicts with transformers 5.x
