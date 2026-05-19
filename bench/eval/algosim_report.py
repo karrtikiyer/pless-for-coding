@@ -107,20 +107,44 @@ def _load_summary() -> dict:
     return json.loads(SUMMARY_PATH.read_text())
 
 
+def _load_metrics_from_per_config_files(metrics_dir: Path) -> dict[str, dict]:
+    """Build a {config_key: summary-entry} dict from individual
+    ``metrics/<config>_metrics.json`` files in the model's results
+    directory. Used when the legacy ``split_decoding_report_summary.json``
+    doesn't exist (i.e. for arbitrary models / α-sweep results).
+
+    Maps the field names ``structural_diversity``/``codebleu_diversity``
+    (full metric output) → ``struct_div``/``codebleu_div`` (legacy
+    summary schema), and constructs a human label from method +
+    temperature when available.
+    """
+    out: dict[str, dict] = {}
+    for p in sorted(metrics_dir.glob("*_metrics.json")):
+        cfg = p.stem.removesuffix("_metrics")
+        m = json.loads(p.read_text())
+        label = cfg
+        if "method" in m and "temperature" in m:
+            label = f"{m['method']} @ T={m['temperature']}"
+        out[cfg] = {
+            "label": label,
+            "pass_at_k": {str(k): float(v) for k, v in m.get("pass_at_k", {}).items()},
+            "struct_div": float(m.get("structural_diversity", 0.0)),
+            "codebleu_div": float(m.get("codebleu_diversity", 0.0)),
+        }
+    return out
+
+
 def _write_markdown(joined: list[dict], out_path: Path,
-                    pending: list[str] | None = None) -> None:
+                    pending: list[str] | None = None,
+                    title: str = "Qwen3-8B Split Decoding",
+                    judge: str = "Llama-3.1-8B-Instruct") -> None:
     joined_sorted = sorted(joined, key=lambda r: -r["NAUADC"])
     lines = [
-        "# algosim Diversity Report — Qwen3-8B Split Decoding",
+        f"# algosim Diversity Report — {title}",
         "",
-        "AlgoSim NAUADC / EA / DA@10 (Llama-3.1-8B-Instruct judge, correct samples only) "
+        f"AlgoSim NAUADC / EA / DA@10 ({judge} judge, correct samples only) "
         "joined with our existing structural / CodeBLEU / pass@k metrics. "
         "Sorted by NAUADC descending.",
-        "",
-        "Scope: baseline configs (no thinking, thinking, uniform pless) plus the "
-        "**pure-temp** split-decoding series (`temp_pure` on the `<think>` phase). "
-        "`temp_standard` (top_p=0.95, top_k=20) configs are deliberately excluded "
-        "to keep the comparison clean.",
         "",
     ]
     if pending:
@@ -146,7 +170,8 @@ def _write_markdown(joined: list[dict], out_path: Path,
 
 
 def _scatter(joined: list[dict], x_key: str, y_key: str, xlabel: str, ylabel: str,
-             out_path: Path, draw_yx: bool = False) -> None:
+             out_path: Path, draw_yx: bool = False,
+             title_suffix: str = "Qwen3-8B Split Decoding") -> None:
     fig, ax = plt.subplots(figsize=(8, 6))
     xs = [r[x_key] for r in joined]
     ys = [r[y_key] for r in joined]
@@ -156,7 +181,7 @@ def _scatter(joined: list[dict], x_key: str, y_key: str, xlabel: str, ylabel: st
                     xytext=(5, 5), textcoords="offset points", fontsize=9)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_title(f"{ylabel} vs {xlabel} — Qwen3-8B Split Decoding")
+    ax.set_title(f"{ylabel} vs {xlabel} — {title_suffix}")
     ax.grid(True, alpha=0.3)
     if draw_yx:
         lo = min(min(xs), min(ys))
@@ -178,10 +203,42 @@ def main() -> None:
              "(e.g. '_claude' -> algosim_report_claude.md). "
              "Use when running a second judge alongside the default Llama outputs.",
     )
+    parser.add_argument(
+        "--metrics-dir", type=Path, default=None,
+        help="Directory of per-config <config>_metrics.json files for the "
+             "pass@k / struct_div / codebleu_div join. Defaults to a sibling "
+             "'metrics/' under --analysis-dir's parent (i.e. results/X/metrics/ "
+             "when --analysis-dir is results/X/analysis/). Falls back to the "
+             "legacy split_decoding_report_summary.json path if neither exists.",
+    )
+    parser.add_argument(
+        "--title", type=str, default=None,
+        help="Title prefix used in the report markdown and scatter plots. "
+             "Default: derived from --analysis-dir's parent directory name.",
+    )
+    parser.add_argument(
+        "--judge", type=str, default="Llama-3.1-8B-Instruct",
+        help="Judge model name used in the narrative line of the markdown.",
+    )
     args = parser.parse_args()
     suf = args.output_suffix
 
-    summary = _load_summary()
+    # Title: derive from analysis-dir if not supplied
+    title = args.title
+    if title is None:
+        title = args.analysis_dir.parent.name.replace("--", "/") or "α-sweep"
+
+    # Try the new path (per-config metrics files) first, fall back to legacy.
+    metrics_dir = args.metrics_dir
+    if metrics_dir is None:
+        metrics_dir = args.analysis_dir.parent / "metrics"
+    if metrics_dir.is_dir():
+        summary = _load_metrics_from_per_config_files(metrics_dir)
+        print(f"[algosim_report] loaded {len(summary)} configs from {metrics_dir}")
+    else:
+        print(f"[algosim_report] no metrics dir at {metrics_dir}; using legacy "
+              f"{SUMMARY_PATH}")
+        summary = _load_summary()
     algo_metrics = _gather_algosim_metrics(args.responses_dir)
     if not algo_metrics:
         raise SystemExit(f"No parquet files found in {args.responses_dir}")
@@ -217,7 +274,7 @@ def main() -> None:
 
     args.analysis_dir.mkdir(parents=True, exist_ok=True)
     md_path = args.analysis_dir / f"algosim_report{suf}.md"
-    _write_markdown(joined, md_path, pending=pending)
+    _write_markdown(joined, md_path, pending=pending, title=title, judge=args.judge)
     print(f"[algosim_report] wrote {md_path}")
 
     raw_path = args.analysis_dir / f"algosim_per_config{suf}.json"
@@ -227,12 +284,14 @@ def main() -> None:
 
     _scatter(joined, "struct_div", "NAUADC",
              "struct_div (ours)", "NAUADC (algosim)",
-             args.analysis_dir / f"algosim_struct_vs_nauadc{suf}.png")
+             args.analysis_dir / f"algosim_struct_vs_nauadc{suf}.png",
+             title_suffix=title)
     print(f"[algosim_report] wrote {args.analysis_dir / f'algosim_struct_vs_nauadc{suf}.png'}")
 
     _scatter(joined, "pass@10", "NAUADC",
              "pass@10", "NAUADC (algosim)",
-             args.analysis_dir / f"algosim_pass_vs_nauadc{suf}.png")
+             args.analysis_dir / f"algosim_pass_vs_nauadc{suf}.png",
+             title_suffix=title)
     print(f"[algosim_report] wrote {args.analysis_dir / f'algosim_pass_vs_nauadc{suf}.png'}")
 
 

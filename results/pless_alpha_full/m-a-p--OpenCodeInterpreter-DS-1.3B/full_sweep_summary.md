@@ -86,6 +86,91 @@ other (no T-baseline available for this model — see "Caveats").
    AST-fingerprint level, while CodeLlama-7B clusters everything
    to a single template.
 
+## NAUADC — algorithmic diversity (Claude-Sonnet-4.6 judge, MBPP)
+
+Added 2026-05-19. Completes the 3-model NAUADC matrix on MBPP.
+
+| Config | NAUADC | EA     | DA@10 | Δ NAUADC vs α=2 |
+|--------|-------:|-------:|------:|----------------:|
+| α=2.0  | 1.0727 | 1.0641 | 1.0794 |          — |
+| α=2.5  | 1.1318 | 1.1132 | 1.1431 |     +5.51% |
+| α=3.0  | 1.1652 | 1.1313 | 1.1817 |     +8.62% |
+| α=5.0  | 1.2095 | 1.1692 | 1.2295 | **+12.75%** |
+
+Monotonic in α — same pattern as Qwen and CodeLlama.
+
+**m-a-p has the highest absolute NAUADC of the 3-model sweep at every
+matched α.** Despite being the smallest model (1.3B vs 7B), it produces
+the most algorithmically diverse correct solutions per problem. Two
+candidate explanations (not mutually exclusive):
+
+1. **Less RLHF flattening** — m-a-p's instruction-tuning is shorter
+   than Qwen's, so the model's natural variation isn't squashed.
+2. **DeepSeek-Coder lineage** — different training mix may favor
+   broader algorithmic coverage of common patterns.
+
+Combined with the absolute pass@k numbers (~55% pass@10 baseline,
+67% at α=5), this is a remarkable small-model showing.
+
+Cost: $32.09 for 8,535 Claude-Sonnet-4.6 calls.
+
+**Cross-model NAUADC summary at α=5.0** (highest-diversity arm):
+
+| Model | pass@1 | pass@10 | struct_div | NAUADC |
+|---|---:|---:|---:|---:|
+| Qwen2.5-Coder-7B-Instruct | 75.3% | 88.0% | 0.210 | 1.167 |
+| CodeLlama-7B-Instruct | 40.3% | 53.2% | 0.008 | 1.119 |
+| **m-a-p OpenCodeInterpreter-DS-1.3B** | 46.3% | 66.4% | 0.342 | **1.209** |
+
+m-a-p wins on NAUADC and is middle on pass@10. Best
+algorithmic-diversity-per-parameter among the three.
+
+## Is it just temperature? (resolved 2026-05-19)
+
+The pless@T={1.0, 1.5, 2.0} MBPP baselines were added on 2026-05-19,
+making this comparison rigorous for the first time on this model.
+
+| Config       | pass@1   | pass@10  | struct_div | cb_div   |
+|--------------|---------:|---------:|-----------:|---------:|
+| **α=2.0**    | 47.68%   | 55.40%   | 0.0903     | 0.1749   |
+| pless@T=1.0  | 47.74%   | 55.60%   | 0.0853     | 0.1687   |
+| α=2.5        | 47.28%   | 61.40%   | 0.2018     | 0.3515   |
+| pless@T=1.5  | 47.14%   | 61.60%   | 0.2530     | 0.4019   |
+| **α=3.0**    | **48.00%** | **65.00%** | 0.2535 | 0.4371   |
+| α=5.0        | 46.26%   | 66.40%   | 0.3419     | 0.5414   |
+| pless@T=2.0  | 45.82%   | **67.20%** | **0.4885** | **0.6463** |
+
+### Three findings worth flagging
+
+1. **α=2.0 ≡ pless@T=1.0 sanity gate clears cleanly**: Δpass@1 −0.06 pp,
+   Δpass@10 −0.20 pp, Δstruct_div +0.005. Within sampling noise. Third
+   model's sanity gate done.
+
+2. **α=3.0 strictly Pareto-dominates pless@T=1.5 on both axes**:
+   - pass@1: 48.00% vs 47.14% → **+0.86 pp**
+   - pass@10: 65.00% vs 61.60% → **+3.40 pp**
+   - struct_div: 0.254 vs 0.253 → basically tied
+   
+   This is the **cleanest strict Pareto-dominance result in the entire
+   3-model sweep**. On Qwen and CodeLlama the α wins required accepting
+   a small pass@1 cost; on m-a-p the α arm wins BOTH pass@1 and pass@10
+   over its T counterpart.
+
+3. **α=5.0 vs pless@T=2.0**: nearly identical pass@10 (66.4 vs 67.2,
+   −0.80 pp) with slightly higher pass@1 (+0.44 pp, 46.26 vs 45.82).
+   Pareto-comparable points. **Temperature wins more raw diversity
+   here** (T=2.0 sd=0.489, α=5.0 sd=0.342) — for AST diversity alone,
+   pushing T past α gives more variation; for the (pass@1, pass@10,
+   diversity) joint frontier the choice is more nuanced.
+
+### Mild pass@1 cliff at T=2.0
+
+Pass@1 drops 47.14 → 45.82 going T=1.5 → T=2.0, a 1.32 pp drop. Smaller
+than the cliff on Qwen (−4.20 pp at T=1.5 → T=2.0) or CodeLlama
+(−4.08 pp) — possibly because this smaller model is less RLHF-flattened
+and tolerates higher temperatures more gracefully. T=2.5/3.0 not yet
+measured here; expect the cliff to deepen there.
+
 ## Cross-model context
 
 | Model | MBPP Δp@10 (α=2→α=5) | HumanEval Δp@10 (α=2→α=5) | MBPP pass@10 max | HumanEval pass@10 max |
@@ -138,24 +223,24 @@ both axes. On HumanEval, pass@1 declines monotonically as expected.
 
 ## Caveats
 
-- **No pless@T baseline on MBPP for this model** in the existing
-  repo (the `pless_full_mbpp_results/m-a-p--OpenCodeInterpreter-DS-1.3B/`
-  metrics directory is empty). Means the "is α just temperature?"
-  check is harder to do directly on this model. Would need at minimum
-  pless@T=1.0 and pless@T=1.5 baselines to perform the comparison.
+- ~~**No pless@T baseline on MBPP for this model**~~ — **RESOLVED 2026-05-19**.
+  T=1.0, T=1.5, T=2.0 added; α=3.0 now strictly Pareto-dominates
+  pless@T=1.5 on this model (cleanest such result in the 3-model
+  sweep). See "Is it just temperature?" section above.
 - **No HumanEval pless@T sweep in the existing `temprature_results/`
   dir** for this model either — only Qwen and CodeLlama are covered.
-- **NAUADC not measured** for this model in the current Claude judge
-  run. Would cost ~$10–15 of additional API spend to fill in.
+- ~~**NAUADC not measured** for this model~~ — **RESOLVED 2026-05-19.**
+  See "NAUADC — algorithmic diversity" section above. m-a-p produces
+  the highest absolute NAUADC of the 3-model sweep.
 - **1.3B size — different model class** from the 7B Qwen and CodeLlama
   pairs. Some patterns (e.g., where the Pareto sweet spot lives in α)
   shift with scale.
 
 ## Recommended next steps for this model
 
-1. **Run pless@T={1.0, 1.5, 2.0} on MBPP** to close the T-envelope
-   check (5–6 GPU-hours total). Cheap, makes the Pareto-dominance
-   claim defensible for this model.
+1. ~~**Run pless@T={1.0, 1.5, 2.0} on MBPP**~~ — **DONE 2026-05-19.**
+   Closed the gap. Pareto-dominance verified (α=3.0 strictly dominates
+   T=1.5 on both axes).
 2. **NAUADC on MBPP α-arms** (~$10–15 of Claude API spend, ~30–60 min
    wall-clock). Would complete the 3-model × NAUADC matrix.
 3. **HumanEval pless@T sweep** to match Qwen and CodeLlama coverage

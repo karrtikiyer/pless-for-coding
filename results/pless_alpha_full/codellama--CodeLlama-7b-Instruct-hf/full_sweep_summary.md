@@ -54,37 +54,57 @@ limitation, not a sampler limitation** — see "Why struct_div is near
 zero" below. The cb_div signal (+0.24) is the right replacement metric
 on this model.
 
-## Is it just temperature? (incomplete check)
+## Is it just temperature? (now complete — 2026-05-19)
 
-The cleanest version of this test on Qwen used pless@T=1.5 as the
-"diversity-favoring temperature" baseline. **That baseline does not
-exist for CodeLlama in our repo** — the available temperature points
-are pless@T={0.6, 0.7, 1.0} and temp@T={0.3, 0.7}. The closest analog,
-**temp@T=0.7** (plain multinomial, no pless), gives:
+The pless@T=1.5 and pless@T=2.0 baselines were added on 2026-05-19,
+making this comparison rigorous. Full T-sweep on CodeLlama MBPP:
 
-| | pass@1 | pass@10 | struct_div | cb_div |
-|---|---:|---:|---:|---:|
-| temp @ T=0.7 (baseline) | 38.30% | **55.20%** | 0.0106 | 0.3619 |
-| α=5.0 (new)             | 40.32% |  53.20%  | 0.0079 | 0.3042 |
+| Config       | pass@1   | pass@10  | struct_div | cb_div   |
+|--------------|---------:|---------:|-----------:|---------:|
+| pless@T=0.6  | 41.22%   | 42.20%   | 0.0000     | 0.0514   |
+| pless@T=0.7  | 42.16%   | 43.00%   | 0.0000     | 0.0326   |
+| **α=2.0**    | 41.78%   | 44.20%   | 0.0000     | 0.0677   |
+| pless@T=1.0  | 41.64%   | 44.20%   | 0.0000     | 0.0641   |
+| pless@T=1.5  | 41.18%   | 47.20%   | 0.0000     | 0.1649   |
+| α=2.5        | 41.24%   | 49.20%   | 0.0036     | 0.1920   |
+| α=3.0        | 40.66%   | 50.80%   | 0.0021     | 0.2354   |
+| α=5.0        | 40.32%   | 53.20%   | 0.0079     | 0.3042   |
+| pless@T=2.0  | 37.10%   | 53.80%   | 0.0339     | 0.2989   |
 
-This is a genuine cross-cut, not a strict win:
+### Two pivotal Pareto comparisons
 
-- **pass@10**: temp@T=0.7 wins by +2.0 pp (55.2 vs 53.2).
-- **pass@1**:  α=5.0 wins by +2.0 pp (40.3 vs 38.3).
-- **cb_div**:  temp@T=0.7 wins by +0.06 (0.36 vs 0.30).
+**α=5.0 vs pless@T=1.5**:
+- α=5.0 has pass@10 = 53.20% vs T=1.5's 47.20% → **+6.00 pp pass@10**
+- α=5.0 has pass@1 = 40.32% vs T=1.5's 41.18% → −0.86 pp pass@1
+- α=5.0 has cb_div = 0.304 vs T=1.5's 0.165 → +0.139 cb_div
 
-These are different Pareto points, not dominance in either direction.
-On CodeLlama specifically, *lowering* temperature toward 0.7 is a strong
-diversity lever — possibly because CodeLlama's logits are sharper than
-Qwen2.5-Coder's (a smaller / older model with less RLHF flattening).
-The α parameterization gives a different operating point (higher pass@1
-at the cost of slightly lower pass@10) but doesn't unambiguously
-Pareto-dominate temperature here.
+α=5.0 wins pass@10 and diversity by a large margin at a small (<1 pp)
+pass@1 cost. **Favorable Pareto trade, not strict dominance.**
 
-**To complete the Qwen-style comparison on CodeLlama, we need to run
-pless@T=1.5 as an extra baseline.** ~10 min on a single GPU at the same
-500 × 10 budget. Until then, the CodeLlama replication is "qualitatively
-yes" but quantitatively softer than Qwen's.
+**α=5.0 vs pless@T=2.0** (the critical comparison):
+- α=5.0 has pass@1 = 40.32% vs T=2.0's **37.10%** → **+3.22 pp pass@1**
+- α=5.0 has pass@10 = 53.20% vs T=2.0's 53.80% → −0.60 pp pass@10
+
+Both reach almost identical pass@10, but α=5.0 retains 3.22 pp more
+pass@1. **α wins this Pareto trade decisively.** The temperature
+curve needs to be pushed past T=1.5 to match α=5's pass@10, but doing
+so triggers the pass@1 cliff (a 4 pp drop from T=1.5 to T=2.0).
+
+### Pass@1 cliff between T=1.5 and T=2.0
+
+The classic temperature-cliff phenomenon (visible on every other
+(model, benchmark) cell we measured — Qwen MBPP, Qwen HumanEval,
+CodeLlama HumanEval) **reproduces on CodeLlama MBPP too**:
+
+- T=0.6 → T=1.5: pass@1 stable at 41–42% (variation < 1 pp)
+- T=1.5 → T=2.0: pass@1 drops **−4.08 pp** (41.18 → 37.10)
+- (T=2.5/T=3.0 not measured here; HumanEval data for this same model
+  shows T=3.0 → pass@1 = 4.88%, full collapse)
+
+The α-curve has no analogous cliff: pass@1 declines gracefully
+41.78 → 40.32 across α=2 → α=5, a total of 1.46 pp over the full range.
+
+## Why struct_div is near zero on CodeLlama (model property, not bug)
 
 ## Why struct_div is near zero on CodeLlama (model property, not bug)
 

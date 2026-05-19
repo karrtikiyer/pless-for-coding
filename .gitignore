@@ -230,3 +230,7 @@ results/results_tf*/
 # algosim outputs (regenerable from the JSONLs + algosim submodule HEAD)
 .venv-algosim/
 algosim_data/
+
+# Bimodal-entropy experiment sidecars (~300MB each; regenerable from the
+# main JSONLs via bench.runner --log-entropy on a GPU).
+results/pless_alpha_entropy/**/*.entropy.jsonl

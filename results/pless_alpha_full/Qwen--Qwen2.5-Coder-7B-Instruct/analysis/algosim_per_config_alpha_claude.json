@@ -26,7 +26,56 @@
     24,
     25
   ],
-  "configs": [],
+  "configs": [
+    {
+      "config": "pless_alpha_a2.0_t1.0",
+      "label": "pless_alpha @ T=1.0",
+      "pass@1": 0.7707999999999999,
+      "pass@10": 0.82,
+      "struct_div": 0.0579,
+      "codebleu_div": 0.1328,
+      "NAUADC": 1.0405664037295135,
+      "EA": 1.0358998471363778,
+      "DA@10": 1.0439024390243903,
+      "n_problems": 410
+    },
+    {
+      "config": "pless_alpha_a2.5_t1.0",
+      "label": "pless_alpha @ T=1.0",
+      "pass@1": 0.7676,
+      "pass@10": 0.864,
+      "struct_div": 0.1306,
+      "codebleu_div": 0.2826,
+      "NAUADC": 1.1007136580197923,
+      "EA": 1.0804407341528408,
+      "DA@10": 1.1111111111111112,
+      "n_problems": 432
+    },
+    {
+      "config": "pless_alpha_a3.0_t1.0",
+      "label": "pless_alpha @ T=1.0",
+      "pass@1": 0.766,
+      "pass@10": 0.864,
+      "struct_div": 0.1604,
+      "codebleu_div": 0.3395,
+      "NAUADC": 1.1102143500146973,
+      "EA": 1.0941367056581464,
+      "DA@10": 1.1203703703703705,
+      "n_problems": 432
+    },
+    {
+      "config": "pless_alpha_a5.0_t1.0",
+      "label": "pless_alpha @ T=1.0",
+      "pass@1": 0.7532000000000001,
+      "pass@10": 0.88,
+      "struct_div": 0.2098,
+      "codebleu_div": 0.4257,
+      "NAUADC": 1.167200689935065,
+      "EA": 1.1273042934938853,
+      "DA@10": 1.1863636363636363,
+      "n_problems": 440
+    }
+  ],
   "raw": {
     "pless_alpha_a2.0_t1.0": {
       "DA": [

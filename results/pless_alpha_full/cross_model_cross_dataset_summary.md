@@ -133,12 +133,12 @@ problem on average; bypasses AST canonicalization, so it's the right
 diversity signal for models like CodeLlama that produce canonical
 correct solutions.
 
-| α   | Qwen NAUADC | Qwen Δ vs α=2 | CodeLlama NAUADC | CodeLlama Δ vs α=2 |
-|----:|------------:|--------------:|-----------------:|-------------------:|
-| 2.0 |      1.0406 |       +0.00% |           1.0085 |             +0.00% |
-| 2.5 |      1.1007 |       +5.78% |           1.0446 |             +3.58% |
-| 3.0 |      1.1102 |       +6.69% |           1.0770 |             +6.79% |
-| 5.0 |  **1.1672** |   **+12.17%** |       **1.1186** |        **+10.92%** |
+| α   | Qwen NAUADC | CodeLlama NAUADC | m-a-p NAUADC | Qwen Δ | CodeLlama Δ | m-a-p Δ |
+|----:|------------:|-----------------:|-------------:|-------:|------------:|--------:|
+| 2.0 |      1.0406 |           1.0085 |       1.0727 |  +0.00% |       +0.00% |   +0.00% |
+| 2.5 |      1.1007 |           1.0446 |       1.1318 |  +5.78% |       +3.58% |   +5.51% |
+| 3.0 |      1.1102 |           1.0770 |       1.1652 |  +6.69% |       +6.79% |   +8.62% |
+| 5.0 |  **1.1672** |       **1.1186** |   **1.2095** | **+12.17%** | **+10.92%** | **+12.75%** |
 
 **Both models monotonic α=2 → α=5.** Relative lifts are nearly matched
 (~11–12%) despite very different absolute scales — Qwen runs higher
