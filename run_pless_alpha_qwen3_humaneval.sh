@@ -43,11 +43,23 @@ TEMPERATURE="${TEMPERATURE:-1.0}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-4096}"
 RESULTS_DIR="${RESULTS_DIR:-results/pless_alpha_full_humaneval}"
 BACKEND="${BACKEND:-hf}"
+VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
 LOG_DIR="${LOG_DIR:-/tmp/alpha_qwen3_humaneval_logs}"
 
 MAX_PROBLEMS_FLAG=""
 if [ -n "${MAX_PROBLEMS:-}" ]; then
   MAX_PROBLEMS_FLAG="--max-problems $MAX_PROBLEMS"
+fi
+
+if [ "$BACKEND" = "vllm" ]; then
+  if [ ! -x "$VLLM_VENV/bin/python" ]; then
+    cat >&2 <<EOF
+Error: vLLM venv not found at '$VLLM_VENV/bin/python'.
+Override with VLLM_VENV=/path/to/.venv (e.g. /workspace/.venv on a
+consolidated single-venv pod).
+EOF
+    exit 4
+  fi
 fi
 
 if [ -n "${GPUS:-}" ]; then
@@ -88,17 +100,33 @@ run_arm() {
   local alpha="$2"
   local log="$LOG_DIR/qwen3_a${alpha}.log"
   echo "[GPU $gpu] start α=$alpha at $(date +%H:%M:%S) → $log"
-  CUDA_VISIBLE_DEVICES="$gpu" uv run python -m bench.humaneval \
-    --model "$MODEL" \
-    --method pless_alpha --alpha "$alpha" \
-    --temperature "$TEMPERATURE" \
-    --n-samples "$N_SAMPLES" \
-    --max-new-tokens "$MAX_NEW_TOKENS" \
-    --backend "$BACKEND" \
-    --enable-thinking \
-    --results-dir "$RESULTS_DIR" \
-    $MAX_PROBLEMS_FLAG \
-    > "$log" 2>&1
+  if [ "$BACKEND" = "vllm" ]; then
+    CUDA_VISIBLE_DEVICES="$gpu" \
+    PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}" \
+    "$VLLM_VENV/bin/python" -m bench.humaneval \
+      --model "$MODEL" \
+      --method pless_alpha --alpha "$alpha" \
+      --temperature "$TEMPERATURE" \
+      --n-samples "$N_SAMPLES" \
+      --max-new-tokens "$MAX_NEW_TOKENS" \
+      --backend vllm \
+      --enable-thinking \
+      --results-dir "$RESULTS_DIR" \
+      $MAX_PROBLEMS_FLAG \
+      > "$log" 2>&1
+  else
+    CUDA_VISIBLE_DEVICES="$gpu" uv run python -m bench.humaneval \
+      --model "$MODEL" \
+      --method pless_alpha --alpha "$alpha" \
+      --temperature "$TEMPERATURE" \
+      --n-samples "$N_SAMPLES" \
+      --max-new-tokens "$MAX_NEW_TOKENS" \
+      --backend hf \
+      --enable-thinking \
+      --results-dir "$RESULTS_DIR" \
+      $MAX_PROBLEMS_FLAG \
+      > "$log" 2>&1
+  fi
   echo "[GPU $gpu] done α=$alpha at $(date +%H:%M:%S)"
 }
 

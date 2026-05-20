@@ -257,6 +257,7 @@ def main():
                         sampler_name=args.method,
                         n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                         temperature=args.temperature, stop_strings=stop_strings,
+                        alpha=args.alpha,
                     )
             elif args.method == "greedy":
                 raw_samples = generate_samples_greedy(

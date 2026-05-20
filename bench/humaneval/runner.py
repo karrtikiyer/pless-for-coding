@@ -190,6 +190,7 @@ def run_benchmark(
                         sampler_name=method,
                         n_samples=n_samples, max_new_tokens=max_new_tokens,
                         temperature=temperature, stop_strings=stop_strings,
+                        alpha=alpha,
                     )
             elif method in ("temp", "top_p"):
                 raw_samples = generate_samples_standard(

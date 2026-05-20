@@ -51,11 +51,30 @@ TEMPERATURE="${TEMPERATURE:-1.0}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-4096}"
 RESULTS_DIR="${RESULTS_DIR:-results/pless_alpha_full}"
 BACKEND="${BACKEND:-hf}"
+VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
 LOG_DIR="${LOG_DIR:-/tmp/alpha_qwen3_mbpp_logs}"
 
 MAX_PROBLEMS_FLAG=""
 if [ -n "${MAX_PROBLEMS:-}" ]; then
   MAX_PROBLEMS_FLAG="--max-problems $MAX_PROBLEMS"
+fi
+
+# vLLM venv preflight — vllm 0.21+ doesn't live in the main .venv unless
+# you consolidated. See pyproject-vllm.toml / requirements-vllm-frozen.txt.
+if [ "$BACKEND" = "vllm" ]; then
+  if [ ! -x "$VLLM_VENV/bin/python" ]; then
+    cat >&2 <<EOF
+Error: vLLM venv not found at '$VLLM_VENV/bin/python'.
+
+Override location with VLLM_VENV=/path/to/.venv. On a consolidated
+single-venv pod (most common), use VLLM_VENV=/workspace/.venv.
+
+Setup once if missing:
+  uv venv $VLLM_VENV --python 3.12
+  VIRTUAL_ENV=$VLLM_VENV uv pip install -r requirements-vllm-frozen.txt
+EOF
+    exit 4
+  fi
 fi
 
 # ── GPU auto-detection ──────────────────────────────────────────────────────
@@ -99,18 +118,35 @@ run_arm() {
   local alpha="$2"
   local log="$LOG_DIR/qwen3_a${alpha}.log"
   echo "[GPU $gpu] start α=$alpha at $(date +%H:%M:%S) → $log"
-  CUDA_VISIBLE_DEVICES="$gpu" uv run python -m bench \
-    --model "$MODEL" \
-    --method pless_alpha --alpha "$alpha" \
-    --temperature "$TEMPERATURE" \
-    --n-samples "$N_SAMPLES" \
-    --max-new-tokens "$MAX_NEW_TOKENS" \
-    --backend "$BACKEND" \
-    --enable-thinking \
-    --mbpp-config full \
-    --results-dir "$RESULTS_DIR" \
-    $MAX_PROBLEMS_FLAG \
-    > "$log" 2>&1
+  if [ "$BACKEND" = "vllm" ]; then
+    CUDA_VISIBLE_DEVICES="$gpu" \
+    PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}" \
+    "$VLLM_VENV/bin/python" -m bench \
+      --model "$MODEL" \
+      --method pless_alpha --alpha "$alpha" \
+      --temperature "$TEMPERATURE" \
+      --n-samples "$N_SAMPLES" \
+      --max-new-tokens "$MAX_NEW_TOKENS" \
+      --backend vllm \
+      --enable-thinking \
+      --mbpp-config full \
+      --results-dir "$RESULTS_DIR" \
+      $MAX_PROBLEMS_FLAG \
+      > "$log" 2>&1
+  else
+    CUDA_VISIBLE_DEVICES="$gpu" uv run python -m bench \
+      --model "$MODEL" \
+      --method pless_alpha --alpha "$alpha" \
+      --temperature "$TEMPERATURE" \
+      --n-samples "$N_SAMPLES" \
+      --max-new-tokens "$MAX_NEW_TOKENS" \
+      --backend hf \
+      --enable-thinking \
+      --mbpp-config full \
+      --results-dir "$RESULTS_DIR" \
+      $MAX_PROBLEMS_FLAG \
+      > "$log" 2>&1
+  fi
   echo "[GPU $gpu] done α=$alpha at $(date +%H:%M:%S)"
 }
 
