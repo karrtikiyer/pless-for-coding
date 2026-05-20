@@ -96,6 +96,30 @@ def _pless_norm_mask_logits(logits: torch.Tensor) -> torch.Tensor:
     return logits
 
 
+def _pless_alpha_mask_logits(logits: torch.Tensor, alpha: float) -> torch.Tensor:
+    """In-place: zero out tokens below the Rényi-α p-less threshold.
+
+    Mirrors ``bench/sampler_bridge.py:make_pless_alpha_sampler``:
+      * threshold = Σ pᵢ^α  (raw, no root — matches the unrooted Σpᵢ² in pless)
+      * α=2 fast-path uses ``probs.square()`` for byte-equivalence with
+        ``_pless_mask_logits``.
+      * α < 2 may prune the whole row at non-peaked distributions; the
+        argmax-fallback restores its argmax token.
+    """
+    probs = torch.softmax(logits.float(), dim=-1)
+    if alpha == 2.0:
+        threshold = probs.square().sum(dim=-1, keepdim=True)
+    else:
+        threshold = probs.pow(alpha).sum(dim=-1, keepdim=True)
+    mask = probs < threshold
+    all_pruned = mask.all(dim=-1)
+    if all_pruned.any():
+        fallback_idx = probs[all_pruned].argmax(dim=-1, keepdim=True)
+        mask[all_pruned] = mask[all_pruned].scatter(-1, fallback_idx, False)
+    logits.masked_fill_(mask, float("-inf"))
+    return logits
+
+
 def _top_p_top_k_mask_logits(
     logits: torch.Tensor, top_p: float, top_k: int
 ) -> torch.Tensor:
@@ -210,10 +234,20 @@ def _build_pless_split_logits_processor_class() -> type:
             for key in ("t_think", "t_code", "sampler_think", "sampler_code"):
                 if key not in cfg:
                     raise ValueError(f"pless_split config missing {key!r}")
-            for key in ("sampler_think", "sampler_code"):
-                if cfg[key] not in _SAMPLER_LOGIT_FN:
+            allowed = set(_SAMPLER_LOGIT_FN) | {"pless_alpha"}
+            for sampler_key, alpha_key in (
+                ("sampler_think", "alpha_think"),
+                ("sampler_code", "alpha_code"),
+            ):
+                if cfg[sampler_key] not in allowed:
                     raise ValueError(
-                        f"pless_split.{key}={cfg[key]!r} not in {list(_SAMPLER_LOGIT_FN)}"
+                        f"pless_split.{sampler_key}={cfg[sampler_key]!r} not in "
+                        f"{sorted(allowed)}"
+                    )
+                if cfg[sampler_key] == "pless_alpha" and alpha_key not in cfg:
+                    raise ValueError(
+                        f"pless_split.{sampler_key}='pless_alpha' requires "
+                        f"{alpha_key!r} to be set."
                     )
 
         def is_argmax_invariant(self) -> bool:
@@ -285,14 +319,19 @@ def _build_pless_split_logits_processor_class() -> type:
                 if in_code:
                     temp = float(cfg["t_code"])
                     sampler_name = cfg["sampler_code"]
+                    alpha_key = "alpha_code"
                 else:
                     temp = float(cfg["t_think"])
                     sampler_name = cfg["sampler_think"]
+                    alpha_key = "alpha_think"
 
                 row = logits[idx]
                 if temp != 1.0:
                     row = row / temp
-                row = _SAMPLER_LOGIT_FN[sampler_name](row)
+                if sampler_name == "pless_alpha":
+                    row = _pless_alpha_mask_logits(row, alpha=float(cfg[alpha_key]))
+                else:
+                    row = _SAMPLER_LOGIT_FN[sampler_name](row)
                 logits[idx] = row
             return logits
 
@@ -424,18 +463,33 @@ def generate_samples_vllm(
     max_new_tokens: int,
     temperature: float,
     stop_strings: list[str] | None = None,
+    alpha: float | None = None,
 ) -> list[str]:
     """vLLM-backed single-sampler generation (no think/code split).
 
     Matches the role of ``bench/generator.py:generate_samples`` and is the
     target for MBPP / HumanEval runs that use a uniform sampler.
+
+    ``alpha`` is required when ``sampler_name == "pless_alpha"`` and is
+    propagated to both phases (uniform α across think + code).
     """
     from vllm import SamplingParams
 
     processor_cls = _build_pless_split_logits_processor_class()
+    if sampler_name == "pless_alpha" and alpha is None:
+        raise ValueError("alpha is required when sampler_name='pless_alpha'")
     # We reuse the split processor by setting t_think == t_code and
     # sampler_think == sampler_code; the </think> detection becomes a
     # no-op since both phases are identical.
+    cfg = {
+        "t_think":       float(temperature),
+        "t_code":        float(temperature),
+        "sampler_think": sampler_name,
+        "sampler_code":  sampler_name,
+    }
+    if sampler_name == "pless_alpha":
+        cfg["alpha_think"] = float(alpha)
+        cfg["alpha_code"] = float(alpha)
     sp = SamplingParams(
         n=n_samples,
         max_tokens=max_new_tokens,
@@ -444,14 +498,7 @@ def generate_samples_vllm(
         top_k=-1,
         stop=stop_strings or None,
         logits_processors=[processor_cls],
-        extra_args={
-            processor_cls.EXTRA_ARG_KEY: {
-                "t_think":       float(temperature),
-                "t_code":        float(temperature),
-                "sampler_think": sampler_name,
-                "sampler_code":  sampler_name,
-            },
-        },
+        extra_args={processor_cls.EXTRA_ARG_KEY: cfg},
     )
 
     if isinstance(prompt_text, list):

@@ -47,6 +47,7 @@ from bench.prompts import is_instruct_model
 from bench.sampler_bridge import (
     SAMPLERS,
     SPLIT_SAMPLERS,
+    make_pless_alpha_sampler,
     make_pless_post_temp_sampler,
 )
 
@@ -71,6 +72,8 @@ def _method_key(args: argparse.Namespace) -> str:
         key = f"{key}_think_t{args.temperature}"
     if args.post_temperature is not None:
         key = f"{key}_pt{args.post_temperature}"
+    if args.method == "pless_alpha":
+        key = f"{key}_a{args.alpha}"
     return key
 
 
@@ -84,7 +87,7 @@ def parse_args():
                    help="APPS difficulty bucket")
     p.add_argument(
         "--method", required=True,
-        choices=list(SAMPLERS.keys()) + ["temp", "split"],
+        choices=list(SAMPLERS.keys()) + ["temp", "split", "pless_alpha"],
         help="Sampling method",
     )
     p.add_argument("--n-samples", type=int, default=10)
@@ -111,6 +114,10 @@ def parse_args():
     p.add_argument("--sampler-code", choices=list(SPLIT_SAMPLERS.keys()), default=None)
     p.add_argument("--post-temperature", type=float, default=None,
                    help="T₂ for p-less post-truncation flattening.")
+    p.add_argument("--alpha", type=float, default=None,
+                   help="Rényi exponent for --method pless_alpha. "
+                        "Threshold = Σpᵢ^α. α=2 reproduces standard pless; "
+                        "α>2 keeps more tokens at high-entropy positions.")
     args = p.parse_args()
     if args.method == "split":
         for name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
@@ -118,6 +125,10 @@ def parse_args():
                 p.error(f"--{name.replace('_', '-')} is required when --method is split")
     if args.post_temperature is not None and args.method not in SAMPLERS:
         p.error("--post-temperature only works with p-less methods")
+    if args.method == "pless_alpha" and args.alpha is None:
+        p.error("--alpha is required when --method is pless_alpha")
+    if args.alpha is not None and args.method != "pless_alpha":
+        p.error("--alpha only applies to --method pless_alpha")
     return args
 
 
@@ -162,6 +173,8 @@ def main():
         if args.method == "split":
             sampler_fn_think = SPLIT_SAMPLERS[args.sampler_think]
             sampler_fn_code = SPLIT_SAMPLERS[args.sampler_code]
+        elif args.method == "pless_alpha":
+            sampler_fn = make_pless_alpha_sampler(args.alpha)
         elif args.method != "temp":
             if args.post_temperature is not None:
                 sampler_fn = make_pless_post_temp_sampler(args.post_temperature)
@@ -217,6 +230,7 @@ def main():
                         sampler_name=args.method,
                         n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                         temperature=args.temperature, stop_strings=None,
+                        alpha=args.alpha,
                     )
             elif args.method == "temp":
                 raw_samples = generate_samples_standard(
