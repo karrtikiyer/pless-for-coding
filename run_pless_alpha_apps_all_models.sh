@@ -30,7 +30,8 @@
 #   DIFFICULTIES     (default "introductory interview competition")
 #   N_SAMPLES                                (default 10)
 #   TEMPERATURE                              (default 1.0)
-#   MAX_NEW_TOKENS                           (default 4096)
+#   MAX_NEW_TOKENS                           (default 8192 — matches existing APPS Qwen3-8B runs;
+#                                            APPS programs can be long even without thinking)
 #   RESULTS_DIR                              (default results/pless_alpha_apps)
 #   BACKEND          hf | vllm                (default vllm)
 #   GPUS                                      (default: auto-detect)
@@ -53,7 +54,7 @@ SOURCES="${SOURCES:-$SOURCES_DEFAULT}"
 DIFFICULTIES="${DIFFICULTIES:-$DIFFICULTIES_DEFAULT}"
 N_SAMPLES="${N_SAMPLES:-10}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
-MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-4096}"
+MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-8192}"
 RESULTS_DIR="${RESULTS_DIR:-results/pless_alpha_apps}"
 BACKEND="${BACKEND:-vllm}"
 LOG_DIR="${LOG_DIR:-/tmp/alpha_apps_logs}"
