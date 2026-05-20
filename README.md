@@ -18,7 +18,7 @@ Implementation lives in the `p-less/` git submodule ([github.com/ryttry/p-less-s
 ## Requirements
 
 - Python 3.12+
-- NVIDIA GPU with CUDA 12.4 (tested on RTX 4090, ~15GB VRAM per model), or Apple Silicon MPS for smaller models (tested with Qwen2.5-Coder-3B, OCI-DS-1.3B)
+- NVIDIA GPU with CUDA 12.8 + driver ≥555 (tested on RTX 4090, ~15GB VRAM per model; Blackwell GPUs supported), or Apple Silicon MPS for smaller models (tested with Qwen2.5-Coder-3B, OCI-DS-1.3B)
 - [uv](https://docs.astral.sh/uv/) package manager
 
 ## Setup

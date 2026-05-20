@@ -5,7 +5,7 @@ Benchmarks the **pless** and **pless-norm** hyperparameter-free sampling methods
 ## Setup Essentials
 
 - **Python >=3.12** required (`requires-python` in pyproject.toml)
-- **CUDA 12.4** — torch is pulled from `https://download.pytorch.org/whl/cu124` (non-macOS)
+- **CUDA 12.8 + torch 2.7** — torch is pulled from `https://download.pytorch.org/whl/cu128` (non-macOS). First wheel combination that ships `sm_120` kernels for Blackwell GPUs (RTX 5090 / B100 / B200); also backward-compatible with Ampere (sm_80) and Hopper (sm_90). Requires nvidia driver **≥555**.
 - **`uv sync`** installs everything. Never use pip.
 - **`git submodule update --init`** to clone `p-less/` sampler
 - **`models/`** is gitignored — download weights locally or use HF model IDs
@@ -103,7 +103,7 @@ Also: `metrics_before_fix/` and `analysis_before_fix/` directories are snapshots
 
 ## Key Dependencies
 
-- `torch` (CUDA 12.4), `transformers`, `datasets`, `accelerate`
+- `torch` 2.7 (CUDA 12.8), `transformers`, `datasets`, `accelerate`
 - `tiktoken`, `einops`, `sentencepiece` — tokenizer support for various models
 - `transformers-stream-generator` — required by old Qwen remote code
 - `zss` — Zhang-Shasha tree edit distance, used by `fingerprint.py` for structural diversity

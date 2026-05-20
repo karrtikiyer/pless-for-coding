@@ -12,6 +12,16 @@
 #
 # The main .venv stays untouched; all existing work (algosim, layer-
 # entropy probes, ad-hoc analysis) continues to run against it.
+#
+# Blackwell note (RTX 5090 / B100 / B200, SM 12.0):
+#   * vLLM 0.21.0 ships FlashInfer/torch wheels that don't compile
+#     for sm_120 — the engine fails during profile_run with
+#     "FlashInfer requires GPUs with sm75 or higher" (misleading;
+#     the real cause is the JIT can't target sm_120 under cu124).
+#   * vLLM 0.9+ ships torch 2.7 + FlashInfer wheels with sm_120
+#     support. Use that on Blackwell pods.
+#   * On Ampere/Hopper either version works; we pin >=0.9 because
+#     it's a strict superset and avoids a sister-version regression.
 
 [project]
 name = "pless-for-coding-vllm"
@@ -20,7 +30,7 @@ description = "vLLM backend overlay for the pless benchmarks. Only installed in 
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "vllm==0.21.0",
+    "vllm>=0.9.0",
     # The rest mirror the main project's runner-side deps. vllm pulls torch + transformers itself.
     "datasets<4",
     "tqdm",
@@ -46,6 +56,7 @@ dev = [
     "pytest>=9.0.2",
 ]
 
-# Note: no [[tool.uv.index]] for pytorch-cu124 here — vLLM ships its own
-# torch wheel pinning via PyPI dependency resolution. If vLLM and our
-# torch pin disagree on the GPU box, vLLM wins.
+# Note: no [[tool.uv.index]] for a custom pytorch wheel here — vLLM ships
+# its own torch wheel pinning via PyPI dependency resolution (and on
+# 0.9+ that's torch 2.7 with cu128, which covers Blackwell). If vLLM and
+# any local torch pin disagree on the GPU box, vLLM wins.

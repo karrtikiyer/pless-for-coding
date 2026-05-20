@@ -5,7 +5,11 @@ description = "Benchmark pless samplers on MBPP"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "torch>=2.4",
+    # torch 2.7+ with CUDA 12.8 wheels is the first combination that ships
+    # sm_120 kernels for Blackwell GPUs (RTX 5090 / B100 / B200).
+    # cu128 wheels remain backward-compatible with Ampere (sm_80) and
+    # Hopper (sm_90) GPUs as long as the nvidia driver is >=555.
+    "torch>=2.7,<2.8",
     "transformers>=5",
     "datasets<4",
     "tqdm",
@@ -28,13 +32,13 @@ dependencies = [
 ]
 
 [[tool.uv.index]]
-name = "pytorch-cu124"
-url = "https://download.pytorch.org/whl/cu124"
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
 explicit = true
 
 [tool.uv.sources]
 torch = [
-    { index = "pytorch-cu124", marker = "sys_platform != 'darwin'" },
+    { index = "pytorch-cu128", marker = "sys_platform != 'darwin'" },
 ]
 
 [dependency-groups]
