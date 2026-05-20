@@ -1,39 +1,47 @@
-# Separate project file for the .venv-vllm environment.
+# Single-venv (vLLM-enabled) project file. This is the source of truth
+# for the GPU box environment captured in requirements-vllm-frozen.txt.
 #
-# Why a parallel pyproject: vLLM has aggressive CUDA/PyTorch version
-# pinning that conflicts with the main pyproject.toml. The .venv-vllm
-# is sync'd from this file on the GPU box only (vLLM has no Mac wheels).
+# Why pinned tighter than pyproject.toml: vLLM ships CUDA/torch wheels
+# whose versions move with the vLLM release cadence. Pinning to a known
+# *working triple* (vllm + torch + transformers) avoids the FlashInfer
+# / sm_120 / "logits_processors removed" failures we hit when uv/pip
+# free-resolved them. requirements-vllm-frozen.txt is the bit-exact
+# replay of this triple on an H100 80GB pod.
 #
-# Usage (on the GPU box):
-#   uv venv .venv-vllm --python 3.12
-#   UV_PROJECT_ENVIRONMENT=.venv-vllm uv sync \
-#       --project pyproject-vllm.toml --no-install-package torch
-#   .venv-vllm/bin/python -m bench.apps.runner --backend vllm ...
+# Usage on a fresh GPU box (single consolidated venv):
+#   uv venv /workspace/.venv --python 3.12
+#   UV_PROJECT_ENVIRONMENT=/workspace/.venv uv sync \
+#       --project pyproject-vllm.toml
 #
-# The main .venv stays untouched; all existing work (algosim, layer-
-# entropy probes, ad-hoc analysis) continues to run against it.
+# OR for bit-exact reproduction (recommended if a new vllm/torch
+# release on PyPI breaks our flow):
+#   uv venv /workspace/.venv --python 3.12
+#   /workspace/.venv/bin/python -m pip install -r requirements-vllm-frozen.txt
 #
-# Blackwell note (RTX 5090 / B100 / B200, SM 12.0):
-#   * vLLM 0.21.0 ships FlashInfer/torch wheels that don't compile
-#     for sm_120 — the engine fails during profile_run with
-#     "FlashInfer requires GPUs with sm75 or higher" (misleading;
-#     the real cause is the JIT can't target sm_120 under cu124).
-#   * vLLM 0.9+ ships torch 2.7 + FlashInfer wheels with sm_120
-#     support. Use that on Blackwell pods.
-#   * On Ampere/Hopper either version works; we pin >=0.9 because
-#     it's a strict superset and avoids a sister-version regression.
+# Captured working environment:
+#   * GPU:    NVIDIA H100 80GB HBM3 (also tested on RTX 4090 Ada / SM 8.9)
+#   * Driver: >=580.126
+#   * CUDA:   13.0 (via torch's bundled cu130 wheels)
+#   * torch:  2.11.0+cu130   (arch list: sm_75..sm_120, full Blackwell)
+#   * vllm:   0.21.0          (LogitsProcessor API registers at LLM init)
+#   * transformers: 5.8.1
+#   * datasets: 2.21.0        (3.0+ deprecates trust_remote_code script loaders)
 
 [project]
 name = "pless-for-coding-vllm"
 version = "0.1.0"
-description = "vLLM backend overlay for the pless benchmarks. Only installed in .venv-vllm/."
+description = "vLLM backend overlay for the pless benchmarks. Single-venv setup for GPU pods."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "vllm>=0.9.0",
-    # The rest mirror the main project's runner-side deps. vllm pulls torch + transformers itself.
-    # datasets>=4 removed Python loading-script support; codeparrot/apps still ships apps.py.
-    "datasets>=2.21,<3",
+    # Load-bearing triple — pinned exact to match requirements-vllm-frozen.txt.
+    "vllm==0.21.0",
+    "torch==2.11.0",
+    "torchvision==0.26.0",
+    "transformers==5.8.1",
+    # datasets 4.0+ removed Python loading-script support; codeparrot/apps still ships apps.py.
+    "datasets==2.21.0",
+    # The rest are runner-side deps (kept loose; minor versions don't affect inference).
     "tqdm",
     "accelerate",
     "hf-transfer>=0.1.9",
@@ -57,7 +65,13 @@ dev = [
     "pytest>=9.0.2",
 ]
 
-# Note: no [[tool.uv.index]] for a custom pytorch wheel here — vLLM ships
-# its own torch wheel pinning via PyPI dependency resolution (and on
-# 0.9+ that's torch 2.7 with cu128, which covers Blackwell). If vLLM and
-# any local torch pin disagree on the GPU box, vLLM wins.
+# vLLM 0.21.0 bundles its own torch+cu130 stack via PyPI. We don't need
+# a separate [[tool.uv.index]] here — pip/uv will resolve torch==2.11.0
+# from PyPI's vLLM dependency chain, which itself points at the cu130
+# wheel. If you want to force cu130 explicitly (e.g. testing a different
+# torch version), uncomment:
+#
+# [[tool.uv.index]]
+# name = "pytorch-cu130"
+# url = "https://download.pytorch.org/whl/cu130"
+# explicit = true
