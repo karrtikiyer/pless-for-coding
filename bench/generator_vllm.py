@@ -353,19 +353,37 @@ def load_engine(
     dtype: str = "bfloat16",
     max_model_len: int | None = None,
     gpu_memory_utilization: float = 0.90,
+    register_pless_logitsproc: bool = True,
     **kwargs,
 ):
     """Construct a vLLM LLM engine. Deferred-import wrapper.
 
     Mirrors `bench/generator.py:load_model_and_tokenizer` in role — call
     once before the per-task loop, reuse for all generations.
+
+    vLLM 0.21+ requires custom LogitsProcessor *classes* to be registered
+    at engine init via ``LLM(logits_processors=[...])`` rather than
+    per-request via ``SamplingParams(logits_processors=...)`` (the
+    latter was removed). When ``register_pless_logitsproc=True``
+    (default), the PlessSplitLogitsProcessor is auto-registered so the
+    pless / pless_norm / pless_alpha samplers work via per-request
+    ``extra_args``. Pass ``register_pless_logitsproc=False`` only for
+    bare temp-sampling workflows that don't need our custom processor.
     """
     from vllm import LLM
+    if register_pless_logitsproc:
+        processor_cls = _build_pless_split_logits_processor_class()
+        # Use user-provided 'logits_processors' kwarg if any, else default to ours.
+        existing = kwargs.pop("logits_processors", None)
+        logits_processors = (existing or []) + [processor_cls]
+    else:
+        logits_processors = kwargs.pop("logits_processors", None)
     return LLM(
         model=model_id,
         dtype=dtype,
         max_model_len=max_model_len,
         gpu_memory_utilization=gpu_memory_utilization,
+        logits_processors=logits_processors,
         **kwargs,
     )
 
@@ -422,6 +440,11 @@ def generate_samples_split_vllm(
     _verify_think_end_id(engine)
     processor_cls = _build_pless_split_logits_processor_class()
 
+    # NOTE: vLLM 0.21+ removed SamplingParams.logits_processors. The
+    # processor class must be pre-registered at engine load via
+    # ``load_engine(..., register_pless_logitsproc=True)`` (the default)
+    # or by passing ``logits_processors=[processor_cls]`` to ``LLM()``.
+    # Per-request activation happens via ``extra_args`` below.
     sp = SamplingParams(
         n=n_samples,
         max_tokens=max_new_tokens,
@@ -429,7 +452,6 @@ def generate_samples_split_vllm(
         top_p=1.0,
         top_k=-1,
         stop=stop_strings or None,
-        logits_processors=[processor_cls],
         extra_args={
             processor_cls.EXTRA_ARG_KEY: {
                 "t_think":       float(temperature_think),
@@ -490,6 +512,8 @@ def generate_samples_vllm(
     if sampler_name == "pless_alpha":
         cfg["alpha_think"] = float(alpha)
         cfg["alpha_code"] = float(alpha)
+    # NOTE: vLLM 0.21+ removed SamplingParams.logits_processors; the
+    # processor class is pre-registered at engine load (see load_engine).
     sp = SamplingParams(
         n=n_samples,
         max_tokens=max_new_tokens,
@@ -497,7 +521,6 @@ def generate_samples_vllm(
         top_p=1.0,
         top_k=-1,
         stop=stop_strings or None,
-        logits_processors=[processor_cls],
         extra_args={processor_cls.EXTRA_ARG_KEY: cfg},
     )
 
