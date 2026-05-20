@@ -21,7 +21,10 @@
 #   ALPHAS          space-separated α values (default "2.0 2.5 3.0 5.0")
 #   N_SAMPLES                              (default 10)
 #   TEMPERATURE                            (default 1.0)
-#   MAX_NEW_TOKENS                         (default 8192 — Qwen3 thinking is verbose)
+#   MAX_NEW_TOKENS                         (default 4096 — covers thinking + code on
+#                                          HumanEval-164's short prompts. Bump only if
+#                                          you see truncated samples; 8192 was overkill
+#                                          and slowed HF inference via larger KV cache.)
 #   RESULTS_DIR                            (default results/pless_alpha_full_humaneval)
 #   BACKEND          hf | vllm             (default hf)
 #   GPUS                                    (default: auto-detect)
@@ -37,7 +40,7 @@ ALPHAS_DEFAULT="2.0 2.5 3.0 5.0"
 ALPHAS="${ALPHAS:-$ALPHAS_DEFAULT}"
 N_SAMPLES="${N_SAMPLES:-10}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
-MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-8192}"
+MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-4096}"
 RESULTS_DIR="${RESULTS_DIR:-results/pless_alpha_full_humaneval}"
 BACKEND="${BACKEND:-hf}"
 LOG_DIR="${LOG_DIR:-/tmp/alpha_qwen3_humaneval_logs}"
