@@ -1,8 +1,12 @@
 # Frozen vLLM + bench environment captured from working H100 pod.
 # Use for bit-exact replication on a new GPU box:
 #
-#   uv venv .venv --python 3.12
-#   .venv/bin/python -m pip install -r requirements-vllm-frozen.txt
+#   uv venv /workspace/.venv --python 3.12
+#   VIRTUAL_ENV=/workspace/.venv uv pip install -r requirements-vllm-frozen.txt
+#
+# Note: `uv venv` creates a minimal venv without pip pre-installed. Use
+# `uv pip install` (which doesn't need pip in the venv) — or bootstrap
+# pip first via `python -m ensurepip --upgrade` if you must use `pip`.
 #
 # Captured: 2026-05-20T11:18:24Z
 # Python:   3.12.13
