@@ -16,7 +16,10 @@ dependencies = [
     # not exist") when a stale cu124 wheel survives a torch bump.
     "torchvision>=0.22,<0.23",
     "transformers>=5",
-    "datasets<4",
+    # datasets>=4.0 removed support for Python loading scripts (e.g.
+    # codeparrot/apps ships apps.py). Pin to 2.21+/3.x range so the
+    # `trust_remote_code=True` script-loading path keeps working.
+    "datasets>=2.21,<3",
     "tqdm",
     "accelerate",
     "hf-transfer>=0.1.9",
