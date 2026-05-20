@@ -34,6 +34,9 @@
 #                                            APPS programs can be long even without thinking)
 #   RESULTS_DIR                              (default results/pless_alpha_apps)
 #   BACKEND          hf | vllm                (default vllm)
+#   VLLM_VENV        path to vLLM venv root   (default .venv-vllm)
+#                    Only used when BACKEND=vllm. See pyproject-vllm.toml
+#                    for setup instructions.
 #   GPUS                                      (default: auto-detect)
 #   MAX_PROBLEMS     cap per bucket (smoke)  (default: unset → full)
 #   ONLY_ALPHA                                (default: unset)
@@ -57,7 +60,28 @@ TEMPERATURE="${TEMPERATURE:-1.0}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-8192}"
 RESULTS_DIR="${RESULTS_DIR:-results/pless_alpha_apps}"
 BACKEND="${BACKEND:-vllm}"
+VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
 LOG_DIR="${LOG_DIR:-/tmp/alpha_apps_logs}"
+
+# ── vLLM venv preflight ─────────────────────────────────────────────────────
+# vLLM lives in a separate venv (.venv-vllm) per project convention
+# (see pyproject-vllm.toml). The main .venv does NOT have vllm installed.
+if [ "$BACKEND" = "vllm" ]; then
+  if [ ! -x "$VLLM_VENV/bin/python" ]; then
+    cat >&2 <<EOF
+Error: vLLM venv not found at '$VLLM_VENV/bin/python'.
+
+Setup once on the GPU box:
+  uv venv $VLLM_VENV --python 3.12
+  UV_PROJECT_ENVIRONMENT=$VLLM_VENV uv sync \\
+      --project pyproject-vllm.toml --no-install-package torch
+
+Or override VLLM_VENV=/path/to/your/venv if it lives elsewhere.
+Alternatively, run with BACKEND=hf to skip vLLM entirely (slower).
+EOF
+    exit 4
+  fi
+fi
 
 MAX_PROBLEMS_FLAG=""
 if [ -n "${MAX_PROBLEMS:-}" ]; then
@@ -116,17 +140,35 @@ run_arm() {
   local model_slug; model_slug=$(echo "$model" | tr '/' '-')
   local log="$LOG_DIR/${model_slug}_${source}_${difficulty}_a${alpha}.log"
   echo "[GPU $gpu] start $model_slug / $source / $difficulty / α=$alpha → $log"
-  CUDA_VISIBLE_DEVICES="$gpu" uv run python -m bench.apps \
-    --model "$model" \
-    --source "$source" --difficulty "$difficulty" \
-    --method pless_alpha --alpha "$alpha" \
-    --temperature "$TEMPERATURE" \
-    --n-samples "$N_SAMPLES" \
-    --max-new-tokens "$MAX_NEW_TOKENS" \
-    --backend "$BACKEND" \
-    --results-dir "$RESULTS_DIR" \
-    $MAX_PROBLEMS_FLAG \
-    > "$log" 2>&1
+  if [ "$BACKEND" = "vllm" ]; then
+    # vLLM runs in its parallel venv. PYTHONPATH=$PWD so the source tree
+    # wins over any installed copy of bench/.
+    CUDA_VISIBLE_DEVICES="$gpu" \
+    PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}" \
+    "$VLLM_VENV/bin/python" -m bench.apps \
+      --model "$model" \
+      --source "$source" --difficulty "$difficulty" \
+      --method pless_alpha --alpha "$alpha" \
+      --temperature "$TEMPERATURE" \
+      --n-samples "$N_SAMPLES" \
+      --max-new-tokens "$MAX_NEW_TOKENS" \
+      --backend vllm \
+      --results-dir "$RESULTS_DIR" \
+      $MAX_PROBLEMS_FLAG \
+      > "$log" 2>&1
+  else
+    CUDA_VISIBLE_DEVICES="$gpu" uv run python -m bench.apps \
+      --model "$model" \
+      --source "$source" --difficulty "$difficulty" \
+      --method pless_alpha --alpha "$alpha" \
+      --temperature "$TEMPERATURE" \
+      --n-samples "$N_SAMPLES" \
+      --max-new-tokens "$MAX_NEW_TOKENS" \
+      --backend hf \
+      --results-dir "$RESULTS_DIR" \
+      $MAX_PROBLEMS_FLAG \
+      > "$log" 2>&1
+  fi
   echo "[GPU $gpu] done $model_slug / $source / $difficulty / α=$alpha at $(date +%H:%M:%S)"
 }
 
