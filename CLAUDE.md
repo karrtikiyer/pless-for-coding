@@ -47,6 +47,8 @@ Two functions from `p_less_samplers.py`:
 
 Public API exports from `bench/eval/__init__.py`: `check_sample`, `evaluate_task`, `ast_fingerprint`, `load_results`, `compute_pass_at_k`, `compute_cover_at_t`.
 
+**Canonical headline-table column set** (locked by `bench/eval/headline_table.py` + `tests/test_headline_table.py`). Every per-model `full_sweep_summary.md` and any new analysis that reports per-config metrics MUST use this column order: `pass@1, pass@3, pass@5, pass@10, cov@0.3, cov@0.5, struct_div, cb_div`. Use `bench.eval.headline_table.headline_table([(metrics_json, label), ...])` to emit the markdown table — don't hand-roll a different subset of columns.
+
 ### HumanEval (`bench/humaneval/`)
 - `runner.py` — CLI: `python -m bench.humaneval`
 - `prompts.py` — HumanEval prompt formatting
