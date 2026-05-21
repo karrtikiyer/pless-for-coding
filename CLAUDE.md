@@ -2,6 +2,17 @@
 
 Benchmarks the **pless** and **pless-norm** hyperparameter-free sampling methods on MBPP and HumanEval, comparing against vanilla temperature sampling across multiple model families. Based on ["A Thorough Examination of Decoding Methods in the Era of LLMs"](https://arxiv.org/abs/2402.06925).
 
+## Living TODO list — `docs/theory/todos.md`
+
+The project's wholistic TODO list lives at `docs/theory/todos.md` with section-by-section status (ACTIVE / PROPOSED / DEFERRED / DONE / DROPPED / OPEN) and an append-only **Version history**. Any Claude session working on this repo MUST:
+
+- Update the relevant row when picking up a TODO (PROPOSED/ACTIVE → ACTIVE → DONE) or dropping one (→ DROPPED).
+- Append a Version history entry citing the commit / discussion that drove the change.
+- Add a new row (next free ID in the appropriate section A–G) when a new TODO emerges from discussion.
+- Never delete completed/dropped rows — historical context matters for paper writing.
+
+Convention is documented at the top of `todos.md` ("How to maintain this file") and in the project memory file `project_todos_maintenance.md`.
+
 ## Setup Essentials
 
 - **Python >=3.12** required (`requires-python` in pyproject.toml)
