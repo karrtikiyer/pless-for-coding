@@ -44,7 +44,17 @@ MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-4096}"
 RESULTS_DIR="${RESULTS_DIR:-results/pless_alpha_full_humaneval}"
 BACKEND="${BACKEND:-hf}"
 VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
+THINKING="${THINKING:-on}"     # "on" → --enable-thinking, "off" → omit the flag
 LOG_DIR="${LOG_DIR:-/tmp/alpha_qwen3_humaneval_logs}"
+
+if [ "$THINKING" = "on" ]; then
+  THINKING_FLAG="--enable-thinking"
+elif [ "$THINKING" = "off" ]; then
+  THINKING_FLAG=""
+else
+  echo "Error: THINKING must be 'on' or 'off', got '$THINKING'" >&2
+  exit 5
+fi
 
 MAX_PROBLEMS_FLAG=""
 if [ -n "${MAX_PROBLEMS:-}" ]; then
@@ -110,7 +120,7 @@ run_arm() {
       --n-samples "$N_SAMPLES" \
       --max-new-tokens "$MAX_NEW_TOKENS" \
       --backend vllm \
-      --enable-thinking \
+      $THINKING_FLAG \
       --results-dir "$RESULTS_DIR" \
       $MAX_PROBLEMS_FLAG \
       > "$log" 2>&1
@@ -122,7 +132,7 @@ run_arm() {
       --n-samples "$N_SAMPLES" \
       --max-new-tokens "$MAX_NEW_TOKENS" \
       --backend hf \
-      --enable-thinking \
+      $THINKING_FLAG \
       --results-dir "$RESULTS_DIR" \
       $MAX_PROBLEMS_FLAG \
       > "$log" 2>&1
