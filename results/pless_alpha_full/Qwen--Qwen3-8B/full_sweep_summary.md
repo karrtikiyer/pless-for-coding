@@ -1,10 +1,13 @@
 # Rényi-α P-less Full Sweep — Qwen3-8B (thinking enabled) on MBPP-500 + HumanEval-164
 
-**Verdict (preliminary): The α-sweep on a thinking model shows a
-*different* regime than the non-thinking models. pass@1 and pass@10
-both climb modestly with α (Pareto improvement, not a trade-off), and
-struct_div climbs cleanly. The C7 v3 ν(α) regularity is expected to
-hold; β-binomial fit pending (see Step 2 below).**
+**Verdict: The α-sweep on a thinking model shows a *different* regime
+than the non-thinking models — pass@1 and pass@10 both climb modestly
+with α (small Pareto improvement, not a trade-off), and struct_div
+climbs cleanly. The β-binomial fit (committed 308cf24) confirms the
+distinguishing signature: mean p grows on Qwen3 (vs flat on the
+other 3 models) and ν is approximately flat or shrinks (vs growing
+2.5×–6.5× on the other 3 models). The C7 v3 ν(α) regularity does
+NOT hold here; thinking is a separate regime.**
 
 500 MBPP-full problems + 164 HumanEval problems, 10 samples per task,
 T=1.0, **vLLM** backend on CUDA (H100 80GB). 4 α-arms; no T-baselines
@@ -34,38 +37,156 @@ on the other 3 models for the cross-model story).
 Tables generated via `bench.eval.headline_table` (canonical 8-column
 layout matching the other models' summaries).
 
-## What's different about Qwen3-8B + thinking
+## What's different about Qwen3-8B + thinking — observation
 
 Across the three non-thinking models (Qwen2.5-Coder-7B-Instruct,
-CodeLlama-7B-Instruct, m-a-p OCI-1.3B) the α-sweep pattern was:
-**pass@1 decreases monotonically (~−2 pp from α=2→5), pass@10 increases
-monotonically, struct_div grows monotonically.**
+CodeLlama-7B-Instruct, m-a-p OCI-1.3B), the α=2→5 sweep pattern is:
+pass@1 decreases monotonically (Δ between −1.4 and −3.0 pp), pass@10
+increases monotonically, and the β-binomial concentration ν grows
+2.5×–6.5×. Mean p (the fitted Beta mean of the per-task pass-rate)
+stays approximately flat. See `results/c7_validation/beta_binomial/fit_summary.md`
+for the per-cell (a, b, ν, mean) values that produced these summary
+statistics.
 
-Qwen3-8B + thinking shows a different pattern:
+Qwen3-8B + thinking shows a **different** pattern on the same α-sweep
+grid:
 
 | Cell | Δpass@1 (α=2→5) | Δpass@10 (α=2→5) | Δstruct_div (α=2→5) |
 |---|---:|---:|---:|
 | MBPP | **+1.92 pp** | +0.80 pp | +0.0414 (+33% rel) |
 | HumanEval | **+1.65 pp** | +1.83 pp | +0.0106 (+7% rel) |
 
-**Both pass@1 and pass@10 go UP** — Pareto improvement rather than a
-diversity-for-pass@1 trade. Three plausible mechanisms (not yet
-distinguished):
+Both pass@1 and pass@10 climb together — a small Pareto improvement
+rather than the diversity-for-pass@1 trade seen on the other three
+models. The β-binomial fit
+(`results/c7_validation/beta_binomial/fit_summary.md`) further shows
+that Qwen3's *mean p climbs* (+1.92 pp MBPP, +1.65 pp HE — the same
+values the headline table shows, since at fixed n the fitted Beta
+mean must reproduce pass@1) and that *ν* either grows weakly (+9.5%
+MBPP) or shrinks (−7.3% HE), inverting the C7 v3 trajectory observed
+on the other three models. The β-binomial framework still fits the
+data within sampling noise (Step 3 MAE 0.36–0.93 pp on Qwen3 cells),
+but the (a, b) trajectory across α is qualitatively different.
 
-1. **Saturation effect.** Qwen3-thinking at α=2 already lands at
-   82–88% pass@10 — close to the achievable ceiling on these benchmarks.
-   When pass@10 is near ceiling, ν(α) growth manifests as marginal
-   gains rather than the dramatic +6–14 pp lifts seen on weaker models.
+## What's *driving* the difference — three candidate explanations
 
-2. **Thinking compensates for narrow sampling.** At α=2 the model may
-   commit to a wrong reasoning path on some problems. Higher α widens
-   exploration during the thinking phase as well, letting the model
-   recover from initial missteps before committing to code.
+Two surviving hypotheses; one earlier hypothesis is now falsified by
+the β-binomial fit. Each is annotated with a confidence assessment
+based on what's verifiable today.
 
-3. **The C7 v3 ν(α) story is intact but flatter.** Mean p climbs
-   *slightly* (instead of staying constant), concentration ν also
-   grows (giving the Pareto-improvement appearance). β-binomial fit
-   will tell us whether the (a, b) trajectory still has clean structure.
+### (A) Saturation effect — *confidence: high that saturation contributes, medium that it dominates*
+
+**Claim.** Pass@10 lift size is bounded by distance from the achievable
+ceiling. Qwen3-thinking is already at 82–88% pass@10 at α=2; the other
+three models start at 32–82%. So smaller α-sweep lifts on Qwen3 are
+partly mechanical.
+
+**Evidence — our data (verified live via metrics JSONs):**
+
+| Model | Dataset | α=2 pass@10 | Δpass@10(α=2→5) |
+|---|---|---:|---:|
+| CodeLlama-7B-Instruct | HumanEval | 32.32% | +14.63 pp |
+| CodeLlama-7B-Instruct | MBPP | 44.20% | +9.00 pp |
+| m-a-p OCI-DS-1.3B | MBPP | 55.40% | +11.00 pp |
+| m-a-p OCI-DS-1.3B | HumanEval | 75.61% | +7.93 pp |
+| Qwen2.5-Coder-7B-Instruct | MBPP | 82.00% | +6.00 pp |
+| **Qwen3-8B-Think** | **MBPP** | **82.00%** | **+0.80 pp** |
+| Qwen3-8B-Think | HumanEval | 87.80% | +1.83 pp |
+| Qwen2.5-Coder-7B-Instruct | HumanEval | 89.63% | +1.83 pp |
+
+Spearman ρ(baseline, lift) = **−0.867** (p = 0.0053). Strong negative
+monotonic correlation: lower baseline → bigger lift, exactly what
+saturation predicts.
+
+**But saturation is not sufficient.** Qwen3-Think and Qwen2.5-Coder
+both sit at **82.00% pass@10 on MBPP** at α=2 — identical baseline.
+Their α-responses differ by **7.5×** (+0.80 vs +6.00 pp). Saturation
+explains why both lifts are modest, not why one is so much more modest
+than the other.
+
+**Evidence — literature (caveat).** The temperature-vs-k tradeoff is
+discussed in the Codex paper (Chen et al. 2021,
+[arXiv:2107.03374](https://arxiv.org/abs/2107.03374)), which
+introduced the pass@k metric. I have not verified a specific verbatim
+quote from that paper supporting the ceiling-flattening claim — the
+arXiv abstract page does not contain it. The "saturation suppresses
+lift" phenomenology is widely repeated in follow-up work but I am
+not citing a specific verified source here; treat this as a
+well-supported folk claim in the literature rather than a single
+canonical citation. The empirical evidence in our own data table
+above (Spearman ρ = −0.867, p = 0.005) is the load-bearing support.
+
+### (B) Thinking-phase decoding contributes to mean p — *confidence: medium-high*
+
+**Claim.** With thinking enabled, broader sampling (α > 2) also widens
+exploration in the thinking phase, not just the code phase. The model
+explores more reasoning paths and, on average, lands on better
+reasoning trajectories on more problems. The per-task Bernoulli mean p
+goes up — distinct from the variance-spreading mechanism that drives
+ν(α) growth on non-thinking models.
+
+**Evidence — our data.** The β-binomial fit's distinguishing signature
+is that **mean p climbs** for Qwen3 but stays flat on the other three
+models. Saturation alone cannot produce a *positive* shift in mean p;
+it can only shrink the *magnitude* of whatever shift is happening. So
+the sign of Δmean(p) is a separate empirical signal pointing to a
+mechanism that is active in the thinking model and not in the others.
+
+**Evidence — literature.** The closest published support is
+[arXiv:2510.02611](https://arxiv.org/abs/2510.02611) ("On the Role of
+Temperature Sampling in Test-Time Scaling," 2025), which tests the
+same model family (Qwen3 at 0.6B/1.7B/4B/**8B**) on LiveCodeBench plus
+math benchmarks. Verified verbatim claim (via WebFetch): *"different
+sampling temperatures solve different subsets of problems, implying
+that single-temperature scaling explores only part of a model's
+potential"*, and the paper reports "an additional 7.3 points over
+single-temperature TTS" from combining temperatures.
+
+**Honest caveat.** That paper's specific framing is about *combining
+multiple temperatures*, not about *widening a single distribution*
+(which is what α > 2 does for us). The two are related ideas — both
+involve more diverse exploration in the thinking phase improving
+outcomes — but not literally identical claims. Our finding extends
+their direction rather than reproducing their exact result.
+
+### (C) ~~The C7 v3 ν(α) story is intact but flatter~~ — *falsified*
+
+The β-binomial fit (commit `308cf24`) showed ν does **not** grow
+monotonically on Qwen3 — it grows weakly on MBPP (+9.5%) and shrinks
+on HumanEval (−7.3%), and mean p grows rather than staying flat. Both
+signs are inverted from the C7 v3 regularity. Removed as a candidate
+explanation.
+
+## How to distinguish (A) from (B) — proposed decisive test
+
+Run an α-sweep on Qwen3-8B with `--enable-thinking=False` (thinking
+disabled). The model still has the same weights; only the inference-
+time reasoning phase is removed. Predictions:
+
+- **If (A) saturation dominates** → similar small Δpass@10 (still
+  near-saturated on these benchmarks), and pass@1 may decline with α
+  the way it does for the other non-thinking models. Mean p stays
+  flat, ν grows.
+- **If (B) thinking is necessary for the Pareto signature** → the
+  pattern reverts to the non-thinking regime: pass@1 falls with α,
+  ν grows monotonically, mean p flat. Same pattern as Qwen2.5-Coder.
+
+Cost: ~1 GPU-hr on H100 (4 α-arms × 500 MBPP + 164 HumanEval, vLLM).
+Uses existing infrastructure unchanged.
+
+## What this means for the headline claim
+
+The β-binomial ν(α) regularity (formerly framed as universal across
+3 models × 2 datasets) needs to be restated more narrowly:
+
+> **For non-thinking code-generation models, α-sweep effects decompose
+> as monotonic ν(α) growth with approximately constant mean p.**
+> **Thinking models occupy a distinct regime** in which mean p climbs
+> with α and ν stays flat or shrinks — likely a combination of
+> saturation (the lifts must be small) and a thinking-phase mechanism
+> not present in non-thinking models (the signs are inverted).
+
+This is a narrower but better-supported claim than the original.
 
 ## Structural diversity climbs cleanly on both benchmarks
 
@@ -105,22 +226,28 @@ Three observations:
   "standard" patterns. CodeLlama collapses on AST diversity (almost
   zero on MBPP) — model property, well-documented elsewhere in this
   repo. Qwen3-thinking has comparable struct_div to Qwen2.5-Coder.
-- **Qwen3-thinking is a clean cross-model data point** for the C7 v3
-  ν(α) regularity: a reasoning model with high baseline pass@10 that
-  nonetheless shows monotonic struct_div growth with α.
+- **Qwen3-thinking is a clean cross-model data point** distinguishing
+  thinking from non-thinking regimes in the β-binomial trajectory: a
+  reasoning model with high baseline pass@10 that breaks the C7 v3
+  ν(α) regularity while still showing monotonic struct_div growth.
 
 ## Pending follow-ups
 
-1. **β-binomial ν(α) fit** — extend `validate_pass_at_k_beta_binomial.py`
-   to include Qwen3-8B-Think. Tests whether mean p actually climbs (as
-   raw pass@1 suggests) or just appears to, and whether concentration
-   ν shows the same monotonic growth as on the other 3 models.
-2. **NAUADC** (Claude-judged algorithmic diversity) — running on
-   4 α arms × ~7-8 correct samples/problem. Expected ~$30, ~2 hr API
-   time. Outputs land at `analysis/algosim_*_alpha_claude.{md,json,png}`.
-3. **Pareto plots** — pass@10 vs struct_div scatter (one point per α)
+1. ~~**β-binomial ν(α) fit**~~ — **done** (commit 308cf24). Result is
+   above: Qwen3 breaks the C7 v3 regularity (mean p climbs, ν flat or
+   shrinks). See `results/c7_validation/beta_binomial/fit_summary.md`.
+2. **Decisive test for thinking-mechanism vs saturation** — run
+   Qwen3-8B α-sweep with `--enable-thinking=False` (~1 GPU-hr on H100).
+   Predictions in the "How to distinguish" section above. This is the
+   highest-value next experiment for the paper since it pins down
+   *why* Qwen3 occupies a different regime.
+3. **NAUADC** (Claude-judged algorithmic diversity) — running on 4 α
+   arms × ~7-9 correct samples/problem. Expected ~$30-50, ~6-7 hr
+   API time (Qwen3-thinking has high pass-rate → more clustering
+   work). Outputs land at `analysis/algosim_*_alpha_claude.{md,json,png}`.
+4. **Pareto plots** — pass@10 vs struct_div scatter (one point per α)
    to slot into the cross-model `cross_model_cross_dataset_summary.md`.
-4. **T-baseline (optional, deferred)** — if we want a within-model
+5. **T-baseline (optional, deferred)** — if we want a within-model
    "is it just temperature?" control, run `pless@T=1.5` on Qwen3-8B
    (~30 min on H100). Not blocking the paper since the cross-model
    T-envelope on the other 3 models already covers the question.
