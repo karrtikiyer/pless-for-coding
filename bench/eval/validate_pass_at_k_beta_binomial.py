@@ -144,30 +144,47 @@ class ModelConfig:
     """Per-model layout knobs.
 
     method_prefix: filename stem for the metrics JSONs (e.g.
-        "pless_alpha" for non-thinking models, "pless_alpha_think"
-        for Qwen3-8B with thinking enabled).
-    he_subdir: name of the HumanEval-level subdir between {slug}/ and
-        metrics/. The non-thinking models use {slug}/humaneval/metrics/;
-        Qwen3-8B's runs landed in {slug}/metrics/ directly.
+        "pless_alpha" for non-thinking, "pless_alpha_think" for
+        Qwen3 with thinking enabled).
+    mbpp_metrics_dir / he_metrics_dir: explicit metrics-directory
+        paths (relative to repo root) for cases where the layout
+        differs from the original 3-model convention. When None,
+        falls back to the legacy convention used by the first 3
+        models (results/pless_alpha_full/{slug}/metrics for MBPP,
+        results/pless_alpha_full_humaneval/{slug}/humaneval/metrics
+        for HumanEval).
     """
     short: str
     slug: str
     method_prefix: str = "pless_alpha"
-    he_subdir: str | None = "humaneval"
+    mbpp_metrics_dir: str | None = None
+    he_metrics_dir: str | None = None
 
 
 _MODELS: list[ModelConfig] = [
     ModelConfig("Qwen2.5-Coder-7B-Instruct", "Qwen--Qwen2.5-Coder-7B-Instruct"),
     ModelConfig("CodeLlama-7B-Instruct", "codellama--CodeLlama-7b-Instruct-hf"),
     ModelConfig("m-a-p-OCI-DS-1.3B", "m-a-p--OpenCodeInterpreter-DS-1.3B"),
-    # Qwen3-8B-Think uses `pless_alpha_think_*` filenames (thinking mode
-    # encoded in method_key) and its HumanEval JSONLs landed in
-    # {slug}/metrics/ without the `humaneval/` subdir of the other models.
+    # Qwen3-8B-Think uses `pless_alpha_think_*` filenames; user
+    # reorganized to put both MBPP and HumanEval under their own
+    # top-level dirs (pless_alpha_full_mbpp / pless_alpha_full_humaneval).
     ModelConfig(
         "Qwen3-8B-Think",
         "Qwen--Qwen3-8B",
         method_prefix="pless_alpha_think",
-        he_subdir=None,
+        mbpp_metrics_dir="results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/metrics",
+        he_metrics_dir="results/pless_alpha_full_humaneval/Qwen--Qwen3-8B/metrics",
+    ),
+    # Qwen3-8B with thinking DISABLED — the decisive test for
+    # mechanism (A) saturation vs (B) thinking-phase. Uses standard
+    # `pless_alpha_*` filenames (no _think suffix) under the `no-think/`
+    # subdir of each benchmark's parent dir.
+    ModelConfig(
+        "Qwen3-8B-NoThink",
+        "Qwen--Qwen3-8B",
+        method_prefix="pless_alpha",
+        mbpp_metrics_dir="results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/no-think/metrics",
+        he_metrics_dir="results/pless_alpha_full_humaneval/Qwen--Qwen3-8B/no-think/metrics",
     ),
 ]
 _ALPHAS = [2.0, 2.5, 3.0, 5.0]
@@ -177,27 +194,28 @@ def build_cells(repo_root: Path) -> list[Cell]:
     out: list[Cell] = []
     for cfg in _MODELS:
         for alpha in _ALPHAS:
-            mbpp_p = (
-                repo_root
-                / "results"
-                / "pless_alpha_full"
-                / cfg.slug
-                / "metrics"
-                / f"{cfg.method_prefix}_a{alpha:.1f}_t1.0_metrics.json"
-            )
+            # MBPP path: explicit dir if provided, else default convention
+            # (results/pless_alpha_full_mbpp/{slug}/metrics/).
+            if cfg.mbpp_metrics_dir is not None:
+                mbpp_p = repo_root / cfg.mbpp_metrics_dir / f"{cfg.method_prefix}_a{alpha:.1f}_t1.0_metrics.json"
+            else:
+                mbpp_p = (
+                    repo_root / "results" / "pless_alpha_full_mbpp" / cfg.slug / "metrics"
+                    / f"{cfg.method_prefix}_a{alpha:.1f}_t1.0_metrics.json"
+                )
             if mbpp_p.exists():
                 out.append(Cell(model=cfg.short, dataset="MBPP", alpha=alpha, metrics_path=mbpp_p))
 
-            # HumanEval path varies: some models use {slug}/humaneval/metrics/,
-            # Qwen3-8B used {slug}/metrics/.
-            he_base = repo_root / "results" / "pless_alpha_full_humaneval" / cfg.slug
-            if cfg.he_subdir:
-                he_base = he_base / cfg.he_subdir
-            he_p = (
-                he_base
-                / "metrics"
-                / f"{cfg.method_prefix}_a{alpha:.1f}_t1.0_metrics.json"
-            )
+            # HumanEval path: explicit dir if provided, else legacy convention
+            # (results/pless_alpha_full_humaneval/{slug}/humaneval/metrics/).
+            if cfg.he_metrics_dir is not None:
+                he_p = repo_root / cfg.he_metrics_dir / f"{cfg.method_prefix}_a{alpha:.1f}_t1.0_metrics.json"
+            else:
+                he_p = (
+                    repo_root / "results" / "pless_alpha_full_humaneval" / cfg.slug
+                    / "humaneval" / "metrics"
+                    / f"{cfg.method_prefix}_a{alpha:.1f}_t1.0_metrics.json"
+                )
             if he_p.exists():
                 out.append(Cell(model=cfg.short, dataset="HumanEval", alpha=alpha, metrics_path=he_p))
     return out
