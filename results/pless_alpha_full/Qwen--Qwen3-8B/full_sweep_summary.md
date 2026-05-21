@@ -203,6 +203,53 @@ CodeBLEU diversity tells the same story (+25% MBPP, +10% HumanEval).
 even when the dataset-level pass-rate is near saturation.** This is
 the diversity argument intact on a thinking model.
 
+## NAUADC — algorithmic diversity (Claude-Sonnet-4.6 judge, MBPP)
+
+NAUADC = AUC of DA@K over k ∈ [1, 25]. Counts how many algorithmically
+distinct correct solutions the model produces per problem on average.
+Computed by clustering correct samples via the Claude-Sonnet judge
+(pairwise, greedy hierarchical, paper protocol). Numbers pulled live
+from `analysis/algosim_per_config_alpha_claude.json`.
+
+| Config | NAUADC | EA | DA@10 | Δ NAUADC vs α=2 |
+|--------|-------:|-------:|------:|----------------:|
+| α=2.0  | 1.0746 | 1.0594 | 1.0829 | — |
+| α=2.5  | 1.0969 | 1.0729 | 1.1079 | **+2.08%** |
+| α=3.0  | 1.1018 | 1.0768 | 1.1138 | +2.53% |
+| α=5.0  | 1.1202 | 1.0868 | 1.1353 | **+4.24%** |
+
+Strictly monotonic in α. The α-sweep produces algorithmically more
+diverse correct solutions on Qwen3-thinking too, consistent with the
+deterministic-metric (struct_div, cb_div) story above.
+
+**But the magnitude is smaller than on the non-thinking models:**
+
+| Model | α=2 NAUADC | α=5 NAUADC | Δ (% rel) |
+|---|---:|---:|---:|
+| Qwen2.5-Coder-7B-Instruct (MBPP) | 1.0406 | 1.1672 | **+12.17%** |
+| CodeLlama-7B-Instruct (MBPP) | 1.0091 | 1.1190 | **+10.89%** |
+| m-a-p OCI-DS-1.3B (MBPP) | 1.0727 | 1.2087 | **+12.68%** |
+| **Qwen3-8B (thinking) (MBPP)** | **1.0746** | **1.1202** | **+4.24%** |
+
+Cross-model α=2 NAUADC numbers extracted live from each model's
+`analysis/algosim_per_config_alpha_claude.json` (or
+`algosim_report_alpha_claude.md`).
+
+**Reading.** The 4.2% relative growth on Qwen3-thinking is genuine
+(NAUADC monotonically climbs at every α step) but smaller than the
+10–13% growth on the other three models. This matches the
+saturation interpretation in section (A) above — Qwen3 is already
+producing more diverse correct solutions at α=2 (NAUADC 1.075 is the
+highest α=2 baseline of any model in the table), so the marginal
+algorithmic-diversity room for α-broadening is smaller. Equivalently,
+near pass@k ceiling the algorithmic-diversity ceiling is also being
+approached.
+
+The Qwen3-thinking sweep cost ~$30–40 in Claude judge API spend
+(4 configs × ~410 tasks × ~7–9 correct samples/problem × O(k) pairwise
+clustering calls). NAUADC on HumanEval not yet run; the cross-model
+NAUADC story rests on MBPP for all 4 models.
+
 ## Cross-model context (preview)
 
 How Qwen3-8B-thinking compares to the existing 3 models at α=5.0
@@ -241,10 +288,12 @@ Three observations:
    Predictions in the "How to distinguish" section above. This is the
    highest-value next experiment for the paper since it pins down
    *why* Qwen3 occupies a different regime.
-3. **NAUADC** (Claude-judged algorithmic diversity) — running on 4 α
-   arms × ~7-9 correct samples/problem. Expected ~$30-50, ~6-7 hr
-   API time (Qwen3-thinking has high pass-rate → more clustering
-   work). Outputs land at `analysis/algosim_*_alpha_claude.{md,json,png}`.
+3. ~~**NAUADC** (Claude-judged algorithmic diversity)~~ — **done.** See
+   "NAUADC — algorithmic diversity" section above. NAUADC grows
+   monotonically with α (+4.24% rel α=2→5), smaller magnitude than
+   the +10–13% rel on the other three models — consistent with the
+   saturation interpretation in section (A). Total spend ~$30–40.
+   Artifacts at `analysis/algosim_*_alpha_claude.{md,json,png}`.
 4. **Pareto plots** — pass@10 vs struct_div scatter (one point per α)
    to slot into the cross-model `cross_model_cross_dataset_summary.md`.
 5. **T-baseline (optional, deferred)** — if we want a within-model
