@@ -139,41 +139,67 @@ class Cell:
 
 CELLS_TO_LOAD: list[Cell] = []
 
-_MODELS = {
-    "Qwen2.5-Coder-7B-Instruct": "Qwen--Qwen2.5-Coder-7B-Instruct",
-    "CodeLlama-7B-Instruct": "codellama--CodeLlama-7b-Instruct-hf",
-    "m-a-p-OCI-DS-1.3B": "m-a-p--OpenCodeInterpreter-DS-1.3B",
-}
+@dataclass
+class ModelConfig:
+    """Per-model layout knobs.
+
+    method_prefix: filename stem for the metrics JSONs (e.g.
+        "pless_alpha" for non-thinking models, "pless_alpha_think"
+        for Qwen3-8B with thinking enabled).
+    he_subdir: name of the HumanEval-level subdir between {slug}/ and
+        metrics/. The non-thinking models use {slug}/humaneval/metrics/;
+        Qwen3-8B's runs landed in {slug}/metrics/ directly.
+    """
+    short: str
+    slug: str
+    method_prefix: str = "pless_alpha"
+    he_subdir: str | None = "humaneval"
+
+
+_MODELS: list[ModelConfig] = [
+    ModelConfig("Qwen2.5-Coder-7B-Instruct", "Qwen--Qwen2.5-Coder-7B-Instruct"),
+    ModelConfig("CodeLlama-7B-Instruct", "codellama--CodeLlama-7b-Instruct-hf"),
+    ModelConfig("m-a-p-OCI-DS-1.3B", "m-a-p--OpenCodeInterpreter-DS-1.3B"),
+    # Qwen3-8B-Think uses `pless_alpha_think_*` filenames (thinking mode
+    # encoded in method_key) and its HumanEval JSONLs landed in
+    # {slug}/metrics/ without the `humaneval/` subdir of the other models.
+    ModelConfig(
+        "Qwen3-8B-Think",
+        "Qwen--Qwen3-8B",
+        method_prefix="pless_alpha_think",
+        he_subdir=None,
+    ),
+]
 _ALPHAS = [2.0, 2.5, 3.0, 5.0]
 
 
 def build_cells(repo_root: Path) -> list[Cell]:
     out: list[Cell] = []
-    for short, slug in _MODELS.items():
+    for cfg in _MODELS:
         for alpha in _ALPHAS:
-            # MBPP
             mbpp_p = (
                 repo_root
                 / "results"
                 / "pless_alpha_full"
-                / slug
+                / cfg.slug
                 / "metrics"
-                / f"pless_alpha_a{alpha:.1f}_t1.0_metrics.json"
+                / f"{cfg.method_prefix}_a{alpha:.1f}_t1.0_metrics.json"
             )
             if mbpp_p.exists():
-                out.append(Cell(model=short, dataset="MBPP", alpha=alpha, metrics_path=mbpp_p))
-            # HumanEval
+                out.append(Cell(model=cfg.short, dataset="MBPP", alpha=alpha, metrics_path=mbpp_p))
+
+            # HumanEval path varies: some models use {slug}/humaneval/metrics/,
+            # Qwen3-8B used {slug}/metrics/.
+            he_base = repo_root / "results" / "pless_alpha_full_humaneval" / cfg.slug
+            if cfg.he_subdir:
+                he_base = he_base / cfg.he_subdir
             he_p = (
-                repo_root
-                / "results"
-                / "pless_alpha_full_humaneval"
-                / slug
-                / "humaneval"
+                he_base
                 / "metrics"
-                / f"pless_alpha_a{alpha:.1f}_t1.0_metrics.json"
+                / f"{cfg.method_prefix}_a{alpha:.1f}_t1.0_metrics.json"
             )
             if he_p.exists():
-                out.append(Cell(model=short, dataset="HumanEval", alpha=alpha, metrics_path=he_p))
+                out.append(Cell(model=cfg.short, dataset="HumanEval", alpha=alpha, metrics_path=he_p))
     return out
 
 
