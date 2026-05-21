@@ -224,6 +224,7 @@ If theorem proves:
 | 2026-05-21 | Phase 0a — candidate landscape survey | Complete; majorization (Candidate 3+6) recommended at ~50% confidence |
 | 2026-05-21 | Phase 0b — deep-dive escort/truncation literature | Complete; no kill-shot found, confidence revised to ~55% |
 | 2026-05-21 | Phase 0.5 — brute-force counterexample checker (`bench/eval/check_majorization_trunc_alpha.py`) | **Sign error caught + corrected**. With the corrected statement `q_α' ≺ q_α` for α<α': **0 counterexamples in ~1.235M non-degenerate trials** over V ∈ {3..15} × Dirichlet(1,..,1) random `p` × 28 α-pairs from {1.1, 1.5, 2.0, 2.5, 3.0, 5.0, 10.0, 50.0}. Min-slack quantiles indicate the inequality is not tight in most cases. Confidence revised **upward to ~80–85%**. |
+| 2026-05-21 | Phase 0.6 — uniqueness check (`bench/eval/check_majorization_topp_topk.py`) | **Top-p and top-k ALSO satisfy the same monotonicity.** 0 counterexamples in 3.15M top-p trials + 600k top-k trials (slacks within ±8e-16 FP noise). The Phase-1 theorem for α is NOT uniquely α's — it's a property shared by the class of "truncate-and-renormalize" operators. Paper positioning must shift from "uniquely principled" to "first proved member of a conjectured class." See "Paper-positioning update" below. |
 | Pending | Phase 1 — proof attempt or counterexample documentation | Ready to launch; budget 5 working days. |
 
 ### Phase 0.5 detail
@@ -258,6 +259,72 @@ With the corrected statement: **PHASE-1 PROCEED**. The literal target
 holds across V ∈ {3..15} and a wide α-grid with effectively zero
 counterexamples (only FP-noise edge cases). Prior on the theorem
 being true has risen from ~60% (pre-checker) to **~80–85%** (post-checker).
+
+### Phase 0.6 — uniqueness check (added 2026-05-21)
+
+After Phase 0.5 succeeded, asked: is the conjectured monotonicity
+UNIQUE to α-truncation, or do top-p and top-k also satisfy it?
+This determines whether the paper's theoretical contribution is
+"unique guarantee" or "first proved member of a class."
+
+Brute-force checker at `bench/eval/check_majorization_topp_topk.py`:
+
+| Operator | Trials | Counterexamples | Min slack (passing) |
+|---|---:|---:|---|
+| α-truncation (`Trunc_α`) | 1,235,063 | 0 | within ±FP noise |
+| Top-p (`Trunc_topP`) | 3,150,000 | **0** | within ±8e-16 FP noise |
+| Top-k (`Trunc_topK`) | 600,000 | **0** | within ±8e-16 FP noise |
+
+**All three operators empirically satisfy the same majorization
+monotonicity.** The Phase-1 theorem, if proved for α, would not be
+uniquely α's — it would be the first *proved* instance of a property
+that empirically holds for the whole "truncate-and-renormalize" class.
+
+### Paper-positioning update (2026-05-21)
+
+What the contribution **can** claim:
+
+1. **α-truncation has a data-dependent threshold** (`T_α = Σpᵢ^α`,
+   intrinsic to the input distribution). Top-p uses an external
+   cumulative-mass target `p`; top-k uses an external count `k`.
+   This is a genuine qualitative difference.
+2. **α=2 is a hyperparameter-free starting point** — the original
+   p-less sampler of Tan et al. ([arXiv:2509.23234](https://arxiv.org/abs/2509.23234))
+   based on collision probability. No analogous canonical "zero" exists
+   for top-p or top-k.
+3. **Phase-1 theorem (if proved):** the first proved majorization
+   monotonicity for any truncate-and-renormalize sampler. Top-p and
+   top-k satisfy it empirically but no theorem is published; this paper
+   would be the first proved instance.
+
+What the contribution **cannot** claim:
+
+- "α is uniquely principled" — empirically false; top-p and top-k
+  satisfy the same monotonicity.
+- "α reaches operating points other samplers can't" — empirically
+  false; the `bench/eval/sampler_comparison.py` output shows existing
+  stochastic samplers (especially `pless@T=2.0`, `top_p0.9`, `top_k5`)
+  reach Pareto-equivalent or Pareto-dominating points on
+  (pass@10, cb_div) across the 3 instruct models × 2 datasets.
+
+The honest empirical+theoretical paper claim:
+
+> The α-truncation family parameterizes a diversity-quality trade-off
+> curve with a **provable monotonic-diversity guarantee** via the
+> Rényi-α majorization theorem (Phase-1). Empirically, the same
+> property appears to hold for top-p and top-k truncation
+> (3.15M + 600k trials, zero counterexamples), suggesting a broader
+> class of *monotone-diversity truncation operators*. α-truncation
+> is the **first proved member** of this conjectured class and the
+> only one with a *data-dependent* threshold (intrinsic to the input
+> distribution), corresponding at α=2 to the hyperparameter-free
+> p-less baseline.
+
+Empirically, on 4 models × 2 datasets, α-arms reach a Pareto
+frontier comparable to (and on MBPP, slightly *within*) the frontier
+achievable by tuned top-p / top-k / pless@high-T samplers. The
+contribution is principled-parameterization, not new operating
+points.
 
 ## References
 
