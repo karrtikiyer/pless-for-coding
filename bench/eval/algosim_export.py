@@ -34,18 +34,31 @@ DEFAULT_RESULTS_ROOT = Path("results/pless_full_mbpp_results")
 DEFAULT_MODEL_SLUG = "Qwen--Qwen3-8B"
 
 
-def _load_jsonl(path: Path) -> dict[int, dict]:
-    out: dict[int, dict] = {}
+def _coerce_task_id(tid):
+    """task_id is int for MBPP/APPS but a string like 'HumanEval/0' for HE.
+    Keep the native type — downstream just needs a consistent key."""
+    if isinstance(tid, int):
+        return tid
+    s = str(tid)
+    # Try parsing as int for backward compat with older int-as-string ids.
+    try:
+        return int(s)
+    except ValueError:
+        return s
+
+
+def _load_jsonl(path: Path) -> dict:
+    out: dict = {}
     with path.open() as f:
         for line in f:
             rec = json.loads(line)
-            out[int(rec["task_id"])] = rec
+            out[_coerce_task_id(rec["task_id"])] = rec
     return out
 
 
-def _load_metrics(path: Path) -> dict[int, list[bool]]:
+def _load_metrics(path: Path) -> dict:
     data = json.loads(path.read_text())
-    return {int(t["task_id"]): list(t["pass_results"]) for t in data["per_task"]}
+    return {_coerce_task_id(t["task_id"]): list(t["pass_results"]) for t in data["per_task"]}
 
 
 def _file_sha256(path: Path) -> str:
@@ -118,8 +131,15 @@ def export_config(
         correct_samples += len(keep)
         if not keep:
             continue
+        # task_id can be int (MBPP/APPS) or str like 'HumanEval/0' (HE);
+        # format defensively. Prefix kept as 'ATCODER_' for backward compat
+        # with downstream judge scripts that parse the prefix.
+        if isinstance(task_id, int):
+            tid_fmt = f"{task_id:04d}"
+        else:
+            tid_fmt = str(task_id).replace("/", "_")
         rows.append({
-            "problem_id": f"ATCODER_{config_key}_{task_id:04d}",
+            "problem_id": f"ATCODER_{config_key}_{tid_fmt}",
             "question": rec["prompt_text"],
             "solutions": keep,
         })
