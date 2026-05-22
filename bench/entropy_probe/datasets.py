@@ -33,24 +33,57 @@ def load_gsm8k(max_problems: int | None = None) -> list[EntropyProbeProblem]:
     return out
 
 
+_MATH_SUBJECTS = (
+    "algebra",
+    "counting_and_probability",
+    "geometry",
+    "intermediate_algebra",
+    "number_theory",
+    "prealgebra",
+    "precalculus",
+)
+
+
 def load_math(max_problems: int | None = None) -> list[EntropyProbeProblem]:
-    """Load competition MATH via HuggingFace ``lighteval/MATH``.
+    """Load competition MATH via HuggingFace ``EleutherAI/hendrycks_math``.
 
     The original ``hendrycks/competition_math`` dataset was removed from
-    the Hub; ``lighteval/MATH`` is the canonical surviving mirror used
-    by lighteval and many recent papers.
+    the Hub. ``lighteval/MATH`` is gated and requires an access request.
+    ``EleutherAI/hendrycks_math`` is the public mirror used in lm-eval
+    harness; same Hendrycks 2021 source, same (problem, solution)
+    schema, organised into 7 subject subsets.
+
+    We load all 7 subsets and round-robin across subjects so a
+    ``max_problems`` cap gives a roughly balanced sample of problem
+    types rather than 200 problems all from algebra.
     """
     from datasets import load_dataset
-    ds = load_dataset("lighteval/MATH", "all", split="test")
+    per_subject: list[list[dict]] = []
+    for subject in _MATH_SUBJECTS:
+        ds = load_dataset("EleutherAI/hendrycks_math", subject, split="test")
+        per_subject.append([dict(row, _subject=subject) for row in ds])
+    # Round-robin interleave so each subject contributes roughly equally
+    # to any prefix of the merged list (matters when max_problems caps).
     out: list[EntropyProbeProblem] = []
-    for i, row in enumerate(ds):
-        out.append(EntropyProbeProblem(
-            task_id=f"math_{i:04d}",
-            problem=row["problem"],
-            reference=row.get("solution"),
-        ))
-        if max_problems is not None and len(out) >= max_problems:
+    idx = 0
+    counter = 0
+    while True:
+        any_added = False
+        for subject_rows in per_subject:
+            if idx < len(subject_rows):
+                row = subject_rows[idx]
+                out.append(EntropyProbeProblem(
+                    task_id=f"math_{row['_subject']}_{idx:04d}",
+                    problem=row["problem"],
+                    reference=row.get("solution"),
+                ))
+                counter += 1
+                any_added = True
+                if max_problems is not None and counter >= max_problems:
+                    return out
+        if not any_added:
             break
+        idx += 1
     return out
 
 
