@@ -144,3 +144,101 @@ def test_runner_argparse_has_required_flags():
     assert ns.model == "fake/model"
     assert ns.dataset == "gsm8k"
     assert ns.max_problems == 1
+    # Default n_samples must be 1 (preserves greedy / single-sample
+    # behavior of the original probe — back-compat with results captured
+    # under the previous default).
+    assert ns.n_samples == 1
+
+
+def test_runner_argparse_accepts_n_samples():
+    """--n-samples must accept N > 1 for stochastic-sampling cells."""
+    from bench.entropy_probe.runner import parse_args
+    ns = parse_args([
+        "--model", "fake/model",
+        "--dataset", "gsm8k",
+        "--n-samples", "3",
+    ])
+    assert ns.n_samples == 3
+
+
+def test_run_one_problem_returns_list_of_n_samples():
+    """run_one_problem(..., n_samples=N) must produce N records, each
+    with a distinct sample_idx. Uses mocked model/tokenizer so no GPU
+    or HF download is required."""
+    from unittest.mock import MagicMock, patch
+    import torch
+    from bench.entropy_probe.runner import run_one_problem
+    from bench.entropy_probe.datasets import EntropyProbeProblem
+
+    # Mock tokenizer that produces a deterministic short prompt.
+    fake_tok = MagicMock()
+    fake_tok.apply_chat_template.return_value = "PROMPT"
+    fake_tok.return_value = MagicMock(
+        input_ids=torch.zeros((1, 4), dtype=torch.long),
+    )
+    # Make `to(...)` return self so generate sees the tensor.
+    fake_tok.return_value.to.return_value = fake_tok.return_value
+    fake_tok.decode.return_value = "COMPLETION"
+    fake_tok.pad_token_id = 0
+    fake_tok.eos_token_id = 0
+
+    fake_model = MagicMock()
+    fake_model.device = "cpu"
+    fake_model.generate.return_value = torch.zeros((1, 8), dtype=torch.long)
+
+    fake_problem = EntropyProbeProblem(task_id="x", problem="q", reference=None)
+
+    with patch("bench.entropy_probe.runner.teacher_forced_entropy",
+               return_value=[0.1, 0.2, 0.3, 0.4]):
+        recs = run_one_problem(
+            fake_model, fake_tok, fake_problem,
+            dataset="gsm8k", max_new_tokens=8, n_samples=3,
+        )
+
+    assert len(recs) == 3
+    assert [r["sample_idx"] for r in recs] == [0, 1, 2]
+    assert all(r["task_id"] == "x" for r in recs)
+    # Verify do_sample=True was selected for n>1
+    sample_calls = [c for c in fake_model.generate.call_args_list]
+    for call in sample_calls:
+        assert call.kwargs["do_sample"] is True, (
+            "n_samples>1 must use multinomial sampling, not greedy"
+        )
+
+
+def test_run_one_problem_n_eq_1_uses_greedy():
+    """n_samples=1 must use deterministic greedy decode for back-compat."""
+    from unittest.mock import MagicMock, patch
+    import torch
+    from bench.entropy_probe.runner import run_one_problem
+    from bench.entropy_probe.datasets import EntropyProbeProblem
+
+    fake_tok = MagicMock()
+    fake_tok.apply_chat_template.return_value = "PROMPT"
+    fake_tok.return_value = MagicMock(
+        input_ids=torch.zeros((1, 4), dtype=torch.long),
+    )
+    fake_tok.return_value.to.return_value = fake_tok.return_value
+    fake_tok.decode.return_value = "COMPLETION"
+    fake_tok.pad_token_id = 0
+    fake_tok.eos_token_id = 0
+
+    fake_model = MagicMock()
+    fake_model.device = "cpu"
+    fake_model.generate.return_value = torch.zeros((1, 8), dtype=torch.long)
+
+    fake_problem = EntropyProbeProblem(task_id="x", problem="q", reference=None)
+
+    with patch("bench.entropy_probe.runner.teacher_forced_entropy",
+               return_value=[0.1, 0.2]):
+        recs = run_one_problem(
+            fake_model, fake_tok, fake_problem,
+            dataset="gsm8k", max_new_tokens=4, n_samples=1,
+        )
+
+    assert len(recs) == 1
+    assert recs[0]["sample_idx"] == 0
+    call = fake_model.generate.call_args
+    assert call.kwargs["do_sample"] is False, (
+        "n_samples=1 must use greedy for deterministic / back-compat behavior"
+    )

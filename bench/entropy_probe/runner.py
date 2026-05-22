@@ -37,6 +37,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--dataset", required=True, choices=list(DATASETS.keys()))
     p.add_argument("--max-problems", type=int, default=50)
     p.add_argument("--max-new-tokens", type=int, default=512)
+    p.add_argument("--n-samples", type=int, default=1,
+                   help="Completions per problem. N=1 uses greedy decode "
+                        "(deterministic). N>1 uses multinomial sampling at "
+                        "temperature 1.0 to explore diverse trajectories. "
+                        "Larger N raises total token count per (model, "
+                        "dataset) cell, which raises dip-test statistical "
+                        "power. See empirical power curve: n>=60K tokens "
+                        "for >=90%% reliable bimodality detection on "
+                        "MBPP-style distributions.")
     p.add_argument("--output-dir", default="results/entropy_probe")
     p.add_argument("--dtype", choices=["bfloat16", "float16"],
                    default="bfloat16")
@@ -51,15 +60,25 @@ def _load_model(model_id: str, dtype: str):
     return load_model_and_tokenizer(model_id, dtype=dtype)
 
 
-def _generate_greedy(model, tokenizer, prompt_text: str, max_new_tokens: int):
-    """One greedy completion. Returns (full_input_ids, prompt_len, completion_text)."""
+def _generate(
+    model, tokenizer, prompt_text: str, max_new_tokens: int,
+    *, do_sample: bool, temperature: float,
+):
+    """One completion (greedy or multinomial sampling).
+
+    Returns (full_input_ids, prompt_len, completion_text). When
+    ``do_sample=False``, behaves identically to the previous greedy
+    code path; when ``do_sample=True``, samples at the given
+    temperature.
+    """
     inputs = tokenizer(prompt_text, return_tensors="pt").to(model.device)
     prompt_len = inputs.input_ids.shape[1]
     with torch.no_grad():
         gen = model.generate(
             inputs.input_ids,
             max_new_tokens=max_new_tokens,
-            do_sample=False,
+            do_sample=do_sample,
+            temperature=temperature if do_sample else 1.0,
             num_beams=1,
             pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
         )
@@ -74,24 +93,34 @@ def run_one_problem(
     model, tokenizer,
     problem: EntropyProbeProblem, dataset: str,
     max_new_tokens: int,
-) -> dict:
-    """Greedy decode + teacher-forced entropy for one problem.
+    n_samples: int = 1,
+) -> list[dict]:
+    """Generate ``n_samples`` completions + teacher-forced entropy.
 
-    Returns a dict with: task_id, prompt, completion, entropies (list[float]).
-    Raises if the prompt is empty or generation fails — caller is
-    expected to catch and continue.
+    Returns a list of ``n_samples`` dicts, each with: task_id,
+    sample_idx, prompt, completion, entropies (list[float]).
+    Greedy decode when ``n_samples == 1`` (deterministic, matches
+    original behavior); multinomial sampling at temperature 1.0
+    when ``n_samples > 1`` (matches the existing
+    ``pless_alpha_entropy/`` MBPP run convention).
     """
     prompt_text = format_prompt(dataset, problem.problem, tokenizer)
-    full_ids, prompt_len, completion_text = _generate_greedy(
-        model, tokenizer, prompt_text, max_new_tokens,
-    )
-    entropies = teacher_forced_entropy(model, full_ids, prompt_len)
-    return {
-        "task_id": problem.task_id,
-        "prompt": prompt_text,
-        "completion": completion_text,
-        "entropies_nats": entropies,
-    }
+    use_sampling = (n_samples > 1)
+    out: list[dict] = []
+    for sample_idx in range(n_samples):
+        full_ids, prompt_len, completion_text = _generate(
+            model, tokenizer, prompt_text, max_new_tokens,
+            do_sample=use_sampling, temperature=1.0,
+        )
+        entropies = teacher_forced_entropy(model, full_ids, prompt_len)
+        out.append({
+            "task_id": problem.task_id,
+            "sample_idx": sample_idx,
+            "prompt": prompt_text,
+            "completion": completion_text,
+            "entropies_nats": entropies,
+        })
+    return out
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -127,31 +156,37 @@ def main(argv: list[str] | None = None) -> None:
     with csv_path.open("w", newline="") as csv_f, \
          generations_path.open("w") as gen_f:
         writer = csv.writer(csv_f)
-        writer.writerow(["task_id", "position", "entropy_nats"])
+        writer.writerow(["task_id", "sample_idx", "position", "entropy_nats"])
         for problem in tqdm(problems, desc=f"{args.dataset} probe",
                             file=sys.stderr):
             try:
-                rec = run_one_problem(
+                recs = run_one_problem(
                     model, tokenizer, problem,
                     args.dataset, args.max_new_tokens,
+                    n_samples=args.n_samples,
                 )
             except Exception as exc:
                 n_failed += 1
                 print(f"  [fail] {problem.task_id}: {exc!r}", file=sys.stderr)
                 continue
-            gen_f.write(json.dumps({
-                "task_id": rec["task_id"],
-                "prompt": rec["prompt"],
-                "completion": rec["completion"],
-                "n_completion_tokens": len(rec["entropies_nats"]),
-            }) + "\n")
-            for pos, ent in enumerate(rec["entropies_nats"]):
-                writer.writerow([rec["task_id"], pos, f"{ent:.6f}"])
-                all_entropies.append(ent)
+            for rec in recs:
+                gen_f.write(json.dumps({
+                    "task_id": rec["task_id"],
+                    "sample_idx": rec["sample_idx"],
+                    "prompt": rec["prompt"],
+                    "completion": rec["completion"],
+                    "n_completion_tokens": len(rec["entropies_nats"]),
+                }) + "\n")
+                for pos, ent in enumerate(rec["entropies_nats"]):
+                    writer.writerow([
+                        rec["task_id"], rec["sample_idx"], pos, f"{ent:.6f}",
+                    ])
+                    all_entropies.append(ent)
 
     summary = compute_dip_test(all_entropies)
     summary["model"] = args.model
     summary["dataset"] = args.dataset
+    summary["n_samples_per_problem"] = args.n_samples
     summary["n_problems_loaded"] = len(problems)
     summary["n_problems_failed"] = n_failed
     summary["n_problems_succeeded"] = len(problems) - n_failed

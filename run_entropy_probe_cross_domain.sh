@@ -29,13 +29,23 @@ set -euo pipefail
 MODELS_DEFAULT="Qwen/Qwen2.5-Coder-7B-Instruct Qwen/Qwen3-8B"
 DATASETS_DEFAULT="mbpp gsm8k math"
 
-# Default 200 problems × 1 sample × ~400 tokens/completion ≈ 80k tokens per
-# (model, dataset) cell — directly comparable to the existing code-domain
-# baseline in results/phase_entropy_probe/Qwen2.5-Coder-7B-Instruct/
-# (151 tasks × ~9 samples = 87,360 teacher-forced tokens).
+# Sample-budget rationale (empirically verified 2026-05-22 via dip-test
+# power curve on the known-bimodal 295,444-token MBPP entropy data):
+#   * n >= 60,000 tokens reaches >= 90% reliability for bimodality detection
+#   * n >= 87,000 tokens reaches 100% reliability
+#   * At 500 problems x 3 samples per problem:
+#       - GSM8K (~225 tokens/completion):  ~340k tokens — deeply safe
+#       - MATH  (~225-400 tokens/completion): ~340-600k tokens — deeply safe
+#       - MBPP  (~58 tokens/completion):   ~87k tokens — at the 100%
+#         reliability threshold, no margin. For MBPP, the recommended
+#         authoritative source is the existing 295k-token entropy.jsonl
+#         file in results/pless_alpha_entropy/. The new probe on MBPP
+#         is run for methodological uniformity only.
+#   * Total cost: 2 models x 3 datasets x 1500 trajectories ≈ ~75 GPU-hours.
 MODELS="${MODELS:-$MODELS_DEFAULT}"
 DATASETS="${DATASETS:-$DATASETS_DEFAULT}"
-MAX_PROBLEMS="${MAX_PROBLEMS:-200}"
+MAX_PROBLEMS="${MAX_PROBLEMS:-500}"
+N_SAMPLES="${N_SAMPLES:-3}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-512}"
 OUTPUT_DIR="${OUTPUT_DIR:-results/entropy_probe}"
 DTYPE="${DTYPE:-bfloat16}"
@@ -48,6 +58,7 @@ echo "Cross-domain entropy probe"
 echo "  Models:        $MODELS"
 echo "  Datasets:      $DATASETS"
 echo "  Max problems:  $MAX_PROBLEMS per cell"
+echo "  N samples:     $N_SAMPLES per problem (N>1 ⇒ multinomial sampling at T=1.0)"
 echo "  Max tokens:    $MAX_NEW_TOKENS"
 echo "  Output dir:    $OUTPUT_DIR"
 echo "  Log dir:       $LOG_DIR"
@@ -63,6 +74,7 @@ for MODEL in $MODELS; do
       --model "$MODEL" \
       --dataset "$DS" \
       --max-problems "$MAX_PROBLEMS" \
+      --n-samples "$N_SAMPLES" \
       --max-new-tokens "$MAX_NEW_TOKENS" \
       --output-dir "$OUTPUT_DIR" \
       --dtype "$DTYPE" \
