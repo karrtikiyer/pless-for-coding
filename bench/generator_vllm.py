@@ -378,7 +378,7 @@ def load_engine(
         logits_processors = (existing or []) + [processor_cls]
     else:
         logits_processors = kwargs.pop("logits_processors", None)
-    return LLM(
+    engine = LLM(
         model=model_id,
         dtype=dtype,
         max_model_len=max_model_len,
@@ -386,6 +386,61 @@ def load_engine(
         logits_processors=logits_processors,
         **kwargs,
     )
+    # Detect broken byte-level BPE decoder (same bug worked around in
+    # bench/generator.py:108-117 for the HF backend). vLLM's internal
+    # tokenizer for OCI / DeepSeek-Coder loads as slow LlamaTokenizer and
+    # either strips whitespace or emits literal `Ġ`/`Ċ` BPE markers.
+    # Stash a known-good PreTrainedTokenizerFast on the engine so callers
+    # can re-decode token_ids when needed.
+    _maybe_install_safe_tokenizer(engine, model_id)
+    return engine
+
+
+def _maybe_install_safe_tokenizer(engine, model_id: str) -> None:
+    """Round-trip 'a b\\nc' through vLLM's tokenizer; if broken, attach a
+    PreTrainedTokenizerFast as ``engine._safe_tokenizer`` for callers to
+    re-decode generated token ids with.
+    """
+    test_str = "a b\nc"
+    tok = engine.get_tokenizer()
+    try:
+        ids = tok.encode(test_str, add_special_tokens=False)
+        decoded = tok.decode(ids, skip_special_tokens=True).strip()
+    except Exception:
+        decoded = None
+    if decoded == test_str.strip():
+        return  # tokenizer is fine
+    from transformers import PreTrainedTokenizerFast
+    safe = PreTrainedTokenizerFast.from_pretrained(model_id)
+    safe_decoded = safe.decode(
+        safe.encode(test_str, add_special_tokens=False),
+        skip_special_tokens=True,
+    ).strip()
+    if safe_decoded != test_str.strip():
+        raise RuntimeError(
+            f"vLLM tokenizer for {model_id!r} round-trips whitespace "
+            f"incorrectly ({decoded!r}) AND PreTrainedTokenizerFast also "
+            f"failed ({safe_decoded!r}); cannot recover."
+        )
+    engine._safe_tokenizer = safe
+    print(
+        f"[vllm] Installed safe PreTrainedTokenizerFast for {model_id!r} "
+        f"(vLLM's default tokenizer mangled whitespace: {decoded!r})"
+    )
+
+
+def _extract_completion_texts(request_output, engine) -> list[str]:
+    """Return decoded text per completion, using engine._safe_tokenizer
+    to re-decode token_ids if vLLM's default decoder is broken for this
+    model. Falls back to completion.text otherwise.
+    """
+    safe = getattr(engine, "_safe_tokenizer", None)
+    if safe is None:
+        return [completion.text for completion in request_output.outputs]
+    return [
+        safe.decode(list(completion.token_ids), skip_special_tokens=True)
+        for completion in request_output.outputs
+    ]
 
 
 def _verify_think_end_id(engine) -> None:
@@ -473,7 +528,7 @@ def generate_samples_split_vllm(
     outputs = engine.generate([prompt], sp, use_tqdm=False)
     # outputs is a list of RequestOutput, one per prompt; we sent one prompt.
     request_out = outputs[0]
-    return [completion.text for completion in request_out.outputs]
+    return _extract_completion_texts(request_out, engine)
 
 
 def generate_samples_vllm(
@@ -531,7 +586,7 @@ def generate_samples_vllm(
         prompt = prompt_text
 
     outputs = engine.generate([prompt], sp, use_tqdm=False)
-    return [completion.text for completion in outputs[0].outputs]
+    return _extract_completion_texts(outputs[0], engine)
 
 
 def generate_samples_standard_vllm(
@@ -567,4 +622,4 @@ def generate_samples_standard_vllm(
         prompt = prompt_text
 
     outputs = engine.generate([prompt], sp, use_tqdm=False)
-    return [completion.text for completion in outputs[0].outputs]
+    return _extract_completion_texts(outputs[0], engine)
