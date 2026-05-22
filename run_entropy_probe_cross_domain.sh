@@ -29,9 +29,13 @@ set -euo pipefail
 MODELS_DEFAULT="Qwen/Qwen2.5-Coder-7B-Instruct Qwen/Qwen3-8B"
 DATASETS_DEFAULT="mbpp gsm8k math"
 
+# Default 200 problems × 1 sample × ~400 tokens/completion ≈ 80k tokens per
+# (model, dataset) cell — directly comparable to the existing code-domain
+# baseline in results/phase_entropy_probe/Qwen2.5-Coder-7B-Instruct/
+# (151 tasks × ~9 samples = 87,360 teacher-forced tokens).
 MODELS="${MODELS:-$MODELS_DEFAULT}"
 DATASETS="${DATASETS:-$DATASETS_DEFAULT}"
-MAX_PROBLEMS="${MAX_PROBLEMS:-50}"
+MAX_PROBLEMS="${MAX_PROBLEMS:-200}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-512}"
 OUTPUT_DIR="${OUTPUT_DIR:-results/entropy_probe}"
 DTYPE="${DTYPE:-bfloat16}"
