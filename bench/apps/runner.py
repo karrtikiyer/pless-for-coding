@@ -118,6 +118,11 @@ def parse_args():
                    help="Rényi exponent for --method pless_alpha. "
                         "Threshold = Σpᵢ^α. α=2 reproduces standard pless; "
                         "α>2 keeps more tokens at high-entropy positions.")
+    p.add_argument("--treat-as-instruct", action="store_true",
+                   help="Force instruct-prompt formatting even when the model "
+                        "id does not contain 'Instruct' or 'Chat'. Use for "
+                        "models like m-a-p/OpenCodeInterpreter-DS-1.3B that "
+                        "are chat-tuned but not named accordingly.")
     args = p.parse_args()
     if args.method == "split":
         for name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
@@ -135,10 +140,12 @@ def parse_args():
 def main():
     args = parse_args()
 
-    if not is_instruct_model(args.model):
+    if not is_instruct_model(args.model) and not args.treat_as_instruct:
         raise SystemExit(
             f"APPS runner requires an instruct model — {args.model!r} looks "
-            "like a base model. Add 'Instruct' to the model id or switch to MBPP."
+            "like a base model. Add 'Instruct' to the model id, pass "
+            "--treat-as-instruct if the model is chat-tuned but not named "
+            "accordingly, or switch to MBPP."
         )
 
     out_path = _output_path(

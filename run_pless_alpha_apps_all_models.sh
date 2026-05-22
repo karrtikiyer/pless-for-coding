@@ -139,6 +139,12 @@ run_arm() {
   local alpha="$5"
   local model_slug; model_slug=$(echo "$model" | tr '/' '-')
   local log="$LOG_DIR/${model_slug}_${source}_${difficulty}_a${alpha}.log"
+  # Chat-tuned models whose HF id lacks 'Instruct'/'Chat' need an opt-in
+  # flag so the APPS runner accepts them. Currently just OpenCodeInterpreter.
+  local instruct_flag=""
+  case "$model" in
+    *OpenCodeInterpreter*) instruct_flag="--treat-as-instruct" ;;
+  esac
   echo "[GPU $gpu] start $model_slug / $source / $difficulty / α=$alpha → $log"
   if [ "$BACKEND" = "vllm" ]; then
     # vLLM runs in its parallel venv. PYTHONPATH=$PWD so the source tree
@@ -154,6 +160,7 @@ run_arm() {
       --max-new-tokens "$MAX_NEW_TOKENS" \
       --backend vllm \
       --results-dir "$RESULTS_DIR" \
+      $instruct_flag \
       $MAX_PROBLEMS_FLAG \
       > "$log" 2>&1
   else
@@ -166,6 +173,7 @@ run_arm() {
       --max-new-tokens "$MAX_NEW_TOKENS" \
       --backend hf \
       --results-dir "$RESULTS_DIR" \
+      $instruct_flag \
       $MAX_PROBLEMS_FLAG \
       > "$log" 2>&1
   fi
