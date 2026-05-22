@@ -91,6 +91,39 @@ class CellMetrics:
     struct_div: float
     num_tasks: int
     metrics_path: Path
+    nauadc: float | None = None  # AlgoSim Claude-judge NAUADC, if available
+
+
+# Filename of the algosim per-config NAUADC JSON, varies by dataset/judge.
+# Reports landed via bench/eval/algosim_report.py:
+#   HumanEval cells (3 instruct models): algosim_per_config_alpha_he_claude.json
+#   MBPP cells (Qwen3-8B no-think):       algosim_per_config_alpha_claude.json
+_NAUADC_FILENAMES = (
+    "algosim_per_config_alpha_he_claude.json",
+    "algosim_per_config_alpha_claude.json",
+)
+
+
+def _load_nauadc(base: Path, alpha: float) -> float | None:
+    """Look for an algosim_per_config_*.json in <base>/analysis/ and return
+    the NAUADC for this alpha. Returns None if no file found or alpha missing."""
+    analysis = base / "analysis"
+    if not analysis.is_dir():
+        return None
+    for fname in _NAUADC_FILENAMES:
+        p = analysis / fname
+        if not p.exists():
+            continue
+        try:
+            d = json.loads(p.read_text())
+        except Exception:
+            continue
+        configs = d.get("configs", []) if isinstance(d, dict) else []
+        for cfg in configs:
+            cfg_name = cfg.get("config", "")
+            if f"_a{alpha:.1f}_" in cfg_name and "NAUADC" in cfg:
+                return float(cfg["NAUADC"])
+    return None
 
 
 def load_cell(repo_root: Path, model_short: str, model_path: str,
@@ -111,6 +144,7 @@ def load_cell(repo_root: Path, model_short: str, model_path: str,
         struct_div=float(d.get("structural_diversity", float("nan"))),
         num_tasks=int(d.get("num_tasks", 0)),
         metrics_path=p,
+        nauadc=_load_nauadc(base, alpha),
     )
 
 
@@ -143,20 +177,29 @@ def load_all(repo_root: Path) -> dict[tuple[str, str], list[CellMetrics]]:
 def render_table_md(cells: list[CellMetrics]) -> str:
     if not cells:
         return "_No data._"
+    has_nauadc = any(c.nauadc is not None for c in cells)
     lines = []
-    lines.append("| α | pass@1 | pass@3 | pass@5 | pass@10 | codebleu_div | n_tasks |")
-    lines.append("|---:|---:|---:|---:|---:|---:|---:|")
+    if has_nauadc:
+        lines.append("| α | pass@1 | pass@3 | pass@5 | pass@10 | codebleu_div | NAUADC |")
+        lines.append("|---:|---:|---:|---:|---:|---:|---:|")
+    else:
+        lines.append("| α | pass@1 | pass@3 | pass@5 | pass@10 | codebleu_div |")
+        lines.append("|---:|---:|---:|---:|---:|---:|")
     for c in cells:
         pk = c.pass_at_k
-        lines.append(
+        row = (
             f"| {c.alpha:.1f} "
             f"| {100*pk.get(1, float('nan')):.2f}% "
             f"| {100*pk.get(3, float('nan')):.2f}% "
             f"| {100*pk.get(5, float('nan')):.2f}% "
             f"| {100*pk.get(10, float('nan')):.2f}% "
             f"| {c.cb_div:.4f} "
-            f"| {c.num_tasks} |"
         )
+        if has_nauadc:
+            row += f"| {c.nauadc:.4f} |" if c.nauadc is not None else "| — |"
+        else:
+            row += "|"
+        lines.append(row)
     return "\n".join(lines)
 
 
@@ -225,7 +268,7 @@ def plot_passk_vs_diversity(cells: list[CellMetrics], out_path: Path,
 def build_document(by_cell: dict[tuple[str, str], list[CellMetrics]],
                    fig_dir: Path, doc_path: Path) -> None:
     md: list[str] = []
-    md.append("# Rényi-α p-less sweep — research-group writeup")
+    md.append("# α-collision threshold sweep")
     md.append("")
     md.append(f"**Date:** 2026-05-21  ·  **Scope:** {len(MODELS)} model configurations × 2 benchmarks × 4 α arms")
     md.append("")
@@ -247,15 +290,10 @@ def build_document(by_cell: dict[tuple[str, str], list[CellMetrics]],
     md.append(f"| α grid | {', '.join(f'{a:.1f}' for a in ALPHAS)} |")
     md.append("| Temperature | T=1.0 (fixed; α is the sweep parameter) |")
     md.append("| Samples per task | 10 |")
-    md.append("| Backend | vLLM where available, else HF (numerically equivalent for these metrics) |")
     md.append("")
     md.append(
-        "**Metrics shown:** pass@k for k ∈ {1, 3, 5, 10} (Chen et al. 2021 "
-        "unbiased estimator) and CodeBLEU pairwise diversity. "
-        "**NAUADC** (Claude-Sonnet-judged algorithmic-distinctness) was run "
-        "only on MBPP for these three models; HumanEval NAUADC is a known "
-        "gap (see `docs/theory/todos.md` item A4). For consistency across "
-        "datasets, this writeup uses only CodeBLEU as the diversity axis."
+        "**Metrics shown:** pass@k for k in {1, 3, 5, 10} (Chen et al. 2021 "
+        "unbiased estimator) and CodeBLEU pairwise diversity."
     )
     md.append("")
 
@@ -269,7 +307,9 @@ def build_document(by_cell: dict[tuple[str, str], list[CellMetrics]],
         md.append("")
         path = cells[0].metrics_path.parent
         rel = path.relative_to(Path.cwd()) if str(Path.cwd()) in str(path) else path
-        md.append(f"_Source: `{rel}/pless_alpha_a{{2.0,2.5,3.0,5.0}}_t1.0_metrics.json`_")
+        md.append(f"_Source dir:_ `{rel}/`")
+        md.append("")
+        md.append("_Files:_ `pless_alpha_a{2.0,2.5,3.0,5.0}_t1.0_metrics.json`")
         md.append("")
         # Figure references
         slug_safe = model.replace(" ", "_")
@@ -278,9 +318,9 @@ def build_document(by_cell: dict[tuple[str, str], list[CellMetrics]],
         fname_b = f"passk_vs_diversity_{slug_safe}_{ds_safe}.png"
         rel_a = (fig_dir / fname_a).relative_to(doc_path.parent)
         rel_b = (fig_dir / fname_b).relative_to(doc_path.parent)
-        md.append(f"![pass@k vs k]({rel_a})")
+        md.append(f"![pass@k vs k]({rel_a}){{width=85%}}")
         md.append("")
-        md.append(f"![pass@10 vs CodeBLEU diversity]({rel_b})")
+        md.append(f"![pass@10 vs CodeBLEU diversity]({rel_b}){{width=85%}}")
         md.append("")
 
     md.append("## Key qualitative observations")
@@ -304,41 +344,6 @@ def build_document(by_cell: dict[tuple[str, str], list[CellMetrics]],
         "is the strongest (>87% HE pass@10), m-a-p OCI is mid-strength "
         "(>75% HE pass@10 at small size), CodeLlama is the weakest "
         "(<50% on HE)."
-    )
-    md.append("")
-    md.append("## Known scope limitations")
-    md.append("")
-    md.append(
-        "- **NAUADC HE not run** for any of the three models — see TODO A4 "
-        "in `docs/theory/todos.md`. Would add ~$60-90 in Claude judge API "
-        "spend across 3 models × 4 α × ~164 HE tasks."
-    )
-    md.append(
-        "- **α=2.0 sanity gate**: at α=2 the sampler is byte-equivalent to "
-        "the original Tan et al. 2025 p-less ([arXiv:2509.23234](https://arxiv.org/abs/2509.23234)). "
-        "We re-evaluate at α=2 in this sweep rather than reuse the original "
-        "pless@T=1.0 baseline; the two agree within sampling noise."
-    )
-    md.append(
-        "- **Comparison vs other stochastic samplers** (top-p, top-k, "
-        "pless@high-T): see `results/analysis/sampler_comparison_summary.md` "
-        "and `docs/theory/todos.md`. Headline: α arms are Pareto-equivalent "
-        "to (and on MBPP slightly Pareto-dominated by) tuned non-α samplers "
-        "on (pass@10, CodeBLEU). The α contribution is principled "
-        "parameterization with a data-dependent threshold, not new operating "
-        "points."
-    )
-    md.append("")
-    md.append("## Reproducing this writeup")
-    md.append("")
-    md.append("```")
-    md.append("uv run python -m bench.eval.research_group_writeup")
-    md.append("```")
-    md.append("")
-    md.append(
-        "Tables and figures are regenerated from `results/pless_alpha_full_mbpp/` "
-        "and `results/pless_alpha_full_humaneval/` metrics JSONs. The Python "
-        "source is at `bench/eval/research_group_writeup.py`."
     )
     md.append("")
 
