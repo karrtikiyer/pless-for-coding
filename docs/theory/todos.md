@@ -48,7 +48,7 @@ it).
 | A9 | DONE | Qwen3-8B α sweep MBPP + HE, thinking ON | — | Commit `d779042` (eval), `308cf24` (β-binomial extension). |
 | A10 | DONE | NAUADC × Qwen3-Think × 4 α arms (MBPP) | ~$30 spent | `results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/analysis/`. |
 | A11 | DONE | Qwen3-8B α sweep MBPP + HE, thinking OFF (decisive test) | — | Commit `b9d30e8`. Mechanism B (thinking) wins. |
-| A12 | OPEN | NAUADC for Qwen3-NoThink × HumanEval (single gap in the 8-cell research-group writeup) | ~$15-20 API + ~30 min CPU | The only cell in the writeup table without NAUADC. Would require export + Claude judging + report. Low priority; writeup gracefully shows 6-col table for that one cell. Task #73. |
+| A12 | DONE | NAUADC for Qwen3-NoThink × HumanEval (closed the 8-cell gap) | — | Closed 2026-05-22 via task #73. Actual cost $13.06 (under $15-20 estimate); judging finished in ~50 min wallclock (much faster than 3-5 hr estimate, probably due to API queue conditions). All 8 cells now have NAUADC in the writeup. |
 
 ## B. Theory / proof work
 
