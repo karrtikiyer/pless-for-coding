@@ -46,7 +46,7 @@
 
 set -euo pipefail
 
-MODELS_DEFAULT="Qwen/Qwen2.5-Coder-7B-Instruct codellama/CodeLlama-7b-Instruct-hf m-a-p/OpenCodeInterpreter-DS-1.3B"
+MODELS_DEFAULT="Qwen/Qwen2.5-Coder-7B-Instruct codellama/CodeLlama-7b-Instruct-hf m-a-p/OpenCodeInterpreter-DS-1.3B Qwen/Qwen3-8B"
 ALPHAS_DEFAULT="2.0 2.5 3.0 5.0"
 SOURCES_DEFAULT="ATCODER CODEFORCES"
 DIFFICULTIES_DEFAULT="introductory interview competition"
@@ -57,7 +57,23 @@ SOURCES="${SOURCES:-$SOURCES_DEFAULT}"
 DIFFICULTIES="${DIFFICULTIES:-$DIFFICULTIES_DEFAULT}"
 N_SAMPLES="${N_SAMPLES:-10}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
-MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-8192}"
+# MAX_NEW_TOKENS default lowered 8192 → 2048 since 2026-05-22.
+# Rationale (verified on-disk):
+#   - Qwen3-NoThink completions on MBPP α=5 are median 20 tokens, p95 72 tokens
+#     (n=5000); on HumanEval median 33 tok, p95 75 tok (n=1640).
+#   - APPS programs are ~5-10× longer than MBPP function bodies → estimated
+#     p95 ≈ 720 tokens for Qwen3-NoThink on APPS. 2048 gives ~3× headroom.
+#   - All 4 default models (Qwen2.5-Coder, CodeLlama, m-a-p OCI, Qwen3-8B)
+#     run in non-thinking mode by default in this sweep, so 8192 was wasteful.
+#   - If you want to also run Qwen3-8B WITH thinking, set both
+#     THINKING=on AND MAX_NEW_TOKENS=8192 (median thinking-trace ≈ 7290 tok,
+#     p95 ≈ 8697 tok per measured Qwen3-think APPS data; will hit the cap
+#     even at 8192).
+MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-2048}"
+# Qwen3 thinking control. Default "off" — non-thinking mode for Qwen3 models.
+# Only applied to model ids containing "Qwen3" (other models silently
+# ignore the flag, but we skip it to keep logs clean).
+THINKING="${THINKING:-off}"
 RESULTS_DIR="${RESULTS_DIR:-results/pless_alpha_apps}"
 BACKEND="${BACKEND:-vllm}"
 VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
@@ -145,7 +161,17 @@ run_arm() {
   case "$model" in
     *OpenCodeInterpreter*) instruct_flag="--treat-as-instruct" ;;
   esac
-  echo "[GPU $gpu] start $model_slug / $source / $difficulty / α=$alpha → $log"
+  # Qwen3 thinking is opt-in via THINKING=on. Only Qwen3 models support it;
+  # for other models the flag would be silently ignored, but we omit it so
+  # the method_key in the output filename stays clean.
+  local thinking_flag=""
+  case "$model" in
+    *Qwen3*)
+      if [ "$THINKING" = "on" ]; then thinking_flag="--enable-thinking"; fi
+      ;;
+  esac
+  echo "[GPU $gpu] start $model_slug / $source / $difficulty / α=$alpha"\
+" thinking=${thinking_flag:-off} → $log"
   if [ "$BACKEND" = "vllm" ]; then
     # vLLM runs in its parallel venv. PYTHONPATH=$PWD so the source tree
     # wins over any installed copy of bench/.
@@ -161,6 +187,7 @@ run_arm() {
       --backend vllm \
       --results-dir "$RESULTS_DIR" \
       $instruct_flag \
+      $thinking_flag \
       $MAX_PROBLEMS_FLAG \
       > "$log" 2>&1
   else
@@ -174,6 +201,7 @@ run_arm() {
       --backend hf \
       --results-dir "$RESULTS_DIR" \
       $instruct_flag \
+      $thinking_flag \
       $MAX_PROBLEMS_FLAG \
       > "$log" 2>&1
   fi
