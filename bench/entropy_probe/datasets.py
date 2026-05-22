@@ -47,15 +47,19 @@ _MATH_SUBJECTS = (
 def load_math(max_problems: int | None = None) -> list[EntropyProbeProblem]:
     """Load competition MATH via HuggingFace ``EleutherAI/hendrycks_math``.
 
-    The original ``hendrycks/competition_math`` dataset was removed from
-    the Hub. ``lighteval/MATH`` is gated and requires an access request.
-    ``EleutherAI/hendrycks_math`` is the public mirror used in lm-eval
-    harness; same Hendrycks 2021 source, same (problem, solution)
-    schema, organised into 7 subject subsets.
+    Dataset choice (verified 2026-05-22 via HF Hub search):
+      * The bare repo ``lighteval/MATH`` does not exist on the Hub.
+        ``lighteval`` publishes ``lighteval/MATH-Hard`` (a hard-subset
+        only, ~7.26k rows) and other variants, but no full-MATH repo.
+      * ``EleutherAI/hendrycks_math`` is publicly accessible (no
+        gating, no auth required) and contains the full Hendrycks 2021
+        MATH source, organised into 7 subject subsets.
 
     We load all 7 subsets and round-robin across subjects so a
     ``max_problems`` cap gives a roughly balanced sample of problem
-    types rather than 200 problems all from algebra.
+    types rather than 200 problems all from algebra. ``split="test"``
+    yields ~5,000 problems total across the 7 subjects (the
+    canonical MATH test split from Hendrycks 2021).
     """
     from datasets import load_dataset
     per_subject: list[list[dict]] = []
