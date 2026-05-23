@@ -104,30 +104,55 @@ run_arm() {
   echo "[gpu=$gpu] done $model_slug / α=$alpha at $(date +%H:%M:%S)"
 }
 
-# Run each (model, α) sequentially within a GPU; distribute α arms across
-# GPUs if more than one is available.
+# Distribute α arms across GPUs using a per-GPU lane queue.
+# - With N_GPUS = 1: one lane with all 4 α arms, runs SEQUENTIALLY (only one
+#   ~14GB bf16 7B model loaded at a time → fits in any 24GB+ GPU).
+# - With N_GPUS = 4: four lanes each with 1 α arm, runs IN PARALLEL.
+# - With N_GPUS = 2: two lanes (α=2.0,3.0 on GPU 0; α=2.5,5.0 on GPU 1).
+# Matches the lane pattern in run_pless_alpha_apps_all_models.sh.
 GPU_ARR=()
 if [ -n "${GPUS:-}" ]; then
   IFS=',' read -ra GPU_ARR <<<"$GPUS"
 fi
 N_GPUS=${#GPU_ARR[@]}
+ALPHA_ARR=($ALPHAS)
+N_ALPHAS=${#ALPHA_ARR[@]}
 
 for MODEL in $MODELS; do
-  pids=()
-  i=0
-  for ALPHA in $ALPHAS; do
-    if [ "$N_GPUS" -gt 0 ]; then
-      gpu="${GPU_ARR[$((i % N_GPUS))]}"
-    else
-      gpu=""
-    fi
-    run_arm "$gpu" "$MODEL" "$ALPHA" &
-    pids+=($!)
-    i=$((i + 1))
-  done
-  for pid in "${pids[@]}"; do
-    wait "$pid"
-  done
+  echo "═══ Model: $MODEL ═══════════════════════════════════════════════════"
+
+  if [ "$N_GPUS" -eq 0 ]; then
+    # No GPU detected (MPS / CPU): one lane, fully sequential.
+    for ALPHA in $ALPHAS; do
+      run_arm "" "$MODEL" "$ALPHA"
+    done
+  else
+    # Build per-GPU α queues via modulo assignment.
+    QUEUE=()
+    for ((lane=0; lane<N_GPUS; lane++)); do QUEUE[$lane]=""; done
+    for ((i=0; i<N_ALPHAS; i++)); do
+      lane=$((i % N_GPUS))
+      QUEUE[$lane]="${QUEUE[$lane]} ${ALPHA_ARR[$i]}"
+    done
+    for ((lane=0; lane<N_GPUS; lane++)); do
+      echo "  GPU ${GPU_ARR[$lane]}: α =${QUEUE[$lane]}"
+    done
+
+    PIDS=()
+    for ((lane=0; lane<N_GPUS; lane++)); do
+      gpu="${GPU_ARR[$lane]}"
+      alphas_for_lane="${QUEUE[$lane]}"
+      (
+        for alpha in $alphas_for_lane; do
+          run_arm "$gpu" "$MODEL" "$alpha"
+        done
+      ) &
+      PIDS+=($!)
+    done
+    wait "${PIDS[@]}"
+  fi
+
+  echo "═══ Model $MODEL done at $(date) ═══"
 done
 
 echo
