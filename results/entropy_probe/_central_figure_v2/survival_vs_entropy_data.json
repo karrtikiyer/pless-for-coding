@@ -1,0 +1,2602 @@
+{
+  "bin_width_nats": 0.05,
+  "h_max_nats": 4.0,
+  "datasets": [
+    "mbpp",
+    "gsm8k"
+  ],
+  "per_dataset": {
+    "mbpp": {
+      "Qwen--Qwen2.5-Coder-7B-Instruct": {
+        "source_jsonl": "results/pless_alpha_entropy/mbpp/Qwen--Qwen2.5-Coder-7B-Instruct/pless_t1.0.jsonl.entropy.jsonl",
+        "bin_width_nats": 0.05,
+        "h_max_nats": 4.0,
+        "bins": [
+          {
+            "h_lo": 0.0,
+            "h_hi": 0.05,
+            "n_positions": 211726,
+            "mean_survival_alpha2": 0.9993366489037626,
+            "mean_survival_alpha5": 0.9993366489037626,
+            "mean_truncation_mass": 6.9650798818299066e-06
+          },
+          {
+            "h_lo": 0.05,
+            "h_hi": 0.1,
+            "n_positions": 14950,
+            "mean_survival_alpha2": 0.9879687926880891,
+            "mean_survival_alpha5": 0.9879687926880891,
+            "mean_truncation_mass": 6.633350119554861e-05
+          },
+          {
+            "h_lo": 0.1,
+            "h_hi": 0.15,
+            "n_positions": 9523,
+            "mean_survival_alpha2": 0.9774250567779312,
+            "mean_survival_alpha5": 0.9774250567779312,
+            "mean_truncation_mass": 8.613209345493885e-05
+          },
+          {
+            "h_lo": 0.15,
+            "h_hi": 0.2,
+            "n_positions": 6248,
+            "mean_survival_alpha2": 0.9642001666825041,
+            "mean_survival_alpha5": 0.9642001666825041,
+            "mean_truncation_mass": 0.00010629704293096407
+          },
+          {
+            "h_lo": 0.2,
+            "h_hi": 0.25,
+            "n_positions": 4478,
+            "mean_survival_alpha2": 0.9498941082142995,
+            "mean_survival_alpha5": 0.9498941082142995,
+            "mean_truncation_mass": 0.00014019354983016603
+          },
+          {
+            "h_lo": 0.25,
+            "h_hi": 0.3,
+            "n_positions": 3733,
+            "mean_survival_alpha2": 0.9350105878210183,
+            "mean_survival_alpha5": 0.9350105878210183,
+            "mean_truncation_mass": 0.00018817098183641074
+          },
+          {
+            "h_lo": 0.3,
+            "h_hi": 0.35,
+            "n_positions": 3085,
+            "mean_survival_alpha2": 0.9163138710892181,
+            "mean_survival_alpha5": 0.9163138710892181,
+            "mean_truncation_mass": 0.00019688964019771098
+          },
+          {
+            "h_lo": 0.35,
+            "h_hi": 0.4,
+            "n_positions": 2832,
+            "mean_survival_alpha2": 0.8992006894895586,
+            "mean_survival_alpha5": 0.8992006894895586,
+            "mean_truncation_mass": 0.00037395282919609193
+          },
+          {
+            "h_lo": 0.4,
+            "h_hi": 0.45,
+            "n_positions": 2457,
+            "mean_survival_alpha2": 0.8776303939961009,
+            "mean_survival_alpha5": 0.8776303939961009,
+            "mean_truncation_mass": 0.0003058822195713374
+          },
+          {
+            "h_lo": 0.45,
+            "h_hi": 0.5,
+            "n_positions": 2406,
+            "mean_survival_alpha2": 0.8564707975484684,
+            "mean_survival_alpha5": 0.8564707975484684,
+            "mean_truncation_mass": 0.0002990072743514422
+          },
+          {
+            "h_lo": 0.5,
+            "h_hi": 0.55,
+            "n_positions": 2726,
+            "mean_survival_alpha2": 0.8261739766431572,
+            "mean_survival_alpha5": 0.8261739766431572,
+            "mean_truncation_mass": 0.00040251424046558427
+          },
+          {
+            "h_lo": 0.55,
+            "h_hi": 0.6,
+            "n_positions": 2807,
+            "mean_survival_alpha2": 0.7964103193439366,
+            "mean_survival_alpha5": 0.856178013124116,
+            "mean_truncation_mass": 0.00038639588695632635
+          },
+          {
+            "h_lo": 0.6,
+            "h_hi": 0.65,
+            "n_positions": 3115,
+            "mean_survival_alpha2": 0.7532120823860169,
+            "mean_survival_alpha5": 0.9150337491190452,
+            "mean_truncation_mass": 0.00039379613677563457
+          },
+          {
+            "h_lo": 0.65,
+            "h_hi": 0.7,
+            "n_positions": 3872,
+            "mean_survival_alpha2": 0.6830273305089021,
+            "mean_survival_alpha5": 0.9434255643955562,
+            "mean_truncation_mass": 0.0002945502904879398
+          },
+          {
+            "h_lo": 0.7,
+            "h_hi": 0.75,
+            "n_positions": 2961,
+            "mean_survival_alpha2": 0.6839192422086103,
+            "mean_survival_alpha5": 0.9252187237269328,
+            "mean_truncation_mass": 0.00045672169069643667
+          },
+          {
+            "h_lo": 0.75,
+            "h_hi": 0.8,
+            "n_positions": 2102,
+            "mean_survival_alpha2": 0.6844706551502365,
+            "mean_survival_alpha5": 0.9092822492221897,
+            "mean_truncation_mass": 0.000614985805075538
+          },
+          {
+            "h_lo": 0.8,
+            "h_hi": 0.85,
+            "n_positions": 1621,
+            "mean_survival_alpha2": 0.6750116670006664,
+            "mean_survival_alpha5": 0.891989987299885,
+            "mean_truncation_mass": 0.0007883475176703318
+          },
+          {
+            "h_lo": 0.85,
+            "h_hi": 0.9,
+            "n_positions": 1658,
+            "mean_survival_alpha2": 0.6839283905896404,
+            "mean_survival_alpha5": 0.8800637127901231,
+            "mean_truncation_mass": 0.001065351846795267
+          },
+          {
+            "h_lo": 0.9,
+            "h_hi": 0.95,
+            "n_positions": 1259,
+            "mean_survival_alpha2": 0.6764191099345637,
+            "mean_survival_alpha5": 0.888429725502719,
+            "mean_truncation_mass": 0.001248441275456388
+          },
+          {
+            "h_lo": 0.95,
+            "h_hi": 1.0,
+            "n_positions": 1000,
+            "mean_survival_alpha2": 0.6620762041807174,
+            "mean_survival_alpha5": 0.8910697975866496,
+            "mean_truncation_mass": 0.0015472634515310748
+          },
+          {
+            "h_lo": 1.0,
+            "h_hi": 1.05,
+            "n_positions": 1028,
+            "mean_survival_alpha2": 0.6520981401321025,
+            "mean_survival_alpha5": 0.8952151201737878,
+            "mean_truncation_mass": 0.0018797837120625334
+          },
+          {
+            "h_lo": 1.05,
+            "h_hi": 1.1,
+            "n_positions": 876,
+            "mean_survival_alpha2": 0.6483643720071065,
+            "mean_survival_alpha5": 0.9021461906217753,
+            "mean_truncation_mass": 0.0016603211547002632
+          },
+          {
+            "h_lo": 1.1,
+            "h_hi": 1.15,
+            "n_positions": 951,
+            "mean_survival_alpha2": 0.6022044467249127,
+            "mean_survival_alpha5": 0.9079715109182488,
+            "mean_truncation_mass": 0.001859477428353294
+          },
+          {
+            "h_lo": 1.15,
+            "h_hi": 1.2,
+            "n_positions": 797,
+            "mean_survival_alpha2": 0.6224272016674243,
+            "mean_survival_alpha5": 0.900773055206428,
+            "mean_truncation_mass": 0.002409543324262658
+          },
+          {
+            "h_lo": 1.2,
+            "h_hi": 1.25,
+            "n_positions": 734,
+            "mean_survival_alpha2": 0.6207913210265318,
+            "mean_survival_alpha5": 0.9043530740188968,
+            "mean_truncation_mass": 0.0029492820457591605
+          },
+          {
+            "h_lo": 1.25,
+            "h_hi": 1.3,
+            "n_positions": 700,
+            "mean_survival_alpha2": 0.6093606524382319,
+            "mean_survival_alpha5": 0.9093004208723349,
+            "mean_truncation_mass": 0.0028950160467511284
+          },
+          {
+            "h_lo": 1.3,
+            "h_hi": 1.35,
+            "n_positions": 603,
+            "mean_survival_alpha2": 0.5789123575386914,
+            "mean_survival_alpha5": 0.9292417139843551,
+            "mean_truncation_mass": 0.002568112621359932
+          },
+          {
+            "h_lo": 1.35,
+            "h_hi": 1.4,
+            "n_positions": 584,
+            "mean_survival_alpha2": 0.6078277073086125,
+            "mean_survival_alpha5": 0.8932929686908546,
+            "mean_truncation_mass": 0.004434395164916786
+          },
+          {
+            "h_lo": 1.4,
+            "h_hi": 1.45,
+            "n_positions": 464,
+            "mean_survival_alpha2": 0.5912267781537155,
+            "mean_survival_alpha5": 0.9216244943231215,
+            "mean_truncation_mass": 0.0043542761211400015
+          },
+          {
+            "h_lo": 1.45,
+            "h_hi": 1.5,
+            "n_positions": 426,
+            "mean_survival_alpha2": 0.5645854489904054,
+            "mean_survival_alpha5": 0.913099863736982,
+            "mean_truncation_mass": 0.004507575085233479
+          },
+          {
+            "h_lo": 1.5,
+            "h_hi": 1.55,
+            "n_positions": 425,
+            "mean_survival_alpha2": 0.5713555325480069,
+            "mean_survival_alpha5": 0.9198481397484155,
+            "mean_truncation_mass": 0.004665688509991442
+          },
+          {
+            "h_lo": 1.55,
+            "h_hi": 1.6,
+            "n_positions": 369,
+            "mean_survival_alpha2": 0.5774705799695276,
+            "mean_survival_alpha5": 0.9301060997997095,
+            "mean_truncation_mass": 0.006447123044172266
+          },
+          {
+            "h_lo": 1.6,
+            "h_hi": 1.65,
+            "n_positions": 341,
+            "mean_survival_alpha2": 0.5621247240874774,
+            "mean_survival_alpha5": 0.9110015049942733,
+            "mean_truncation_mass": 0.006791316799845095
+          },
+          {
+            "h_lo": 1.65,
+            "h_hi": 1.7,
+            "n_positions": 278,
+            "mean_survival_alpha2": 0.5273475171529132,
+            "mean_survival_alpha5": 0.9151183051097361,
+            "mean_truncation_mass": 0.009414499173364819
+          },
+          {
+            "h_lo": 1.7,
+            "h_hi": 1.75,
+            "n_positions": 271,
+            "mean_survival_alpha2": 0.5279712542836517,
+            "mean_survival_alpha5": 0.9328508427945684,
+            "mean_truncation_mass": 0.006644046399453743
+          },
+          {
+            "h_lo": 1.75,
+            "h_hi": 1.8,
+            "n_positions": 322,
+            "mean_survival_alpha2": 0.535425071945842,
+            "mean_survival_alpha5": 0.9268691658927417,
+            "mean_truncation_mass": 0.009782036018089213
+          },
+          {
+            "h_lo": 1.8,
+            "h_hi": 1.85,
+            "n_positions": 186,
+            "mean_survival_alpha2": 0.5383054705396775,
+            "mean_survival_alpha5": 0.9331113285527775,
+            "mean_truncation_mass": 0.011687175099469123
+          },
+          {
+            "h_lo": 1.85,
+            "h_hi": 1.9,
+            "n_positions": 175,
+            "mean_survival_alpha2": 0.5102669125795365,
+            "mean_survival_alpha5": 0.9469763399793634,
+            "mean_truncation_mass": 0.009573261350139676
+          },
+          {
+            "h_lo": 1.9,
+            "h_hi": 1.95,
+            "n_positions": 189,
+            "mean_survival_alpha2": 0.5668095705055055,
+            "mean_survival_alpha5": 0.943318260055055,
+            "mean_truncation_mass": 0.0113033037589587
+          },
+          {
+            "h_lo": 1.95,
+            "h_hi": 2.0,
+            "n_positions": 190,
+            "mean_survival_alpha2": 0.5107439579148042,
+            "mean_survival_alpha5": 0.9401027866865901,
+            "mean_truncation_mass": 0.013958467595014219
+          },
+          {
+            "h_lo": 2.0,
+            "h_hi": 2.05,
+            "n_positions": 175,
+            "mean_survival_alpha2": 0.5001417984281268,
+            "mean_survival_alpha5": 0.937509749344151,
+            "mean_truncation_mass": 0.015991700083416487
+          },
+          {
+            "h_lo": 2.05,
+            "h_hi": 2.1,
+            "n_positions": 88,
+            "mean_survival_alpha2": 0.4995563760061156,
+            "mean_survival_alpha5": 0.9370029829521875,
+            "mean_truncation_mass": 0.018829453029948953
+          },
+          {
+            "h_lo": 2.1,
+            "h_hi": 2.15,
+            "n_positions": 127,
+            "mean_survival_alpha2": 0.5238438958492805,
+            "mean_survival_alpha5": 0.9603493846732918,
+            "mean_truncation_mass": 0.01844796473396425
+          },
+          {
+            "h_lo": 2.15,
+            "h_hi": 2.2,
+            "n_positions": 55,
+            "mean_survival_alpha2": 0.4503853730180047,
+            "mean_survival_alpha5": 0.9588582270715217,
+            "mean_truncation_mass": 0.016793465905886314
+          },
+          {
+            "h_lo": 2.2,
+            "h_hi": 2.25,
+            "n_positions": 46,
+            "mean_survival_alpha2": 0.5280840656031733,
+            "mean_survival_alpha5": 0.9616617624187316,
+            "mean_truncation_mass": 0.023684190063605733
+          },
+          {
+            "h_lo": 2.25,
+            "h_hi": 2.3,
+            "n_positions": 110,
+            "mean_survival_alpha2": 0.5059111879630522,
+            "mean_survival_alpha5": 0.968295979361706,
+            "mean_truncation_mass": 0.018571771669138055
+          },
+          {
+            "h_lo": 2.3,
+            "h_hi": 2.35,
+            "n_positions": 32,
+            "mean_survival_alpha2": 0.425898895598948,
+            "mean_survival_alpha5": 0.9469395670894301,
+            "mean_truncation_mass": 0.03168241152889095
+          },
+          {
+            "h_lo": 2.35,
+            "h_hi": 2.4,
+            "n_positions": 54,
+            "mean_survival_alpha2": 0.4998633795314365,
+            "mean_survival_alpha5": 0.9531516331933543,
+            "mean_truncation_mass": 0.03960075376865765
+          },
+          {
+            "h_lo": 2.4,
+            "h_hi": 2.45,
+            "n_positions": 28,
+            "mean_survival_alpha2": 0.4640284494629928,
+            "mean_survival_alpha5": 0.9734950243146159,
+            "mean_truncation_mass": 0.024615925982029045
+          },
+          {
+            "h_lo": 2.45,
+            "h_hi": 2.5,
+            "n_positions": 44,
+            "mean_survival_alpha2": 0.45764888755299826,
+            "mean_survival_alpha5": 0.9415904596204531,
+            "mean_truncation_mass": 0.05734326033218002
+          },
+          {
+            "h_lo": 2.5,
+            "h_hi": 2.55,
+            "n_positions": 37,
+            "mean_survival_alpha2": 0.4665855292130161,
+            "mean_survival_alpha5": 0.9541550865617102,
+            "mean_truncation_mass": 0.044903542056704895
+          },
+          {
+            "h_lo": 2.55,
+            "h_hi": 2.6,
+            "n_positions": 24,
+            "mean_survival_alpha2": 0.43667125422507524,
+            "mean_survival_alpha5": 0.9563900195838263,
+            "mean_truncation_mass": 0.043073547315240525
+          },
+          {
+            "h_lo": 2.6,
+            "h_hi": 2.65,
+            "n_positions": 57,
+            "mean_survival_alpha2": 0.44293039396666645,
+            "mean_survival_alpha5": 0.9352388977095599,
+            "mean_truncation_mass": 0.06476110229044009
+          },
+          {
+            "h_lo": 2.65,
+            "h_hi": 2.7,
+            "n_positions": 20,
+            "mean_survival_alpha2": 0.39233687296509745,
+            "mean_survival_alpha5": 0.9369870084803551,
+            "mean_truncation_mass": 0.06301299151964486
+          },
+          {
+            "h_lo": 2.7,
+            "h_hi": 2.75,
+            "n_positions": 31,
+            "mean_survival_alpha2": 0.4313653589737031,
+            "mean_survival_alpha5": 0.947975636730271,
+            "mean_truncation_mass": 0.052024363269729
+          },
+          {
+            "h_lo": 2.75,
+            "h_hi": 2.8,
+            "n_positions": 20,
+            "mean_survival_alpha2": 0.4652251396328211,
+            "mean_survival_alpha5": 0.8926822792622261,
+            "mean_truncation_mass": 0.10731772073777393
+          },
+          {
+            "h_lo": 2.8,
+            "h_hi": 2.85,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 2.85,
+            "h_hi": 2.9,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 2.9,
+            "h_hi": 2.95,
+            "n_positions": 16,
+            "mean_survival_alpha2": 0.47948999097570777,
+            "mean_survival_alpha5": 0.8589709040534217,
+            "mean_truncation_mass": 0.1410290959465783
+          },
+          {
+            "h_lo": 2.95,
+            "h_hi": 3.0,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.0,
+            "h_hi": 3.05,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.05,
+            "h_hi": 3.1,
+            "n_positions": 2,
+            "mean_survival_alpha2": 0.36285772919654846,
+            "mean_survival_alpha5": 0.857791630551219,
+            "mean_truncation_mass": 0.142208369448781
+          },
+          {
+            "h_lo": 3.1,
+            "h_hi": 3.15,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.15,
+            "h_hi": 3.2,
+            "n_positions": 10,
+            "mean_survival_alpha2": 0.44197334721684456,
+            "mean_survival_alpha5": 0.865029027685523,
+            "mean_truncation_mass": 0.13497097231447697
+          },
+          {
+            "h_lo": 3.2,
+            "h_hi": 3.25,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.25,
+            "h_hi": 3.3,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.3,
+            "h_hi": 3.35,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.35,
+            "h_hi": 3.4,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.4,
+            "h_hi": 3.45,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.45,
+            "h_hi": 3.5,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.5,
+            "h_hi": 3.55,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.55,
+            "h_hi": 3.6,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.6,
+            "h_hi": 3.65,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.65,
+            "h_hi": 3.7,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.7,
+            "h_hi": 3.75,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.75,
+            "h_hi": 3.8,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.8,
+            "h_hi": 3.85,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.85,
+            "h_hi": 3.9,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.9,
+            "h_hi": 3.95,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.95,
+            "h_hi": 4.0,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          }
+        ]
+      },
+      "codellama--CodeLlama-7b-Instruct-hf": {
+        "source_jsonl": "results/pless_alpha_entropy/mbpp/codellama--CodeLlama-7b-Instruct-hf/pless_t1.0.jsonl.entropy.jsonl",
+        "bin_width_nats": 0.05,
+        "h_max_nats": 4.0,
+        "bins": [
+          {
+            "h_lo": 0.0,
+            "h_hi": 0.05,
+            "n_positions": 219331,
+            "mean_survival_alpha2": 0.9994493267408122,
+            "mean_survival_alpha5": 0.9994493267408122,
+            "mean_truncation_mass": 9.024532001535465e-07
+          },
+          {
+            "h_lo": 0.05,
+            "h_hi": 0.1,
+            "n_positions": 10120,
+            "mean_survival_alpha2": 0.9874196126644791,
+            "mean_survival_alpha5": 0.9874196126644791,
+            "mean_truncation_mass": 1.2484785945733551e-05
+          },
+          {
+            "h_lo": 0.1,
+            "h_hi": 0.15,
+            "n_positions": 5577,
+            "mean_survival_alpha2": 0.9758279201205067,
+            "mean_survival_alpha5": 0.9758279201205067,
+            "mean_truncation_mass": 2.1418497005707335e-05
+          },
+          {
+            "h_lo": 0.15,
+            "h_hi": 0.2,
+            "n_positions": 3938,
+            "mean_survival_alpha2": 0.9633666750681225,
+            "mean_survival_alpha5": 0.9633666750681225,
+            "mean_truncation_mass": 3.30101085849277e-05
+          },
+          {
+            "h_lo": 0.2,
+            "h_hi": 0.25,
+            "n_positions": 3666,
+            "mean_survival_alpha2": 0.948767330678382,
+            "mean_survival_alpha5": 0.948767330678382,
+            "mean_truncation_mass": 5.0733757017687696e-05
+          },
+          {
+            "h_lo": 0.25,
+            "h_hi": 0.3,
+            "n_positions": 3016,
+            "mean_survival_alpha2": 0.9329495914576856,
+            "mean_survival_alpha5": 0.9329495914576856,
+            "mean_truncation_mass": 8.360887631661643e-05
+          },
+          {
+            "h_lo": 0.3,
+            "h_hi": 0.35,
+            "n_positions": 2670,
+            "mean_survival_alpha2": 0.9174545116415631,
+            "mean_survival_alpha5": 0.9174545116415631,
+            "mean_truncation_mass": 0.0001199885485321298
+          },
+          {
+            "h_lo": 0.35,
+            "h_hi": 0.4,
+            "n_positions": 2607,
+            "mean_survival_alpha2": 0.9000470179865815,
+            "mean_survival_alpha5": 0.9000470179865815,
+            "mean_truncation_mass": 0.00018982313000215096
+          },
+          {
+            "h_lo": 0.4,
+            "h_hi": 0.45,
+            "n_positions": 2750,
+            "mean_survival_alpha2": 0.8782663451108066,
+            "mean_survival_alpha5": 0.8782663451108066,
+            "mean_truncation_mass": 0.00017904497723049358
+          },
+          {
+            "h_lo": 0.45,
+            "h_hi": 0.5,
+            "n_positions": 2488,
+            "mean_survival_alpha2": 0.8627252851124745,
+            "mean_survival_alpha5": 0.8627252851124745,
+            "mean_truncation_mass": 0.000284642451210633
+          },
+          {
+            "h_lo": 0.5,
+            "h_hi": 0.55,
+            "n_positions": 2914,
+            "mean_survival_alpha2": 0.8357126055797978,
+            "mean_survival_alpha5": 0.8357126055797978,
+            "mean_truncation_mass": 0.00034212615562298384
+          },
+          {
+            "h_lo": 0.55,
+            "h_hi": 0.6,
+            "n_positions": 3027,
+            "mean_survival_alpha2": 0.8070245904618456,
+            "mean_survival_alpha5": 0.8532534936916171,
+            "mean_truncation_mass": 0.00033363049858555627
+          },
+          {
+            "h_lo": 0.6,
+            "h_hi": 0.65,
+            "n_positions": 2983,
+            "mean_survival_alpha2": 0.7637374357732798,
+            "mean_survival_alpha5": 0.9012069226140509,
+            "mean_truncation_mass": 0.0002956165047720471
+          },
+          {
+            "h_lo": 0.65,
+            "h_hi": 0.7,
+            "n_positions": 3943,
+            "mean_survival_alpha2": 0.699032025427314,
+            "mean_survival_alpha5": 0.922919135539779,
+            "mean_truncation_mass": 0.00021716106881971845
+          },
+          {
+            "h_lo": 0.7,
+            "h_hi": 0.75,
+            "n_positions": 1996,
+            "mean_survival_alpha2": 0.7099959228882092,
+            "mean_survival_alpha5": 0.8883724943744037,
+            "mean_truncation_mass": 0.0003386850779961457
+          },
+          {
+            "h_lo": 0.75,
+            "h_hi": 0.8,
+            "n_positions": 1979,
+            "mean_survival_alpha2": 0.7122925558495004,
+            "mean_survival_alpha5": 0.8721804040031881,
+            "mean_truncation_mass": 0.0005008469039685322
+          },
+          {
+            "h_lo": 0.8,
+            "h_hi": 0.85,
+            "n_positions": 1237,
+            "mean_survival_alpha2": 0.6854331874037907,
+            "mean_survival_alpha5": 0.8941605183850784,
+            "mean_truncation_mass": 0.0004657827103287898
+          },
+          {
+            "h_lo": 0.85,
+            "h_hi": 0.9,
+            "n_positions": 1242,
+            "mean_survival_alpha2": 0.68104964595486,
+            "mean_survival_alpha5": 0.877751576040846,
+            "mean_truncation_mass": 0.0005499994966421977
+          },
+          {
+            "h_lo": 0.9,
+            "h_hi": 0.95,
+            "n_positions": 1140,
+            "mean_survival_alpha2": 0.6646316300881536,
+            "mean_survival_alpha5": 0.8840369188439167,
+            "mean_truncation_mass": 0.0005486031517948023
+          },
+          {
+            "h_lo": 0.95,
+            "h_hi": 1.0,
+            "n_positions": 1025,
+            "mean_survival_alpha2": 0.6551351812118438,
+            "mean_survival_alpha5": 0.8812106655501738,
+            "mean_truncation_mass": 0.0008078335343657268
+          },
+          {
+            "h_lo": 1.0,
+            "h_hi": 1.05,
+            "n_positions": 819,
+            "mean_survival_alpha2": 0.6333419143498599,
+            "mean_survival_alpha5": 0.9182555627200629,
+            "mean_truncation_mass": 0.0006654451760375178
+          },
+          {
+            "h_lo": 1.05,
+            "h_hi": 1.1,
+            "n_positions": 944,
+            "mean_survival_alpha2": 0.6171636524594436,
+            "mean_survival_alpha5": 0.9078262231265337,
+            "mean_truncation_mass": 0.0006885357090427677
+          },
+          {
+            "h_lo": 1.1,
+            "h_hi": 1.15,
+            "n_positions": 701,
+            "mean_survival_alpha2": 0.6163161076424636,
+            "mean_survival_alpha5": 0.9059267912575505,
+            "mean_truncation_mass": 0.0008963761986934099
+          },
+          {
+            "h_lo": 1.15,
+            "h_hi": 1.2,
+            "n_positions": 591,
+            "mean_survival_alpha2": 0.604961583759579,
+            "mean_survival_alpha5": 0.9072368016746998,
+            "mean_truncation_mass": 0.0009574219438959949
+          },
+          {
+            "h_lo": 1.2,
+            "h_hi": 1.25,
+            "n_positions": 495,
+            "mean_survival_alpha2": 0.5835234415651572,
+            "mean_survival_alpha5": 0.9172921635059997,
+            "mean_truncation_mass": 0.0010199775882137148
+          },
+          {
+            "h_lo": 1.25,
+            "h_hi": 1.3,
+            "n_positions": 457,
+            "mean_survival_alpha2": 0.6184763729702722,
+            "mean_survival_alpha5": 0.890565287664174,
+            "mean_truncation_mass": 0.0013606329875522182
+          },
+          {
+            "h_lo": 1.3,
+            "h_hi": 1.35,
+            "n_positions": 417,
+            "mean_survival_alpha2": 0.5939826634433344,
+            "mean_survival_alpha5": 0.9240057949262629,
+            "mean_truncation_mass": 0.0014673300267935856
+          },
+          {
+            "h_lo": 1.35,
+            "h_hi": 1.4,
+            "n_positions": 343,
+            "mean_survival_alpha2": 0.5990646881195268,
+            "mean_survival_alpha5": 0.925784228554229,
+            "mean_truncation_mass": 0.0014849020591313298
+          },
+          {
+            "h_lo": 1.4,
+            "h_hi": 1.45,
+            "n_positions": 386,
+            "mean_survival_alpha2": 0.559463022131994,
+            "mean_survival_alpha5": 0.9460235503815848,
+            "mean_truncation_mass": 0.0013317990586210263
+          },
+          {
+            "h_lo": 1.45,
+            "h_hi": 1.5,
+            "n_positions": 293,
+            "mean_survival_alpha2": 0.5425770150516627,
+            "mean_survival_alpha5": 0.9321952367252304,
+            "mean_truncation_mass": 0.0029854505881680145
+          },
+          {
+            "h_lo": 1.5,
+            "h_hi": 1.55,
+            "n_positions": 217,
+            "mean_survival_alpha2": 0.538495258526868,
+            "mean_survival_alpha5": 0.9484010532815954,
+            "mean_truncation_mass": 0.001955531799017772
+          },
+          {
+            "h_lo": 1.55,
+            "h_hi": 1.6,
+            "n_positions": 228,
+            "mean_survival_alpha2": 0.5681230450669924,
+            "mean_survival_alpha5": 0.9546622478162151,
+            "mean_truncation_mass": 0.0015708648795231582
+          },
+          {
+            "h_lo": 1.6,
+            "h_hi": 1.65,
+            "n_positions": 174,
+            "mean_survival_alpha2": 0.5407619084092392,
+            "mean_survival_alpha5": 0.9592393472116312,
+            "mean_truncation_mass": 0.0027429207093780275
+          },
+          {
+            "h_lo": 1.65,
+            "h_hi": 1.7,
+            "n_positions": 129,
+            "mean_survival_alpha2": 0.5328737484623295,
+            "mean_survival_alpha5": 0.9506730271626062,
+            "mean_truncation_mass": 0.003254921271075214
+          },
+          {
+            "h_lo": 1.7,
+            "h_hi": 1.75,
+            "n_positions": 129,
+            "mean_survival_alpha2": 0.6021969548260518,
+            "mean_survival_alpha5": 0.9566712356100306,
+            "mean_truncation_mass": 0.004554925476811128
+          },
+          {
+            "h_lo": 1.75,
+            "h_hi": 1.8,
+            "n_positions": 161,
+            "mean_survival_alpha2": 0.5313613779426362,
+            "mean_survival_alpha5": 0.9551455567313231,
+            "mean_truncation_mass": 0.004724250227993936
+          },
+          {
+            "h_lo": 1.8,
+            "h_hi": 1.85,
+            "n_positions": 97,
+            "mean_survival_alpha2": 0.5745103979848095,
+            "mean_survival_alpha5": 0.9624216864809644,
+            "mean_truncation_mass": 0.005920014411451291
+          },
+          {
+            "h_lo": 1.85,
+            "h_hi": 1.9,
+            "n_positions": 79,
+            "mean_survival_alpha2": 0.5694016997195497,
+            "mean_survival_alpha5": 0.9677621644326262,
+            "mean_truncation_mass": 0.0039921942623066895
+          },
+          {
+            "h_lo": 1.9,
+            "h_hi": 1.95,
+            "n_positions": 55,
+            "mean_survival_alpha2": 0.5543828463012522,
+            "mean_survival_alpha5": 0.9296642047649418,
+            "mean_truncation_mass": 0.010191112547446127
+          },
+          {
+            "h_lo": 1.95,
+            "h_hi": 2.0,
+            "n_positions": 70,
+            "mean_survival_alpha2": 0.4293759780270713,
+            "mean_survival_alpha5": 0.9587665943362351,
+            "mean_truncation_mass": 0.005161238538806044
+          },
+          {
+            "h_lo": 2.0,
+            "h_hi": 2.05,
+            "n_positions": 47,
+            "mean_survival_alpha2": 0.5487877780452688,
+            "mean_survival_alpha5": 0.9572948852672856,
+            "mean_truncation_mass": 0.009607683221203958
+          },
+          {
+            "h_lo": 2.05,
+            "h_hi": 2.1,
+            "n_positions": 19,
+            "mean_survival_alpha2": 0.3736212394739452,
+            "mean_survival_alpha5": 0.9785964325756619,
+            "mean_truncation_mass": 0.00660472882966707
+          },
+          {
+            "h_lo": 2.1,
+            "h_hi": 2.15,
+            "n_positions": 9,
+            "mean_survival_alpha2": 0.5303320636351904,
+            "mean_survival_alpha5": 0.8925630033093815,
+            "mean_truncation_mass": 0.06199100708343192
+          },
+          {
+            "h_lo": 2.15,
+            "h_hi": 2.2,
+            "n_positions": 35,
+            "mean_survival_alpha2": 0.41583169783864704,
+            "mean_survival_alpha5": 0.9427957439795136,
+            "mean_truncation_mass": 0.017097993301078012
+          },
+          {
+            "h_lo": 2.2,
+            "h_hi": 2.25,
+            "n_positions": 29,
+            "mean_survival_alpha2": 0.594318830247583,
+            "mean_survival_alpha5": 0.9671794932961849,
+            "mean_truncation_mass": 0.01602991253633357
+          },
+          {
+            "h_lo": 2.25,
+            "h_hi": 2.3,
+            "n_positions": 55,
+            "mean_survival_alpha2": 0.4441577607935125,
+            "mean_survival_alpha5": 0.9707476041618396,
+            "mean_truncation_mass": 0.01692976547320458
+          },
+          {
+            "h_lo": 2.3,
+            "h_hi": 2.35,
+            "n_positions": 23,
+            "mean_survival_alpha2": 0.470957048561262,
+            "mean_survival_alpha5": 0.9644502143567913,
+            "mean_truncation_mass": 0.024464282105960276
+          },
+          {
+            "h_lo": 2.35,
+            "h_hi": 2.4,
+            "n_positions": 25,
+            "mean_survival_alpha2": 0.44365823179483416,
+            "mean_survival_alpha5": 0.9637950213230215,
+            "mean_truncation_mass": 0.03322338902857155
+          },
+          {
+            "h_lo": 2.4,
+            "h_hi": 2.45,
+            "n_positions": 24,
+            "mean_survival_alpha2": 0.3411415747056405,
+            "mean_survival_alpha5": 0.9711420877138153,
+            "mean_truncation_mass": 0.022333252597794246
+          },
+          {
+            "h_lo": 2.45,
+            "h_hi": 2.5,
+            "n_positions": 2,
+            "mean_survival_alpha2": 0.509373128414154,
+            "mean_survival_alpha5": 0.9630449292017147,
+            "mean_truncation_mass": 0.036955070798285306
+          },
+          {
+            "h_lo": 2.5,
+            "h_hi": 2.55,
+            "n_positions": 11,
+            "mean_survival_alpha2": 0.35203579745509406,
+            "mean_survival_alpha5": 0.8229039841627871,
+            "mean_truncation_mass": 0.17709601583721285
+          },
+          {
+            "h_lo": 2.55,
+            "h_hi": 2.6,
+            "n_positions": 1,
+            "mean_survival_alpha2": 0.5043634921312332,
+            "mean_survival_alpha5": 0.9464872893877327,
+            "mean_truncation_mass": 0.053512710612267256
+          },
+          {
+            "h_lo": 2.6,
+            "h_hi": 2.65,
+            "n_positions": 3,
+            "mean_survival_alpha2": 0.4835037365555763,
+            "mean_survival_alpha5": 0.8572839971166104,
+            "mean_truncation_mass": 0.1427160028833896
+          },
+          {
+            "h_lo": 2.65,
+            "h_hi": 2.7,
+            "n_positions": 3,
+            "mean_survival_alpha2": 0.5401275207599004,
+            "mean_survival_alpha5": 0.9533655438572168,
+            "mean_truncation_mass": 0.046634456142783165
+          },
+          {
+            "h_lo": 2.7,
+            "h_hi": 2.75,
+            "n_positions": 5,
+            "mean_survival_alpha2": 0.33264200389385223,
+            "mean_survival_alpha5": 0.9215123194735497,
+            "mean_truncation_mass": 0.07848768052645028
+          },
+          {
+            "h_lo": 2.75,
+            "h_hi": 2.8,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 2.8,
+            "h_hi": 2.85,
+            "n_positions": 7,
+            "mean_survival_alpha2": 0.4669079950877598,
+            "mean_survival_alpha5": 0.877247149923018,
+            "mean_truncation_mass": 0.12275285007698196
+          },
+          {
+            "h_lo": 2.85,
+            "h_hi": 2.9,
+            "n_positions": 1,
+            "mean_survival_alpha2": 0.48104944825172424,
+            "mean_survival_alpha5": 0.8430902275722474,
+            "mean_truncation_mass": 0.15690977242775261
+          },
+          {
+            "h_lo": 2.9,
+            "h_hi": 2.95,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 2.95,
+            "h_hi": 3.0,
+            "n_positions": 5,
+            "mean_survival_alpha2": 0.4116049036383629,
+            "mean_survival_alpha5": 0.802200379781425,
+            "mean_truncation_mass": 0.197799620218575
+          },
+          {
+            "h_lo": 3.0,
+            "h_hi": 3.05,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.05,
+            "h_hi": 3.1,
+            "n_positions": 1,
+            "mean_survival_alpha2": 0.3056464418768883,
+            "mean_survival_alpha5": 0.8408149387687445,
+            "mean_truncation_mass": 0.15918506123125553
+          },
+          {
+            "h_lo": 3.1,
+            "h_hi": 3.15,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.15,
+            "h_hi": 3.2,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.2,
+            "h_hi": 3.25,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.25,
+            "h_hi": 3.3,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.3,
+            "h_hi": 3.35,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.35,
+            "h_hi": 3.4,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.4,
+            "h_hi": 3.45,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.45,
+            "h_hi": 3.5,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.5,
+            "h_hi": 3.55,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.55,
+            "h_hi": 3.6,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.6,
+            "h_hi": 3.65,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.65,
+            "h_hi": 3.7,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.7,
+            "h_hi": 3.75,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.75,
+            "h_hi": 3.8,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.8,
+            "h_hi": 3.85,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.85,
+            "h_hi": 3.9,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.9,
+            "h_hi": 3.95,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.95,
+            "h_hi": 4.0,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          }
+        ]
+      }
+    },
+    "gsm8k": {
+      "Qwen--Qwen2.5-Coder-7B-Instruct": {
+        "source_jsonl": "results/pless_alpha_entropy/gsm8k/Qwen--Qwen2.5-Coder-7B-Instruct/pless_t1.0.jsonl.entropy.jsonl",
+        "bin_width_nats": 0.05,
+        "h_max_nats": 4.0,
+        "bins": [
+          {
+            "h_lo": 0.0,
+            "h_hi": 0.05,
+            "n_positions": 297634,
+            "mean_survival_alpha2": 0.9989349808305434,
+            "mean_survival_alpha5": 0.9989349808305434,
+            "mean_truncation_mass": 4.0150248422577824e-05
+          },
+          {
+            "h_lo": 0.05,
+            "h_hi": 0.1,
+            "n_positions": 36434,
+            "mean_survival_alpha2": 0.9885917080919757,
+            "mean_survival_alpha5": 0.9885917080919757,
+            "mean_truncation_mass": 0.00031581739166124974
+          },
+          {
+            "h_lo": 0.1,
+            "h_hi": 0.15,
+            "n_positions": 21604,
+            "mean_survival_alpha2": 0.9781618676783089,
+            "mean_survival_alpha5": 0.9781618676783089,
+            "mean_truncation_mass": 0.0003417561227632871
+          },
+          {
+            "h_lo": 0.15,
+            "h_hi": 0.2,
+            "n_positions": 15414,
+            "mean_survival_alpha2": 0.9664756793625952,
+            "mean_survival_alpha5": 0.9664756793625952,
+            "mean_truncation_mass": 0.0003970042825818737
+          },
+          {
+            "h_lo": 0.2,
+            "h_hi": 0.25,
+            "n_positions": 12086,
+            "mean_survival_alpha2": 0.953252285309586,
+            "mean_survival_alpha5": 0.953252285309586,
+            "mean_truncation_mass": 0.0004628650559575842
+          },
+          {
+            "h_lo": 0.25,
+            "h_hi": 0.3,
+            "n_positions": 10060,
+            "mean_survival_alpha2": 0.9387062298433918,
+            "mean_survival_alpha5": 0.9387062298433918,
+            "mean_truncation_mass": 0.0005125200156151317
+          },
+          {
+            "h_lo": 0.3,
+            "h_hi": 0.35,
+            "n_positions": 9106,
+            "mean_survival_alpha2": 0.923089710331581,
+            "mean_survival_alpha5": 0.923089710331581,
+            "mean_truncation_mass": 0.000554374861376571
+          },
+          {
+            "h_lo": 0.35,
+            "h_hi": 0.4,
+            "n_positions": 8089,
+            "mean_survival_alpha2": 0.9055670321776143,
+            "mean_survival_alpha5": 0.9055670321776143,
+            "mean_truncation_mass": 0.0006174172726507704
+          },
+          {
+            "h_lo": 0.4,
+            "h_hi": 0.45,
+            "n_positions": 7576,
+            "mean_survival_alpha2": 0.8872941858759651,
+            "mean_survival_alpha5": 0.8872941858759651,
+            "mean_truncation_mass": 0.0007169379913495228
+          },
+          {
+            "h_lo": 0.45,
+            "h_hi": 0.5,
+            "n_positions": 7433,
+            "mean_survival_alpha2": 0.8673036787706542,
+            "mean_survival_alpha5": 0.8673036787706542,
+            "mean_truncation_mass": 0.0007912004303869083
+          },
+          {
+            "h_lo": 0.5,
+            "h_hi": 0.55,
+            "n_positions": 7140,
+            "mean_survival_alpha2": 0.8412463077143126,
+            "mean_survival_alpha5": 0.8412463077143126,
+            "mean_truncation_mass": 0.0007930266996482005
+          },
+          {
+            "h_lo": 0.55,
+            "h_hi": 0.6,
+            "n_positions": 7236,
+            "mean_survival_alpha2": 0.8135209726308709,
+            "mean_survival_alpha5": 0.8558097046492605,
+            "mean_truncation_mass": 0.0007733377795244362
+          },
+          {
+            "h_lo": 0.6,
+            "h_hi": 0.65,
+            "n_positions": 7487,
+            "mean_survival_alpha2": 0.779001843233492,
+            "mean_survival_alpha5": 0.8896333584802021,
+            "mean_truncation_mass": 0.0008291917581942193
+          },
+          {
+            "h_lo": 0.65,
+            "h_hi": 0.7,
+            "n_positions": 9419,
+            "mean_survival_alpha2": 0.7180944390643211,
+            "mean_survival_alpha5": 0.9185122590318634,
+            "mean_truncation_mass": 0.0007029336351984148
+          },
+          {
+            "h_lo": 0.7,
+            "h_hi": 0.75,
+            "n_positions": 8781,
+            "mean_survival_alpha2": 0.7033907644991152,
+            "mean_survival_alpha5": 0.91772407491357,
+            "mean_truncation_mass": 0.0009549856937492812
+          },
+          {
+            "h_lo": 0.75,
+            "h_hi": 0.8,
+            "n_positions": 7058,
+            "mean_survival_alpha2": 0.7025561698116773,
+            "mean_survival_alpha5": 0.8963817018782259,
+            "mean_truncation_mass": 0.001176845435719303
+          },
+          {
+            "h_lo": 0.8,
+            "h_hi": 0.85,
+            "n_positions": 5764,
+            "mean_survival_alpha2": 0.6961028514472583,
+            "mean_survival_alpha5": 0.884007973021244,
+            "mean_truncation_mass": 0.001330474853846752
+          },
+          {
+            "h_lo": 0.85,
+            "h_hi": 0.9,
+            "n_positions": 5778,
+            "mean_survival_alpha2": 0.6789410197897823,
+            "mean_survival_alpha5": 0.8834530953988408,
+            "mean_truncation_mass": 0.0014023704172475302
+          },
+          {
+            "h_lo": 0.9,
+            "h_hi": 0.95,
+            "n_positions": 5552,
+            "mean_survival_alpha2": 0.6665584538507702,
+            "mean_survival_alpha5": 0.8897149121027805,
+            "mean_truncation_mass": 0.0015771860101387787
+          },
+          {
+            "h_lo": 0.95,
+            "h_hi": 1.0,
+            "n_positions": 5432,
+            "mean_survival_alpha2": 0.6567180298038364,
+            "mean_survival_alpha5": 0.907542578309544,
+            "mean_truncation_mass": 0.001538484385635766
+          },
+          {
+            "h_lo": 1.0,
+            "h_hi": 1.05,
+            "n_positions": 5332,
+            "mean_survival_alpha2": 0.6542734645547406,
+            "mean_survival_alpha5": 0.8987061290331716,
+            "mean_truncation_mass": 0.0018424965015746678
+          },
+          {
+            "h_lo": 1.05,
+            "h_hi": 1.1,
+            "n_positions": 4697,
+            "mean_survival_alpha2": 0.6452266047527264,
+            "mean_survival_alpha5": 0.8987148304600551,
+            "mean_truncation_mass": 0.002101066952381466
+          },
+          {
+            "h_lo": 1.1,
+            "h_hi": 1.15,
+            "n_positions": 4110,
+            "mean_survival_alpha2": 0.6285794607044136,
+            "mean_survival_alpha5": 0.893203619172357,
+            "mean_truncation_mass": 0.0023075057154437924
+          },
+          {
+            "h_lo": 1.15,
+            "h_hi": 1.2,
+            "n_positions": 3633,
+            "mean_survival_alpha2": 0.6201224486722193,
+            "mean_survival_alpha5": 0.8933779672365005,
+            "mean_truncation_mass": 0.002680721185849307
+          },
+          {
+            "h_lo": 1.2,
+            "h_hi": 1.25,
+            "n_positions": 3144,
+            "mean_survival_alpha2": 0.6120868154514685,
+            "mean_survival_alpha5": 0.8971160073961906,
+            "mean_truncation_mass": 0.0028065720513527634
+          },
+          {
+            "h_lo": 1.25,
+            "h_hi": 1.3,
+            "n_positions": 2910,
+            "mean_survival_alpha2": 0.6108959522341535,
+            "mean_survival_alpha5": 0.8949197975905849,
+            "mean_truncation_mass": 0.003171463981524287
+          },
+          {
+            "h_lo": 1.3,
+            "h_hi": 1.35,
+            "n_positions": 2614,
+            "mean_survival_alpha2": 0.6081410809587502,
+            "mean_survival_alpha5": 0.8949500899409195,
+            "mean_truncation_mass": 0.0035275499230219783
+          },
+          {
+            "h_lo": 1.35,
+            "h_hi": 1.4,
+            "n_positions": 2564,
+            "mean_survival_alpha2": 0.5974914529789442,
+            "mean_survival_alpha5": 0.8982671009645072,
+            "mean_truncation_mass": 0.0037245093349043937
+          },
+          {
+            "h_lo": 1.4,
+            "h_hi": 1.45,
+            "n_positions": 2432,
+            "mean_survival_alpha2": 0.5893631146142357,
+            "mean_survival_alpha5": 0.8941970656914667,
+            "mean_truncation_mass": 0.004675930016958094
+          },
+          {
+            "h_lo": 1.45,
+            "h_hi": 1.5,
+            "n_positions": 2183,
+            "mean_survival_alpha2": 0.574750593521701,
+            "mean_survival_alpha5": 0.8999421025632334,
+            "mean_truncation_mass": 0.005197323324209898
+          },
+          {
+            "h_lo": 1.5,
+            "h_hi": 1.55,
+            "n_positions": 2043,
+            "mean_survival_alpha2": 0.5658606800724348,
+            "mean_survival_alpha5": 0.8964567525910393,
+            "mean_truncation_mass": 0.005793922615491237
+          },
+          {
+            "h_lo": 1.55,
+            "h_hi": 1.6,
+            "n_positions": 1945,
+            "mean_survival_alpha2": 0.5620626890720622,
+            "mean_survival_alpha5": 0.90715833870876,
+            "mean_truncation_mass": 0.006034572223258716
+          },
+          {
+            "h_lo": 1.6,
+            "h_hi": 1.65,
+            "n_positions": 1647,
+            "mean_survival_alpha2": 0.5755986694538311,
+            "mean_survival_alpha5": 0.9091151087991859,
+            "mean_truncation_mass": 0.006449059690862672
+          },
+          {
+            "h_lo": 1.65,
+            "h_hi": 1.7,
+            "n_positions": 1817,
+            "mean_survival_alpha2": 0.5500546981819922,
+            "mean_survival_alpha5": 0.9107743779430038,
+            "mean_truncation_mass": 0.007463176715537464
+          },
+          {
+            "h_lo": 1.7,
+            "h_hi": 1.75,
+            "n_positions": 1439,
+            "mean_survival_alpha2": 0.530736691757902,
+            "mean_survival_alpha5": 0.9214894454890656,
+            "mean_truncation_mass": 0.007504737706113257
+          },
+          {
+            "h_lo": 1.75,
+            "h_hi": 1.8,
+            "n_positions": 1301,
+            "mean_survival_alpha2": 0.5314871824355789,
+            "mean_survival_alpha5": 0.9322512903086824,
+            "mean_truncation_mass": 0.007618934311281135
+          },
+          {
+            "h_lo": 1.8,
+            "h_hi": 1.85,
+            "n_positions": 1192,
+            "mean_survival_alpha2": 0.52660735104008,
+            "mean_survival_alpha5": 0.9324522745852584,
+            "mean_truncation_mass": 0.008648923809713346
+          },
+          {
+            "h_lo": 1.85,
+            "h_hi": 1.9,
+            "n_positions": 1267,
+            "mean_survival_alpha2": 0.5331263232626309,
+            "mean_survival_alpha5": 0.9371445313374084,
+            "mean_truncation_mass": 0.009972082512973763
+          },
+          {
+            "h_lo": 1.9,
+            "h_hi": 1.95,
+            "n_positions": 1075,
+            "mean_survival_alpha2": 0.5035103635871133,
+            "mean_survival_alpha5": 0.9341957414531431,
+            "mean_truncation_mass": 0.010056673404946134
+          },
+          {
+            "h_lo": 1.95,
+            "h_hi": 2.0,
+            "n_positions": 1080,
+            "mean_survival_alpha2": 0.5097157012809206,
+            "mean_survival_alpha5": 0.9426504226361565,
+            "mean_truncation_mass": 0.010887900126063058
+          },
+          {
+            "h_lo": 2.0,
+            "h_hi": 2.05,
+            "n_positions": 907,
+            "mean_survival_alpha2": 0.48865406629203306,
+            "mean_survival_alpha5": 0.9436110929840644,
+            "mean_truncation_mass": 0.012173930892497145
+          },
+          {
+            "h_lo": 2.05,
+            "h_hi": 2.1,
+            "n_positions": 816,
+            "mean_survival_alpha2": 0.4893856483201186,
+            "mean_survival_alpha5": 0.9535434956735972,
+            "mean_truncation_mass": 0.011849967169299683
+          },
+          {
+            "h_lo": 2.1,
+            "h_hi": 2.15,
+            "n_positions": 743,
+            "mean_survival_alpha2": 0.4995993397839137,
+            "mean_survival_alpha5": 0.9561741597645553,
+            "mean_truncation_mass": 0.01411638188597109
+          },
+          {
+            "h_lo": 2.15,
+            "h_hi": 2.2,
+            "n_positions": 644,
+            "mean_survival_alpha2": 0.4823973340832669,
+            "mean_survival_alpha5": 0.9580535243325166,
+            "mean_truncation_mass": 0.014394695409063393
+          },
+          {
+            "h_lo": 2.2,
+            "h_hi": 2.25,
+            "n_positions": 455,
+            "mean_survival_alpha2": 0.5047569892563663,
+            "mean_survival_alpha5": 0.9700031668028365,
+            "mean_truncation_mass": 0.013319673260132102
+          },
+          {
+            "h_lo": 2.25,
+            "h_hi": 2.3,
+            "n_positions": 410,
+            "mean_survival_alpha2": 0.474110035598278,
+            "mean_survival_alpha5": 0.9705660857884895,
+            "mean_truncation_mass": 0.0152302490287317
+          },
+          {
+            "h_lo": 2.3,
+            "h_hi": 2.35,
+            "n_positions": 483,
+            "mean_survival_alpha2": 0.4890739419198678,
+            "mean_survival_alpha5": 0.972176834947177,
+            "mean_truncation_mass": 0.01754010749070213
+          },
+          {
+            "h_lo": 2.35,
+            "h_hi": 2.4,
+            "n_positions": 357,
+            "mean_survival_alpha2": 0.45898867957815737,
+            "mean_survival_alpha5": 0.9712621838574889,
+            "mean_truncation_mass": 0.019676675426128713
+          },
+          {
+            "h_lo": 2.4,
+            "h_hi": 2.45,
+            "n_positions": 320,
+            "mean_survival_alpha2": 0.4861480337334797,
+            "mean_survival_alpha5": 0.9732311035637394,
+            "mean_truncation_mass": 0.021412966733714713
+          },
+          {
+            "h_lo": 2.45,
+            "h_hi": 2.5,
+            "n_positions": 199,
+            "mean_survival_alpha2": 0.4568357069288666,
+            "mean_survival_alpha5": 0.9741516792855691,
+            "mean_truncation_mass": 0.021323944012582977
+          },
+          {
+            "h_lo": 2.5,
+            "h_hi": 2.55,
+            "n_positions": 201,
+            "mean_survival_alpha2": 0.4736671316534726,
+            "mean_survival_alpha5": 0.971846128772873,
+            "mean_truncation_mass": 0.02682947738344297
+          },
+          {
+            "h_lo": 2.55,
+            "h_hi": 2.6,
+            "n_positions": 129,
+            "mean_survival_alpha2": 0.45848160595163817,
+            "mean_survival_alpha5": 0.9799788425818209,
+            "mean_truncation_mass": 0.01974318023002165
+          },
+          {
+            "h_lo": 2.6,
+            "h_hi": 2.65,
+            "n_positions": 95,
+            "mean_survival_alpha2": 0.4579271536908652,
+            "mean_survival_alpha5": 0.9707730806573588,
+            "mean_truncation_mass": 0.028849993367360806
+          },
+          {
+            "h_lo": 2.65,
+            "h_hi": 2.7,
+            "n_positions": 52,
+            "mean_survival_alpha2": 0.4497385165439202,
+            "mean_survival_alpha5": 0.973387549250709,
+            "mean_truncation_mass": 0.026165140859890156
+          },
+          {
+            "h_lo": 2.7,
+            "h_hi": 2.75,
+            "n_positions": 47,
+            "mean_survival_alpha2": 0.48042283587633294,
+            "mean_survival_alpha5": 0.9639247095935601,
+            "mean_truncation_mass": 0.03607529040643985
+          },
+          {
+            "h_lo": 2.75,
+            "h_hi": 2.8,
+            "n_positions": 19,
+            "mean_survival_alpha2": 0.48309117124268885,
+            "mean_survival_alpha5": 0.9660934554903131,
+            "mean_truncation_mass": 0.03390654450968692
+          },
+          {
+            "h_lo": 2.8,
+            "h_hi": 2.85,
+            "n_positions": 7,
+            "mean_survival_alpha2": 0.45032464393547605,
+            "mean_survival_alpha5": 0.9690533210024503,
+            "mean_truncation_mass": 0.030946678997549628
+          },
+          {
+            "h_lo": 2.85,
+            "h_hi": 2.9,
+            "n_positions": 2,
+            "mean_survival_alpha2": 0.5057582370936871,
+            "mean_survival_alpha5": 0.970997910713777,
+            "mean_truncation_mass": 0.029002089286223054
+          },
+          {
+            "h_lo": 2.9,
+            "h_hi": 2.95,
+            "n_positions": 1,
+            "mean_survival_alpha2": 0.4094656929373741,
+            "mean_survival_alpha5": 0.9518480154220015,
+            "mean_truncation_mass": 0.04815198457799852
+          },
+          {
+            "h_lo": 2.95,
+            "h_hi": 3.0,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.0,
+            "h_hi": 3.05,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.05,
+            "h_hi": 3.1,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.1,
+            "h_hi": 3.15,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.15,
+            "h_hi": 3.2,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.2,
+            "h_hi": 3.25,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.25,
+            "h_hi": 3.3,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.3,
+            "h_hi": 3.35,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.35,
+            "h_hi": 3.4,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.4,
+            "h_hi": 3.45,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.45,
+            "h_hi": 3.5,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.5,
+            "h_hi": 3.55,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.55,
+            "h_hi": 3.6,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.6,
+            "h_hi": 3.65,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.65,
+            "h_hi": 3.7,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.7,
+            "h_hi": 3.75,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.75,
+            "h_hi": 3.8,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.8,
+            "h_hi": 3.85,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.85,
+            "h_hi": 3.9,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.9,
+            "h_hi": 3.95,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.95,
+            "h_hi": 4.0,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          }
+        ]
+      },
+      "codellama--CodeLlama-7b-Instruct-hf": {
+        "source_jsonl": "results/pless_alpha_entropy/gsm8k/codellama--CodeLlama-7b-Instruct-hf/pless_t1.0.jsonl.entropy.jsonl",
+        "bin_width_nats": 0.05,
+        "h_max_nats": 4.0,
+        "bins": [
+          {
+            "h_lo": 0.0,
+            "h_hi": 0.05,
+            "n_positions": 190053,
+            "mean_survival_alpha2": 0.9981639117845658,
+            "mean_survival_alpha5": 0.9981639117845658,
+            "mean_truncation_mass": 0.00011100534387952139
+          },
+          {
+            "h_lo": 0.05,
+            "h_hi": 0.1,
+            "n_positions": 39179,
+            "mean_survival_alpha2": 0.989313436771882,
+            "mean_survival_alpha5": 0.989313436771882,
+            "mean_truncation_mass": 0.000462042267288787
+          },
+          {
+            "h_lo": 0.1,
+            "h_hi": 0.15,
+            "n_positions": 25695,
+            "mean_survival_alpha2": 0.9795528537221724,
+            "mean_survival_alpha5": 0.9795528537221724,
+            "mean_truncation_mass": 0.0007392344015411703
+          },
+          {
+            "h_lo": 0.15,
+            "h_hi": 0.2,
+            "n_positions": 19640,
+            "mean_survival_alpha2": 0.9690564451356041,
+            "mean_survival_alpha5": 0.9690564451356041,
+            "mean_truncation_mass": 0.0010085820151718879
+          },
+          {
+            "h_lo": 0.2,
+            "h_hi": 0.25,
+            "n_positions": 15800,
+            "mean_survival_alpha2": 0.9579476223339009,
+            "mean_survival_alpha5": 0.9579476223339009,
+            "mean_truncation_mass": 0.001481354805072237
+          },
+          {
+            "h_lo": 0.25,
+            "h_hi": 0.3,
+            "n_positions": 14923,
+            "mean_survival_alpha2": 0.9458231509374899,
+            "mean_survival_alpha5": 0.9458231509374899,
+            "mean_truncation_mass": 0.0024794611337672114
+          },
+          {
+            "h_lo": 0.3,
+            "h_hi": 0.35,
+            "n_positions": 13766,
+            "mean_survival_alpha2": 0.9320466954633972,
+            "mean_survival_alpha5": 0.9320466954633972,
+            "mean_truncation_mass": 0.0029097743042188467
+          },
+          {
+            "h_lo": 0.35,
+            "h_hi": 0.4,
+            "n_positions": 12602,
+            "mean_survival_alpha2": 0.9168935545028873,
+            "mean_survival_alpha5": 0.9168935545028873,
+            "mean_truncation_mass": 0.0029977561495531276
+          },
+          {
+            "h_lo": 0.4,
+            "h_hi": 0.45,
+            "n_positions": 11098,
+            "mean_survival_alpha2": 0.9017364814230334,
+            "mean_survival_alpha5": 0.9017364814230334,
+            "mean_truncation_mass": 0.002839015058878531
+          },
+          {
+            "h_lo": 0.45,
+            "h_hi": 0.5,
+            "n_positions": 9667,
+            "mean_survival_alpha2": 0.8852725700075752,
+            "mean_survival_alpha5": 0.8852725700075752,
+            "mean_truncation_mass": 0.0028124394076601946
+          },
+          {
+            "h_lo": 0.5,
+            "h_hi": 0.55,
+            "n_positions": 8851,
+            "mean_survival_alpha2": 0.867374807013696,
+            "mean_survival_alpha5": 0.867374807013696,
+            "mean_truncation_mass": 0.0029411279727716276
+          },
+          {
+            "h_lo": 0.55,
+            "h_hi": 0.6,
+            "n_positions": 8082,
+            "mean_survival_alpha2": 0.8464568613469969,
+            "mean_survival_alpha5": 0.8588556572149603,
+            "mean_truncation_mass": 0.003029680814403597
+          },
+          {
+            "h_lo": 0.6,
+            "h_hi": 0.65,
+            "n_positions": 7976,
+            "mean_survival_alpha2": 0.8225971443976539,
+            "mean_survival_alpha5": 0.8612624850000816,
+            "mean_truncation_mass": 0.0029954530814595842
+          },
+          {
+            "h_lo": 0.65,
+            "h_hi": 0.7,
+            "n_positions": 8468,
+            "mean_survival_alpha2": 0.7868215156843148,
+            "mean_survival_alpha5": 0.872107029112516,
+            "mean_truncation_mass": 0.0030385148855146603
+          },
+          {
+            "h_lo": 0.7,
+            "h_hi": 0.75,
+            "n_positions": 8327,
+            "mean_survival_alpha2": 0.7544523105052134,
+            "mean_survival_alpha5": 0.8769502202524233,
+            "mean_truncation_mass": 0.003075610062569188
+          },
+          {
+            "h_lo": 0.75,
+            "h_hi": 0.8,
+            "n_positions": 7676,
+            "mean_survival_alpha2": 0.7463207415471541,
+            "mean_survival_alpha5": 0.8652773920743648,
+            "mean_truncation_mass": 0.0034852509036339715
+          },
+          {
+            "h_lo": 0.8,
+            "h_hi": 0.85,
+            "n_positions": 7111,
+            "mean_survival_alpha2": 0.7303621034349944,
+            "mean_survival_alpha5": 0.8635545049751715,
+            "mean_truncation_mass": 0.0041215427173003
+          },
+          {
+            "h_lo": 0.85,
+            "h_hi": 0.9,
+            "n_positions": 6566,
+            "mean_survival_alpha2": 0.7152265314417862,
+            "mean_survival_alpha5": 0.8571355882379619,
+            "mean_truncation_mass": 0.00430018290874743
+          },
+          {
+            "h_lo": 0.9,
+            "h_hi": 0.95,
+            "n_positions": 5949,
+            "mean_survival_alpha2": 0.6994214337660417,
+            "mean_survival_alpha5": 0.851872555384903,
+            "mean_truncation_mass": 0.004701222610359075
+          },
+          {
+            "h_lo": 0.95,
+            "h_hi": 1.0,
+            "n_positions": 5886,
+            "mean_survival_alpha2": 0.6907808965833423,
+            "mean_survival_alpha5": 0.8496393153359756,
+            "mean_truncation_mass": 0.005379585323666287
+          },
+          {
+            "h_lo": 1.0,
+            "h_hi": 1.05,
+            "n_positions": 5820,
+            "mean_survival_alpha2": 0.6903484336852618,
+            "mean_survival_alpha5": 0.8420699037297843,
+            "mean_truncation_mass": 0.006364842957638557
+          },
+          {
+            "h_lo": 1.05,
+            "h_hi": 1.1,
+            "n_positions": 5497,
+            "mean_survival_alpha2": 0.6743211083755247,
+            "mean_survival_alpha5": 0.8474594471450608,
+            "mean_truncation_mass": 0.006369471025771913
+          },
+          {
+            "h_lo": 1.1,
+            "h_hi": 1.15,
+            "n_positions": 5075,
+            "mean_survival_alpha2": 0.6609969943556292,
+            "mean_survival_alpha5": 0.8461557305971243,
+            "mean_truncation_mass": 0.00660042053483628
+          },
+          {
+            "h_lo": 1.15,
+            "h_hi": 1.2,
+            "n_positions": 5121,
+            "mean_survival_alpha2": 0.6414928030360143,
+            "mean_survival_alpha5": 0.8494874601587188,
+            "mean_truncation_mass": 0.007136755202015659
+          },
+          {
+            "h_lo": 1.2,
+            "h_hi": 1.25,
+            "n_positions": 4658,
+            "mean_survival_alpha2": 0.637054722149928,
+            "mean_survival_alpha5": 0.8432130305843885,
+            "mean_truncation_mass": 0.00824530605370265
+          },
+          {
+            "h_lo": 1.25,
+            "h_hi": 1.3,
+            "n_positions": 4360,
+            "mean_survival_alpha2": 0.628060496666836,
+            "mean_survival_alpha5": 0.8487087013708308,
+            "mean_truncation_mass": 0.008146107501870708
+          },
+          {
+            "h_lo": 1.3,
+            "h_hi": 1.35,
+            "n_positions": 4247,
+            "mean_survival_alpha2": 0.6218288519437493,
+            "mean_survival_alpha5": 0.8468618293799159,
+            "mean_truncation_mass": 0.009533590188870655
+          },
+          {
+            "h_lo": 1.35,
+            "h_hi": 1.4,
+            "n_positions": 3879,
+            "mean_survival_alpha2": 0.6056763155615862,
+            "mean_survival_alpha5": 0.848223552511168,
+            "mean_truncation_mass": 0.010107449140165068
+          },
+          {
+            "h_lo": 1.4,
+            "h_hi": 1.45,
+            "n_positions": 3942,
+            "mean_survival_alpha2": 0.6005912372782894,
+            "mean_survival_alpha5": 0.8516145597435515,
+            "mean_truncation_mass": 0.010897647093978648
+          },
+          {
+            "h_lo": 1.45,
+            "h_hi": 1.5,
+            "n_positions": 3767,
+            "mean_survival_alpha2": 0.5874668368696375,
+            "mean_survival_alpha5": 0.8577694048623441,
+            "mean_truncation_mass": 0.011743605820332402
+          },
+          {
+            "h_lo": 1.5,
+            "h_hi": 1.55,
+            "n_positions": 3540,
+            "mean_survival_alpha2": 0.5790934707653724,
+            "mean_survival_alpha5": 0.8572325569005305,
+            "mean_truncation_mass": 0.012586931800133585
+          },
+          {
+            "h_lo": 1.55,
+            "h_hi": 1.6,
+            "n_positions": 3413,
+            "mean_survival_alpha2": 0.5739946269784685,
+            "mean_survival_alpha5": 0.8650319568213614,
+            "mean_truncation_mass": 0.013320811017975033
+          },
+          {
+            "h_lo": 1.6,
+            "h_hi": 1.65,
+            "n_positions": 3340,
+            "mean_survival_alpha2": 0.5671526472056341,
+            "mean_survival_alpha5": 0.8660711992929361,
+            "mean_truncation_mass": 0.015244448510919884
+          },
+          {
+            "h_lo": 1.65,
+            "h_hi": 1.7,
+            "n_positions": 3098,
+            "mean_survival_alpha2": 0.5561772908863905,
+            "mean_survival_alpha5": 0.8688405475858328,
+            "mean_truncation_mass": 0.015995687216789067
+          },
+          {
+            "h_lo": 1.7,
+            "h_hi": 1.75,
+            "n_positions": 2965,
+            "mean_survival_alpha2": 0.5440913683346914,
+            "mean_survival_alpha5": 0.8746894590448255,
+            "mean_truncation_mass": 0.017224598516958293
+          },
+          {
+            "h_lo": 1.75,
+            "h_hi": 1.8,
+            "n_positions": 2887,
+            "mean_survival_alpha2": 0.5369701667727176,
+            "mean_survival_alpha5": 0.8861124557911527,
+            "mean_truncation_mass": 0.017544070112235757
+          },
+          {
+            "h_lo": 1.8,
+            "h_hi": 1.85,
+            "n_positions": 2816,
+            "mean_survival_alpha2": 0.5300566364471293,
+            "mean_survival_alpha5": 0.8850165232627412,
+            "mean_truncation_mass": 0.020220999715909713
+          },
+          {
+            "h_lo": 1.85,
+            "h_hi": 1.9,
+            "n_positions": 2530,
+            "mean_survival_alpha2": 0.5215937497469747,
+            "mean_survival_alpha5": 0.893280089429576,
+            "mean_truncation_mass": 0.020146393266019903
+          },
+          {
+            "h_lo": 1.9,
+            "h_hi": 1.95,
+            "n_positions": 2624,
+            "mean_survival_alpha2": 0.5133289961348765,
+            "mean_survival_alpha5": 0.8944284482234851,
+            "mean_truncation_mass": 0.0229324709379984
+          },
+          {
+            "h_lo": 1.95,
+            "h_hi": 2.0,
+            "n_positions": 2450,
+            "mean_survival_alpha2": 0.5121647208077567,
+            "mean_survival_alpha5": 0.9087697704977888,
+            "mean_truncation_mass": 0.023364535954097997
+          },
+          {
+            "h_lo": 2.0,
+            "h_hi": 2.05,
+            "n_positions": 2432,
+            "mean_survival_alpha2": 0.5024037907990676,
+            "mean_survival_alpha5": 0.9068746364811503,
+            "mean_truncation_mass": 0.026441790448408654
+          },
+          {
+            "h_lo": 2.05,
+            "h_hi": 2.1,
+            "n_positions": 2079,
+            "mean_survival_alpha2": 0.4963674247981609,
+            "mean_survival_alpha5": 0.9184639299675436,
+            "mean_truncation_mass": 0.0269315175118626
+          },
+          {
+            "h_lo": 2.1,
+            "h_hi": 2.15,
+            "n_positions": 2265,
+            "mean_survival_alpha2": 0.48648010919951973,
+            "mean_survival_alpha5": 0.9206348071816413,
+            "mean_truncation_mass": 0.030027903281340862
+          },
+          {
+            "h_lo": 2.15,
+            "h_hi": 2.2,
+            "n_positions": 2035,
+            "mean_survival_alpha2": 0.49289585883919085,
+            "mean_survival_alpha5": 0.9301442296794245,
+            "mean_truncation_mass": 0.029900465876668936
+          },
+          {
+            "h_lo": 2.2,
+            "h_hi": 2.25,
+            "n_positions": 1914,
+            "mean_survival_alpha2": 0.48155814902847216,
+            "mean_survival_alpha5": 0.9349124271631339,
+            "mean_truncation_mass": 0.033045417886784154
+          },
+          {
+            "h_lo": 2.25,
+            "h_hi": 2.3,
+            "n_positions": 1737,
+            "mean_survival_alpha2": 0.4681625401941125,
+            "mean_survival_alpha5": 0.9386505971789587,
+            "mean_truncation_mass": 0.03511062856600829
+          },
+          {
+            "h_lo": 2.3,
+            "h_hi": 2.35,
+            "n_positions": 1627,
+            "mean_survival_alpha2": 0.46482208262632135,
+            "mean_survival_alpha5": 0.9455048110824659,
+            "mean_truncation_mass": 0.03745970153118915
+          },
+          {
+            "h_lo": 2.35,
+            "h_hi": 2.4,
+            "n_positions": 1544,
+            "mean_survival_alpha2": 0.4682187098922893,
+            "mean_survival_alpha5": 0.9513919310378592,
+            "mean_truncation_mass": 0.037287404203800105
+          },
+          {
+            "h_lo": 2.4,
+            "h_hi": 2.45,
+            "n_positions": 1473,
+            "mean_survival_alpha2": 0.46731004611578264,
+            "mean_survival_alpha5": 0.9483360452054225,
+            "mean_truncation_mass": 0.045315232129270674
+          },
+          {
+            "h_lo": 2.45,
+            "h_hi": 2.5,
+            "n_positions": 1011,
+            "mean_survival_alpha2": 0.45920057039114653,
+            "mean_survival_alpha5": 0.9534674281118305,
+            "mean_truncation_mass": 0.04274350298225406
+          },
+          {
+            "h_lo": 2.5,
+            "h_hi": 2.55,
+            "n_positions": 1048,
+            "mean_survival_alpha2": 0.465327913432119,
+            "mean_survival_alpha5": 0.9508492426254793,
+            "mean_truncation_mass": 0.0478727371617924
+          },
+          {
+            "h_lo": 2.55,
+            "h_hi": 2.6,
+            "n_positions": 868,
+            "mean_survival_alpha2": 0.4690391483892631,
+            "mean_survival_alpha5": 0.946716416791892,
+            "mean_truncation_mass": 0.0529041233070454
+          },
+          {
+            "h_lo": 2.6,
+            "h_hi": 2.65,
+            "n_positions": 653,
+            "mean_survival_alpha2": 0.4727266465882795,
+            "mean_survival_alpha5": 0.9519145505848322,
+            "mean_truncation_mass": 0.04802924729116631
+          },
+          {
+            "h_lo": 2.65,
+            "h_hi": 2.7,
+            "n_positions": 523,
+            "mean_survival_alpha2": 0.45496629781123554,
+            "mean_survival_alpha5": 0.9463187412154704,
+            "mean_truncation_mass": 0.05359352696551202
+          },
+          {
+            "h_lo": 2.7,
+            "h_hi": 2.75,
+            "n_positions": 348,
+            "mean_survival_alpha2": 0.4588820021385434,
+            "mean_survival_alpha5": 0.9385096519160481,
+            "mean_truncation_mass": 0.06149034808395195
+          },
+          {
+            "h_lo": 2.75,
+            "h_hi": 2.8,
+            "n_positions": 194,
+            "mean_survival_alpha2": 0.44963001886133064,
+            "mean_survival_alpha5": 0.9360959970976763,
+            "mean_truncation_mass": 0.06390400290232363
+          },
+          {
+            "h_lo": 2.8,
+            "h_hi": 2.85,
+            "n_positions": 131,
+            "mean_survival_alpha2": 0.46889364014145074,
+            "mean_survival_alpha5": 0.9367548044760292,
+            "mean_truncation_mass": 0.0632451955239708
+          },
+          {
+            "h_lo": 2.85,
+            "h_hi": 2.9,
+            "n_positions": 70,
+            "mean_survival_alpha2": 0.42474833796066896,
+            "mean_survival_alpha5": 0.9274633285489732,
+            "mean_truncation_mass": 0.07253667145102684
+          },
+          {
+            "h_lo": 2.9,
+            "h_hi": 2.95,
+            "n_positions": 58,
+            "mean_survival_alpha2": 0.4337280072785657,
+            "mean_survival_alpha5": 0.8930846492575225,
+            "mean_truncation_mass": 0.10691535074247754
+          },
+          {
+            "h_lo": 2.95,
+            "h_hi": 3.0,
+            "n_positions": 25,
+            "mean_survival_alpha2": 0.4678875641524792,
+            "mean_survival_alpha5": 0.9187383041251451,
+            "mean_truncation_mass": 0.08126169587485492
+          },
+          {
+            "h_lo": 3.0,
+            "h_hi": 3.05,
+            "n_positions": 5,
+            "mean_survival_alpha2": 0.4683511570096016,
+            "mean_survival_alpha5": 0.8750405007973313,
+            "mean_truncation_mass": 0.12495949920266866
+          },
+          {
+            "h_lo": 3.05,
+            "h_hi": 3.1,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.1,
+            "h_hi": 3.15,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.15,
+            "h_hi": 3.2,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.2,
+            "h_hi": 3.25,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.25,
+            "h_hi": 3.3,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.3,
+            "h_hi": 3.35,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.35,
+            "h_hi": 3.4,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.4,
+            "h_hi": 3.45,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.45,
+            "h_hi": 3.5,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.5,
+            "h_hi": 3.55,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.55,
+            "h_hi": 3.6,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.6,
+            "h_hi": 3.65,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.65,
+            "h_hi": 3.7,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.7,
+            "h_hi": 3.75,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.75,
+            "h_hi": 3.8,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.8,
+            "h_hi": 3.85,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.85,
+            "h_hi": 3.9,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.9,
+            "h_hi": 3.95,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          },
+          {
+            "h_lo": 3.95,
+            "h_hi": 4.0,
+            "n_positions": 0,
+            "mean_survival_alpha2": NaN,
+            "mean_survival_alpha5": NaN,
+            "mean_truncation_mass": NaN
+          }
+        ]
+      }
+    }
+  }
+}

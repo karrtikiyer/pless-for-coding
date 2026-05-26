@@ -189,3 +189,82 @@ def test_bin_records_handles_empty_bins():
     # Empty bins still exist (so the plot has a continuous x-axis)
     n_empty = sum(1 for b in bins if b["n_positions"] == 0)
     assert n_empty > 0
+
+
+# ─── dataset-aware path resolution ──────────────────────────────────────
+
+
+def test_model_jsonl_path_mbpp():
+    """The MBPP entropy data lives at pless_alpha_entropy/mbpp/<slug>/...
+    (post-2026-05-26 reorg). The resolver must include the dataset prefix."""
+    from bench.eval.entropy_survival_curves import _model_jsonl_path
+    p = _model_jsonl_path("Qwen--Qwen2.5-Coder-7B-Instruct", "mbpp")
+    s = str(p)
+    assert "pless_alpha_entropy/mbpp/Qwen--Qwen2.5-Coder-7B-Instruct/" in s
+    assert s.endswith("pless_t1.0.jsonl.entropy.jsonl")
+
+
+def test_model_jsonl_path_gsm8k():
+    """GSM8K entropy data lives at pless_alpha_entropy/gsm8k/<slug>/...
+    — mirrors the MBPP layout exactly."""
+    from bench.eval.entropy_survival_curves import _model_jsonl_path
+    p = _model_jsonl_path("codellama--CodeLlama-7b-Instruct-hf", "gsm8k")
+    s = str(p)
+    assert "pless_alpha_entropy/gsm8k/codellama--CodeLlama-7b-Instruct-hf/" in s
+    assert s.endswith("pless_t1.0.jsonl.entropy.jsonl")
+
+
+def test_main_accepts_datasets_flag(tmp_path, monkeypatch):
+    """CLI must accept --datasets {mbpp,gsm8k} (nargs="+"). We don't need
+    to actually run the pipeline — just verify the argparser doesn't reject
+    multiple datasets. We monkeypatch the heavy parts so the test is fast."""
+    from bench.eval import entropy_survival_curves as mod
+    # Stub out heavy I/O — we just want to assert the CLI surface accepts
+    # the new flag and threads the dataset list through.
+    seen = {"datasets": None, "models": None}
+    def fake_main(argv):
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("--models", nargs="+", required=True)
+        p.add_argument("--datasets", nargs="+", default=["mbpp"])
+        p.add_argument("--output-dir")
+        p.add_argument("--bin-width", type=float, default=0.05)
+        p.add_argument("--h-max", type=float, default=4.0)
+        p.add_argument("--validation-sample-size", type=int, default=500)
+        ns = p.parse_args(argv)
+        seen["datasets"] = ns.datasets
+        seen["models"] = ns.models
+    # Run the real CLI parser to confirm --datasets is accepted (not stubbed)
+    monkeypatch.setattr(mod, "process_model", lambda *a, **kw: {"bins": []})
+    monkeypatch.setattr(mod, "validate",
+                        lambda *a, **kw: {"validation_sample_size": 0,
+                                          "checks": [], "all_passed": True})
+    monkeypatch.setattr(mod, "_model_jsonl_path",
+                        lambda model, dataset: tmp_path / f"missing-{dataset}-{model}.jsonl")
+    # Should not raise — argparser accepts --datasets with two values
+    mod.main([
+        "--models", "Qwen--Qwen2.5-Coder-7B-Instruct",
+        "--datasets", "mbpp", "gsm8k",
+        "--output-dir", str(tmp_path),
+    ])
+    # Outputs created (validation report + data JSON) even when sources missing
+    assert (tmp_path / "survival_vs_entropy_data.json").exists()
+
+
+def test_main_default_dataset_is_mbpp(tmp_path, monkeypatch):
+    """Backward compat: omitting --datasets defaults to ['mbpp']."""
+    from bench.eval import entropy_survival_curves as mod
+    monkeypatch.setattr(mod, "process_model", lambda *a, **kw: {"bins": []})
+    monkeypatch.setattr(mod, "validate",
+                        lambda *a, **kw: {"validation_sample_size": 0,
+                                          "checks": [], "all_passed": True})
+    seen = []
+    def fake_path(model, dataset):
+        seen.append((model, dataset))
+        return tmp_path / f"missing-{dataset}-{model}.jsonl"
+    monkeypatch.setattr(mod, "_model_jsonl_path", fake_path)
+    mod.main([
+        "--models", "Qwen--Qwen2.5-Coder-7B-Instruct",
+        "--output-dir", str(tmp_path),
+    ])
+    assert ("Qwen--Qwen2.5-Coder-7B-Instruct", "mbpp") in seen

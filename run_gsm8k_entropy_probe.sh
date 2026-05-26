@@ -49,7 +49,9 @@ SEED="${SEED:-0}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-512}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
 DTYPE="${DTYPE:-bfloat16}"
-RESULTS_DIR_BASE="${RESULTS_DIR_BASE:-results/pless_alpha_entropy}"
+# Default is .../pless_alpha_entropy/gsm8k so the runner's <slug>/ subdir
+# lands at .../gsm8k/<slug>/, mirroring the MBPP layout exactly.
+RESULTS_DIR_BASE="${RESULTS_DIR_BASE:-results/pless_alpha_entropy/gsm8k}"
 LOG_DIR="${LOG_DIR:-/tmp/gsm8k_entropy_logs}"
 mkdir -p "$LOG_DIR"
 
@@ -76,20 +78,25 @@ echo "  Log dir:        $LOG_DIR"
 echo "═══════════════════════════════════════════════════════════════════════"
 
 for MODEL in $MODELS; do
-  MODEL_SLUG=$(echo "$MODEL" | tr '/' '-')
-  OUT_DIR="$RESULTS_DIR_BASE/$MODEL_SLUG/gsm8k"
-  mkdir -p "$OUT_DIR"
-  LOG="$LOG_DIR/${MODEL_SLUG}_entropy.log"
+  # The runner uses model.replace("/", "--") for its output subdir
+  # — match that here so we can pre-check for an existing sidecar.
+  MODEL_SLUG_DBL=$(echo "$MODEL" | sed 's|/|--|g')
+  MODEL_SLUG_SH=$(echo "$MODEL" | tr '/' '-')  # for log file name only
+  OUT_DIR="$RESULTS_DIR_BASE/$MODEL_SLUG_DBL"
+  LOG="$LOG_DIR/${MODEL_SLUG_SH}_entropy.log"
   EXPECTED_SIDECAR="$OUT_DIR/pless_t${TEMPERATURE}.jsonl.entropy.jsonl"
 
   if [ -f "$EXPECTED_SIDECAR" ] && [ "${FORCE:-0}" != "1" ]; then
-    echo "[skip] $MODEL_SLUG entropy sidecar already exists at $EXPECTED_SIDECAR"
+    echo "[skip] $MODEL_SLUG_DBL entropy sidecar already exists at $EXPECTED_SIDECAR"
     echo "       (set FORCE=1 to re-run)"
     continue
   fi
 
   echo
   echo "───── $MODEL → $OUT_DIR (log: $LOG) ─────"
+  # Pass --results-dir as the parent dir; the runner appends <double-hyphen-slug>/
+  # under it. Net layout: $RESULTS_DIR_BASE/<slug>/pless_t1.0.jsonl[.entropy.jsonl]
+  # (matches results/pless_alpha_entropy/mbpp/<slug>/...).
   uv run python -m bench.gsm8k \
     --model "$MODEL" \
     --method pless \
@@ -100,7 +107,7 @@ for MODEL in $MODELS; do
     --seed "$SEED" \
     --dtype "$DTYPE" \
     --log-entropy \
-    --results-dir "$RESULTS_DIR_BASE/$MODEL_SLUG/gsm8k" \
+    --results-dir "$RESULTS_DIR_BASE" \
     2>&1 | tee "$LOG"
 
   # Sanity-check the sidecar was written
@@ -115,7 +122,7 @@ done
 if [ "${SMOKE:-0}" = "1" ]; then
   echo
   echo "── SMOKE: verify zero code emission in CodeLlama output ──"
-  SMOKE_JSONL="$RESULTS_DIR_BASE/codellama-CodeLlama-7b-Instruct-hf/gsm8k/pless_t${TEMPERATURE}.jsonl"
+  SMOKE_JSONL="$RESULTS_DIR_BASE/codellama--CodeLlama-7b-Instruct-hf/pless_t${TEMPERATURE}.jsonl"
   if [ -f "$SMOKE_JSONL" ]; then
     uv run python -c "
 import json
@@ -137,12 +144,15 @@ fi
 
 echo
 echo "═══════════════════════════════════════════════════════════════════════"
-echo "Done. Next step (after full run): regenerate the central figure"
+echo "Done. Output layout (mirrors results/pless_alpha_entropy/mbpp/<slug>/):"
+echo "  $RESULTS_DIR_BASE/<slug>/pless_t1.0.jsonl"
+echo "  $RESULTS_DIR_BASE/<slug>/pless_t1.0.jsonl.entropy.jsonl"
+echo
+echo "Next step: regenerate the central figure (2-panel MBPP + GSM8K)"
 echo "  uv run python -m bench.eval.entropy_survival_curves \\"
 echo "    --models Qwen--Qwen2.5-Coder-7B-Instruct codellama--CodeLlama-7b-Instruct-hf \\"
+echo "    --datasets mbpp gsm8k \\"
 echo "    --output-dir results/entropy_probe/_central_figure_v2"
-echo "(Note: the survival_curves module currently expects entropy data at"
-echo " results/pless_alpha_entropy/<model>/pless_t1.0.jsonl.entropy.jsonl —"
-echo " but this script writes to <model>/gsm8k/pless_t1.0.jsonl.entropy.jsonl."
-echo " A small wiring update will be needed to handle the gsm8k/ subdir.)"
+echo "(Note: --datasets is a planned addition to the survival_curves module;"
+echo " requires a small patch to handle the gsm8k/ subdir.)"
 echo "═══════════════════════════════════════════════════════════════════════"

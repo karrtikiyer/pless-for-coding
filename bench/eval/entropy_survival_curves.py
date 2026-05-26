@@ -281,111 +281,194 @@ def process_model(
 
 def _density_fractions(bins: list[dict], h_low_max: float = 0.3,
                        h_high_min: float = 0.5) -> dict:
-    """Per-model: fraction of positions in the low-entropy mode and the
-    decision region. Used for the numeric annotation."""
+    """Per-model: fraction of positions in the low-entropy mode, the
+    decision region, and the gap between them. Used for the numeric
+    annotation.
+
+    Note: ``frac_below`` and ``frac_above`` do NOT sum to 1.0 — the
+    interval (h_low_max, h_high_min) is a deliberate gap between the
+    'where most of the certain-token mass sits' edge (h_low_max=0.3)
+    and the 'where the α-knob starts diverging the curves' edge
+    (h_high_min=0.5). ``frac_gap`` exposes the residual.
+    """
     total = sum(b["n_positions"] for b in bins)
     if total == 0:
-        return {"total": 0, "frac_below": 0.0, "frac_above": 0.0}
+        return {"total": 0, "frac_below": 0.0, "frac_above": 0.0,
+                "frac_gap": 0.0, "h_low_max": h_low_max,
+                "h_high_min": h_high_min}
     low = sum(b["n_positions"] for b in bins if b["h_hi"] <= h_low_max)
     high = sum(b["n_positions"] for b in bins if b["h_lo"] >= h_high_min)
+    # Gap = neither below ≤h_low_max nor above ≥h_high_min
+    gap = total - low - high
     return {
         "total": total,
         "frac_below": low / total,
         "frac_above": high / total,
+        "frac_gap": gap / total,
         "h_low_max": h_low_max,
         "h_high_min": h_high_min,
     }
 
 
+def _plot_one_cell(ax, data: dict, *, title: str) -> None:
+    """Render one (dataset, model) cell into the given axis."""
+    bins = data["bins"]
+    h_centers = np.array([(b["h_lo"] + b["h_hi"]) / 2 for b in bins])
+    n_pos = np.array([b["n_positions"] for b in bins])
+    ma2 = np.array([b["mean_survival_alpha2"] for b in bins])
+    ma5 = np.array([b["mean_survival_alpha5"] for b in bins])
+    reliable = n_pos >= 50
+    unreliable = (~reliable) & (n_pos > 0)
+
+    # Solid curves on reliable bins
+    ax.plot(h_centers[reliable], ma2[reliable], "-",
+            color="tab:red", linewidth=2, label="α=2 (survived mass)")
+    ax.plot(h_centers[reliable], ma5[reliable], "-",
+            color="tab:blue", linewidth=2, label="α=5 (survived mass)")
+    # Dotted continuation on low-count bins (signal noise)
+    if unreliable.any():
+        ax.plot(h_centers[unreliable], ma2[unreliable], ":",
+                color="tab:red", linewidth=1, alpha=0.5)
+        ax.plot(h_centers[unreliable], ma5[unreliable], ":",
+                color="tab:blue", linewidth=1, alpha=0.5)
+
+    # Vertical reference at H=0.5 (the divergence point)
+    ax.axvline(0.5, color="black", linestyle="--", linewidth=1.0, alpha=0.5)
+    ax.text(0.52, 0.97, "H=0.5 nats\n(divergence)",
+            transform=ax.get_xaxis_transform(),
+            fontsize=8, va="top", ha="left", alpha=0.7)
+
+    # Numeric annotation — lower-right.
+    # The two cutoffs encode different empirical facts: h_low_max=0.3
+    # marks the upper edge of the dense low-entropy mode; h_high_min=0.5
+    # marks where the α=2 vs α=5 curves visibly diverge. The interval
+    # (0.3, 0.5) is a deliberate gap between the two characterizations —
+    # mass sits there but it's neither "no-effect" nor "decision region".
+    fr = _density_fractions(bins)
+    ann = (
+        f"Position density:\n"
+        f"  H ≤ {fr['h_low_max']} nats: {fr['frac_below']*100:.1f}% (low-entropy mode,\n"
+        f"                 α-knob has no effect)\n"
+        f"  H ≥ {fr['h_high_min']} nats: {fr['frac_above']*100:.1f}% (decision region,\n"
+        f"                 where α-knob diverges)\n"
+        f"  {fr['h_low_max']} < H < {fr['h_high_min']}: {fr['frac_gap']*100:.1f}% (transition, not shown)\n"
+        f"  N = {fr['total']:,} positions"
+    )
+    ax.text(0.98, 0.05, ann, transform=ax.transAxes,
+            fontsize=8, va="bottom", ha="right",
+            bbox=dict(boxstyle="round,pad=0.4", fc="white",
+                      ec="gray", alpha=0.95))
+
+    ax.set_xlim(0, h_centers[reliable].max() + 0.5 if reliable.any() else 4)
+    ax.set_ylim(0, 1.02)
+    ax.set_title(title, fontsize=11)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="lower left", fontsize=9)
+
+
 def make_plot(
-    model_to_bins: dict[str, dict],
+    per_dataset: dict[str, dict[str, dict]],
     output_path: Path,
+    *,
+    models: list[str] | None = None,
+    datasets: list[str] | None = None,
 ) -> None:
-    """Render the 2-subplot central figure: one subplot per model,
-    two curves per subplot (α=2 and α=5), with:
-      - dashed vertical reference line at H=0.5 nats (the divergence
-        point matching the entropy distribution's secondary mode)
-      - numeric position-density annotation in the lower-right corner
-        (replaces the previous KDE shading, which was visually
-        misleading on heavy-tailed entropy distributions — see
-        ``docs/theory/central_figure_plan.md`` for the design rationale)
-      - legend in lower-left corner (opposite side from annotation)
+    """Render the central figure as a (rows=datasets) × (cols=models) grid.
+
+    Each cell shows two curves (α=2 and α=5 survival mass vs entropy)
+    plus a dashed vertical reference at H=0.5 nats and a numeric
+    position-density annotation in the lower-right corner. KDE shading
+    is intentionally omitted (it was visually misleading on heavy-tailed
+    entropy distributions — see ``docs/theory/central_figure_plan.md``).
+
+    ``per_dataset[dataset][model] = data`` is the nested output from
+    ``process_model``. If ``models`` or ``datasets`` are not given, they
+    are inferred from the dict's insertion order so old single-dataset
+    callers continue to work.
     """
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    if datasets is None:
+        datasets = list(per_dataset.keys())
+    if models is None:
+        # Union of all models across datasets, preserving first-seen order
+        seen: dict[str, None] = {}
+        for ds in datasets:
+            for m in per_dataset.get(ds, {}).keys():
+                seen.setdefault(m, None)
+        models = list(seen.keys())
+
+    n_rows = len(datasets)
+    n_cols = max(1, len(models))
     fig, axes = plt.subplots(
-        1, len(model_to_bins), figsize=(7 * len(model_to_bins), 5),
-        sharey=True,
+        n_rows, n_cols, figsize=(7 * n_cols, 4.5 * n_rows),
+        sharey=True, squeeze=False,
     )
-    if len(model_to_bins) == 1:
-        axes = [axes]
+    # axes is now always a 2-D array (n_rows, n_cols)
 
-    for ax, (model, data) in zip(axes, model_to_bins.items()):
-        bins = data["bins"]
-        h_centers = np.array([(b["h_lo"] + b["h_hi"]) / 2 for b in bins])
-        n_pos = np.array([b["n_positions"] for b in bins])
-        ma2 = np.array([b["mean_survival_alpha2"] for b in bins])
-        ma5 = np.array([b["mean_survival_alpha5"] for b in bins])
-        reliable = n_pos >= 50
-        unreliable = (~reliable) & (n_pos > 0)
+    dataset_display = {"mbpp": "code (MBPP)", "gsm8k": "CoT (GSM8K)"}
 
-        # Solid curves on reliable bins
-        ax.plot(h_centers[reliable], ma2[reliable], "-",
-                color="tab:red", linewidth=2, label="α=2 (survived mass)")
-        ax.plot(h_centers[reliable], ma5[reliable], "-",
-                color="tab:blue", linewidth=2, label="α=5 (survived mass)")
-        # Dotted continuation on low-count bins (signal noise)
-        if unreliable.any():
-            ax.plot(h_centers[unreliable], ma2[unreliable], ":",
-                    color="tab:red", linewidth=1, alpha=0.5)
-            ax.plot(h_centers[unreliable], ma5[unreliable], ":",
-                    color="tab:blue", linewidth=1, alpha=0.5)
+    any_drawn = False
+    for r, dataset in enumerate(datasets):
+        for c, model in enumerate(models):
+            ax = axes[r, c]
+            data = per_dataset.get(dataset, {}).get(model)
+            if data is None:
+                ax.set_visible(False)
+                continue
+            # Title shows model on top row, dataset short-name on left col
+            parts = []
+            if r == 0:
+                parts.append(model.replace("--", "/"))
+            ax.set_title(parts[0] if parts else "", fontsize=11)
+            _plot_one_cell(ax, data, title=ax.get_title())
+            if c == 0:
+                ax.set_ylabel(
+                    f"{dataset_display.get(dataset, dataset)}\n\n"
+                    "Mean surviving probability mass",
+                )
+            if r == n_rows - 1:
+                ax.set_xlabel("Per-token entropy H (nats)")
+            any_drawn = True
 
-        # Vertical reference at H=0.5 (the divergence point)
-        ax.axvline(0.5, color="black", linestyle="--", linewidth=1.0, alpha=0.5)
-        ax.text(0.52, 0.97, "H=0.5 nats\n(divergence)",
-                transform=ax.get_xaxis_transform(),
-                fontsize=8, va="top", ha="left", alpha=0.7)
+    if not any_drawn:
+        plt.close(fig)
+        return
 
-        # Numeric annotation — lower-right, computed from actual bin counts
-        fr = _density_fractions(bins)
-        ann = (
-            f"Position density:\n"
-            f"  H ≤ {fr['h_low_max']} nats: {fr['frac_below']*100:.1f}% (low-entropy mode,\n"
-            f"                 α-knob has no effect)\n"
-            f"  H ≥ {fr['h_high_min']} nats: {fr['frac_above']*100:.1f}% (decision region,\n"
-            f"                 where α-knob diverges)\n"
-            f"  N = {fr['total']:,} positions"
+    if n_rows == 1 and datasets[0] == "mbpp":
+        # Backward-compat single-dataset suptitle
+        suptitle = (
+            "Survival mass vs entropy under p-less filter at α=2 and α=5\n"
+            "(MBPP, top-32 truncation, recorded under α=2 sampling)"
         )
-        ax.text(0.98, 0.05, ann, transform=ax.transAxes,
-                fontsize=8, va="bottom", ha="right",
-                bbox=dict(boxstyle="round,pad=0.4", fc="white",
-                          ec="gray", alpha=0.95))
-
-        ax.set_xlim(0, h_centers[reliable].max() + 0.5 if reliable.any() else 4)
-        ax.set_ylim(0, 1.02)
-        ax.set_xlabel("Per-token entropy H (nats)")
-        ax.set_title(model.replace("--", "/"), fontsize=11)
-        ax.grid(True, alpha=0.3)
-        # Legend in lower-left (opposite corner from annotation)
-        ax.legend(loc="lower left", fontsize=9)
-
-    axes[0].set_ylabel("Mean surviving probability mass")
-    fig.suptitle(
-        "Survival mass vs entropy under p-less filter at α=2 and α=5\n"
-        "(MBPP, top-32 truncation, recorded under α=2 sampling)",
-        fontsize=12,
-    )
+    else:
+        ds_label = " + ".join(dataset_display.get(d, d) for d in datasets)
+        suptitle = (
+            "Survival mass vs entropy under p-less filter at α=2 and α=5\n"
+            f"({ds_label}, top-32 truncation, recorded under α=2 sampling)"
+        )
+    fig.suptitle(suptitle, fontsize=12)
     fig.tight_layout()
     fig.savefig(output_path, dpi=150)
     plt.close(fig)
 
 
-def _model_jsonl_path(model_slug: str) -> Path:
+def _model_jsonl_path(model_slug: str, dataset: str = "mbpp") -> Path:
+    """Resolve the per-(model, dataset) entropy sidecar path.
+
+    Layout (post-2026-05-26 reorg):
+        results/pless_alpha_entropy/<dataset>/<model>/pless_t1.0.jsonl.entropy.jsonl
+
+    ``dataset`` is one of {"mbpp", "gsm8k"} — both produced by the
+    α=2 sampler (pless@T=1.0); MBPP is the code-side data, GSM8K is the
+    CoT-side data. They share an identical sidecar schema (verified
+    by direct inspection 2026-05-26).
+    """
     return Path(
-        f"results/pless_alpha_entropy/{model_slug}/pless_t1.0.jsonl.entropy.jsonl"
+        f"results/pless_alpha_entropy/{dataset}/{model_slug}/"
+        f"pless_t1.0.jsonl.entropy.jsonl"
     )
 
 
@@ -394,6 +477,12 @@ def main(argv: list[str] | None = None) -> None:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--models", nargs="+", required=True,
                    help="Model slugs (e.g. Qwen--Qwen2.5-Coder-7B-Instruct).")
+    p.add_argument("--datasets", nargs="+", default=["mbpp"],
+                   choices=["mbpp", "gsm8k"],
+                   help="Datasets to include as rows of the figure. "
+                        "Default: ['mbpp'] (backward-compatible single panel). "
+                        "Pass 'mbpp gsm8k' for the 2-row central figure v2 "
+                        "(code-side + CoT-side).")
     p.add_argument("--output-dir", type=Path, required=True)
     p.add_argument("--bin-width", type=float, default=0.05,
                    help="Entropy bin width in nats.")
@@ -403,30 +492,42 @@ def main(argv: list[str] | None = None) -> None:
     args = p.parse_args(argv)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Per-model processing
-    model_to_bins: dict[str, dict] = {}
-    validation_results: dict[str, dict] = {}
-    for model in args.models:
-        jsonl = _model_jsonl_path(model)
-        if not jsonl.exists():
-            print(f"[skip] no entropy jsonl for {model} at {jsonl}")
-            continue
-        print(f"[{model}] running validation on {args.validation_sample_size} records ...")
-        validation_results[model] = validate(jsonl, n_sample=args.validation_sample_size)
-        print(f"[{model}] processing full file: {jsonl}")
-        data = process_model(jsonl, bin_width=args.bin_width, h_max=args.h_max)
-        model_to_bins[model] = data
-        n_total = sum(b["n_positions"] for b in data["bins"])
-        print(f"[{model}] processed {n_total:,} positions into "
-              f"{sum(1 for b in data['bins'] if b['n_positions'] > 0)} populated bins")
+    # Per-(dataset, model) processing — nested dict for JSON friendliness
+    per_dataset: dict[str, dict[str, dict]] = {ds: {} for ds in args.datasets}
+    validation_results: dict[tuple[str, str], dict] = {}
+    for dataset in args.datasets:
+        for model in args.models:
+            jsonl = _model_jsonl_path(model, dataset)
+            if not jsonl.exists():
+                print(f"[skip] no entropy jsonl for {dataset}/{model} at {jsonl}")
+                continue
+            print(f"[{dataset}/{model}] running validation on "
+                  f"{args.validation_sample_size} records ...")
+            validation_results[(dataset, model)] = validate(
+                jsonl, n_sample=args.validation_sample_size,
+            )
+            print(f"[{dataset}/{model}] processing full file: {jsonl}")
+            data = process_model(jsonl, bin_width=args.bin_width,
+                                 h_max=args.h_max)
+            per_dataset[dataset][model] = data
+            n_total = sum(b["n_positions"] for b in data["bins"])
+            n_pop = sum(1 for b in data["bins"] if b["n_positions"] > 0)
+            print(f"[{dataset}/{model}] processed {n_total:,} positions "
+                  f"into {n_pop} populated bins")
 
-    # Persist data
+    # Persist data — nested by dataset for clarity. Includes a flat
+    # per_model echo when only one dataset is requested (preserves
+    # backward-compatible JSON shape so older readers still work).
     data_path = args.output_dir / "survival_vs_entropy_data.json"
-    data_path.write_text(json.dumps({
+    payload: dict = {
         "bin_width_nats": args.bin_width,
         "h_max_nats": args.h_max,
-        "per_model": model_to_bins,
-    }, indent=2))
+        "datasets": args.datasets,
+        "per_dataset": per_dataset,
+    }
+    if len(args.datasets) == 1:
+        payload["per_model"] = per_dataset[args.datasets[0]]
+    data_path.write_text(json.dumps(payload, indent=2))
     print(f"\nWrote per-bin numerical data → {data_path}")
 
     # Validation report
@@ -434,12 +535,13 @@ def main(argv: list[str] | None = None) -> None:
     lines = [
         "# Survival-curves validation report",
         "",
-        "Standard rigor: 4 checks per `docs/theory/central_figure_plan.md`. Reported per model.",
+        "Standard rigor: 4 checks per `docs/theory/central_figure_plan.md`. "
+        "Reported per (dataset, model) cell.",
         "",
     ]
     overall_pass = True
-    for model, vr in validation_results.items():
-        lines.append(f"## {model}")
+    for (dataset, model), vr in validation_results.items():
+        lines.append(f"## {dataset} / {model}")
         lines.append("")
         lines.append(f"Random subsample size: **{vr['validation_sample_size']}**")
         lines.append("")
@@ -454,7 +556,7 @@ def main(argv: list[str] | None = None) -> None:
                 lines.append(f"- {k}: `{v}`")
             lines.append("")
         # Check 4: per-bin sample size adequacy (computed from binned data)
-        bins = model_to_bins.get(model, {}).get("bins", [])
+        bins = per_dataset.get(dataset, {}).get(model, {}).get("bins", [])
         n_bins_total = len(bins)
         n_bins_populated = sum(1 for b in bins if b["n_positions"] > 0)
         n_bins_reliable = sum(1 for b in bins if b["n_positions"] >= 50)
@@ -475,10 +577,12 @@ def main(argv: list[str] | None = None) -> None:
     val_path.write_text("\n".join(lines))
     print(f"Wrote validation report → {val_path}")
 
-    # Make plot
-    if model_to_bins:
+    # Make plot — only if at least one cell was processed
+    any_cell = any(per_dataset[ds] for ds in args.datasets)
+    if any_cell:
         plot_path = args.output_dir / "survival_vs_entropy.png"
-        make_plot(model_to_bins, plot_path)
+        make_plot(per_dataset, plot_path, models=args.models,
+                  datasets=args.datasets)
         print(f"Wrote figure → {plot_path}")
 
 
