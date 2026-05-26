@@ -66,6 +66,8 @@ STRATEGY_PLAIN_FENCE_DEDENT = "plain_fence_dedent"
 STRATEGY_PLAIN_FENCE_TRIM   = "plain_fence_trim"
 STRATEGY_RAW_DEDENT         = "raw_dedent"
 STRATEGY_RAW_TRIM           = "raw_trim"
+STRATEGY_RAW_PREFIX_STRIP   = "raw_prefix_strip"
+STRATEGY_RAW_WINDOW         = "raw_window"
 STRATEGY_NONE               = "none"
 
 
@@ -90,6 +92,51 @@ def _trim_to_compilable(code: str) -> str | None:
         candidate = "\n".join(lines[:end])
         if _try_compile(candidate):
             return candidate
+    return None
+
+
+def _strip_leading_to_compilable(code: str) -> str | None:
+    """Drop leading lines progressively until what remains compiles.
+
+    Sibling of :func:`_trim_to_compilable` for the OTHER end of the
+    sample. Useful when a model emits prose / hallucinated tokens
+    BEFORE the actual code (a frequent Deepseek-Coder-Instruct
+    failure mode on APPS — see ``tests/test_apps_extractor.py``).
+
+    Returns the longest compilable suffix, or None.
+    """
+    if _try_compile(code):
+        return code
+    lines = code.split("\n")
+    for start in range(1, len(lines)):
+        candidate = "\n".join(lines[start:])
+        if _try_compile(candidate):
+            return candidate
+    return None
+
+
+def _window_to_compilable(code: str, max_iter: int = 100) -> str | None:
+    """Drop BOTH leading AND trailing lines to find a compilable window.
+
+    Only attempted when neither :func:`_trim_to_compilable` (suffix-only)
+    nor :func:`_strip_leading_to_compilable` (prefix-only) succeeds.
+    For each candidate start (capped at ``max_iter`` lines), search for
+    the largest end such that ``lines[start:end]`` compiles, and return
+    the first such window found. ``max_iter`` bounds the worst-case to
+    O(max_iter × n) compile attempts, keeping cost predictable on
+    pathologically long samples.
+    """
+    if _try_compile(code):
+        return code
+    lines = code.split("\n")
+    n = len(lines)
+    for start in range(1, min(n, max_iter)):
+        # range(n, start, -1) gives [n, n-1, ..., start+1] so the smallest
+        # window considered for this start is the single line lines[start:start+1].
+        for end in range(n, start, -1):
+            candidate = "\n".join(lines[start:end])
+            if _try_compile(candidate):
+                return candidate
     return None
 
 
@@ -211,6 +258,32 @@ def extract_python_code_apps(
                                     STRATEGY_RAW_TRIM))
         if win is not None:
             winners.append((_score(win, is_python_fence=False, fn_name=fn_name), win, strat))
+
+    # 4. Raw text with leading-line stripping (prefix-strip). When the
+    #    model emits prose / hallucinated tokens BEFORE the code (e.g.
+    #    '\\n\\nceed:\\ndef dfs(...)...'), neither dedent nor suffix-trim
+    #    can recover it. ~67% of our Phase A Deepseek ParsingErrors fell
+    #    into this pattern (cell1 corpus audit 2026-05-26).
+    if not winners:
+        recovered = _strip_leading_to_compilable(text)
+        if recovered is not None:
+            winners.append((
+                _score(recovered, is_python_fence=False, fn_name=fn_name),
+                recovered, STRATEGY_RAW_PREFIX_STRIP,
+            ))
+
+    # 5. Raw text with both leading AND trailing stripping. Catches
+    #    samples with prose preamble AND trailing garbage around a valid
+    #    code middle. Recovers another ~27% of our Phase A Deepseek PEs
+    #    on top of prefix-strip alone. Bounded by max_iter=100 to keep
+    #    cost predictable on huge samples.
+    if not winners:
+        recovered = _window_to_compilable(text, max_iter=100)
+        if recovered is not None:
+            winners.append((
+                _score(recovered, is_python_fence=False, fn_name=fn_name),
+                recovered, STRATEGY_RAW_WINDOW,
+            ))
 
     if not winners:
         return ExtractionResult(code="", success=False, strategy=STRATEGY_NONE,
