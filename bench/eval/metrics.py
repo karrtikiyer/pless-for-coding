@@ -248,15 +248,22 @@ def build_metrics_output(
     dataset: str,
     k_values: list[int],
     t_values: list[float],
+    skip_diversity: bool = False,
 ) -> dict:
     """Aggregate all metrics into a single output dict.
 
     Expects task_results from evaluate_all() and the original records.
     Mutates task_results in-place (adds fingerprint/diversity fields).
+
+    When ``skip_diversity=True``, the expensive AST-fingerprint and
+    self-CodeBLEU computations are bypassed. The output dict will have
+    ``structural_diversity = None`` and no ``self_*`` keys. Useful for
+    quick pass@k-only verdicts on large cells.
     """
     add_distinct_counts(task_results, records)
-    add_structural_diversity(task_results, records)
-    add_self_codebleu(task_results, records)
+    if not skip_diversity:
+        add_structural_diversity(task_results, records)
+        add_self_codebleu(task_results, records)
 
     num_samples_per_task = len(records[0]["samples"]) if records else 0
 
@@ -264,8 +271,12 @@ def build_metrics_output(
     cover_at_t, cover_at_t_distinct = compute_cover_at_t(
         task_results, t_values, num_samples_per_task
     )
-    structural_diversity = compute_structural_diversity(task_results)
-    codebleu_diversity = compute_self_codebleu_diversity(task_results)
+    if skip_diversity:
+        structural_diversity = None
+        codebleu_diversity: dict = {}
+    else:
+        structural_diversity = compute_structural_diversity(task_results)
+        codebleu_diversity = compute_self_codebleu_diversity(task_results)
 
     return {
         "model": model,

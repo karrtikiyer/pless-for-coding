@@ -40,6 +40,13 @@ def parse_args():
         "--workers", type=int, default=4,
         help="Number of parallel workers (default: 4)",
     )
+    parser.add_argument(
+        "--skip-diversity", action="store_true",
+        help="Skip structural_diversity (AST fingerprint + zss tree edit "
+             "distance) and self_codebleu computation. Useful when you "
+             "only need pass@k for a quick verdict. The output JSON will "
+             "have those fields set to null. Default: False (compute all).",
+    )
     return parser.parse_args()
 
 
@@ -143,9 +150,12 @@ def main():
         task_results = evaluate_all(records, args.dataset, args.timeout, args.workers)
 
     # Compute all metrics
-    print("Computing AST fingerprints and structural diversity...")
+    if not args.skip_diversity:
+        print("Computing AST fingerprints and structural diversity...")
     meta = infer_metadata(args.results_file, records[0])
 
+    if args.skip_diversity:
+        print("Skipping diversity metrics (--skip-diversity).")
     output = build_metrics_output(
         task_results,
         records,
@@ -157,6 +167,7 @@ def main():
         dataset=args.dataset,
         k_values=k_values,
         t_values=t_values,
+        skip_diversity=args.skip_diversity,
     )
     if extraction_diag is not None:
         output["extraction_diagnostics"] = extraction_diag
@@ -176,7 +187,10 @@ def main():
     print(f"  pass@k: {output['pass_at_k']}")
     print(f"  cover@t: {output['cover_at_t']}")
     print(f"  cover@t (distinct): {output['cover_at_t_distinct']}")
-    print(f"  structural_diversity: {output['structural_diversity']}")
+    if output["structural_diversity"] is not None:
+        print(f"  structural_diversity: {output['structural_diversity']}")
+    else:
+        print("  structural_diversity: skipped (--skip-diversity)")
 
 
 if __name__ == "__main__":
