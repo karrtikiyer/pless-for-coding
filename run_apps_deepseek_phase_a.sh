@@ -60,6 +60,19 @@ mkdir -p "$LOG_DIR"
 # processor class to module level (deferred — non-blocking for Phase A).
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
 
+# Disable vLLM's FlashInfer top-k/top-p sampler. FlashInfer JIT-compiles
+# its CUDA kernel via `ninja` on first use; if ninja isn't installed in
+# PATH the engine startup crashes with
+#   FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+# (verified on the H100 pod 2026-05-26). With this flag set to 0, vLLM
+# falls back to the PyTorch-native sampler (Triton for batch >= 8) — per
+# vLLM 0.21 envs.py: "set to 0 to opt out explicitly, which forces the
+# PyTorch-native (Triton for bs>=8) path". For our 6.7B-class models the
+# sampler speed difference is negligible vs the forward pass.
+# Alternative if you want the FlashInfer kernel: `pip install ninja` in
+# the vLLM venv. Setting this flag is cheap insurance either way.
+export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
+
 # Pick the python interpreter based on backend: vLLM needs its dedicated venv.
 if [ "$BACKEND" = "vllm" ]; then
   if [ ! -x "$VLLM_VENV/bin/python" ]; then
