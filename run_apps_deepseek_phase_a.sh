@@ -48,9 +48,16 @@ BACKEND="${BACKEND:-vllm}"   # default vLLM (much faster); BACKEND=hf to fall ba
 VLLM_VENV="${VLLM_VENV:-.venv-vllm}"  # vLLM lives in a separate venv (incompatible deps with main .venv)
 mkdir -p "$LOG_DIR"
 
-# Match other vLLM drivers' convention: avoid fork-related crashes in
-# multi-worker vLLM mode.
-export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
+# NOTE: do NOT export VLLM_WORKER_MULTIPROC_METHOD=spawn here. The
+# PlessSplitLogitsProcessor class in bench/generator_vllm.py is defined
+# inside a factory function (to keep the file Mac-importable when vLLM
+# isn't installed), and spawn-mode workers can't pickle local classes
+# (`AttributeError: Can't pickle local object ...PlessSplitLogitsProcessor`).
+# The working APPS vLLM drivers (run_apps_qwen3_top_configs_vllm.sh,
+# run_pless_alpha_apps_all_models.sh) intentionally leave this unset
+# so vLLM uses its Linux default (fork), which doesn't pickle. If a
+# future vLLM release forces spawn, the proper fix is to lift the
+# processor class to module level (deferred — non-blocking for Phase A).
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
 
 # Pick the python interpreter based on backend: vLLM needs its dedicated venv.
