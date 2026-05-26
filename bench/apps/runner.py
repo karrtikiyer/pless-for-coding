@@ -91,6 +91,10 @@ def parse_args():
         help="Sampling method",
     )
     p.add_argument("--n-samples", type=int, default=10)
+    p.add_argument("--top-p", type=float, default=1.0,
+                   help="Nucleus sampling cutoff (only applied when "
+                        "--method temp). Default 1.0 disables nucleus. "
+                        "Paper-replica uses 0.95.")
     p.add_argument("--max-new-tokens", type=int, default=8192,
                    help="Default 8192 to accommodate Qwen3 thinking.")
     p.add_argument("--results-dir", default="results/pless_apps_results")
@@ -123,6 +127,19 @@ def parse_args():
                         "id does not contain 'Instruct' or 'Chat'. Use for "
                         "models like m-a-p/OpenCodeInterpreter-DS-1.3B that "
                         "are chat-tuned but not named accordingly.")
+    p.add_argument("--paper-replica-model", default=None,
+                   help="OPTIONAL: HF model id whose paper-published prompts "
+                        "should be used verbatim (loaded from "
+                        "sh0416/outputs-apps via bench.apps.paper_replica). "
+                        "When set, bypasses format_prompt_apps_instruct "
+                        "entirely — the runner injects the paper's exact "
+                        "prompt string for each matching problem_id. "
+                        "Problems with no matching paper prompt are SKIPPED "
+                        "(with a warning). Default behavior (this flag "
+                        "unset) is unchanged.")
+    p.add_argument("--paper-replica-cache-dir", type=Path, default=None,
+                   help="Where to cache the dedup'd paper-prompt parquet. "
+                        "Default: results/pless_alpha_apps/_paper_replica_cache/")
     args = p.parse_args()
     if args.method == "split":
         for name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
@@ -195,6 +212,36 @@ def main():
         problems = [p for p in problems if p.problem_id in wanted]
     if args.max_problems is not None:
         problems = problems[:args.max_problems]
+
+    # Optional: load paper-replica prompts (Phase A Deepseek comparison).
+    # When set, we filter problems to only those the paper has prompts for,
+    # and the inner loop injects the paper's prompt string instead of calling
+    # format_prompt_apps_instruct. Default (None) preserves existing behavior.
+    paper_prompts: dict[int, str] | None = None
+    if args.paper_replica_model is not None:
+        from bench.apps.paper_replica import load_paper_prompts
+        cache_dir = (args.paper_replica_cache_dir
+                     or Path("results/pless_alpha_apps/_paper_replica_cache"))
+        print(f"[paper-replica] loading prompts for "
+              f"{args.paper_replica_model} on {args.source}/{args.difficulty}")
+        paper_prompts = load_paper_prompts(
+            model=args.paper_replica_model,
+            source=args.source,
+            difficulty=args.difficulty,
+            cache_dir=cache_dir,
+        )
+        # Filter problems to those for which the paper has a prompt
+        before = len(problems)
+        problems = [p for p in problems if p.problem_id in paper_prompts]
+        skipped = before - len(problems)
+        print(f"[paper-replica] {len(problems)} problems matched paper prompts "
+              f"({skipped} skipped — no paper prompt available)")
+        if not problems:
+            raise SystemExit(
+                "[paper-replica] No overlap between requested bucket and "
+                "paper's prompts. Check (model, source, difficulty)."
+            )
+
     remaining = [p for p in problems if p.problem_id not in completed_ids]
     print(f"{args.source} / {args.difficulty}: {len(problems)} problems "
           f"({len(remaining)} remaining after resume)")
@@ -203,9 +250,15 @@ def main():
                desc=f"{_method_key(args)} on {args.source}/{args.difficulty}")
     for problem in bar:
         try:
-            prompt_text, code_prefix = format_prompt_apps_instruct(
-                problem, tokenizer, enable_thinking=args.enable_thinking,
-            )
+            if paper_prompts is not None:
+                # Inject paper's exact prompt string verbatim — bypass our
+                # chat-template wrapper entirely for Phase A apples-to-apples.
+                prompt_text = paper_prompts[problem.problem_id]
+                code_prefix = ""
+            else:
+                prompt_text, code_prefix = format_prompt_apps_instruct(
+                    problem, tokenizer, enable_thinking=args.enable_thinking,
+                )
 
             if args.backend == "vllm":
                 # vLLM dispatches by sampler name string, not callable.
@@ -219,7 +272,7 @@ def main():
                         engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
                         n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                         temperature=args.temperature, stop_strings=None,
-                        top_p=1.0, top_k=0,
+                        top_p=args.top_p, top_k=0,
                     )
                 elif args.method == "split":
                     raw_samples = generate_samples_split_vllm(
@@ -244,7 +297,7 @@ def main():
                     model=model, tokenizer=tokenizer, prompt_text=prompt_text,
                     n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                     temperature=args.temperature, stop_strings=None,
-                    top_p=1.0, top_k=0,
+                    top_p=args.top_p, top_k=0,
                 )
             elif args.method == "split":
                 raw_samples = generate_samples_split(
