@@ -95,6 +95,24 @@ def _trim_to_compilable(code: str) -> str | None:
     return None
 
 
+def _compile_with_optional_dedent(code: str) -> str | None:
+    """Return ``code`` if it compiles, or its dedented form if dedenting
+    yields something compilable, else None.
+
+    Handles the common "all lines indented at consistent N" pattern
+    that arises when a window-strip or prefix-strip yields a code block
+    that was originally inside a (hallucinated) function body. The
+    block-as-is is an IndentationError at module scope; ``textwrap.dedent``
+    on it removes the common N-space prefix and the result compiles.
+    """
+    if _try_compile(code):
+        return code
+    dedented = textwrap.dedent(code)
+    if dedented != code and _try_compile(dedented):
+        return dedented
+    return None
+
+
 def _strip_leading_to_compilable(code: str) -> str | None:
     """Drop leading lines progressively until what remains compiles.
 
@@ -103,6 +121,10 @@ def _strip_leading_to_compilable(code: str) -> str | None:
     BEFORE the actual code (a frequent Deepseek-Coder-Instruct
     failure mode on APPS — see ``tests/test_apps_extractor.py``).
 
+    Each candidate suffix is checked first as-is, then with
+    ``textwrap.dedent`` applied (to recover indented-code blocks that
+    were inside a hallucinated function body).
+
     Returns the longest compilable suffix, or None.
     """
     if _try_compile(code):
@@ -110,8 +132,9 @@ def _strip_leading_to_compilable(code: str) -> str | None:
     lines = code.split("\n")
     for start in range(1, len(lines)):
         candidate = "\n".join(lines[start:])
-        if _try_compile(candidate):
-            return candidate
+        recovered = _compile_with_optional_dedent(candidate)
+        if recovered is not None:
+            return recovered
     return None
 
 
@@ -121,8 +144,10 @@ def _window_to_compilable(code: str, max_iter: int = 100) -> str | None:
     Only attempted when neither :func:`_trim_to_compilable` (suffix-only)
     nor :func:`_strip_leading_to_compilable` (prefix-only) succeeds.
     For each candidate start (capped at ``max_iter`` lines), search for
-    the largest end such that ``lines[start:end]`` compiles, and return
-    the first such window found. ``max_iter`` bounds the worst-case to
+    the largest end such that ``lines[start:end]`` compiles (after an
+    optional ``textwrap.dedent`` pass — necessary for the
+    indented-code-buried-in-prose pattern), and return the first such
+    window found. ``max_iter`` bounds the worst-case to
     O(max_iter × n) compile attempts, keeping cost predictable on
     pathologically long samples.
     """
@@ -135,8 +160,9 @@ def _window_to_compilable(code: str, max_iter: int = 100) -> str | None:
         # window considered for this start is the single line lines[start:start+1].
         for end in range(n, start, -1):
             candidate = "\n".join(lines[start:end])
-            if _try_compile(candidate):
-                return candidate
+            recovered = _compile_with_optional_dedent(candidate)
+            if recovered is not None:
+                return recovered
     return None
 
 

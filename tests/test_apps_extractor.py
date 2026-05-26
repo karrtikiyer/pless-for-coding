@@ -153,3 +153,62 @@ def test_complete_garbage_is_unrecoverable():
     txt = "@#$%^&* not valid syntax anywhere [{}] @@@"
     r = extract_python_code_apps(txt)
     assert not r.success
+
+
+# ─── New: smart-dedent rescue (blank-line-aware) ─────────────────────────
+
+
+def test_smart_dedent_recovers_blank_line_broken_indent():
+    """Real Deepseek pattern: code at consistent 4-space indent but blank
+    lines defeat textwrap.dedent (blank lines are 0-indent so common
+    prefix collapses to 0). Smart-dedent ignores blank lines when
+    computing common prefix."""
+    from bench.eval.apps_extractor import extract_python_code_apps
+    txt = (
+        "\n\n"  # leading blanks
+        "    from collections import Counter\n"
+        "\n"  # blank in middle — breaks textwrap.dedent
+        "    n = int(input().strip())\n"
+        "    arr = list(map(int, input().split()))\n"
+        "    counter = Counter(arr)\n"
+        "    if len(counter) > 1:\n"
+        "        print(0)\n"
+        "    else:\n"
+        "        print(min(arr))\n"
+    )
+    r = extract_python_code_apps(txt)
+    assert r.success, (
+        f"smart-dedent should recover indented-code-with-blank-lines; "
+        f"got strategy={r.strategy}, reason={r.reason_if_failed!r}"
+    )
+    assert "from collections" in r.code
+
+
+def test_smart_dedent_handles_mixed_blank_and_indented_code_with_prose_suffix():
+    """Variant that ALSO has prose at the end — recovery should still
+    pick the compilable code-only portion."""
+    from bench.eval.apps_extractor import extract_python_code_apps
+    txt = (
+        "\n"
+        "    def solve():\n"
+        "\n"
+        "        return 42\n"
+        "\n"
+        "    print(solve())\n"
+        "\n"
+        "This solution works by...\n"
+    )
+    r = extract_python_code_apps(txt)
+    assert r.success
+    assert "def solve" in r.code
+    assert "solution works by" not in r.code
+
+
+def test_smart_dedent_does_not_break_zero_indent_code():
+    """If the code is already at 0-indent, smart-dedent should be a
+    no-op and not change the result."""
+    from bench.eval.apps_extractor import extract_python_code_apps
+    txt = "def foo():\n    return 1\n"
+    r = extract_python_code_apps(txt)
+    assert r.success
+    assert "def foo" in r.code
