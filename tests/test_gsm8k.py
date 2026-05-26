@@ -182,6 +182,39 @@ def test_runner_alpha_only_with_pless_alpha():
         parse_args(["--model", "x", "--method", "temp", "--alpha", "2.0"])
 
 
+def test_runner_log_entropy_accepted_with_pless():
+    """--log-entropy is the new flag for the central-figure entropy probe.
+    Should be accepted with --method pless (the GSM8K analog of MBPP's
+    pless@T=1.0 entropy recording)."""
+    from bench.gsm8k.runner import parse_args
+    ns = parse_args(["--model", "x", "--method", "pless", "--log-entropy"])
+    assert ns.log_entropy is True
+
+
+def test_runner_log_entropy_accepted_with_pless_alpha():
+    from bench.gsm8k.runner import parse_args
+    ns = parse_args([
+        "--model", "x", "--method", "pless_alpha",
+        "--alpha", "2.0", "--log-entropy",
+    ])
+    assert ns.log_entropy is True
+
+
+def test_runner_log_entropy_rejected_with_temp():
+    """--log-entropy is incompatible with --method temp (the
+    generate_samples_standard path doesn't expose entropy_log)."""
+    from bench.gsm8k.runner import parse_args
+    with pytest.raises(SystemExit):
+        parse_args(["--model", "x", "--method", "temp", "--log-entropy"])
+
+
+def test_runner_log_entropy_default_false():
+    """Without --log-entropy, the flag defaults to False (no sidecar produced)."""
+    from bench.gsm8k.runner import parse_args
+    ns = parse_args(["--model", "x", "--method", "pless"])
+    assert ns.log_entropy is False
+
+
 def test_eval_runner_parse_args_requires_results_file():
     from bench.gsm8k.eval_runner import parse_args
     with pytest.raises(SystemExit):

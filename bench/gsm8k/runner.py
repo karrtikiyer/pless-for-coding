@@ -61,11 +61,26 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--results-dir", default="results/pless_alpha_full_gsm8k")
     p.add_argument("--dtype", choices=["bfloat16", "float16"], default="bfloat16")
     p.add_argument("--no-resume", action="store_true")
+    p.add_argument("--log-entropy", action="store_true",
+                   help="Log per-position next-token entropy stats "
+                        "(Σpᵢ², Σpᵢ³, Σpᵢ⁵, max(pᵢ), top-32) to a sidecar "
+                        "JSONL at <out_path>.entropy.jsonl. Only works with "
+                        "--method pless / pless_alpha (the generate_samples "
+                        "path that supports the entropy_log hook). Mirrors "
+                        "the MBPP runner's --log-entropy flag — used to "
+                        "generate the survival-vs-entropy data for the "
+                        "central figure (docs/theory/central_figure_plan.md).")
     args = p.parse_args(argv)
     if args.method == "pless_alpha" and args.alpha is None:
         p.error("--alpha is required when --method is pless_alpha")
     if args.alpha is not None and args.method != "pless_alpha":
         p.error("--alpha only applies to --method pless_alpha")
+    if args.log_entropy and args.method not in SAMPLERS and args.method != "pless_alpha":
+        p.error(
+            "--log-entropy only works with --method pless / pless_norm / "
+            "pless_alpha (the generate_samples path). For temp/top_p the "
+            "raw softmax isn't captured in our HF generate path."
+        )
     return args
 
 
@@ -128,6 +143,7 @@ def main(argv: list[str] | None = None) -> None:
                 top_k=0,
             )
         else:
+            entropy_log = [] if args.log_entropy else None
             samples = generate_samples(
                 model=model, tokenizer=tokenizer,
                 prompt_text=prompt_text,
@@ -136,6 +152,7 @@ def main(argv: list[str] | None = None) -> None:
                 max_new_tokens=args.max_new_tokens,
                 temperature=args.temperature,
                 stop_strings=STOP_STRINGS,
+                entropy_log=entropy_log,
             )
 
         append_result(out_path, {
@@ -151,6 +168,19 @@ def main(argv: list[str] | None = None) -> None:
             "gold_answer": problem.gold_answer,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         })
+
+        # Write entropy-log sidecar (one row per (sample, position))
+        # — mirrors bench/runner.py:356-361 MBPP-side pattern exactly.
+        if args.log_entropy and args.method not in ("temp", "top_p"):
+            entropy_log_local = locals().get("entropy_log")
+            if entropy_log_local is not None:
+                entropy_sidecar = out_path.with_suffix(
+                    out_path.suffix + ".entropy.jsonl"
+                )
+                with entropy_sidecar.open("a") as fh:
+                    for rec in entropy_log_local:
+                        rec_out = {"task_id": problem.task_id, **rec}
+                        fh.write(json.dumps(rec_out) + "\n")
 
     print(f"\nDone. Output: {out_path}")
 
