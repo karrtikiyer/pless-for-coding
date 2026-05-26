@@ -28,6 +28,14 @@ TIMEOUT="${TIMEOUT:-5.0}"
 LOG_DIR="${LOG_DIR:-/tmp/deepseek_phase_a_eval_logs}"
 mkdir -p "$LOG_DIR"
 
+# Force matplotlib's headless backend in every subprocess we spawn (and every
+# subprocess THEY spawn to execute model-generated code). Deepseek-Coder
+# routinely hallucinates `import matplotlib.pyplot` in competitive-programming
+# samples (~328/65,780 ≈ 0.5% in our Phase A data); on macOS the default
+# `macosx` backend opens a GUI window on import, which we observed as flashing
+# windows during eval (2026-05-26). Agg backend is in-memory only.
+export MPLBACKEND="${MPLBACKEND:-Agg}"
+
 if [ ! -d "$PHASE_A_DIR" ]; then
   echo "ERROR: $PHASE_A_DIR not found." >&2
   exit 2

@@ -73,6 +73,14 @@ export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
 # the vLLM venv. Setting this flag is cheap insurance either way.
 export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
 
+# Force matplotlib to its headless backend in all subprocesses. Deepseek-Coder
+# routinely hallucinates `import matplotlib.pyplot` in competitive-programming
+# samples (~328/65,780 ≈ 0.5% in our Phase A data). On macOS the default
+# `macosx` backend pops a GUI window on import-time, which we observed as
+# flashing windows during eval (2026-05-26). Agg backend writes pixels in
+# memory only — no GUI. Inherited by every subprocess we spawn.
+export MPLBACKEND="${MPLBACKEND:-Agg}"
+
 # Pick the python interpreter based on backend: vLLM needs its dedicated venv.
 if [ "$BACKEND" = "vllm" ]; then
   if [ ! -x "$VLLM_VENV/bin/python" ]; then
