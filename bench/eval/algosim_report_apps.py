@@ -84,7 +84,9 @@ def _da_at_k(group_sizes: np.ndarray, k: int) -> float:
 
 _PID_RE = re.compile(
     r"^(?P<source>ATCODER|CODEFORCES)"
-    r"_(?P<entity>[^_]+)"
+    # Entity may contain underscores (e.g. ``pless_alpha_a2.0_t1.0``), so we
+    # match lazily and let the fixed difficulty alternation anchor the split.
+    r"_(?P<entity>.+?)"
     r"_(?P<difficulty>introductory|interview|competition)"
     r"_(?P<id>.+)$"
 )
@@ -140,9 +142,15 @@ def _compute_bucket(df: pd.DataFrame) -> dict:
 
 
 def _load_responses(responses_dir: Path) -> pd.DataFrame:
-    """Concatenate all response parquets and annotate parsed problem_id parts."""
+    """Concatenate all response parquets and annotate parsed problem_id parts.
+
+    Discovery is recursive — buckets may be nested as ``<bucket>/<arm>.parquet``
+    (the layout the α-sweep judge produces). Bucketing into (source, difficulty)
+    cells is driven by ``problem_id`` parsing, not by directory structure, so
+    flat and nested layouts both work.
+    """
     frames = []
-    for p in sorted(responses_dir.glob("*.parquet")):
+    for p in sorted(responses_dir.rglob("*.parquet")):
         try:
             frames.append(pd.read_parquet(p))
         except Exception as exc:
@@ -182,34 +190,36 @@ def _aggregate(df: pd.DataFrame) -> list[dict]:
 # ── Output ──────────────────────────────────────────────────────────────────
 
 
-def _write_markdown(rows: list[dict], output_path: Path) -> None:
+def _write_markdown(rows: list[dict], output_path: Path,
+                    label: str = "our configs") -> None:
     cells = sorted({(r["source"], r["difficulty"]) for r in rows})
+    n_entities = len({r["entity"] for r in rows})
     lines = [
-        "# AlgoSim APPS Report — Qwen3-8B vs paper reference baselines",
+        f"# AlgoSim APPS Report — {label} vs paper reference baselines",
         "",
-        "Per (source, difficulty) bucket: NAUADC / EA / DA@10 for each entity "
-        "(our Qwen3-8B config OR a paper-baseline model re-clustered with our "
-        "pipeline). Paper-published Table 2 numbers are interleaved as `paper:` "
-        "rows where known.",
+        f"Per (source, difficulty) bucket: NAUADC / EA / DA@10 for each entity "
+        f"(a {label} config OR a paper-baseline model re-clustered with our "
+        f"pipeline). Paper-published Table 2 numbers are interleaved as `paper:` "
+        f"rows where known.",
         "",
         "**Comparability caveats — read before quoting any number across blocks:**",
         "",
-        "1. **Sample-budget asymmetry.** Paper-baseline NAUADC is computed over "
-        "100 samples/problem; our Qwen3-8B configs use 10/problem. DA@10 stays "
-        "directly comparable; NAUADC integrals span k=1..25 on different sample "
-        "budgets and should be read accordingly.",
+        f"1. **Sample-budget asymmetry.** Paper-baseline NAUADC is computed over "
+        f"100 samples/problem; our {label} configs use 10/problem. DA@10 stays "
+        f"directly comparable; NAUADC integrals span k=1..25 on different sample "
+        f"budgets and should be read accordingly.",
         "",
-        "2. **Sample-filter asymmetry.** Paper baselines were clustered after "
-        "filtering to functionally-correct samples (`status == \"Passed\"`). Our "
-        "Qwen3-8B configs are clustered without a correctness filter (we don't "
-        "run APPS execution at algosim-export time). On easy problems with high "
-        "pass rates this matters little; on competition difficulty, where most "
-        "Qwen3-8B samples are broken-in-different-ways, the unfiltered NAUADC "
-        "inflates because the judge sees those broken samples as distinct "
-        "\"algorithms\". The **relative ordering across our 6 configs** remains "
-        "informative; the **absolute comparison to paper baselines on the same "
-        "bucket** is only meaningful where pass rates are high enough that "
-        "filter vs no-filter would converge.",
+        f"2. **Sample-filter asymmetry.** Paper baselines were clustered after "
+        f"filtering to functionally-correct samples (`status == \"Passed\"`). Our "
+        f"{label} configs are clustered without a correctness filter (we don't "
+        f"run APPS execution at algosim-export time). On easy problems with high "
+        f"pass rates this matters little; on competition difficulty, where most "
+        f"{label} samples are broken-in-different-ways, the unfiltered NAUADC "
+        f"inflates because the judge sees those broken samples as distinct "
+        f"\"algorithms\". The **relative ordering across our {n_entities} configs** "
+        f"remains informative; the **absolute comparison to paper baselines on "
+        f"the same bucket** is only meaningful where pass rates are high enough "
+        f"that filter vs no-filter would converge.",
         "",
     ]
     for source, difficulty in cells:
@@ -240,7 +250,8 @@ def _write_markdown(rows: list[dict], output_path: Path) -> None:
     print(f"[apps_report] wrote {output_path}")
 
 
-def _bar_chart(rows: list[dict], output_path: Path) -> None:
+def _bar_chart(rows: list[dict], output_path: Path,
+               label: str = "our configs") -> None:
     cells = sorted({(r["source"], r["difficulty"]) for r in rows})
     if not cells:
         return
@@ -272,7 +283,7 @@ def _bar_chart(rows: list[dict], output_path: Path) -> None:
         if any(src == source and diff == difficulty
                for (_, src, diff), _ in PAPER_NAUADC_TABLE.items()):
             ax.legend(fontsize=8, loc="lower right")
-    fig.suptitle("APPS NAUADC by bucket — Qwen3-8B configs + paper baselines",
+    fig.suptitle(f"APPS NAUADC by bucket — {label} configs + paper baselines",
                  fontsize=12)
     fig.tight_layout()
     fig.savefig(output_path, dpi=150, bbox_inches="tight")
@@ -289,6 +300,11 @@ def parse_args():
                    help="Optional second responses directory (e.g. paper baselines). "
                         "If supplied, parquets from both dirs are pooled before bucketing.")
     p.add_argument("--output-dir", type=Path, required=True)
+    p.add_argument("--label", type=str, default=None,
+                   help="Display name for the entities being re-clustered "
+                        "(e.g. 'Qwen2.5-Coder-7B-Instruct α-sweep'). Used in "
+                        "the report title, prose, and chart suptitle. Defaults "
+                        "to the responses-dir basename.")
     return p.parse_args()
 
 
@@ -313,8 +329,9 @@ def main():
     raw_path.write_text(json.dumps({"k_values": K_VALUES, "cells": rows}, indent=2))
     print(f"[apps_report] wrote {raw_path}")
 
-    _write_markdown(rows, args.output_dir / "algosim_apps_report.md")
-    _bar_chart(rows, args.output_dir / "algosim_apps_bar.png")
+    label = args.label or args.responses_dir.name
+    _write_markdown(rows, args.output_dir / "algosim_apps_report.md", label=label)
+    _bar_chart(rows, args.output_dir / "algosim_apps_bar.png", label=label)
 
 
 if __name__ == "__main__":
