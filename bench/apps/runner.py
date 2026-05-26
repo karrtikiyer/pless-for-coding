@@ -328,6 +328,7 @@ def main():
                 "backend": args.backend,
                 "method": args.method,
                 "temperature": args.temperature,
+                "top_p": args.top_p,
                 "task_id": problem.problem_id,
                 "source": problem.source,
                 "difficulty": problem.difficulty,
@@ -335,6 +336,10 @@ def main():
                 "samples": samples,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
+            if args.alpha is not None:
+                record["alpha"] = args.alpha
+            if args.paper_replica_model is not None:
+                record["paper_replica_model"] = args.paper_replica_model
             if args.enable_thinking:
                 record["samples_with_thinking"] = samples_with_think
             if args.method == "split":
