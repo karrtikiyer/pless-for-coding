@@ -86,6 +86,39 @@ def format_prompt_apps_bigcode_default(
     return prompt, ""
 
 
+def format_prompt_apps_bigcode_chat(
+    problem: AppsProblem,
+    tokenizer,
+) -> tuple[str, str]:
+    """Wrap bigcode-eval-harness's bare APPS prompt in the model's chat
+    template — the modification paper authors most plausibly applied to
+    make bigcode-eval-harness work on chat-tuned models like
+    Deepseek-Coder-Instruct.
+
+    The bigcode prompt (``QUESTION:/Use Standard Input format/ANSWER:``)
+    becomes the *user-message content*. ``tokenizer.apply_chat_template``
+    then adds the model-specific system prompt + role wrappers
+    (``### Instruction:`` / ``### Response:`` for Deepseek; varies by
+    model). The model sees its expected chat framing on the outside and
+    bigcode's QUESTION/ANSWER markers on the inside.
+
+    Why this exists: bigcode's bare prompt fails on instruct models
+    (output drifts to C++, off-topic, or model collapse — verified
+    empirically in the smoke for this experiment). Wrapping with chat
+    template re-activates the model's instruct-tuning prior (Python
+    by default) without modifying bigcode's task-specific content.
+
+    Returns ``(prompt, code_prefix)`` like the other formatters.
+    ``code_prefix`` is always ``""``.
+    """
+    bare_prompt, _ = format_prompt_apps_bigcode_default(problem)
+    messages = [{"role": "user", "content": bare_prompt}]
+    wrapped = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True,
+    )
+    return wrapped, ""
+
+
 def format_prompt_apps_instruct(
     problem: AppsProblem,
     tokenizer,

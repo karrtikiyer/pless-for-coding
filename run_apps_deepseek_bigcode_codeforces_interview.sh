@@ -56,7 +56,7 @@ N_SAMPLES="${N_SAMPLES:-100}"
 TOP_P="${TOP_P:-0.95}"
 TEMPERATURE="${TEMPERATURE:-1.0}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-1024}"   # match paper
-RESULTS_DIR="${RESULTS_DIR:-results/pless_alpha_apps_deepseek_bigcode}"
+RESULTS_DIR="${RESULTS_DIR:-results/pless_alpha_apps_deepseek_bigcode_chat}"
 LOG_DIR="${LOG_DIR:-/tmp/deepseek_bigcode_logs}"
 BACKENDS="${BACKENDS:-vllm hf}"
 VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
@@ -103,7 +103,7 @@ echo "  Bucket:          $SOURCE / $DIFFICULTY"
 echo "  Sampler:         T=$TEMPERATURE, top_p=$TOP_P (nucleus)"
 echo "  N samples/task:  $N_SAMPLES"
 echo "  Max new tokens:  $MAX_NEW_TOKENS"
-echo "  Prompt format:   bigcode-default (no chat template)"
+echo "  Prompt format:   bigcode-chat (bigcode bare + apply_chat_template)"
 echo "  Backends:        $BACKENDS"
 echo "  Results:         $RESULTS_DIR/<backend>/<slug>/<bucket>/temp_t1.0.jsonl"
 echo "═══════════════════════════════════════════════════════════════════════"
@@ -155,7 +155,7 @@ for BACKEND in $BACKENDS; do
     --n-samples "$N_SAMPLES" \
     --max-new-tokens "$MAX_NEW_TOKENS" \
     --backend "$BACKEND" --dtype bfloat16 \
-    --prompt-format bigcode-default \
+    --prompt-format bigcode-chat \
     --results-dir "$CELL_RESULTS" \
     $MAX_PROBLEMS_FLAG \
     2>&1 | tee "$LOG"; then

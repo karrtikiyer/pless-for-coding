@@ -118,3 +118,72 @@ def test_bigcode_prompt_returns_str_not_tuple_or_list():
     prompt, code_prefix = result
     assert isinstance(prompt, str)
     assert isinstance(code_prefix, str)
+
+
+# ─── bigcode-chat: wrap bigcode's bare prompt in chat template ───────────
+
+
+class _MockTokenizer:
+    """Minimal tokenizer that mimics Deepseek-Coder's chat template wrap.
+    For testing only — real runner uses HF AutoTokenizer."""
+
+    def apply_chat_template(self, messages, tokenize=False,
+                            add_generation_prompt=True, **kw):
+        if tokenize:
+            raise NotImplementedError("test mock returns strings only")
+        # Mimic Deepseek's chat template structure (verbatim from the
+        # registered template on HF — verified earlier):
+        out = ("You are an AI programming assistant, utilizing the Deepseek "
+               "Coder model, developed by Deepseek Company.\n")
+        for m in messages:
+            if m["role"] == "user":
+                out += f"### Instruction:\n{m['content']}\n"
+            elif m["role"] == "assistant":
+                out += f"### Response:\n{m['content']}\n"
+        if add_generation_prompt:
+            out += "### Response:\n"
+        return out
+
+
+def test_module_exposes_format_prompt_apps_bigcode_chat():
+    from bench.apps.prompts import format_prompt_apps_bigcode_chat
+    assert callable(format_prompt_apps_bigcode_chat)
+
+
+def test_bigcode_chat_wraps_bare_prompt_in_chat_template():
+    """The bigcode bare prompt becomes the user-message content; the
+    tokenizer's chat template adds system prompt + ### Instruction /
+    ### Response wrappers."""
+    from bench.apps.prompts import (
+        format_prompt_apps_bigcode_chat,
+        format_prompt_apps_bigcode_default,
+    )
+    p = _make_problem(question="Find the maximum.")
+    tok = _MockTokenizer()
+    chat_prompt, code_prefix = format_prompt_apps_bigcode_chat(p, tok)
+    bare_prompt, _ = format_prompt_apps_bigcode_default(p)
+    # The bare prompt should appear inside the chat-wrapped prompt
+    assert bare_prompt in chat_prompt, (
+        f"bare prompt should be embedded as user-message content.\n"
+        f"bare = {bare_prompt!r}\n"
+        f"chat = {chat_prompt!r}"
+    )
+    # And the chat wrappers should be present
+    assert "### Instruction:" in chat_prompt
+    assert "### Response:" in chat_prompt
+    assert "AI programming assistant" in chat_prompt
+    assert code_prefix == ""
+
+
+def test_bigcode_chat_preserves_bigcode_markers():
+    """The chat template wraps bigcode's bare prompt — it does NOT strip
+    the QUESTION:/Use Standard Input format/ANSWER: markers. That's the
+    whole point: we keep the bigcode framing visible to the model while
+    also giving it the chat-mode signals it was instruct-tuned with."""
+    from bench.apps.prompts import format_prompt_apps_bigcode_chat
+    p = _make_problem(question="Find the maximum.")
+    tok = _MockTokenizer()
+    chat_prompt, _ = format_prompt_apps_bigcode_chat(p, tok)
+    assert "QUESTION:" in chat_prompt
+    assert "Use Standard Input format" in chat_prompt
+    assert "ANSWER:" in chat_prompt
