@@ -64,9 +64,27 @@ SEED="${SEED:-0}"
 
 mkdir -p "$LOG_DIR"
 
-# Env hygiene (matches other vLLM drivers)
+# Env hygiene (matches other vLLM drivers — see Phase A iterative fixes
+# in commits 8bc1b77 → bbd6f20 → 9608094).
+#
+# NOTE: do NOT export VLLM_WORKER_MULTIPROC_METHOD=spawn here. Our
+# bench.generator_vllm.load_engine attaches PlessSplitLogitsProcessor as
+# a default logits processor on every engine, even for --method temp.
+# That class is defined inside a factory function (to keep the module
+# Mac-importable) and spawn-mode workers can't pickle local classes
+# (AttributeError: Can't pickle local object ...). Linux's default
+# `fork` works because the child inherits parent memory. Leave the
+# variable unset; vLLM will pick fork by default.
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+# FlashInfer's top-k/top-p sampler JIT-compiles a CUDA kernel via `ninja`
+# on first use. Pods often don't ship ninja in PATH, which crashes engine
+# startup with FileNotFoundError. VLLM_USE_FLASHINFER_SAMPLER=0 forces
+# the PyTorch-native (Triton for bs≥8) sampler instead — negligible
+# perf hit for our 6.7B-class workload.
 export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
+# Deepseek-Coder hallucinates `import matplotlib.pyplot` in ~0.5% of
+# CODEFORCES competitive-programming samples. On macOS this pops a GUI
+# window when each subprocess test runs. Agg backend is in-memory only.
 export MPLBACKEND="${MPLBACKEND:-Agg}"
 
 # Smoke override
@@ -100,6 +118,18 @@ for BACKEND in $BACKENDS; do
   if [ "$BACKEND" = "vllm" ]; then
     if [ ! -x "$VLLM_VENV/bin/python" ]; then
       echo "ERROR: vLLM venv missing at $VLLM_VENV — see pyproject-vllm.toml" >&2
+      echo "  Bootstrap with:" >&2
+      echo "    uv venv $VLLM_VENV --python 3.12" >&2
+      echo "    UV_PROJECT_ENVIRONMENT=$VLLM_VENV uv sync --project pyproject-vllm.toml" >&2
+      echo "Skipping vLLM cell." >&2
+      FAILED_CELLS+=("$BACKEND")
+      continue
+    fi
+    # Verify vllm is actually importable inside that venv (catches a
+    # broken/incomplete sync before we waste 30 min loading the model).
+    if ! "$VLLM_VENV/bin/python" -c "import vllm" 2>/dev/null; then
+      echo "ERROR: vllm import failed inside $VLLM_VENV." >&2
+      echo "  Re-sync from pyproject-vllm.toml and try again." >&2
       echo "Skipping vLLM cell." >&2
       FAILED_CELLS+=("$BACKEND")
       continue
