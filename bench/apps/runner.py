@@ -64,6 +64,25 @@ def _output_path(results_dir: str, model_id: str, source: str,
     return out_dir / f"{method_key}_t{temperature}.jsonl"
 
 
+def _chunk_sizes(n_samples: int, hf_batch_size: int | None) -> list[int]:
+    """Split n_samples into per-call batch sizes for HF generation.
+
+    Returns a list of positive ints that sums to n_samples. ``hf_batch_size``
+    None / 0 / negative / >= n_samples means a single chunk (preserve current
+    behavior). Used by the pless / pless_alpha / split branches to bound
+    KV cache memory on H100s — at n_samples=100 with Deepseek-6.7B and 1024
+    max new tokens, a single-call batch needs ~100 GiB KV, exceeding the
+    80 GiB capacity.
+    """
+    if hf_batch_size is None or hf_batch_size <= 0 or hf_batch_size >= n_samples:
+        return [n_samples]
+    chunks = [hf_batch_size] * (n_samples // hf_batch_size)
+    rem = n_samples % hf_batch_size
+    if rem:
+        chunks.append(rem)
+    return chunks
+
+
 def _method_key(args: argparse.Namespace) -> str:
     if args.method == "split":
         key = (
@@ -107,6 +126,12 @@ def parse_args():
                    help="Generation backend. Default 'hf' (current behaviour, zero regression). "
                         "'vllm' routes through bench/generator_vllm.py and requires the "
                         ".venv-vllm environment (see pyproject-vllm.toml).")
+    p.add_argument("--hf-batch-size", type=int, default=10,
+                   help="HF backend: split n_samples into chunks of this size to "
+                        "avoid CUDA OOM at large n_samples (e.g. N=100 on Deepseek-6.7B "
+                        "needs ~100 GiB KV cache vs 80 GiB H100 capacity). "
+                        "Default 10 keeps peak VRAM ~23 GiB for 6.7B bf16. "
+                        "No effect on --backend vllm (paged attention handles batching).")
     p.add_argument("--no-resume", action="store_true")
     p.add_argument("--max-problems", type=int, default=None,
                    help="Cap problems within the (source, difficulty) bucket (for smoke tests).")
@@ -332,29 +357,41 @@ def main():
                         alpha=args.alpha,
                     )
             elif args.method == "temp":
+                # generate_samples_standard handles chunking internally via
+                # its own hf_batch_size kwarg.
                 raw_samples = generate_samples_standard(
                     model=model, tokenizer=tokenizer, prompt_text=prompt_text,
                     n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                     temperature=args.temperature, stop_strings=None,
                     top_p=args.top_p, top_k=0,
+                    hf_batch_size=args.hf_batch_size,
                 )
             elif args.method == "split":
-                raw_samples = generate_samples_split(
-                    model=model, tokenizer=tokenizer, prompt_text=prompt_text,
-                    sampler_fn_think=sampler_fn_think,
-                    sampler_fn_code=sampler_fn_code,
-                    n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
-                    temperature_think=args.temp_think,
-                    temperature_code=args.temp_code,
-                    stop_strings=None,
-                )
+                # Loop chunks externally — keeps generate_samples_split
+                # signature unchanged (also used by MBPP/HE).
+                raw_samples = []
+                for b in _chunk_sizes(args.n_samples, args.hf_batch_size):
+                    raw_samples.extend(generate_samples_split(
+                        model=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        sampler_fn_think=sampler_fn_think,
+                        sampler_fn_code=sampler_fn_code,
+                        n_samples=b, max_new_tokens=args.max_new_tokens,
+                        temperature_think=args.temp_think,
+                        temperature_code=args.temp_code,
+                        stop_strings=None,
+                    ))
             else:
-                raw_samples = generate_samples(
-                    model=model, tokenizer=tokenizer, prompt_text=prompt_text,
-                    sampler_fn=sampler_fn,
-                    n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
-                    temperature=args.temperature, stop_strings=None,
-                )
+                # pless / pless_alpha / pless_norm — same chunk-at-call-site
+                # pattern as split path. Each chunk re-runs prefill (small
+                # cost, ~1% of total) but bounds KV memory.
+                raw_samples = []
+                for b in _chunk_sizes(args.n_samples, args.hf_batch_size):
+                    raw_samples.extend(generate_samples(
+                        model=model, tokenizer=tokenizer, prompt_text=prompt_text,
+                        sampler_fn=sampler_fn,
+                        n_samples=b, max_new_tokens=args.max_new_tokens,
+                        temperature=args.temperature, stop_strings=None,
+                    ))
 
             samples_with_think = [code_prefix + s for s in raw_samples]
             if args.enable_thinking:

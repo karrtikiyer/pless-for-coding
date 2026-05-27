@@ -190,8 +190,21 @@ def generate_samples_standard(
     stop_strings: list[str] | None = None,
     top_p: float = 1.0,
     top_k: int = 0,
+    hf_batch_size: int | None = None,
 ) -> list[str]:
-    """Generate samples using standard model.generate() with batched generation."""
+    """Generate samples using standard model.generate() with batched generation.
+
+    When ``hf_batch_size`` is set (and < n_samples), splits the request into
+    multiple ``generate()`` calls of size ``hf_batch_size`` and concatenates
+    the results. This avoids OOM on large n_samples (e.g. 100 sequences ×
+    Deepseek-6.7B × 1024 max new tokens needs ~100 GiB KV cache, exceeding
+    H100 80GB capacity). Output distribution is identical to the unchunked
+    version — same sampler, dtype, temperature; samples remain independent
+    via torch's advancing RNG state.
+
+    Default ``hf_batch_size=None`` preserves the original single-call behavior
+    so other benchmarks (MBPP, HumanEval, GSM8K, SQuAD) are unaffected.
+    """
     if isinstance(prompt_text, list):
         input_ids = torch.tensor([prompt_text], device=model.device)
     else:
@@ -206,28 +219,40 @@ def generate_samples_standard(
         kwargs["stop_strings"] = stop_strings
         kwargs["tokenizer"] = tokenizer
 
-    with torch.no_grad():
-        output = model.generate(
-            input_ids,
-            attention_mask=attention_mask,
-            pad_token_id=pad_token_id,
-            max_new_tokens=max_new_tokens,
-            do_sample=True,
-            temperature=temperature,
-            top_k=top_k,
-            top_p=top_p,
-            num_return_sequences=n_samples,
-            **kwargs,
-        )
-    decoded_prompt = tokenizer.decode(output[0, :prompt_len], skip_special_tokens=True)
+    # Clamp chunk size: None (or larger than n_samples) → single call.
+    chunk = n_samples if hf_batch_size is None else min(hf_batch_size, n_samples)
+    chunk = max(1, chunk)
+
+    outputs = []
+    remaining = n_samples
+    while remaining > 0:
+        b = min(chunk, remaining)
+        with torch.no_grad():
+            out = model.generate(
+                input_ids,
+                attention_mask=attention_mask,
+                pad_token_id=pad_token_id,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=temperature,
+                top_k=top_k,
+                top_p=top_p,
+                num_return_sequences=b,
+                **kwargs,
+            )
+        outputs.append(out)
+        remaining -= b
+
+    decoded_prompt = tokenizer.decode(outputs[0][0, :prompt_len], skip_special_tokens=True)
     samples = []
-    for i in range(n_samples):
-        full_text = tokenizer.decode(output[i], skip_special_tokens=True)
-        text = full_text[len(decoded_prompt):]
-        # Post-generation truncation as safety net
-        if stop_strings:
-            text = _truncate_at_stop(text, stop_strings)
-        samples.append(text)
+    for out in outputs:
+        for i in range(out.shape[0]):
+            full_text = tokenizer.decode(out[i], skip_special_tokens=True)
+            text = full_text[len(decoded_prompt):]
+            # Post-generation truncation as safety net
+            if stop_strings:
+                text = _truncate_at_stop(text, stop_strings)
+            samples.append(text)
     return samples
 
 
@@ -427,7 +452,8 @@ def generate_samples(
     temperature: float,
     stop_strings: list[str] | None = None,
     entropy_log: list[dict] | None = None,
-) -> list[str]:
+    return_token_ids: bool = False,
+):
     """Generate n_samples completions in parallel using batched decoding.
 
     If ``entropy_log`` is a list (not None), this function appends one
@@ -436,6 +462,14 @@ def generate_samples(
     pre-truncation) next-token distribution. Used for the bimodal-
     entropy measurement experiment. No-op when ``entropy_log`` is None,
     so the production path is unaffected.
+
+    If ``return_token_ids`` is True, returns
+    ``(samples_text, full_ids_list, prompt_len)`` where ``full_ids_list``
+    is a list of 1-D token-id tensors (one per sample) covering the full
+    prompt+completion, with completion truncated at first EOS (no
+    padding). ``prompt_len`` is the number of tokens in the encoded
+    prompt. Used by the entropy probe so it can teacher-force on the
+    exact tokens the sampler actually emitted.
     """
     if isinstance(prompt_text, list):
         input_ids = torch.tensor([prompt_text], device=model.device)
@@ -553,6 +587,7 @@ def generate_samples(
     # Decode each sequence (strip trailing eos tokens)
     decoded_prompt = tokenizer.decode(input_ids[0], skip_special_tokens=True)
     samples = []
+    full_ids_list: list[torch.Tensor] | None = [] if return_token_ids else None
     for i in range(N):
         ids = all_ids[i]
         # Find first eos token
@@ -566,7 +601,12 @@ def generate_samples(
         if stop_strings:
             text = _truncate_at_stop(text, stop_strings)
         samples.append(text)
+        if full_ids_list is not None:
+            full_ids_list.append(full_ids)
 
+    if return_token_ids:
+        prompt_len = int(input_ids.shape[1])
+        return samples, full_ids_list, prompt_len
     return samples
 
 

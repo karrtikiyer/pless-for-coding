@@ -46,6 +46,13 @@ MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-1024}"   # match paper
 SEED="${SEED:-0}"
 BACKEND="${BACKEND:-vllm}"   # default vLLM (much faster); BACKEND=hf to fall back
 VLLM_VENV="${VLLM_VENV:-.venv-vllm}"  # vLLM lives in a separate venv (incompatible deps with main .venv)
+# HF backend KV-cache chunking. N=100 in a single model.generate(num_return_sequences=100)
+# call on Deepseek-6.7B + 1024 max-new-tokens needs ~100 GiB KV cache and OOMs
+# on H100 80GB. Chunk into batches of HF_BATCH_SIZE to bound peak VRAM
+# (~23 GiB at batch=10 for 6.7B bf16). No effect when BACKEND=vllm (paged
+# attention handles batching). Default 10 is safe across all Phase A buckets;
+# raise to 20 if you have margin for faster wall-clock on shorter prompts.
+HF_BATCH_SIZE="${HF_BATCH_SIZE:-10}"
 mkdir -p "$LOG_DIR"
 
 # NOTE: do NOT export VLLM_WORKER_MULTIPROC_METHOD=spawn here. The
@@ -110,6 +117,7 @@ if [ "${SMOKE:-0}" = "1" ]; then
     --method temp --temperature 1.0 \
     --n-samples 2 --max-new-tokens "$MAX_NEW_TOKENS" --max-problems 1 \
     --backend "$BACKEND" --dtype bfloat16 \
+    --hf-batch-size "$HF_BATCH_SIZE" \
     --paper-replica-model "$MODEL" \
     --results-dir "${RESULTS_DIR}_smoke" \
     2>&1 | tee "$LOG_DIR/smoke_nucleus.log"
@@ -120,6 +128,7 @@ if [ "${SMOKE:-0}" = "1" ]; then
     --method pless_alpha --alpha 5.0 --temperature 1.0 \
     --n-samples 2 --max-new-tokens "$MAX_NEW_TOKENS" --max-problems 1 \
     --backend "$BACKEND" --dtype bfloat16 \
+    --hf-batch-size "$HF_BATCH_SIZE" \
     --paper-replica-model "$MODEL" \
     --results-dir "${RESULTS_DIR}_smoke" \
     2>&1 | tee "$LOG_DIR/smoke_alpha5.log"
@@ -156,6 +165,7 @@ run_cell() {
     --n-samples "$n_samples" \
     --max-new-tokens "$MAX_NEW_TOKENS" \
     --backend "$BACKEND" --dtype bfloat16 \
+    --hf-batch-size "$HF_BATCH_SIZE" \
     --paper-replica-model "$MODEL" \
     --results-dir "$out_dir" \
     $extra_args \
@@ -167,6 +177,9 @@ echo "Phase A — Deepseek paper-replica comparison"
 echo "  Model:       $MODEL"
 echo "  Bucket:      $SOURCE / $DIFFICULTY"
 echo "  Backend:     $BACKEND"
+if [ "$BACKEND" = "hf" ]; then
+  echo "  HF batch:    $HF_BATCH_SIZE (chunk N=100 to bound KV cache; ~23 GiB peak)"
+fi
 echo "  Results dir: $RESULTS_DIR/{cell_<n>}"
 echo "  Log dir:     $LOG_DIR"
 echo "═══════════════════════════════════════════════════════════════════════"
