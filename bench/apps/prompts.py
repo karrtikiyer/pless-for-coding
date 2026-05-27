@@ -38,6 +38,54 @@ def _user_message(problem: AppsProblem) -> str:
     return "\n".join(parts)
 
 
+def format_prompt_apps_bigcode_default(
+    problem: AppsProblem,
+) -> tuple[str, str]:
+    """Format an APPS prompt exactly as bigcode-evaluation-harness does.
+
+    Reproduces the ``get_prompt`` method of
+    ``bigcode_eval/tasks/apps.py::GeneralAPPS`` byte-for-byte. This is the
+    prompt format the paper authors (Lee et al. 2025; arXiv:2503.00691)
+    started from before applying their own per-model chat-template wrapping.
+
+    Using this format lets us run the SAME prompt across HF transformers
+    and vLLM backends and isolate the "backend choice" effect from the
+    "prompt format" effect when comparing pass@k.
+
+    Returns ``(prompt, code_prefix)``. ``code_prefix`` is always ``""`` —
+    the bigcode protocol expects the model to write the full answer after
+    ``ANSWER:\\n`` with no per-prompt boilerplate.
+
+    Key properties (asserted in ``tests/test_apps_bigcode_prompt.py``):
+      * No chat template applied
+      * No system prompt
+      * First character is ``"\\n"``; first line is ``"QUESTION:"``
+      * No ``### Instruction`` / ``### Response`` wrapping
+      * For CODEFORCES problems (no ``fn_name``): trailing
+        ``"\\nUse Standard Input format\\nANSWER:\\n"``
+      * For function-call problems: trailing
+        ``"\\nUse Call-Based format\\nANSWER:\\n"``
+
+    Reference:
+        https://github.com/bigcode-project/bigcode-evaluation-harness/
+        blob/main/bigcode_eval/tasks/apps.py
+    """
+    starter_code = problem.starter_code if problem.starter_code else ""
+    fn_name = problem.fn_name  # None for stdin/stdout problems
+
+    prompt = "\nQUESTION:\n"
+    prompt += problem.question
+    if starter_code:
+        prompt += starter_code
+    if not fn_name:
+        call_format = "\nUse Standard Input format"
+    else:
+        call_format = "\nUse Call-Based format"
+    prompt += call_format
+    prompt += "\nANSWER:\n"
+    return prompt, ""
+
+
 def format_prompt_apps_instruct(
     problem: AppsProblem,
     tokenizer,

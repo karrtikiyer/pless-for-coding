@@ -34,7 +34,10 @@ from pathlib import Path
 from tqdm import tqdm
 
 from bench.apps.dataset import DIFFICULTIES, SOURCES, load_apps
-from bench.apps.prompts import format_prompt_apps_instruct
+from bench.apps.prompts import (
+    format_prompt_apps_bigcode_default,
+    format_prompt_apps_instruct,
+)
 from bench.checkpointing import append_result, load_completed_ids
 from bench.generator import (
     _strip_think_content,
@@ -127,6 +130,17 @@ def parse_args():
                         "id does not contain 'Instruct' or 'Chat'. Use for "
                         "models like m-a-p/OpenCodeInterpreter-DS-1.3B that "
                         "are chat-tuned but not named accordingly.")
+    p.add_argument("--prompt-format", choices=["auto", "bigcode-default"],
+                   default="auto",
+                   help="Which prompt formatter to use. 'auto' (default): "
+                        "applies our chat-template-based formatter "
+                        "(format_prompt_apps_instruct). 'bigcode-default': "
+                        "emits bigcode-evaluation-harness's APPS prompt "
+                        "verbatim (no chat template; 'QUESTION/Use Standard "
+                        "Input format/ANSWER' bare-completion style). Set "
+                        "this when isolating backend effects (HF vs vLLM) "
+                        "from prompt-format effects. Incompatible with "
+                        "--paper-replica-model.")
     p.add_argument("--paper-replica-model", default=None,
                    help="OPTIONAL: HF model id whose paper-published prompts "
                         "should be used verbatim (loaded from "
@@ -151,6 +165,10 @@ def parse_args():
         p.error("--alpha is required when --method is pless_alpha")
     if args.alpha is not None and args.method != "pless_alpha":
         p.error("--alpha only applies to --method pless_alpha")
+    if args.prompt_format == "bigcode-default" and args.paper_replica_model:
+        p.error("--prompt-format bigcode-default is incompatible with "
+                "--paper-replica-model (both override the default formatter; "
+                "pick one)")
     return args
 
 
@@ -255,6 +273,12 @@ def main():
                 # chat-template wrapper entirely for Phase A apples-to-apples.
                 prompt_text = paper_prompts[problem.problem_id]
                 code_prefix = ""
+            elif args.prompt_format == "bigcode-default":
+                # Reproduce bigcode-evaluation-harness's APPS get_prompt()
+                # byte-for-byte. No chat template, no system prompt; treats
+                # the model as bare-completion. Used to isolate backend
+                # (HF vs vLLM) effects from prompt-format effects.
+                prompt_text, code_prefix = format_prompt_apps_bigcode_default(problem)
             else:
                 prompt_text, code_prefix = format_prompt_apps_instruct(
                     problem, tokenizer, enable_thinking=args.enable_thinking,
