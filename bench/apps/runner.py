@@ -28,6 +28,7 @@ Usage (one invocation per config; see ``run_apps_qwen3_top_configs.sh`` for the
 from __future__ import annotations
 
 import argparse
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -100,7 +101,12 @@ def _method_key(args: argparse.Namespace) -> str:
     return key
 
 
-def parse_args():
+def _build_argparser() -> argparse.ArgumentParser:
+    """Return the bare argparse.ArgumentParser without parsing sys.argv.
+
+    Exposed so tests can construct + drive the parser without invoking
+    main(). All validation lives in parse_args (called once main runs).
+    """
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--model", required=True, help="HuggingFace model ID")
@@ -185,6 +191,26 @@ def parse_args():
     p.add_argument("--paper-replica-cache-dir", type=Path, default=None,
                    help="Where to cache the dedup'd paper-prompt parquet. "
                         "Default: results/pless_alpha_apps/_paper_replica_cache/")
+    p.add_argument("--log-entropy", action="store_true",
+                   help="Log per-position next-token entropy stats "
+                        "(Σpᵢ², Σpᵢ³, Σpᵢ⁵, max(pᵢ), top-32) to a sidecar "
+                        "JSONL at <out_path>.entropy.jsonl. Only works with "
+                        "--method pless / pless_norm / pless_alpha (the "
+                        "generate_samples path that supports the entropy_log "
+                        "hook). Mirrors the MBPP and GSM8K runners' "
+                        "--log-entropy flag — used to extend the survival-"
+                        "vs-entropy central figure to APPS for Deepseek.")
+    return p
+
+
+def parse_args():
+    """Build the parser, parse sys.argv, and apply cross-flag validation.
+
+    Validation centralized here so tests can build the parser without
+    triggering the validation (via _build_argparser) or with it
+    (via this function).
+    """
+    p = _build_argparser()
     args = p.parse_args()
     if args.method == "split":
         for name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
@@ -200,6 +226,21 @@ def parse_args():
         p.error(f"--prompt-format {args.prompt_format} is incompatible with "
                 "--paper-replica-model (both override the default formatter; "
                 "pick one)")
+    if args.log_entropy:
+        # Only generate_samples (the manual token-by-token decode) exposes
+        # the entropy_log hook. temp / split / vllm paths don't capture the
+        # raw softmax. Refuse rather than silently skip the sidecar.
+        if args.method == "temp":
+            p.error("--log-entropy requires --method pless / pless_norm / "
+                    "pless_alpha — temp routes through generate_samples_"
+                    "standard (model.generate) which doesn't capture per-"
+                    "position softmax.")
+        if args.method == "split":
+            p.error("--log-entropy not yet supported with --method split "
+                    "(generate_samples_split doesn't expose entropy_log).")
+        if args.backend == "vllm":
+            p.error("--log-entropy not supported with --backend vllm "
+                    "(no entropy_log hook in the vLLM generator).")
     return args
 
 
@@ -384,14 +425,31 @@ def main():
                 # pless / pless_alpha / pless_norm — same chunk-at-call-site
                 # pattern as split path. Each chunk re-runs prefill (small
                 # cost, ~1% of total) but bounds KV memory.
+                #
+                # When --log-entropy is set, we accumulate per-position
+                # entropy records across chunks here and renumber sample_ids
+                # to give a flat 0..n_samples-1 sequence in the sidecar
+                # (each generate_samples call emits sample_ids 0..b-1 for
+                # its chunk; without renumbering the sidecar would have
+                # duplicate ids across chunks).
                 raw_samples = []
+                entropy_log = [] if args.log_entropy else None
+                sample_offset = 0
                 for b in _chunk_sizes(args.n_samples, args.hf_batch_size):
+                    chunk_log = [] if args.log_entropy else None
                     raw_samples.extend(generate_samples(
                         model=model, tokenizer=tokenizer, prompt_text=prompt_text,
                         sampler_fn=sampler_fn,
                         n_samples=b, max_new_tokens=args.max_new_tokens,
                         temperature=args.temperature, stop_strings=None,
+                        entropy_log=chunk_log,
                     ))
+                    if chunk_log is not None and entropy_log is not None:
+                        for rec in chunk_log:
+                            rec2 = dict(rec)
+                            rec2["sample_id"] = rec.get("sample_id", 0) + sample_offset
+                            entropy_log.append(rec2)
+                    sample_offset += b
 
             samples_with_think = [code_prefix + s for s in raw_samples]
             if args.enable_thinking:
@@ -427,6 +485,21 @@ def main():
                 record["post_temperature"] = args.post_temperature
 
             append_result(out_path, record)
+
+            # Entropy sidecar — mirrors bench/gsm8k/runner.py:174-183 and
+            # bench/runner.py MBPP-side pattern. One row per (sample, position).
+            # Only emitted when --log-entropy was set AND the method routes
+            # through generate_samples (pless/pless_alpha/pless_norm); other
+            # methods are rejected at parse time.
+            if args.log_entropy and entropy_log:
+                entropy_sidecar = out_path.with_suffix(
+                    out_path.suffix + ".entropy.jsonl"
+                )
+                with entropy_sidecar.open("a") as fh:
+                    for rec in entropy_log:
+                        rec_out = {"task_id": problem.problem_id, **rec}
+                        fh.write(json.dumps(rec_out) + "\n")
+
             tqdm.write(f"Completed problem_id={problem.problem_id}")
         except Exception as exc:
             tqdm.write(f"Error on problem_id={problem.problem_id}: {exc}")

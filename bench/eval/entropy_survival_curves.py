@@ -478,11 +478,12 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--models", nargs="+", required=True,
                    help="Model slugs (e.g. Qwen--Qwen2.5-Coder-7B-Instruct).")
     p.add_argument("--datasets", nargs="+", default=["mbpp"],
-                   choices=["mbpp", "gsm8k"],
+                   choices=["mbpp", "gsm8k", "apps"],
                    help="Datasets to include as rows of the figure. "
                         "Default: ['mbpp'] (backward-compatible single panel). "
                         "Pass 'mbpp gsm8k' for the 2-row central figure v2 "
-                        "(code-side + CoT-side).")
+                        "(code-side + CoT-side). 'apps' added 2026-05-28 for "
+                        "the Deepseek paper-replica extension.")
     p.add_argument("--output-dir", type=Path, required=True)
     p.add_argument("--bin-width", type=float, default=0.05,
                    help="Entropy bin width in nats.")

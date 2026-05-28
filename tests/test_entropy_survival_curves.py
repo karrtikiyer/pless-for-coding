@@ -214,6 +214,16 @@ def test_model_jsonl_path_gsm8k():
     assert s.endswith("pless_t1.0.jsonl.entropy.jsonl")
 
 
+def test_model_jsonl_path_apps():
+    """APPS entropy data lives at pless_alpha_entropy/apps/<slug>/...
+    Added 2026-05-28 to extend the central figure to APPS for Deepseek."""
+    from bench.eval.entropy_survival_curves import _model_jsonl_path
+    p = _model_jsonl_path("deepseek-ai--deepseek-coder-6.7b-instruct", "apps")
+    s = str(p)
+    assert "pless_alpha_entropy/apps/deepseek-ai--deepseek-coder-6.7b-instruct/" in s
+    assert s.endswith("pless_t1.0.jsonl.entropy.jsonl")
+
+
 def test_main_accepts_datasets_flag(tmp_path, monkeypatch):
     """CLI must accept --datasets {mbpp,gsm8k} (nargs="+"). We don't need
     to actually run the pipeline — just verify the argparser doesn't reject
