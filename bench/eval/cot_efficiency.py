@@ -1,0 +1,692 @@
+"""CoT token-efficiency vs accuracy — early analysis on existing Qwen3-8B data.
+
+Mines the existing split-decoding corpus (reasoning traces with `<think>...</think>`)
+to ask: within a fixed token budget, does the THINK-phase sampler / temperature move
+the accuracy-vs-CoT-length Pareto frontier? Reports both token efficiency (think
+length, in tokens) and accuracy/exploration (pass@1, pass@k), using the efficiency
+decomposition from arXiv:2602.09805 (completion rate / conditional accuracy / length).
+
+No new generation is performed — this reuses on-disk JSONL + metrics JSON.
+
+Usage:
+    uv run python -m bench.eval.cot_efficiency \
+        --results-dir results/pless_full_mbpp_results/Qwen--Qwen3-8B \
+        --dataset mbpp
+
+Verification (one config, asserts pass@1 matches the on-disk metrics):
+    uv run python -m bench.eval.cot_efficiency \
+        --results-dir results/pless_full_mbpp_results/Qwen--Qwen3-8B \
+        --dataset mbpp --limit-files 1 --verify
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import re
+import statistics
+from datetime import date
+from pathlib import Path
+
+from bench.eval.executor import strip_code_fences
+from bench.eval.loader import load_results
+from bench.eval.metrics import compute_cover_at_t, compute_pass_at_k
+from bench.eval.split_decoding_analysis import CONFIGS, load_metrics
+
+# Budget for the Pareto frontier: a length axis is only meaningful within one cap.
+PARETO_BUDGET = 8192
+NEAR_CAP_FRAC = 0.98
+K_VALUES = [1, 5, 10]
+T_VALUES = [0.3, 0.5]
+
+# Filename → max_tokens, authoritative for configs the existing analysis knows about.
+_BUDGET_BY_FILE = {cfg["file"]: cfg["max_tokens"] for cfg in CONFIGS.values()}
+
+# Stable colors per think-sampler for the Pareto scatter.
+_SAMPLER_COLORS = {
+    "temp_standard": "#1E88E5",
+    "temp_pure": "#26A69A",
+    "pless": "#E53935",
+    "pless_norm": "#8E24AA",
+    "pless_alpha": "#FB8C00",
+    "temp": "#1E88E5",
+}
+
+
+# ── think-span extraction & length ──────────────────────────────────────────
+
+def extract_think_span(swt: str) -> tuple[str, bool]:
+    """Return (think_text, closed) from a `samples_with_thinking` string.
+
+    `closed` is True iff a `</think>` terminator is present (i.e. the thinking
+    phase ended naturally rather than being truncated at the token cap).
+    """
+    swt = str(swt)
+    closed = "</think>" in swt
+    start = swt.find("<think>")
+    if start == -1:
+        return "", closed
+    start += len("<think>")
+    end = swt.find("</think>", start)
+    think = swt[start:end] if end != -1 else swt[start:]
+    return think, closed
+
+
+def measure_lengths(text: str, tokenizer) -> tuple[int | None, int]:
+    """Return (n_tokens, n_chars). n_tokens is None when no tokenizer is given."""
+    n_chars = len(text)
+    if tokenizer is None:
+        return None, n_chars
+    n_tokens = len(tokenizer.encode(text, add_special_tokens=False))
+    return n_tokens, n_chars
+
+
+# ── per-sample rows (join + classification) ─────────────────────────────────
+
+def build_sample_rows(records, metrics, tokenizer, max_tokens, has_code_by_task=None):
+    """Join each samples_with_thinking[i] to its pass/fail label and classify it.
+
+    Classification (mutually exclusive, primary signal = `closed`):
+      - truncated : not closed (think phase hit the cap before `</think>`)
+      - completed : closed and produced code
+      - malformed : closed but no extractable code
+    `near_cap` is a secondary diagnostic (tokens >= NEAR_CAP_FRAC * max_tokens),
+    reported separately — not merged into the truncation count.
+
+    `has_code_by_task` (optional {task_id: [bool]}) overrides the code-presence
+    check — used for APPS, where the metrics `extraction_success` list is the
+    authoritative signal the executor itself used (the APPS extractor is far
+    more involved than `strip_code_fences`).
+    """
+    pass_by_task = {pt["task_id"]: pt["pass_results"] for pt in metrics["per_task"]}
+    rows = []
+    for rec in records:
+        tid = rec["task_id"]
+        swt_list = rec.get("samples_with_thinking") or []
+        code_list = rec.get("samples") or []
+        labels = pass_by_task.get(tid)
+        if labels is None:
+            # Metrics may cover only a subset of the JSONL tasks; skip the rest.
+            continue
+        if len(swt_list) != len(labels):
+            raise ValueError(
+                f"alignment violation task_id {tid}: "
+                f"{len(swt_list)} thinking samples vs {len(labels)} pass labels"
+            )
+        code_flags = has_code_by_task.get(tid) if has_code_by_task else None
+        for i, swt in enumerate(swt_list):
+            think, closed = extract_think_span(swt)
+            n_tok, n_chars = measure_lengths(think, tokenizer)
+            if code_flags is not None:
+                has_code = bool(code_flags[i])
+            else:
+                code = code_list[i] if i < len(code_list) else ""
+                has_code = bool(strip_code_fences(str(code)).strip())
+            near_cap = n_tok is not None and n_tok >= NEAR_CAP_FRAC * max_tokens
+            truncated = not closed
+            completed = closed and has_code
+            malformed = closed and not has_code
+            rows.append({
+                "task_id": tid,
+                "sample_idx": i,
+                "think_tokens": n_tok,
+                "think_chars": n_chars,
+                "closed": closed,
+                "near_cap": near_cap,
+                "has_code": has_code,
+                "completed": completed,
+                "truncated": truncated,
+                "malformed": malformed,
+                "passed": bool(labels[i]),
+            })
+    return rows
+
+
+def aggregate_rows(rows):
+    """Efficiency decomposition (arXiv:2602.09805) over per-sample rows."""
+    n = len(rows)
+    if n == 0:
+        return {}
+    completed = [r for r in rows if r["completed"]]
+    tok_all = [r["think_tokens"] for r in rows if r["think_tokens"] is not None]
+    tok_done = [r["think_tokens"] for r in completed if r["think_tokens"] is not None]
+
+    def _mean(xs):
+        return statistics.fmean(xs) if xs else None
+
+    def _median(xs):
+        return statistics.median(xs) if xs else None
+
+    def _p90(xs):
+        if not xs:
+            return None
+        s = sorted(xs)
+        return s[min(len(s) - 1, int(round(0.9 * (len(s) - 1))))]
+
+    n_done = len(completed)
+    cond_acc = (sum(r["passed"] for r in completed) / n_done) if n_done else None
+    return {
+        "n_samples": n,
+        "completion_rate": n_done / n,
+        "truncation_rate": sum(r["truncated"] for r in rows) / n,
+        "malformed_rate": sum(r["malformed"] for r in rows) / n,
+        "near_cap_rate": sum(r["near_cap"] for r in rows) / n,
+        "conditional_accuracy": cond_acc,
+        "mean_think_tokens": _mean(tok_all),
+        "median_think_tokens": _median(tok_all),
+        "p90_think_tokens": _p90(tok_all),
+        "mean_think_tokens_completed": _mean(tok_done),
+        "median_think_tokens_completed": _median(tok_done),
+        "mean_think_chars": _mean([r["think_chars"] for r in rows]),
+    }
+
+
+# ── config discovery & metadata ─────────────────────────────────────────────
+
+_THINK_GLOBS = ("split_*.jsonl", "temp_think_t*.jsonl",
+                "pless_think_t*.jsonl", "pless_norm_think_t*.jsonl")
+
+
+def _stem(path: Path) -> str:
+    name = path.name
+    for suffix in (".jsonl.gz", ".jsonl.xz", ".jsonl"):
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return path.stem
+
+
+def discover_config_files(results_dir: Path, extra_dirs=(), dataset="mbpp"):
+    """Return [(jsonl_path, metrics_path)], deduped by stem (prefer plain .jsonl)."""
+    found: dict[str, Path] = {}
+    search_dirs = [results_dir, *extra_dirs]
+    # APPS uses arbitrary temp-family filenames (temp_p0.95_k20_think_...); glob
+    # all jsonl in the dir and let analyze_config skip files lacking thinking /
+    # metrics. MBPP/HE use the fixed split/think filename families.
+    patterns = ("*.jsonl",) if dataset == "apps" \
+        else (*_THINK_GLOBS, "pless_alpha_think_*.jsonl")
+    for d in search_dirs:
+        if not d.exists():
+            continue
+        for pattern in patterns:
+            for p in d.glob(pattern):
+                if ".entropy." in p.name:  # skip entropy sidecars
+                    continue
+                stem = _stem(p)
+                # Prefer uncompressed when duplicates exist.
+                if stem not in found or p.suffix == ".jsonl":
+                    found[stem] = p
+    out = []
+    for stem, jsonl_path in sorted(found.items()):
+        metrics_path = jsonl_path.parent / "metrics" / f"{stem}_metrics.json"
+        out.append((jsonl_path, metrics_path))
+    return out
+
+
+def _apps_label(method: str, top_p, top_k, temp) -> str:
+    """Descriptive label for a unified APPS config (temp-family by filter)."""
+    if method != "temp":
+        return f"{method} (t{temp})"
+    parts = []
+    if top_p is not None and top_p < 1.0:
+        parts.append(f"top_p {top_p}")
+    if top_k:
+        parts.append(f"top_k {top_k}")
+    filt = " + ".join(parts) if parts else "unfiltered"
+    return f"temp {temp} ({filt})"
+
+
+def config_meta(record: dict, jsonl_path: Path, dataset="mbpp",
+                max_tokens_override=None) -> dict:
+    """Extract sampler/temp/budget metadata for one config from its first record."""
+    method = record.get("method", "?")
+    stem = _stem(jsonl_path)
+
+    if dataset == "apps":
+        # APPS unified runs: method ∈ {temp, pless, pless_norm, pless_alpha};
+        # temp-family distinguished by top_p/top_k stored in the record. Budget
+        # is the run's --max-new-tokens (not in the record) → supplied by caller.
+        top_p = record.get("top_p")
+        top_k = record.get("top_k", 0)
+        temp = record.get("temperature")
+        alpha = record.get("alpha")
+        label = _apps_label(method, top_p, top_k, temp)
+        return {
+            "file": jsonl_path.name,
+            "method": method,
+            "sampler_think": label,
+            "temp_think": temp,
+            "sampler_code": label,
+            "temp_code": temp,
+            "top_p": top_p,
+            "top_k": top_k,
+            "alpha": alpha,
+            "label": label,
+            "source": record.get("source"),
+            "difficulty": record.get("difficulty"),
+            "max_tokens": max_tokens_override,
+        }
+
+    budget = _BUDGET_BY_FILE.get(jsonl_path.name)
+    if budget is None:
+        # Sweep files not in the known table used the 8192 budget; the original
+        # 7-config (t0.6) phase used 4096. No-think files used 512.
+        if "_t0.6_" in stem or stem.endswith("_t0.6"):
+            budget = 4096
+        else:
+            budget = PARETO_BUDGET
+
+    alpha = None
+    if method == "split":
+        sampler_think = record.get("sampler_think")
+        sampler_code = record.get("sampler_code")
+        temp_think = record.get("temp_think")
+        temp_code = record.get("temp_code")
+    elif method == "pless_alpha":
+        m = re.search(r"_a(\d+(?:\.\d+)?)_", stem)
+        alpha = float(m.group(1)) if m else None
+        sampler_think = sampler_code = "pless_alpha"
+        temp_think = temp_code = record.get("temperature")
+    else:  # uniform think (temp / pless / pless_norm)
+        sampler_think = sampler_code = method
+        temp_think = temp_code = record.get("temperature")
+
+    return {
+        "file": jsonl_path.name,
+        "method": method,
+        "sampler_think": sampler_think,
+        "temp_think": temp_think,
+        "sampler_code": sampler_code,
+        "temp_code": temp_code,
+        "alpha": alpha,
+        "max_tokens": budget,
+    }
+
+
+def task_results_from_metrics(metrics: dict) -> list[dict]:
+    """Shape the on-disk per_task into the {pass_results, num_correct} the
+    estimators expect, so pass@k matches the metrics JSON exactly."""
+    return [
+        {
+            "task_id": pt["task_id"],
+            "num_correct": pt["num_correct"],
+            "pass_results": pt["pass_results"],
+            "num_distinct_correct": pt.get("num_distinct_correct", 0),
+        }
+        for pt in metrics["per_task"]
+    ]
+
+
+def analyze_config(jsonl_path: Path, metrics_path: Path, tokenizer,
+                   dataset="mbpp", max_tokens=None) -> dict | None:
+    """Build the full per-config row (metadata + accuracy + efficiency)."""
+    if not metrics_path.exists():
+        print(f"  SKIP {jsonl_path.name}: no metrics JSON "
+              f"(run `python -m bench.eval` first)")
+        return None
+    records = load_results(jsonl_path)
+    if not records or "samples_with_thinking" not in records[0]:
+        print(f"  SKIP {jsonl_path.name}: no thinking traces")
+        return None
+    metrics = load_metrics(metrics_path)
+    meta = config_meta(records[0], jsonl_path, dataset, max_tokens)
+
+    # Length stats (from JSONL) and pass@k (from metrics) must cover the SAME
+    # task set — restrict both to the JSONL∩metrics intersection.
+    jsonl_ids = {r["task_id"] for r in records}
+    task_results = [tr for tr in task_results_from_metrics(metrics)
+                    if tr["task_id"] in jsonl_ids]
+    dropped = len(metrics["per_task"]) - len(task_results)
+    if dropped:
+        print(f"    note: {jsonl_path.name} — {dropped} metrics task(s) absent "
+              f"from JSONL; analyzing {len(task_results)} common tasks")
+    if not task_results:
+        print(f"  SKIP {jsonl_path.name}: no common tasks between JSONL and metrics")
+        return None
+    n_per_task = metrics.get("num_samples_per_task") or len(task_results[0]["pass_results"])
+    pak = compute_pass_at_k(task_results, K_VALUES)
+    cov, _ = compute_cover_at_t(task_results, T_VALUES, n_per_task)
+
+    # APPS: use the executor's per-sample `extraction_success` as the
+    # authoritative has-code signal (matches what was actually evaluated).
+    has_code_by_task = None
+    if dataset == "apps":
+        has_code_by_task = {
+            pt["task_id"]: pt["extraction_success"]
+            for pt in metrics["per_task"] if "extraction_success" in pt
+        } or None
+
+    rows = build_sample_rows(records, metrics, tokenizer, meta["max_tokens"],
+                             has_code_by_task=has_code_by_task)
+    agg = aggregate_rows(rows)
+
+    out = {**meta, "n_tasks": len(task_results), **agg}
+    for k in K_VALUES:
+        out[f"pass@{k}"] = pak.get(str(k))
+    for t in T_VALUES:
+        out[f"cov@{t}"] = cov.get(str(t))
+    out["_rows"] = rows  # kept in-memory for distribution plot; not written to CSV
+    return out
+
+
+# ── outputs ─────────────────────────────────────────────────────────────────
+
+_CSV_COLUMNS = [
+    "file", "method", "label", "source", "difficulty",
+    "sampler_think", "temp_think", "sampler_code", "temp_code",
+    "top_p", "top_k", "alpha", "max_tokens", "n_tasks", "n_samples", "completion_rate",
+    "truncation_rate", "malformed_rate", "near_cap_rate",
+    "mean_think_tokens", "median_think_tokens", "p90_think_tokens",
+    "mean_think_tokens_completed", "median_think_tokens_completed",
+    "mean_think_chars", "conditional_accuracy",
+    "pass@1", "pass@5", "pass@10", "cov@0.3", "cov@0.5",
+]
+
+
+def write_csv(rows: list[dict], path: Path) -> None:
+    with open(path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=_CSV_COLUMNS, extrasaction="ignore")
+        w.writeheader()
+        for r in rows:
+            w.writerow(r)
+
+
+# Above this truncation rate a config is a context-limited failure, not "short
+# reasoning" — its low mean length is an artifact of hitting the cap, so it must
+# not be presented as Pareto-optimal.
+MAX_TRUNC_FOR_FRONTIER = 0.25
+
+
+def pareto_dominant(configs: list[dict]) -> list[dict]:
+    """Configs not dominated on (shorter mean_think_tokens, >= pass@1).
+
+    Tolerance: a config is dominated only if another is strictly shorter AND
+    not more than 1 absolute pass@1 point worse. Configs whose truncation rate
+    exceeds MAX_TRUNC_FOR_FRONTIER are excluded — their short length is a
+    truncation artifact, not efficient reasoning.
+    """
+    usable = [c for c in configs
+              if c.get("mean_think_tokens") is not None
+              and c.get("pass@1") is not None
+              and (c.get("truncation_rate") or 0) <= MAX_TRUNC_FOR_FRONTIER]
+    frontier = []
+    for c in usable:
+        dominated = False
+        for o in usable:
+            if o is c:
+                continue
+            if (o["mean_think_tokens"] < c["mean_think_tokens"]
+                    and o["pass@1"] >= c["pass@1"] - 0.01):
+                dominated = True
+                break
+        if not dominated:
+            frontier.append(c)
+    return sorted(frontier, key=lambda c: c["mean_think_tokens"])
+
+
+def config_label(c: dict) -> str:
+    """Human label that does NOT disguise a unified (non-split) run as a split.
+
+    Split runs render as "think → code"; single-sampler runs render as
+    "<sampler> <temp> (unified, no split)".
+    """
+    if c.get("label"):  # APPS configs carry an explicit descriptive label
+        return c["label"]
+    if c.get("alpha") is not None:
+        return f"pless_alpha α={c['alpha']} (unified, no split)"
+    if c.get("method") == "split":
+        return (f"{c['sampler_think']} {c['temp_think']} → "
+                f"{c['sampler_code']} {c['temp_code']}")
+    return f"{c['sampler_think']} {c['temp_think']} (unified, no split)"
+
+
+def _fmt(v, nd=4):
+    if v is None:
+        return "—"
+    if isinstance(v, float):
+        return f"{v:.{nd}f}"
+    return str(v)
+
+
+def write_report(configs: list[dict], dataset: str, path: Path) -> None:
+    pareto = [c for c in configs if c["max_tokens"] == PARETO_BUDGET]
+    lines = [
+        f"# CoT Token-Efficiency vs Accuracy — Qwen3-8B / {dataset.upper()}\n",
+        f"**Date:** {date.today().isoformat()}  ",
+        f"**Configs analyzed:** {len(configs)} "
+        f"({len(pareto)} at the {PARETO_BUDGET}-token budget used for the frontier)\n",
+        "Think length is measured in **tokens** (Qwen3 tokenizer). Efficiency is "
+        "decomposed per arXiv:2602.09805 into completion rate, conditional accuracy "
+        "(pass rate among completed samples), and think length.\n",
+        "## Per-config decomposition\n",
+        "| Config (think→code) | budget | compl% | trunc% | cond-acc | "
+        "mean think tok | median (done) | pass@1 | pass@10 |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for c in sorted(configs, key=lambda c: (-(c["max_tokens"] or 0),
+                                            -(c.get("pass@1") or 0))):
+        label = config_label(c)
+        lines.append(
+            f"| {label} | {c['max_tokens']} "
+            f"| {_fmt((c.get('completion_rate') or 0) * 100, 1)} "
+            f"| {_fmt((c.get('truncation_rate') or 0) * 100, 1)} "
+            f"| {_fmt(c.get('conditional_accuracy'))} "
+            f"| {_fmt(c.get('mean_think_tokens'), 0)} "
+            f"| {_fmt(c.get('median_think_tokens_completed'), 0)} "
+            f"| {_fmt(c.get('pass@1'))} | {_fmt(c.get('pass@10'))} |"
+        )
+
+    lines += [
+        f"\n## Pareto-dominant configs ({PARETO_BUDGET}-token budget)\n",
+        f"Not dominated on (shorter mean think tokens, pass@1 within 1pt); "
+        f"configs with >{MAX_TRUNC_FOR_FRONTIER:.0%} truncation excluded as "
+        f"context-limited failures:\n",
+        "| Config | mean think tok | trunc% | pass@1 | pass@10 | cond-acc |",
+        "|---|---|---|---|---|---|",
+    ]
+    for c in pareto_dominant(pareto):
+        label = config_label(c)
+        lines.append(
+            f"| {label} | {_fmt(c.get('mean_think_tokens'), 0)} "
+            f"| {_fmt((c.get('truncation_rate') or 0) * 100, 1)} "
+            f"| {_fmt(c.get('pass@1'))} | {_fmt(c.get('pass@10'))} "
+            f"| {_fmt(c.get('conditional_accuracy'))} |"
+        )
+
+    lines += [
+        "\n## Limitations\n",
+        "- Single model (Qwen3-8B); no cross-model generalization.",
+        "- Think samplers limited to on-disk set "
+        "{temp_standard, temp_pure, pless, pless_norm, pless_alpha}; "
+        "**greedy and top-p are absent** (would need new runs to complete the core set).",
+        "- Token counts are analysis-time estimates (tokenizer special-token handling "
+        "may differ slightly from generation time).",
+        f"- Truncation at the {PARETO_BUDGET} cap biases mean length downward — "
+        "read truncation% beside every length.",
+        "- Correlational across independently-generated configs (no paired seeds).",
+    ]
+    path.write_text("\n".join(lines) + "\n")
+
+
+def make_plots(configs: list[dict], dataset: str, fig_dir: Path) -> None:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    fig_dir.mkdir(parents=True, exist_ok=True)
+    pareto = [c for c in configs
+              if c["max_tokens"] == PARETO_BUDGET
+              and c.get("mean_think_tokens") is not None]
+
+    def _scatter(metric: str, fname: str):
+        fig, ax = plt.subplots(figsize=(9, 6))
+        seen = set()
+        for c in pareto:
+            s = c["sampler_think"]
+            color = _SAMPLER_COLORS.get(s, "#607D8B")
+            ax.scatter(c["mean_think_tokens"], c.get(metric), c=color, s=80,
+                       edgecolors="white", linewidths=0.6, zorder=3,
+                       label=s if s not in seen else None)
+            seen.add(s)
+        # Pareto frontier line on pass@1.
+        if metric == "pass@1":
+            front = pareto_dominant(pareto)
+            if len(front) >= 2:
+                ax.plot([c["mean_think_tokens"] for c in front],
+                        [c["pass@1"] for c in front],
+                        color="#455A64", lw=1.0, ls="--", zorder=2,
+                        label="Pareto frontier")
+        ax.set_xlabel("mean think length (tokens)")
+        ax.set_ylabel(metric)
+        ax.set_title(f"CoT length vs {metric} — Qwen3-8B / {dataset.upper()} "
+                     f"({PARETO_BUDGET}-tok budget)")
+        ax.grid(True, alpha=0.3)
+        ax.set_axisbelow(True)
+        ax.legend(title="think sampler", fontsize=8)
+        fig.tight_layout()
+        fig.savefig(fig_dir / fname, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
+    _scatter("pass@1", "cot_pareto_pass_at_1.png")
+    _scatter("pass@10", "cot_pareto_pass_at_10.png")
+
+    # Think-length distribution per think-sampler (completed samples).
+    by_sampler: dict[str, list[int]] = {}
+    for c in pareto:
+        for r in c.get("_rows", []):
+            if r["completed"] and r["think_tokens"] is not None:
+                by_sampler.setdefault(c["sampler_think"], []).append(r["think_tokens"])
+    if by_sampler:
+        fig, ax = plt.subplots(figsize=(9, 6))
+        samplers = sorted(by_sampler)
+        ax.violinplot([by_sampler[s] for s in samplers], showmedians=True)
+        ax.set_xticks(range(1, len(samplers) + 1))
+        ax.set_xticklabels(samplers, rotation=20, ha="right")
+        ax.set_ylabel("think length (tokens, completed samples)")
+        ax.set_title(f"Think-length distribution by sampler — Qwen3-8B / {dataset.upper()}")
+        ax.grid(True, axis="y", alpha=0.3)
+        fig.tight_layout()
+        fig.savefig(fig_dir / "cot_think_length_dist.png", dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
+
+# ── verification ────────────────────────────────────────────────────────────
+
+def verify_config(jsonl_path: Path, metrics_path: Path, tokenizer) -> None:
+    """Assert the index-alignment invariant and that recomputed pass@1 matches disk."""
+    records = load_results(jsonl_path)
+    metrics = load_metrics(metrics_path)
+    pass_by_task = {pt["task_id"]: pt["pass_results"] for pt in metrics["per_task"]}
+    checked = skipped = 0
+    for rec in records:
+        labels = pass_by_task.get(rec["task_id"])
+        if labels is None:
+            skipped += 1
+            continue
+        swt = rec.get("samples_with_thinking") or []
+        assert len(swt) == len(labels), (
+            f"alignment violation on task {rec['task_id']}: "
+            f"{len(swt)} vs {len(labels)}")
+        checked += 1
+
+    pak = compute_pass_at_k(task_results_from_metrics(metrics), K_VALUES)
+    on_disk = metrics["pass_at_k"]["1"]
+    assert abs(pak["1"] - on_disk) < 1e-6, (
+        f"pass@1 mismatch: recomputed {pak['1']} vs on-disk {on_disk}")
+
+    # Spot-check a couple of think-length extractions.
+    for rec in records[:1]:
+        for swt in rec["samples_with_thinking"][:2]:
+            think, closed = extract_think_span(swt)
+            n_tok, n_chars = measure_lengths(think, tokenizer)
+            ratio = (n_tok / n_chars) if (n_tok and n_chars) else float("nan")
+            print(f"    [{jsonl_path.name}] closed={closed} "
+                  f"chars={n_chars} tokens={n_tok} tok/char={ratio:.3f}")
+    note = f" ({skipped} JSONL task(s) not in metrics, skipped)" if skipped else ""
+    print(f"  OK {jsonl_path.name}: pass@1={pak['1']:.4f} matches on-disk "
+          f"{on_disk:.4f}; alignment holds on {checked} tasks{note}.")
+
+
+# ── CLI ──────────────────────────────────────────────────────────────────────
+
+def load_tokenizer(model_id: str):
+    try:
+        from transformers import AutoTokenizer
+        return AutoTokenizer.from_pretrained(model_id)
+    except Exception as e:  # noqa: BLE001
+        print(f"  WARNING: tokenizer '{model_id}' unavailable ({e}); "
+              f"falling back to char-only lengths.")
+        return None
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--results-dir", type=Path, required=True)
+    ap.add_argument("--dataset", default="mbpp", choices=["mbpp", "humaneval", "apps"])
+    ap.add_argument("--max-tokens", type=int, default=None,
+                    help="Generation budget of the run (REQUIRED for --dataset apps; "
+                         "used for near_cap + as the frontier budget). MBPP/HE infer it.")
+    ap.add_argument("--output-dir", type=Path, default=None)
+    ap.add_argument("--alpha-dir", type=Path, default=None,
+                    help="Optional dir with pless_alpha_think_*.jsonl files")
+    ap.add_argument("--tokenizer", default="Qwen/Qwen3-8B")
+    ap.add_argument("--limit-files", type=int, default=None)
+    ap.add_argument("--no-tokens", action="store_true")
+    ap.add_argument("--verify", action="store_true",
+                    help="Run alignment + pass@1 assertions and exit.")
+    args = ap.parse_args()
+
+    if args.dataset == "apps" and args.max_tokens is None:
+        ap.error("--max-tokens is required for --dataset apps "
+                 "(the run's --max-new-tokens, e.g. 16384)")
+
+    # For APPS every config shares the run budget; make it the frontier budget so
+    # the report/plots include all configs (PARETO_BUDGET is the MBPP 8192 default).
+    if args.dataset == "apps":
+        global PARETO_BUDGET
+        PARETO_BUDGET = args.max_tokens
+
+    out_dir = args.output_dir or (args.results_dir / "analysis")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    tokenizer = None if args.no_tokens else load_tokenizer(args.tokenizer)
+
+    extra = [args.alpha_dir] if args.alpha_dir else []
+    files = discover_config_files(args.results_dir, extra, dataset=args.dataset)
+    if args.limit_files:
+        files = files[: args.limit_files]
+    print(f"Discovered {len(files)} config file(s) under {args.results_dir}")
+
+    if args.verify:
+        for jsonl_path, metrics_path in files:
+            if metrics_path.exists():
+                verify_config(jsonl_path, metrics_path, tokenizer)
+        return
+
+    configs = []
+    for jsonl_path, metrics_path in files:
+        c = analyze_config(jsonl_path, metrics_path, tokenizer,
+                           dataset=args.dataset, max_tokens=args.max_tokens)
+        if c is not None:
+            configs.append(c)
+            print(f"  {c['file']}: budget={c['max_tokens']} "
+                  f"mean_think_tok={_fmt(c.get('mean_think_tokens'), 0)} "
+                  f"pass@1={_fmt(c.get('pass@1'))} "
+                  f"trunc%={_fmt((c.get('truncation_rate') or 0) * 100, 1)}")
+
+    if not configs:
+        print("No analyzable configs found.")
+        return
+
+    csv_path = out_dir / f"cot_efficiency_{args.dataset}.csv"
+    report_path = out_dir / f"cot_efficiency_{args.dataset}_report.md"
+    write_csv(configs, csv_path)
+    write_report(configs, args.dataset, report_path)
+    make_plots(configs, args.dataset, out_dir / "figures")
+    print(f"\nCSV:    {csv_path}")
+    print(f"Report: {report_path}")
+    print(f"Figures: {out_dir / 'figures'}")
+
+
+if __name__ == "__main__":
+    main()

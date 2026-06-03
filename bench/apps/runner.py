@@ -92,6 +92,14 @@ def _method_key(args: argparse.Namespace) -> str:
         )
     else:
         key = args.method
+        # Encode temp-method filters so distinct (top_p, top_k) configs at the
+        # same temperature don't collide on disk (e.g. temp+top_p0.95 vs
+        # temp+top_k20 vs the combined config).
+        if args.method == "temp":
+            if args.top_p < 1.0:
+                key = f"{key}_p{args.top_p}"
+            if args.top_k > 0:
+                key = f"{key}_k{args.top_k}"
     if args.enable_thinking:
         key = f"{key}_think_t{args.temperature}"
     if args.post_temperature is not None:
@@ -124,6 +132,11 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="Nucleus sampling cutoff (only applied when "
                         "--method temp). Default 1.0 disables nucleus. "
                         "Paper-replica uses 0.95.")
+    p.add_argument("--top-k", type=int, default=0,
+                   help="Top-k cutoff (only applied when --method temp). "
+                        "Default 0 disables top-k. Qwen3 recommends 20. "
+                        "Combine with --top-p 0.95 --temperature 0.6 for "
+                        "Qwen3's full recommended generation config.")
     p.add_argument("--max-new-tokens", type=int, default=8192,
                    help="Default 8192 to accommodate Qwen3 thinking.")
     p.add_argument("--results-dir", default="results/pless_apps_results")
@@ -377,7 +390,7 @@ def main():
                         engine=model, tokenizer=tokenizer, prompt_text=prompt_text,
                         n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                         temperature=args.temperature, stop_strings=None,
-                        top_p=args.top_p, top_k=0,
+                        top_p=args.top_p, top_k=args.top_k,
                     )
                 elif args.method == "split":
                     raw_samples = generate_samples_split_vllm(
@@ -404,7 +417,7 @@ def main():
                     model=model, tokenizer=tokenizer, prompt_text=prompt_text,
                     n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                     temperature=args.temperature, stop_strings=None,
-                    top_p=args.top_p, top_k=0,
+                    top_p=args.top_p, top_k=args.top_k,
                     hf_batch_size=args.hf_batch_size,
                 )
             elif args.method == "split":
@@ -463,6 +476,7 @@ def main():
                 "method": args.method,
                 "temperature": args.temperature,
                 "top_p": args.top_p,
+                "top_k": args.top_k,
                 "task_id": problem.problem_id,
                 "source": problem.source,
                 "difficulty": problem.difficulty,
