@@ -22,9 +22,18 @@
 # Runs on a CUDA GPU pod (this is not runnable on macOS). Usage:
 #   ./run_cot_efficiency_apps_qwen3.sh calibrate
 #   ./run_cot_efficiency_apps_qwen3.sh stageb interview 16384
+#   GPUS=0,1,2 ./run_cot_efficiency_apps_qwen3.sh stageb interview 16384
+#
+# GPUS (Stage B only): comma-separated GPU ids. When set, the 6 configs are
+#   distributed across those GPUs (one pinned process per GPU, configs
+#   round-robin'd in slow-first order so pless/pless_norm land on separate
+#   GPUs), run in parallel, then eval+analyze once all finish. Unset => serial
+#   on the default device. Best for the ~1,800-gen Stage B; Stage A is too
+#   small to bother. Each process loads its own model copy (~16 GB) on its GPU.
 #
 # Override via env: MODEL, SOURCE, RESULTS_DIR, CALIB_PROBLEMS, STAGEB_PROBLEMS,
-#   CALIB_BUDGET, N_SAMPLES, TOKENIZER, ONLY (run a single Stage B config key).
+#   CALIB_BUDGET, N_SAMPLES, TOKENIZER, GPUS, ONLY (single config key:
+#   temp|topk|topp|combined|pless|pless_norm).
 
 set -euo pipefail
 
@@ -76,6 +85,31 @@ analyze() {
 
 want() { [ -z "${ONLY:-}" ] || [ "$1" = "$ONLY" ]; }
 
+# Stage B config keys. Order matters for GPU assignment: the two SLOW
+# (token-by-token) configs pless/pless_norm come first, so round-robin
+# placement (config i -> GPU[i % nGPU]) puts them on different GPUs and
+# spreads the load (one slow config per GPU for nGPU>=2).
+STAGEB_ORDER=(pless pless_norm temp topk topp combined)
+
+run_config() {
+  local name="$1" difficulty="$2" budget="$3"
+  case "$name" in
+    temp)       gen "$difficulty" "$N_SAMPLES" "$budget" "$STAGEB_PROBLEMS" \
+                  --method temp --temperature 0.6 ;;
+    topk)       gen "$difficulty" "$N_SAMPLES" "$budget" "$STAGEB_PROBLEMS" \
+                  --method temp --temperature 1.0 --top-k 20 ;;
+    topp)       gen "$difficulty" "$N_SAMPLES" "$budget" "$STAGEB_PROBLEMS" \
+                  --method temp --temperature 1.0 --top-p 0.95 ;;
+    combined)   gen "$difficulty" "$N_SAMPLES" "$budget" "$STAGEB_PROBLEMS" \
+                  --method temp --temperature 0.6 --top-p 0.95 --top-k 20 ;;
+    pless)      gen "$difficulty" "$N_SAMPLES" "$budget" "$STAGEB_PROBLEMS" \
+                  --method pless --temperature 1.0 ;;
+    pless_norm) gen "$difficulty" "$N_SAMPLES" "$budget" "$STAGEB_PROBLEMS" \
+                  --method pless_norm --temperature 1.0 ;;
+    *) echo "unknown config '$name'" >&2; return 1 ;;
+  esac
+}
+
 MODE="${1:-}"
 case "$MODE" in
   calibrate)
@@ -102,26 +136,58 @@ case "$MODE" in
     echo "=== Stage B: $SOURCE/$DIFFICULTY, 6 configs, k=$N_SAMPLES, "\
 "$STAGEB_PROBLEMS problems, budget $BUDGET (HF) ==="
 
-    # 1) temp only (0.6, unfiltered)
-    want temp        && gen "$DIFFICULTY" "$N_SAMPLES" "$BUDGET" "$STAGEB_PROBLEMS" \
-      --method temp --temperature 0.6
-    # 2) top_k 20 only (T=1.0)
-    want topk        && gen "$DIFFICULTY" "$N_SAMPLES" "$BUDGET" "$STAGEB_PROBLEMS" \
-      --method temp --temperature 1.0 --top-k 20
-    # 3) top_p 0.95 only (T=1.0)
-    want topp        && gen "$DIFFICULTY" "$N_SAMPLES" "$BUDGET" "$STAGEB_PROBLEMS" \
-      --method temp --temperature 1.0 --top-p 0.95
-    # 4) combined = Qwen recommended (temp 0.6 + top_p 0.95 + top_k 20), unified
-    want combined    && gen "$DIFFICULTY" "$N_SAMPLES" "$BUDGET" "$STAGEB_PROBLEMS" \
-      --method temp --temperature 0.6 --top-p 0.95 --top-k 20
-    # 5) pless (T=1.0, hyperparameter-free as designed)
-    want pless       && gen "$DIFFICULTY" "$N_SAMPLES" "$BUDGET" "$STAGEB_PROBLEMS" \
-      --method pless --temperature 1.0
-    # 6) pless_norm (T=1.0)
-    want pless_norm  && gen "$DIFFICULTY" "$N_SAMPLES" "$BUDGET" "$STAGEB_PROBLEMS" \
-      --method pless_norm --temperature 1.0
-
     dir="$RESULTS_DIR/$MODEL_DIR/${SOURCE}_${DIFFICULTY}"
+    mkdir -p "$dir"
+
+    # Configs to run (honor ONLY=<key>), in slow-first order.
+    selected=()
+    for name in "${STAGEB_ORDER[@]}"; do want "$name" && selected+=("$name"); done
+
+    if [ -n "${GPUS:-}" ]; then
+      # ── Parallel: one process per GPU, configs round-robin'd across GPUS,
+      #    each GPU runs its group sequentially. Different configs => different
+      #    output files, so no append collision. Per-GPU logs avoid garbled
+      #    interleaving; we wait for all and fail if any worker fails.
+      IFS=',' read -ra GPULIST <<< "$GPUS"
+      ngpu=${#GPULIST[@]}
+      echo "Parallel Stage B: ${#selected[@]} configs across $ngpu GPU(s) [$GPUS]"
+      pids=(); gpus_used=()
+      for ((g=0; g<ngpu; g++)); do
+        group=()
+        for ((i=0; i<${#selected[@]}; i++)); do
+          (( i % ngpu == g )) && group+=("${selected[$i]}")
+        done
+        [ ${#group[@]} -eq 0 ] && continue
+        gpu="${GPULIST[$g]}"
+        log="$dir/stageb_gpu${gpu}.log"
+        echo "  GPU $gpu -> ${group[*]}  (log: $log)"
+        (
+          export CUDA_VISIBLE_DEVICES="$gpu"
+          for name in "${group[@]}"; do
+            echo ">>> [GPU $gpu] config $name"
+            run_config "$name" "$DIFFICULTY" "$BUDGET"
+          done
+        ) >"$log" 2>&1 &
+        pids+=($!); gpus_used+=("$gpu")
+      done
+      fail=0
+      for idx in "${!pids[@]}"; do
+        if ! wait "${pids[$idx]}"; then
+          echo "ERROR: GPU ${gpus_used[$idx]} worker failed — see "\
+"$dir/stageb_gpu${gpus_used[$idx]}.log" >&2
+          fail=1
+        fi
+      done
+      [ $fail -ne 0 ] && exit 4
+      echo "All GPU workers finished."
+    else
+      # Sequential (single GPU / default device).
+      for name in "${selected[@]}"; do
+        echo "---- config $name ----"
+        run_config "$name" "$DIFFICULTY" "$BUDGET"
+      done
+    fi
+
     echo "---- eval ----";    eval_dir "$dir"
     echo "---- analysis ----"; analyze "$dir" "$BUDGET"
     echo
