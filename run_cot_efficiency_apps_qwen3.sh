@@ -277,6 +277,9 @@ def f(r,k):
     except: return None
 cols=[("pass@1","pass@1"),("median completed think tok","median_think_tokens_completed"),
       ("completion_rate","completion_rate")]
+def cell(x):
+    if x is None: return "—"
+    return f"{x:.4f}" if isinstance(x, float) else str(x)
 print(f"{'config':32} {'metric':28} {'HF':>10} {'vLLM':>10} {'Δ':>10}")
 print("-"*94)
 for key in sorted(set(hf)&set(vl)):
@@ -284,8 +287,11 @@ for key in sorted(set(hf)&set(vl)):
     for name,col in cols:
         a,b=f(hf[key],col),f(vl[key],col)
         d=(b-a) if (a is not None and b is not None) else None
-        print(f"{label[:32]:32} {name:28} {a if a is None else round(a,4):>10} "
-              f"{b if b is None else round(b,4):>10} {d if d is None else round(d,4):>10}")
+        print(f"{label[:32]:32} {name:28} {cell(a):>10} {cell(b):>10} {cell(d):>10}")
+    cr_hf, cr_vl = f(hf[key],"completion_rate"), f(vl[key],"completion_rate")
+    if (cr_hf is not None and cr_hf < 0.5) or (cr_vl is not None and cr_vl < 0.5):
+        print(f"  ⚠ low completion (HF {cell(cr_hf)} / vLLM {cell(cr_vl)}) — "
+              f"truncation-dominated; raise --max-tokens before trusting this row.")
     print()
 print("Rule of thumb: pless pass@1 |Δ| within ~1-2 sampling SEs and median-token")
 print("Δ within ~a few % => backend-invariant => vLLM safe for the full study.")
