@@ -16,13 +16,18 @@
 #                   budget (k=10, ~30 problems). All UNIFIED (no split), thinking
 #                   on, standard HF generation only — nothing handcrafted.
 #
-# Backend is HF on purpose: pless's Σpᵢ² threshold is numerically sensitive and
-# vLLM kernels diverge from HF, which would confound the comparison.
+# Backend defaults to HF; set BACKEND=vllm for ~10-20x throughput. vLLM's logits
+# diverge slightly from HF (matmul accumulation, per the vLLM forum thread), but
+# our vLLM pless threshold is computed in fp32 and the per-token prob error is
+# ~1e-4 median — so run the `delta` mode once to confirm pless is backend-
+# invariant before trusting vLLM for the full study.
 #
 # Runs on a CUDA GPU pod (this is not runnable on macOS). Usage:
 #   ./run_cot_efficiency_apps_qwen3.sh calibrate
 #   ./run_cot_efficiency_apps_qwen3.sh stageb interview 16384
-#   GPUS=0,1,2 ./run_cot_efficiency_apps_qwen3.sh stageb interview 16384
+#   ./run_cot_efficiency_apps_qwen3.sh delta  interview 16384     # HF vs vLLM check
+#   BACKEND=vllm ./run_cot_efficiency_apps_qwen3.sh calibrate
+#   GPUS=0,1,2 BACKEND=vllm ./run_cot_efficiency_apps_qwen3.sh stageb interview 16384
 #
 # GPUS (Stage B only): comma-separated GPU ids. When set, the 6 configs are
 #   distributed across those GPUs (one pinned process per GPU, configs
@@ -32,7 +37,8 @@
 #   small to bother. Each process loads its own model copy (~16 GB) on its GPU.
 #
 # Override via env: MODEL, SOURCE, RESULTS_DIR, CALIB_PROBLEMS, STAGEB_PROBLEMS,
-#   CALIB_BUDGET, N_SAMPLES, TOKENIZER, GPUS, ONLY (single config key:
+#   CALIB_BUDGET, N_SAMPLES, TOKENIZER, GPUS, BACKEND (hf|vllm), VLLM_VENV,
+#   DELTA_PROBLEMS, DELTA_SAMPLES, ONLY (single config key:
 #   temp|topk|topp|combined|pless|pless_norm).
 
 set -euo pipefail
@@ -45,24 +51,53 @@ CALIB_PROBLEMS="${CALIB_PROBLEMS:-12}"
 STAGEB_PROBLEMS="${STAGEB_PROBLEMS:-30}"
 CALIB_BUDGET="${CALIB_BUDGET:-16384}"
 N_SAMPLES="${N_SAMPLES:-10}"
+BACKEND="${BACKEND:-hf}"          # hf | vllm
+VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
 
 MODEL_DIR="${MODEL//\//--}"   # Qwen/Qwen3-8B -> Qwen--Qwen3-8B
 
 if ! command -v nvidia-smi >/dev/null 2>&1; then
-  echo "Warning: nvidia-smi not found — generation needs CUDA (HF backend)." >&2
+  echo "Warning: nvidia-smi not found — generation needs CUDA." >&2
 fi
 
-# Generate one config (unified, thinking on, HF). Extra args define the sampler.
+# vLLM preflight (only when generating with --backend vllm).
+check_vllm() {
+  if [ ! -d "$VLLM_VENV" ]; then
+    echo "Error: BACKEND=vllm but venv not found at $VLLM_VENV. Bootstrap once:" >&2
+    echo "  uv venv $VLLM_VENV --python 3.12" >&2
+    echo "  UV_PROJECT_ENVIRONMENT=$VLLM_VENV uv sync --project pyproject-vllm.toml" >&2
+    exit 2
+  fi
+  "$VLLM_VENV/bin/python" -c "import vllm" 2>/dev/null || {
+    echo "Error: 'import vllm' failed inside $VLLM_VENV — re-sync pyproject-vllm.toml." >&2
+    exit 3; }
+}
+
+# Generate one config (unified, thinking on). Extra args define the sampler.
+# Routes through HF (uv env) or vLLM (.venv-vllm) per $BACKEND. Eval/analysis
+# always stay in the main uv env.
 gen() {
   local difficulty="$1" nsamp="$2" budget="$3" maxprob="$4"; shift 4
-  uv run python -m bench.apps \
-    --model "$MODEL" --backend hf \
-    --source "$SOURCE" --difficulty "$difficulty" \
-    --enable-thinking \
-    --n-samples "$nsamp" --max-new-tokens "$budget" \
-    --max-problems "$maxprob" \
-    --results-dir "$RESULTS_DIR" \
-    "$@"
+  if [ "$BACKEND" = "vllm" ]; then
+    PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}" \
+    "$VLLM_VENV/bin/python" -m bench.apps \
+      --model "$MODEL" --backend vllm \
+      --source "$SOURCE" --difficulty "$difficulty" \
+      --enable-thinking \
+      --n-samples "$nsamp" --max-new-tokens "$budget" \
+      --max-problems "$maxprob" \
+      --results-dir "$RESULTS_DIR" \
+      "$@"
+  else
+    uv run python -m bench.apps \
+      --model "$MODEL" --backend hf \
+      --source "$SOURCE" --difficulty "$difficulty" \
+      --enable-thinking \
+      --n-samples "$nsamp" --max-new-tokens "$budget" \
+      --max-problems "$maxprob" \
+      --results-dir "$RESULTS_DIR" \
+      "$@"
+  fi
 }
 
 # Evaluate every JSONL in a result dir (APPS), writing metrics/<stem>_metrics.json.
@@ -111,10 +146,11 @@ run_config() {
 }
 
 MODE="${1:-}"
+[ "$BACKEND" = "vllm" ] && [ "$MODE" != "delta" ] && check_vllm
 case "$MODE" in
   calibrate)
     echo "=== Stage A calibration: $SOURCE {introductory, interview}, "\
-"n=4, $CALIB_PROBLEMS problems, budget $CALIB_BUDGET ==="
+"n=4, $CALIB_PROBLEMS problems, budget $CALIB_BUDGET, backend=$BACKEND ==="
     for diff in introductory interview; do
       echo "---- calibrate $SOURCE/$diff ----"
       # Standard probe sampler: temp 0.6 + nucleus 0.95 (Qwen default minus top_k).
@@ -134,7 +170,7 @@ case "$MODE" in
     DIFFICULTY="${2:?usage: stageb <introductory|interview> <max_tokens>}"
     BUDGET="${3:?usage: stageb <difficulty> <max_tokens>}"
     echo "=== Stage B: $SOURCE/$DIFFICULTY, 6 configs, k=$N_SAMPLES, "\
-"$STAGEB_PROBLEMS problems, budget $BUDGET (HF) ==="
+"$STAGEB_PROBLEMS problems, budget $BUDGET, backend=$BACKEND ==="
 
     dir="$RESULTS_DIR/$MODEL_DIR/${SOURCE}_${DIFFICULTY}"
     mkdir -p "$dir"
@@ -194,9 +230,73 @@ case "$MODE" in
     echo "Results: $dir/analysis/cot_efficiency_apps_report.md"
     ;;
 
+  delta)
+    # One-command HF-vs-vLLM backend-delta check: run pless (the worry) + top_p
+    # (standard ref) on the SAME problems on BOTH backends, then print a
+    # side-by-side of pass@1 / median completed think-tokens / completion-rate.
+    # If pless's HF↔vLLM deltas are within noise, vLLM is safe for the study.
+    DIFFICULTY="${2:?usage: delta <introductory|interview> <max_tokens>}"
+    BUDGET="${3:?usage: delta <difficulty> <max_tokens>}"
+    DELTA_PROBLEMS="${DELTA_PROBLEMS:-8}"
+    DELTA_SAMPLES="${DELTA_SAMPLES:-4}"
+    check_vllm
+    echo "=== Backend delta: $SOURCE/$DIFFICULTY, pless + top_p, "\
+"$DELTA_PROBLEMS problems x $DELTA_SAMPLES, budget $BUDGET, HF vs vLLM ==="
+
+    declare -A DELTA_DIR
+    for bk in hf vllm; do
+      BACKEND="$bk"
+      RESULTS_DIR="${RESULTS_DIR%/}/delta_$bk"   # separate trees (filenames omit backend)
+      d="$RESULTS_DIR/$MODEL_DIR/${SOURCE}_${DIFFICULTY}"
+      DELTA_DIR[$bk]="$d"
+      echo "---- generate ($bk) ----"
+      gen "$DIFFICULTY" "$DELTA_SAMPLES" "$BUDGET" "$DELTA_PROBLEMS" \
+        --method pless --temperature 1.0
+      gen "$DIFFICULTY" "$DELTA_SAMPLES" "$BUDGET" "$DELTA_PROBLEMS" \
+        --method temp --temperature 1.0 --top-p 0.95
+      echo "---- eval ($bk) ----";    eval_dir "$d"
+      echo "---- analysis ($bk) ----"; analyze "$d" "$BUDGET"
+      RESULTS_DIR="${RESULTS_DIR%/delta_$bk}"     # restore for next iter
+    done
+
+    echo
+    echo "=== HF vs vLLM comparison ==="
+    uv run python - "${DELTA_DIR[hf]}/analysis/cot_efficiency_apps.csv" \
+                    "${DELTA_DIR[vllm]}/analysis/cot_efficiency_apps.csv" <<'PY'
+import csv, sys
+def load(p):
+    out={}
+    for r in csv.DictReader(open(p)):
+        key=(r["method"], r.get("top_p",""), r.get("top_k",""))
+        out[key]=r
+    return out
+hf, vl = load(sys.argv[1]), load(sys.argv[2])
+def f(r,k):
+    v=r.get(k,"")
+    try: return float(v)
+    except: return None
+cols=[("pass@1","pass@1"),("median completed think tok","median_think_tokens_completed"),
+      ("completion_rate","completion_rate")]
+print(f"{'config':32} {'metric':28} {'HF':>10} {'vLLM':>10} {'Δ':>10}")
+print("-"*94)
+for key in sorted(set(hf)&set(vl)):
+    label=hf[key].get("label") or hf[key]["method"]
+    for name,col in cols:
+        a,b=f(hf[key],col),f(vl[key],col)
+        d=(b-a) if (a is not None and b is not None) else None
+        print(f"{label[:32]:32} {name:28} {a if a is None else round(a,4):>10} "
+              f"{b if b is None else round(b,4):>10} {d if d is None else round(d,4):>10}")
+    print()
+print("Rule of thumb: pless pass@1 |Δ| within ~1-2 sampling SEs and median-token")
+print("Δ within ~a few % => backend-invariant => vLLM safe for the full study.")
+PY
+    ;;
+
   *)
     echo "usage: $0 calibrate" >&2
     echo "       $0 stageb <introductory|interview> <max_tokens>" >&2
+    echo "       $0 delta  <introductory|interview> <max_tokens>   (HF-vs-vLLM check)" >&2
+    echo "  env: BACKEND=hf|vllm  GPUS=0,1,2  ONLY=<config>  MODEL=...  SOURCE=..." >&2
     exit 1
     ;;
 esac
