@@ -34,8 +34,10 @@ diagnostics block.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
+import tempfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Literal
@@ -100,13 +102,23 @@ def _run_stdin_test(
     stdin_str: str,
     timeout: float,
 ) -> tuple[int, str, str, bool]:
-    """Run ``python3 -c code`` with ``stdin_str`` piped in.
+    """Run the program with ``stdin_str`` piped in.
+
+    The program is written to a temp ``.py`` file and run as ``python3 <file>``
+    rather than passed via ``python3 -c <code>``: Linux caps a single argv
+    string at MAX_ARG_STRLEN (128 KiB), so long generated solutions passed via
+    ``-c`` raise ``OSError: [Errno 7] Argument list too long``. Running a file
+    is behaviour-equivalent (``__name__ == "__main__"`` still holds, stdin still
+    piped) and has no length limit.
 
     Returns ``(returncode, stdout, stderr, timed_out)``.
     """
+    fd, path = tempfile.mkstemp(suffix=".py")
     try:
+        with os.fdopen(fd, "w") as f:
+            f.write(code)
         proc = subprocess.run(
-            ["python3", "-c", code],
+            ["python3", path],
             input=stdin_str,
             capture_output=True,
             text=True,
@@ -115,6 +127,11 @@ def _run_stdin_test(
         return proc.returncode, proc.stdout, proc.stderr, False
     except subprocess.TimeoutExpired:
         return -1, "", "", True
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
 
 
 def _make_fn_call_harness(code: str, fn_name: str) -> str:

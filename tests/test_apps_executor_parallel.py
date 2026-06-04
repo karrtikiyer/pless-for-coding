@@ -85,6 +85,19 @@ def test_evaluate_all_apps_aligns_pass_results(monkeypatch):
     assert [t.task_id for t in task_results] == [1, 2]  # deterministic order
 
 
+def test_run_stdin_test_handles_large_program():
+    # A program over Linux's per-argv limit (MAX_ARG_STRLEN = 128 KiB) would
+    # raise "Argument list too long" if passed via `python3 -c`. The temp-file
+    # path must run it fine. ~300 KB comment forces the over-limit case.
+    from bench.eval.apps_executor import _run_stdin_test
+    pad = "# " + ("x" * 300_000) + "\n"
+    code = pad + "import sys\nd = sys.stdin.read().split()\nprint(int(d[0]) + int(d[1]))\n"
+    rc, out, err, timed_out = _run_stdin_test(code, "2 3\n", timeout=15)
+    assert timed_out is False
+    assert rc == 0, err
+    assert out.strip() == "5"
+
+
 def test_evaluate_all_apps_skips_missing_problem(monkeypatch):
     import bench.eval.apps_executor as ax
     monkeypatch.setattr(ax, "evaluate_apps_sample", _stub_sample_eval)
