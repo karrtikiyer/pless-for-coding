@@ -609,14 +609,10 @@ def make_plots(configs: list[dict], dataset: str, fig_dir: Path) -> None:
                        label=f"{i + 1}. {config_label(c)} — trunc {tr*100:.0f}%")
             ax.annotate(str(i + 1), (x, y), textcoords="offset points",
                         xytext=(8, 5), fontsize=9, fontweight="bold", zorder=4)
-        # Pareto frontier line on pass@1 (ranked on median think tokens).
-        if metric == "pass@1":
-            front = pareto_dominant(pareto)
-            if len(front) >= 2:
-                ax.plot([c["median_think_tokens"] for c in front],
-                        [c["pass@1"] for c in front],
-                        color="#455A64", lw=1.0, ls="--", zorder=2,
-                        label="Pareto frontier")
+        # No "Pareto frontier" line: the x-axis (median-all) is biased upward by
+        # truncation, so a connecting line would imply a clean length↔accuracy
+        # tradeoff the confounded axis can't support. The 6 trunc%-sized labeled
+        # points show position directly; non-dominance is in the report table.
         ax.set_xlabel("median think tokens (all samples)  —  marker size ∝ truncation %")
         ax.set_ylabel(metric)
         ax.set_title(f"CoT length vs {metric} — Qwen3-8B / {dataset.upper()} "
