@@ -267,19 +267,33 @@ class TaskResult:
     extraction_success: list[bool] = field(default_factory=list)
 
 
-def _evaluate_one(args):
-    task_id, samples, problem_pickle, per_test_timeout = args
-    # ``problem_pickle`` is a plain dict because AppsProblem doesn't pickle
-    # cleanly through every executor backend; we reconstruct lightweight
-    # access here.
+def _evaluate_one_sample(args):
+    """Evaluate ONE sample of one task — the parallelism unit.
+
+    Per-sample (not per-task) so the pool scales with the total number of
+    samples, and a single slow problem can't serialize its samples behind one
+    worker. ``problem_pickle`` is a plain dict because AppsProblem doesn't
+    pickle cleanly through every executor backend; rehydrate it here.
+    """
+    tid, idx, sample, problem_pickle, per_test_timeout = args
     problem = AppsProblem(**problem_pickle)
-    results: list[AppsSampleResult] = []
-    extractions: list[ExtractionResult] = []
-    for s in samples:
-        r, e = evaluate_apps_sample(s, problem, per_test_timeout=per_test_timeout)
-        results.append(r)
-        extractions.append(e)
-    return task_id, results, extractions
+    r, e = evaluate_apps_sample(sample, problem, per_test_timeout=per_test_timeout)
+    return tid, idx, r, e
+
+
+def _regroup_results(completed, n_samples_by_task):
+    """Place per-sample ``(tid, idx, result, extraction)`` tuples — which arrive
+    in ARBITRARY completion order from the pool — back into per-task lists
+    ordered by sample index, so ``pass_results[i]`` stays aligned with
+    ``samples[i]``. This index-alignment is the correctness invariant of the
+    per-sample parallelization.
+    """
+    results_by_task = {tid: [None] * n for tid, n in n_samples_by_task.items()}
+    extractions_by_task = {tid: [None] * n for tid, n in n_samples_by_task.items()}
+    for tid, idx, r, e in completed:
+        results_by_task[tid][idx] = r
+        extractions_by_task[tid][idx] = e
+    return results_by_task, extractions_by_task
 
 
 def evaluate_all_apps(
@@ -291,20 +305,23 @@ def evaluate_all_apps(
 ) -> tuple[list[TaskResult], dict, dict]:
     """Run the APPS evaluation across every (task, sample) in ``records``.
 
-    Returns (per_task_results, extraction_diagnostics, execution_diagnostics).
-    Per-task results are shaped to plug into bench.eval.metrics' aggregators.
+    Parallelizes over **(task, sample)** pairs, so throughput scales with the
+    total number of samples (not the number of problems) and one slow problem
+    no longer serializes its samples behind a single worker. Returns
+    (per_task_results, extraction_diagnostics, execution_diagnostics);
+    per-task results are shaped to plug into bench.eval.metrics' aggregators.
     """
-    # Prepare work items
+    # Per-(task, sample) work items. (problem_pickle is duplicated across a
+    # task's samples in the queue — small payloads, negligible vs the win.)
     work = []
     skipped_no_problem: list[int] = []
+    n_samples_by_task: dict[int, int] = {}
     for rec in records:
         tid = int(rec["task_id"])
         problem = problems_by_id.get(tid)
         if problem is None:
             skipped_no_problem.append(tid)
             continue
-        # Pass a dict so the worker can rehydrate AppsProblem without
-        # depending on pickle of the original dataclass.
         problem_pickle = dict(
             problem_id=problem.problem_id,
             source=problem.source,
@@ -315,44 +332,42 @@ def evaluate_all_apps(
             inputs=problem.inputs,
             outputs=problem.outputs,
         )
-        work.append((tid, rec["samples"], problem_pickle, per_test_timeout))
+        samples = rec["samples"]
+        n_samples_by_task[tid] = len(samples)
+        for idx, s in enumerate(samples):
+            work.append((tid, idx, s, problem_pickle, per_test_timeout))
 
+    # Evaluate (parallel over samples; sequential fallback for workers <= 1).
+    completed = []
+    if workers <= 1:
+        for w in work:
+            completed.append(_evaluate_one_sample(w))
+    else:
+        with ProcessPoolExecutor(max_workers=workers) as ex:
+            futures = [ex.submit(_evaluate_one_sample, w) for w in work]
+            for fut in as_completed(futures):
+                completed.append(fut.result())
+
+    results_by_task, extractions_by_task = _regroup_results(completed, n_samples_by_task)
+
+    # Per-task aggregation + diagnostics, in deterministic task order.
     task_results: list[TaskResult] = []
     n_samples_total = 0
     strat_counts: dict[str, int] = {}
     status_counts: dict[str, int] = {s: 0 for s in
         ("Passed", "Failed", "RuntimeError", "Timeout", "SyntaxError", "ParsingError")}
     first_fail_idxs: list[int] = []
-
-    # Sequential fallback when workers <= 1 — useful for debugging
-    if workers <= 1:
-        for w in work:
-            tid, results, extractions = _evaluate_one(w)
-            tr = _to_task_result(tid, results, extractions)
-            task_results.append(tr)
-            n_samples_total += len(results)
-            for ext in extractions:
-                strat_counts[ext.strategy] = strat_counts.get(ext.strategy, 0) + 1
-            for r in results:
-                status_counts[r.status] = status_counts.get(r.status, 0) + 1
-                if r.first_failing_idx is not None:
-                    first_fail_idxs.append(r.first_failing_idx)
-    else:
-        with ProcessPoolExecutor(max_workers=workers) as ex:
-            futures = {ex.submit(_evaluate_one, w): w[0] for w in work}
-            for fut in as_completed(futures):
-                tid, results, extractions = fut.result()
-                tr = _to_task_result(tid, results, extractions)
-                task_results.append(tr)
-                n_samples_total += len(results)
-                for ext in extractions:
-                    strat_counts[ext.strategy] = strat_counts.get(ext.strategy, 0) + 1
-                for r in results:
-                    status_counts[r.status] = status_counts.get(r.status, 0) + 1
-                    if r.first_failing_idx is not None:
-                        first_fail_idxs.append(r.first_failing_idx)
-
-    task_results.sort(key=lambda t: t.task_id)
+    for tid in sorted(n_samples_by_task):
+        results = results_by_task[tid]
+        extractions = extractions_by_task[tid]
+        task_results.append(_to_task_result(tid, results, extractions))
+        n_samples_total += len(results)
+        for ext in extractions:
+            strat_counts[ext.strategy] = strat_counts.get(ext.strategy, 0) + 1
+        for r in results:
+            status_counts[r.status] = status_counts.get(r.status, 0) + 1
+            if r.first_failing_idx is not None:
+                first_fail_idxs.append(r.first_failing_idx)
     extraction_diag = {
         "n_samples_total": n_samples_total,
         "n_records_skipped_no_problem": len(skipped_no_problem),
