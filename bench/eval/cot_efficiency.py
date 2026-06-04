@@ -628,19 +628,28 @@ def make_plots(configs: list[dict], dataset: str, fig_dir: Path) -> None:
     _scatter("pass@1", "cot_pareto_pass_at_1.png")
     _scatter("pass@10", "cot_pareto_pass_at_10.png")
 
-    # Think-length distribution per think-sampler (completed samples).
+    # Think-length distribution per sampler over ALL samples (not completed-only):
+    # truncated traces pile up near the cap, so a config that fails to terminate
+    # shows a visible mass at the top instead of being censored out (which made
+    # the completed-only version misleadingly uniform).
     by_sampler: dict[str, list[int]] = {}
     for c in pareto:
         for r in c.get("_rows", []):
-            if r["completed"] and r["think_tokens"] is not None:
+            if r["think_tokens"] is not None:
                 by_sampler.setdefault(c["sampler_think"], []).append(r["think_tokens"])
     if by_sampler:
-        fig, ax = plt.subplots(figsize=(9, 6))
+        fig, ax = plt.subplots(figsize=(11, 6.5))
         samplers = sorted(by_sampler)
         ax.violinplot([by_sampler[s] for s in samplers], showmedians=True)
+        # Annotate each violin with its truncation% (the mass at the cap).
+        trunc_by_label = {c["sampler_think"]: (c.get("truncation_rate") or 0) for c in pareto}
+        for i, s in enumerate(samplers, start=1):
+            ax.annotate(f"trunc {trunc_by_label.get(s, 0)*100:.0f}%",
+                        (i, max(by_sampler[s])), textcoords="offset points",
+                        xytext=(0, 6), ha="center", fontsize=8)
         ax.set_xticks(range(1, len(samplers) + 1))
         ax.set_xticklabels(samplers, rotation=20, ha="right")
-        ax.set_ylabel("think length (tokens, completed samples)")
+        ax.set_ylabel("think length (tokens, ALL samples; truncated pinned at cap)")
         ax.set_title(f"Think-length distribution by sampler — Qwen3-8B / {dataset.upper()}")
         ax.grid(True, axis="y", alpha=0.3)
         fig.tight_layout()
