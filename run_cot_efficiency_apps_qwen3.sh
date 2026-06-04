@@ -38,6 +38,8 @@
 #
 # Override via env: MODEL, SOURCE, RESULTS_DIR, CALIB_PROBLEMS, STAGEB_PROBLEMS,
 #   CALIB_BUDGET, N_SAMPLES, TOKENIZER, GPUS, BACKEND (hf|vllm), VLLM_VENV,
+#   WORKERS (eval parallelism, default 32), KEEP_DIVERSITY=1 (compute the O(n^2)
+#   diversity metrics; off by default since this study doesn't use them),
 #   DELTA_PROBLEMS, DELTA_SAMPLES, ONLY (single config key:
 #   temp|topk|topp|combined|pless|pless_norm).
 
@@ -53,6 +55,10 @@ CALIB_BUDGET="${CALIB_BUDGET:-16384}"
 N_SAMPLES="${N_SAMPLES:-10}"
 BACKEND="${BACKEND:-hf}"          # hf | vllm
 VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
+WORKERS="${WORKERS:-32}"          # parallel code-execution workers for eval
+# This study needs only pass/fail + extraction, NOT the O(n^2) diversity
+# metrics (AST tree-edit + all-pairs CodeBLEU). Skip them by default for a big
+# eval speedup; set KEEP_DIVERSITY=1 to compute them anyway.
 
 MODEL_DIR="${MODEL//\//--}"   # Qwen/Qwen3-8B -> Qwen--Qwen3-8B
 
@@ -103,11 +109,14 @@ gen() {
 # Evaluate every JSONL in a result dir (APPS), writing metrics/<stem>_metrics.json.
 eval_dir() {
   local dir="$1"
+  local div_flag="--skip-diversity"
+  [ -n "${KEEP_DIVERSITY:-}" ] && div_flag=""
   for f in "$dir"/*.jsonl; do
     [ -e "$f" ] || continue
     case "$f" in *.entropy.*) continue;; esac
-    echo "  eval $(basename "$f")"
-    uv run python -m bench.eval --results-file "$f" --dataset apps
+    echo "  eval $(basename "$f") (workers=$WORKERS${div_flag:+, skip-diversity})"
+    uv run python -m bench.eval --results-file "$f" --dataset apps \
+      --workers "$WORKERS" $div_flag
   done
 }
 
