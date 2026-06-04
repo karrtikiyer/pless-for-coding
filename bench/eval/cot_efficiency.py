@@ -4,7 +4,7 @@ Mines the existing split-decoding corpus (reasoning traces with `<think>...</thi
 to ask: within a fixed token budget, does the THINK-phase sampler / temperature move
 the accuracy-vs-CoT-length Pareto frontier? Reports both token efficiency (think
 length, in tokens) and accuracy/exploration (pass@1, pass@k), using the efficiency
-decomposition from arXiv:2602.09805 (completion rate / conditional accuracy / length).
+decomposition from arXiv:2602.09805 (completion rate / conditional correctness / length).
 
 No new generation is performed — this reuses on-disk JSONL + metrics JSON.
 
@@ -179,7 +179,7 @@ def aggregate_rows(rows):
         "truncation_rate": sum(r["truncated"] for r in rows) / n,
         "malformed_rate": sum(r["malformed"] for r in rows) / n,
         "near_cap_rate": sum(r["near_cap"] for r in rows) / n,
-        "conditional_accuracy": cond_acc,
+        "conditional_correctness": cond_acc,
         "mean_think_tokens": _mean(tok_all),
         "median_think_tokens": _median(tok_all),
         "p90_think_tokens": _p90(tok_all),
@@ -385,7 +385,7 @@ _CSV_COLUMNS = [
     "truncation_rate", "malformed_rate", "near_cap_rate",
     "mean_think_tokens", "median_think_tokens", "p90_think_tokens",
     "mean_think_tokens_completed", "median_think_tokens_completed",
-    "mean_think_chars", "conditional_accuracy",
+    "mean_think_chars", "conditional_correctness",
     "pass@1", "pass@5", "pass@10", "cov@0.3", "cov@0.5",
 ]
 
@@ -463,7 +463,7 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
         f"**Configs analyzed:** {len(configs)} "
         f"({len(pareto)} at the {PARETO_BUDGET}-token budget used for the frontier)\n",
         "Think length is measured in **tokens** (Qwen3 tokenizer). Efficiency is "
-        "decomposed per arXiv:2602.09805 into completion rate, conditional accuracy "
+        "decomposed per arXiv:2602.09805 into completion rate, conditional correctness "
         "(pass rate among completed samples), and think length.\n",
         # ── Grounded column definitions (computed in bench/eval/cot_efficiency.py
         #    aggregate_rows + bench/eval/metrics.py; see source for exact code).
@@ -478,7 +478,7 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
         "- **trunc%** (`truncation_rate`) — % of samples with no closing `</think>` "
         "(think ran into the token cap). Primary truncation signal is the missing "
         "`</think>`, not the token count.",
-        "- **cond-acc** (`conditional_accuracy`) — pass rate *among completed samples "
+        "- **cond-correctness** (`conditional_correctness`) — pass rate *among completed samples "
         "only*: `#(completed & correct) / #completed`. Answers \"given it finished "
         "reasoning, did the code pass all hidden tests?\" Equals `pass@1 / compl%`.",
         "- **mean think tok** (`mean_think_tokens`) — mean think-block length over "
@@ -498,7 +498,7 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
         "- **cov@0.3 / cov@0.5** (CSV) — % of problems with ≥30% / ≥50% of their "
         "samples correct (`num_correct ≥ t·n`).",
         "\n**Coherence checks (should hold every run):**",
-        "- `pass@1 == compl% × cond-acc` *exactly* per row — confirms every passing "
+        "- `pass@1 == compl% × cond-correctness` *exactly* per row — confirms every passing "
         "sample is also classed completed (no passing sample lost to "
         "truncated/malformed) and the decomposition is self-consistent.",
         "- `pass@10 ≥ pass@5 ≥ pass@1` per row (monotone in k).",
@@ -509,7 +509,7 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
         "different trunc% by either statistic; a clean length comparison needs a "
         "budget where all configs complete.\n",
         "## Per-config decomposition\n",
-        "| Config (think→code) | budget | compl% | trunc% | cond-acc | "
+        "| Config (think→code) | budget | compl% | trunc% | cond-correctness | "
         "mean think tok | median (done) | pass@1 | pass@10 |",
         "|---|---|---|---|---|---|---|---|---|",
     ]
@@ -520,7 +520,7 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
             f"| {label} | {c['max_tokens']} "
             f"| {_fmt((c.get('completion_rate') or 0) * 100, 1)} "
             f"| {_fmt((c.get('truncation_rate') or 0) * 100, 1)} "
-            f"| {_fmt(c.get('conditional_accuracy'))} "
+            f"| {_fmt(c.get('conditional_correctness'))} "
             f"| {_fmt(c.get('mean_think_tokens'), 0)} "
             f"| {_fmt(c.get('median_think_tokens_completed'), 0)} "
             f"| {_fmt(c.get('pass@1'))} | {_fmt(c.get('pass@10'))} |"
@@ -533,7 +533,7 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
         f"context-limited failures. NOTE: the length axis is `mean think tok`, which "
         f"is truncation-confounded across configs with different trunc% — read this "
         f"frontier loosely unless trunc% is comparable:\n",
-        "| Config | mean think tok | trunc% | pass@1 | pass@10 | cond-acc |",
+        "| Config | mean think tok | trunc% | pass@1 | pass@10 | cond-correctness |",
         "|---|---|---|---|---|---|",
     ]
     for c in pareto_dominant(pareto):
@@ -542,7 +542,7 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
             f"| {label} | {_fmt(c.get('mean_think_tokens'), 0)} "
             f"| {_fmt((c.get('truncation_rate') or 0) * 100, 1)} "
             f"| {_fmt(c.get('pass@1'))} | {_fmt(c.get('pass@10'))} "
-            f"| {_fmt(c.get('conditional_accuracy'))} |"
+            f"| {_fmt(c.get('conditional_correctness'))} |"
         )
 
     lines += [

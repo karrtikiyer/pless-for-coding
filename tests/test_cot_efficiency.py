@@ -146,8 +146,8 @@ def test_aggregate_decomposition():
     assert agg["completion_rate"] == pytest.approx(0.75)
     assert agg["truncation_rate"] == pytest.approx(0.25)
     assert agg["near_cap_rate"] == pytest.approx(0.25)
-    # conditional accuracy = pass among completed = 2/3
-    assert agg["conditional_accuracy"] == pytest.approx(2 / 3)
+    # conditional correctness = pass among completed = 2/3
+    assert agg["conditional_correctness"] == pytest.approx(2 / 3)
     # mean think tokens over completed = (100+200+300)/3 = 200
     assert agg["mean_think_tokens_completed"] == pytest.approx(200.0)
     # mean over all = (100+200+300+8192)/4
@@ -196,5 +196,5 @@ def test_aggregate_handles_no_completed():
     ]
     agg = aggregate_rows(rows)
     assert agg["completion_rate"] == 0.0
-    assert agg["conditional_accuracy"] is None
+    assert agg["conditional_correctness"] is None
     assert agg["mean_think_tokens_completed"] is None
