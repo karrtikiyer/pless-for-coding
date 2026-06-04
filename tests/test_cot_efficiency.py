@@ -41,10 +41,20 @@ def test_extract_think_span_unclosed_is_truncated():
     assert closed is False
 
 
-def test_extract_think_span_no_open_tag():
-    swt = "```python\nx = 1\n```"
+def test_extract_think_span_r1_distill_completed():
+    # DeepSeek-R1-Distill injects <think> into the PROMPT, so the generation has
+    # no opening tag — only the closing </think>. Think = everything before it.
+    swt = "reasoning step one step two</think>\n```python\nx = 1\n```"
     think, closed = extract_think_span(swt)
-    assert think == ""
+    assert think.strip() == "reasoning step one step two"
+    assert closed is True
+
+
+def test_extract_think_span_r1_distill_truncated():
+    # No opening tag AND no closing tag => truncated reasoning; whole text is think.
+    swt = "reasoning that ran to the token cap without finishing"
+    think, closed = extract_think_span(swt)
+    assert think == swt
     assert closed is False
 
 

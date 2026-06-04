@@ -214,4 +214,8 @@ def is_instruct_model(model_id: str) -> bool:
     # Qwen3 series are instruction-tuned by default (separate -Base variants exist)
     if "qwen3-" in lower and "-base" not in lower:
         return True
+    # DeepSeek-R1 distilled reasoning models use a chat template (and inject
+    # <think> into the prompt); treat as instruct so the template is applied.
+    if "r1-distill" in lower or "deepseek-r1" in lower:
+        return True
     return False

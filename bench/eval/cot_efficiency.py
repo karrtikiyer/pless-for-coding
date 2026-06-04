@@ -60,16 +60,24 @@ def extract_think_span(swt: str) -> tuple[str, bool]:
 
     `closed` is True iff a `</think>` terminator is present (i.e. the thinking
     phase ended naturally rather than being truncated at the token cap).
+
+    Handles two emission styles:
+      * opening tag in the OUTPUT — Qwen3 generates `<think>…</think>`.
+      * opening tag in the PROMPT — DeepSeek-R1-Distill injects `<think>` via its
+        chat template, so the generation starts mid-reasoning and only the
+        closing `</think>` appears. Then the think span is everything up to
+        `</think>` (or the whole text if it never closed / was truncated).
+    Note: the `start == -1` branch never fires for Qwen3 (it emits `<think>`),
+    so existing Qwen results are unaffected.
     """
     swt = str(swt)
-    closed = "</think>" in swt
+    end = swt.find("</think>")
+    closed = end != -1
     start = swt.find("<think>")
     if start == -1:
-        return "", closed
+        return (swt[:end] if closed else swt), closed
     start += len("<think>")
-    end = swt.find("</think>", start)
-    think = swt[start:end] if end != -1 else swt[start:]
-    return think, closed
+    return (swt[start:end] if end != -1 else swt[start:]), closed
 
 
 def measure_lengths(text: str, tokenizer) -> tuple[int | None, int]:
