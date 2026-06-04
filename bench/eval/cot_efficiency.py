@@ -465,6 +465,49 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
         "Think length is measured in **tokens** (Qwen3 tokenizer). Efficiency is "
         "decomposed per arXiv:2602.09805 into completion rate, conditional accuracy "
         "(pass rate among completed samples), and think length.\n",
+        # ── Grounded column definitions (computed in bench/eval/cot_efficiency.py
+        #    aggregate_rows + bench/eval/metrics.py; see source for exact code).
+        "## Column definitions\n",
+        "A *sample* is one generation; each problem has 10 samples. A sample is "
+        "**completed** iff it has a closing `</think>` (the think phase finished, "
+        "not truncated at the cap) AND code was extracted (for APPS, the executor's "
+        "`extraction_success`); **truncated** iff it has no `</think>`.\n",
+        "- **budget** — generation cap (`--max-new-tokens`); all configs here share it.",
+        "- **compl%** (`completion_rate`) — % of samples that completed "
+        "(`#completed / #samples`).",
+        "- **trunc%** (`truncation_rate`) — % of samples with no closing `</think>` "
+        "(think ran into the token cap). Primary truncation signal is the missing "
+        "`</think>`, not the token count.",
+        "- **cond-acc** (`conditional_accuracy`) — pass rate *among completed samples "
+        "only*: `#(completed & correct) / #completed`. Answers \"given it finished "
+        "reasoning, did the code pass all hidden tests?\" Equals `pass@1 / compl%`.",
+        "- **mean think tok** (`mean_think_tokens`) — mean think-block length over "
+        "**ALL** samples, in tokens (think = text between `<think>` and `</think>`; "
+        "for prompt-injected `<think>` models, text up to `</think>`). **Includes "
+        "truncated samples**, which contribute their length-at-cut (≈ the cap) — so "
+        "this is inflated toward the cap for configs that truncate, and NOT "
+        "comparable across configs with different trunc%.",
+        "- **median (done)** (`median_think_tokens_completed`) — median think length "
+        "over **completed samples only**. Cap-robust but **censored**: a config's "
+        "longest traces were truncated out, biasing its completed-median low. Don't "
+        "read it as \"who reasons shorter\" across configs with different trunc%.",
+        "- **pass@1 / pass@10** — unbiased pass@k (human-eval estimator, "
+        "`metrics.compute_pass_at_k`) over each problem's `(num_correct, n=10)`. "
+        "pass@1 = overall fraction of single samples that pass; pass@10 (k=n=10) = "
+        "fraction of problems solved by **≥1** of the 10 samples (coverage).",
+        "- **cov@0.3 / cov@0.5** (CSV) — % of problems with ≥30% / ≥50% of their "
+        "samples correct (`num_correct ≥ t·n`).",
+        "\n**Coherence checks (should hold every run):**",
+        "- `pass@1 == compl% × cond-acc` *exactly* per row — confirms every passing "
+        "sample is also classed completed (no passing sample lost to "
+        "truncated/malformed) and the decomposition is self-consistent.",
+        "- `pass@10 ≥ pass@5 ≥ pass@1` per row (monotone in k).",
+        "\n**Easy misreads (not bugs):** `mean think tok` (all samples, pinned near "
+        "the cap when truncated) and `median (done)` (completed only) are *different "
+        "populations* — for a truncating config the mean sits well above the "
+        "completed-median. And length is **not** comparable across configs with "
+        "different trunc% by either statistic; a clean length comparison needs a "
+        "budget where all configs complete.\n",
         "## Per-config decomposition\n",
         "| Config (think→code) | budget | compl% | trunc% | cond-acc | "
         "mean think tok | median (done) | pass@1 | pass@10 |",
@@ -487,7 +530,9 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
         f"\n## Pareto-dominant configs ({PARETO_BUDGET}-token budget)\n",
         f"Not dominated on (shorter mean think tokens, pass@1 within 1pt); "
         f"configs with >{MAX_TRUNC_FOR_FRONTIER:.0%} truncation excluded as "
-        f"context-limited failures:\n",
+        f"context-limited failures. NOTE: the length axis is `mean think tok`, which "
+        f"is truncation-confounded across configs with different trunc% — read this "
+        f"frontier loosely unless trunc% is comparable:\n",
         "| Config | mean think tok | trunc% | pass@1 | pass@10 | cond-acc |",
         "|---|---|---|---|---|---|",
     ]
@@ -502,14 +547,17 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
 
     lines += [
         "\n## Limitations\n",
-        "- Single model (Qwen3-8B); no cross-model generalization.",
-        "- Think samplers limited to on-disk set "
-        "{temp_standard, temp_pure, pless, pless_norm, pless_alpha}; "
-        "**greedy and top-p are absent** (would need new runs to complete the core set).",
+        "- Single model / single difficulty; no cross-model generalization.",
+        "- Samplers compared are whatever was generated for this run; greedy is "
+        "excluded by design (Qwen discourages it in thinking mode).",
         "- Token counts are analysis-time estimates (tokenizer special-token handling "
         "may differ slightly from generation time).",
-        f"- Truncation at the {PARETO_BUDGET} cap biases mean length downward — "
-        "read truncation% beside every length.",
+        f"- Truncation at the {PARETO_BUDGET} cap censors the upper tail: truncated "
+        "samples are pinned near the cap (inflating the *mean* for configs that "
+        "truncate) yet underestimate their true length. So length is NOT comparable "
+        "across configs with different trunc% — see Column definitions.",
+        "- Stochastic samplers run at a fixed temperature, not matched effective "
+        "entropy, so cross-config pass@1 differences mix sampler + operating point.",
         "- Correlational across independently-generated configs (no paired seeds).",
     ]
     path.write_text("\n".join(lines) + "\n")
