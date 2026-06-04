@@ -405,15 +405,16 @@ MAX_TRUNC_FOR_FRONTIER = 0.25
 
 
 def pareto_dominant(configs: list[dict]) -> list[dict]:
-    """Configs not dominated on (shorter mean_think_tokens, >= pass@1).
+    """Configs not dominated on (shorter median_think_tokens, >= pass@1).
 
-    Tolerance: a config is dominated only if another is strictly shorter AND
-    not more than 1 absolute pass@1 point worse. Configs whose truncation rate
-    exceeds MAX_TRUNC_FOR_FRONTIER are excluded — their short length is a
-    truncation artifact, not efficient reasoning.
+    Length axis is the MEDIAN over all samples — robust to the cap-pinned
+    truncated tail and budget-insensitive (when <50% truncate), unlike the mean
+    which bakes in `n_trunc × cap`. Tolerance: dominated only if another is
+    strictly shorter AND not more than 1 absolute pass@1 point worse. Configs
+    above MAX_TRUNC_FOR_FRONTIER truncation are excluded.
     """
     usable = [c for c in configs
-              if c.get("mean_think_tokens") is not None
+              if c.get("median_think_tokens") is not None
               and c.get("pass@1") is not None
               and (c.get("truncation_rate") or 0) <= MAX_TRUNC_FOR_FRONTIER]
     frontier = []
@@ -422,13 +423,13 @@ def pareto_dominant(configs: list[dict]) -> list[dict]:
         for o in usable:
             if o is c:
                 continue
-            if (o["mean_think_tokens"] < c["mean_think_tokens"]
+            if (o["median_think_tokens"] < c["median_think_tokens"]
                     and o["pass@1"] >= c["pass@1"] - 0.01):
                 dominated = True
                 break
         if not dominated:
             frontier.append(c)
-    return sorted(frontier, key=lambda c: c["mean_think_tokens"])
+    return sorted(frontier, key=lambda c: c["median_think_tokens"])
 
 
 def config_label(c: dict) -> str:
@@ -487,6 +488,15 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
         "truncated samples**, which contribute their length-at-cut (≈ the cap) — so "
         "this is inflated toward the cap for configs that truncate, and NOT "
         "comparable across configs with different trunc%.",
+        "- **median (all)** (`median_think_tokens`) — median think length over **ALL** "
+        "samples; the Pareto-frontier axis. Budget-insensitive (the truncated cap "
+        "*value* doesn't move it) but **biased UPWARD by truncation rate**: truncated "
+        "samples occupy the top ranks, so higher trunc% pushes the median to a higher "
+        "percentile of the completed distribution. So a config sitting right may be "
+        "there partly because it truncates more, not only because it reasons longer — "
+        "read the trunc% (marker size) alongside. It is the least-misleading single "
+        "length stat here (unlike median-done it won't falsely make a truncating config "
+        "look short), but it is NOT fully decoupled from truncation.",
         "- **median (done)** (`median_think_tokens_completed`) — median think length "
         "over **completed samples only**. Cap-robust but **censored**: a config's "
         "longest traces were truncated out, biasing its completed-median low. Don't "
@@ -502,16 +512,19 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
         "sample is also classed completed (no passing sample lost to "
         "truncated/malformed) and the decomposition is self-consistent.",
         "- `pass@10 ≥ pass@5 ≥ pass@1` per row (monotone in k).",
-        "\n**Easy misreads (not bugs):** `mean think tok` (all samples, pinned near "
-        "the cap when truncated) and `median (done)` (completed only) are *different "
-        "populations* — for a truncating config the mean sits well above the "
-        "completed-median. And length is **not** comparable across configs with "
-        "different trunc% by either statistic; a clean length comparison needs a "
-        "budget where all configs complete.\n",
+        "\n**No single length stat is clean under differing truncation — each is "
+        "biased a different way:** `mean think tok` = avg tokens *spent* (counts "
+        "truncated at the cap → biased UP + budget-dependent); `median (all)` = typical "
+        "length but biased UP by truncation rate (rank effect; budget-insensitive — the "
+        "frontier axis, least-misleading); `median (done)` = typical *finished* length, "
+        "biased DOWN (censored — drops the truncated long tail). For a truncating "
+        "config: mean ≫ median(all) > median(done). So **read trunc% (marker size) "
+        "alongside any length**; a clean cross-config length comparison needs a budget "
+        "where all configs complete (no truncation).\n",
         "## Per-config decomposition\n",
         "| Config (think→code) | budget | compl% | trunc% | cond-correctness | "
-        "mean think tok | median (done) | pass@1 | pass@10 |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "mean think tok | median (all) | median (done) | pass@1 | pass@10 |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for c in sorted(configs, key=lambda c: (-(c["max_tokens"] or 0),
                                             -(c.get("pass@1") or 0))):
@@ -522,24 +535,25 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
             f"| {_fmt((c.get('truncation_rate') or 0) * 100, 1)} "
             f"| {_fmt(c.get('conditional_correctness'))} "
             f"| {_fmt(c.get('mean_think_tokens'), 0)} "
+            f"| {_fmt(c.get('median_think_tokens'), 0)} "
             f"| {_fmt(c.get('median_think_tokens_completed'), 0)} "
             f"| {_fmt(c.get('pass@1'))} | {_fmt(c.get('pass@10'))} |"
         )
 
     lines += [
         f"\n## Pareto-dominant configs ({PARETO_BUDGET}-token budget)\n",
-        f"Not dominated on (shorter mean think tokens, pass@1 within 1pt); "
+        f"Not dominated on (shorter median think tokens, pass@1 within 1pt); "
         f"configs with >{MAX_TRUNC_FOR_FRONTIER:.0%} truncation excluded as "
-        f"context-limited failures. NOTE: the length axis is `mean think tok`, which "
-        f"is truncation-confounded across configs with different trunc% — read this "
-        f"frontier loosely unless trunc% is comparable:\n",
-        "| Config | mean think tok | trunc% | pass@1 | pass@10 | cond-correctness |",
+        f"context-limited failures. Length axis = `median (all)` — budget-insensitive "
+        f"but biased UP by truncation rate (so a config may rank longer partly because "
+        f"it truncates more); read trunc% alongside:\n",
+        "| Config | median (all) | trunc% | pass@1 | pass@10 | cond-correctness |",
         "|---|---|---|---|---|---|",
     ]
     for c in pareto_dominant(pareto):
         label = config_label(c)
         lines.append(
-            f"| {label} | {_fmt(c.get('mean_think_tokens'), 0)} "
+            f"| {label} | {_fmt(c.get('median_think_tokens'), 0)} "
             f"| {_fmt((c.get('truncation_rate') or 0) * 100, 1)} "
             f"| {_fmt(c.get('pass@1'))} | {_fmt(c.get('pass@10'))} "
             f"| {_fmt(c.get('conditional_correctness'))} |"
@@ -581,32 +595,37 @@ def make_plots(configs: list[dict], dataset: str, fig_dir: Path) -> None:
     markers = ["o", "s", "^", "D", "v", "P", "X", "*", "<", ">"]
 
     def _scatter(metric: str, fname: str):
-        fig, ax = plt.subplots(figsize=(10, 6.5))
+        # x = MEDIAN think tokens (robust, budget-insensitive "typical length");
+        # marker SIZE ∝ truncation% (the tail/cost, decoupled into its own
+        # channel so it isn't confounded into the x-position as the mean would).
+        fig, ax = plt.subplots(figsize=(10, 7))
         for i, c in enumerate(pareto):
-            x, y = c["mean_think_tokens"], c.get(metric)
+            x, y = c.get("median_think_tokens"), c.get(metric)
+            tr = (c.get("truncation_rate") or 0)
+            size = 80 + 1300 * tr   # 0% -> 80, ~14% -> ~262
             ax.scatter(x, y, color=palette[i % len(palette)],
-                       marker=markers[i % len(markers)], s=120,
+                       marker=markers[i % len(markers)], s=size,
                        edgecolors="black", linewidths=0.6, zorder=3,
-                       label=f"{i + 1}. {config_label(c)}")
+                       label=f"{i + 1}. {config_label(c)} — trunc {tr*100:.0f}%")
             ax.annotate(str(i + 1), (x, y), textcoords="offset points",
-                        xytext=(7, 5), fontsize=9, fontweight="bold", zorder=4)
-        # Pareto frontier line on pass@1.
+                        xytext=(8, 5), fontsize=9, fontweight="bold", zorder=4)
+        # Pareto frontier line on pass@1 (ranked on median think tokens).
         if metric == "pass@1":
             front = pareto_dominant(pareto)
             if len(front) >= 2:
-                ax.plot([c["mean_think_tokens"] for c in front],
+                ax.plot([c["median_think_tokens"] for c in front],
                         [c["pass@1"] for c in front],
                         color="#455A64", lw=1.0, ls="--", zorder=2,
                         label="Pareto frontier")
-        ax.set_xlabel("mean think length (tokens)")
+        ax.set_xlabel("median think tokens (all samples)  —  marker size ∝ truncation %")
         ax.set_ylabel(metric)
         ax.set_title(f"CoT length vs {metric} — Qwen3-8B / {dataset.upper()} "
                      f"({PARETO_BUDGET}-tok budget)")
         ax.grid(True, alpha=0.3)
         ax.set_axisbelow(True)
         # Legend below the plot (labels are long); 2 columns.
-        ax.legend(title="config", fontsize=8, loc="upper center",
-                  bbox_to_anchor=(0.5, -0.12), ncol=2)
+        ax.legend(title="config  (bigger marker = more truncation)", fontsize=8,
+                  loc="upper center", bbox_to_anchor=(0.5, -0.13), ncol=2)
         fig.savefig(fig_dir / fname, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
