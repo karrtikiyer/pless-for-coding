@@ -574,16 +574,22 @@ def make_plots(configs: list[dict], dataset: str, fig_dir: Path) -> None:
               if c["max_tokens"] == PARETO_BUDGET
               and c.get("mean_think_tokens") is not None]
 
+    # One distinct (color, marker) per config — keying on sampler_think collapsed
+    # all APPS temp-family points to one color. Numbered tags at each point plus a
+    # numbered legend make them identifiable even when dots overlap.
+    palette = list(plt.cm.tab10.colors)
+    markers = ["o", "s", "^", "D", "v", "P", "X", "*", "<", ">"]
+
     def _scatter(metric: str, fname: str):
-        fig, ax = plt.subplots(figsize=(9, 6))
-        seen = set()
-        for c in pareto:
-            s = c["sampler_think"]
-            color = _SAMPLER_COLORS.get(s, "#607D8B")
-            ax.scatter(c["mean_think_tokens"], c.get(metric), c=color, s=80,
-                       edgecolors="white", linewidths=0.6, zorder=3,
-                       label=s if s not in seen else None)
-            seen.add(s)
+        fig, ax = plt.subplots(figsize=(10, 6.5))
+        for i, c in enumerate(pareto):
+            x, y = c["mean_think_tokens"], c.get(metric)
+            ax.scatter(x, y, color=palette[i % len(palette)],
+                       marker=markers[i % len(markers)], s=120,
+                       edgecolors="black", linewidths=0.6, zorder=3,
+                       label=f"{i + 1}. {config_label(c)}")
+            ax.annotate(str(i + 1), (x, y), textcoords="offset points",
+                        xytext=(7, 5), fontsize=9, fontweight="bold", zorder=4)
         # Pareto frontier line on pass@1.
         if metric == "pass@1":
             front = pareto_dominant(pareto)
@@ -598,8 +604,9 @@ def make_plots(configs: list[dict], dataset: str, fig_dir: Path) -> None:
                      f"({PARETO_BUDGET}-tok budget)")
         ax.grid(True, alpha=0.3)
         ax.set_axisbelow(True)
-        ax.legend(title="think sampler", fontsize=8)
-        fig.tight_layout()
+        # Legend below the plot (labels are long); 2 columns.
+        ax.legend(title="config", fontsize=8, loc="upper center",
+                  bbox_to_anchor=(0.5, -0.12), ncol=2)
         fig.savefig(fig_dir / fname, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
