@@ -141,6 +141,143 @@ def test_sampler_dispatch_table_covers_all_split_samplers():
 
 
 # ---------------------------------------------------------------------------
+# Equivalence to the AUTHORS' actual samplers (not a reimplementation)
+# ---------------------------------------------------------------------------
+#
+# The tests above compare the vLLM mask against `_pless_decode_on_probs`, a
+# reimplementation living in THIS file — which could share a bug with the vLLM
+# code. The two tests below instead run the real `p_less_decode` /
+# `p_less_norm_decode` from the p-less/ submodule and confirm the vLLM
+# masked-logits distribution has the same survivor support and matching
+# empirical token frequencies. This is the guarantee that our vLLM
+# reimplementation cannot silently drift from the authors' method.
+
+
+def _authors_empirical(decode_fn, logits: torch.Tensor, n: int, seed: int):
+    """Run the authors' (probs->token) sampler `n` times on one distribution;
+    return (survivor_set, freq_dict)."""
+    probs = torch.softmax(logits.float(), dim=-1)            # (1, V)
+    torch.manual_seed(seed)
+    draws = decode_fn(probs.expand(n, -1).clone()).squeeze(-1)  # (n,)
+    survivors = set(draws.unique().tolist())
+    freqs = {t: (draws == t).float().mean().item() for t in survivors}
+    return survivors, freqs
+
+
+def _peaky_logits(vocab: int = 1500) -> torch.Tensor:
+    torch.manual_seed(0)
+    logits = torch.randn(1, vocab)
+    logits[0, :5] += torch.tensor([6.0, 5.0, 4.5, 4.0, 3.5])
+    return logits
+
+
+def test_vllm_pless_matches_authors_sampler():
+    from bench.generator_vllm import _pless_mask_logits
+    from bench.sampler_bridge import p_less_decode
+
+    logits = _peaky_logits()
+    d_vllm = torch.softmax(_pless_mask_logits(logits.clone()).float(), dim=-1)[0]
+    vllm_survivors = set((d_vllm > 0).nonzero(as_tuple=True)[0].tolist())
+
+    authors_survivors, freqs = _authors_empirical(p_less_decode, logits, n=20000, seed=123)
+    assert authors_survivors == vllm_survivors, (
+        f"survivor support differs: authors={sorted(authors_survivors)} "
+        f"vllm={sorted(vllm_survivors)}"
+    )
+    for t, f in freqs.items():
+        assert abs(f - d_vllm[t].item()) < 0.02, (
+            f"token {t}: authors freq {f:.4f} vs vLLM prob {d_vllm[t].item():.4f}"
+        )
+
+
+def test_vllm_pless_norm_matches_authors_sampler():
+    from bench.generator_vllm import _pless_norm_mask_logits
+    from bench.sampler_bridge import p_less_norm_decode
+
+    logits = _peaky_logits()
+    d_vllm = torch.softmax(_pless_norm_mask_logits(logits.clone()).float(), dim=-1)[0]
+    vllm_survivors = set((d_vllm > 0).nonzero(as_tuple=True)[0].tolist())
+
+    authors_survivors, freqs = _authors_empirical(p_less_norm_decode, logits, n=20000, seed=123)
+    assert authors_survivors == vllm_survivors, (
+        f"survivor support differs: authors={sorted(authors_survivors)} "
+        f"vllm={sorted(vllm_survivors)}"
+    )
+    for t, f in freqs.items():
+        assert abs(f - d_vllm[t].item()) < 0.02
+
+
+def test_vllm_argmax_fallback_branchless():
+    """The branchless guard un-masks the argmax of a fully-pruned row and is a
+    no-op otherwise — and the mask fns never leave a row entirely -inf."""
+    from bench.generator_vllm import (
+        _pless_mask_logits,
+        _pless_norm_mask_logits,
+        _restore_argmax_on_all_pruned,
+    )
+
+    probs = torch.tensor([[0.1, 0.7, 0.2]])
+    m = torch.ones(1, 3, dtype=torch.bool)          # whole row pruned
+    _restore_argmax_on_all_pruned(m, probs)
+    assert m.tolist() == [[True, False, True]]      # argmax (idx 1) survives
+
+    m2 = torch.tensor([[True, False, True]])        # normal row
+    before = m2.clone()
+    _restore_argmax_on_all_pruned(m2, probs)
+    assert torch.equal(m2, before)                  # untouched
+
+    torch.manual_seed(0)
+    logits = torch.randn(8, 4000)
+    for fn in (_pless_mask_logits, _pless_norm_mask_logits):
+        out = fn(logits.clone())
+        assert (out > float("-inf")).any(dim=-1).all(), "a row was left all -inf"
+
+
+def test_swap_move_preserves_both_request_states(monkeypatch):
+    """Regression test for the `direct == 'swap'` enum bug: on a SWAP move,
+    BOTH requests' state must be kept. Builds the real processor class against a
+    minimal fake `vllm` module (no GPU / no vLLM install needed)."""
+    import enum
+    import types
+
+    class _Base:  # stand-in for vllm's LogitsProcessor (we override everything)
+        pass
+
+    class MoveDirectionality(enum.Enum):
+        UNIDIRECTIONAL = enum.auto()
+        SWAP = enum.auto()
+
+    lp_mod = types.ModuleType("vllm.v1.sample.logits_processor")
+    lp_mod.LogitsProcessor = _Base
+    lp_mod.MoveDirectionality = MoveDirectionality
+    sp_mod = types.ModuleType("vllm.sampling_params")
+    sp_mod.SamplingParams = object
+    for name in ("vllm", "vllm.v1", "vllm.v1.sample"):
+        monkeypatch.setitem(sys.modules, name, types.ModuleType(name))
+    monkeypatch.setitem(sys.modules, "vllm.v1.sample.logits_processor", lp_mod)
+    monkeypatch.setitem(sys.modules, "vllm.sampling_params", sp_mod)
+
+    import bench.generator_vllm as gv
+    monkeypatch.setattr(gv._build_pless_split_logits_processor_class, "_cached", None)
+    cls = gv._build_pless_split_logits_processor_class()
+    proc = cls(vllm_config=None, device=torch.device("cpu"), is_pin_memory=False)
+
+    cfgA = {"t_think": 1.0, "t_code": 1.0, "sampler_think": "pless", "sampler_code": "pless"}
+    cfgB = {"t_think": 1.0, "t_code": 1.0, "sampler_think": "pless_norm", "sampler_code": "pless_norm"}
+    proc._cfg = {0: cfgA, 1: cfgB}
+    proc._out = {0: [10], 1: [20]}
+    proc._in_code = {0: True, 1: False}
+
+    bu = types.SimpleNamespace(added=[], removed=[], moved=[(0, 1, MoveDirectionality.SWAP)])
+    proc.update_state(bu)
+
+    # After the swap, A's state lives at row 1 and B's at row 0 — neither dropped.
+    assert proc._cfg[1] is cfgA and proc._cfg[0] is cfgB
+    assert proc._out[1] == [10] and proc._out[0] == [20]
+    assert proc._in_code[1] is True and proc._in_code[0] is False
+
+
+# ---------------------------------------------------------------------------
 # GPU parity gate — only runs if vLLM is importable and CUDA is available
 # ---------------------------------------------------------------------------
 

@@ -77,11 +77,35 @@ QWEN3_THINK_END_TOKEN_ID = 151668
 # All transforms are batch-aware: ``logits`` shape is (num_rows, vocab).
 
 
+def _restore_argmax_on_all_pruned(
+    mask: torch.Tensor, probs: torch.Tensor
+) -> torch.Tensor:
+    """Branchless argmax fallback for a fully-pruned row (in-place on ``mask``).
+
+    In exact arithmetic the pless thresholds never prune every token (the argmax
+    always satisfies Σpᵢ^α ≤ max pᵢ), but a float32 reduction over a large vocab
+    can push the threshold just above max(pᵢ) and mask the whole row. This
+    un-masks each all-pruned row's argmax so at least one token survives —
+    matching the HF guarded samplers (``bench/sampler_bridge.py``).
+
+    Written branchlessly (no ``.any()`` / ``.item()`` / Python ``if``) so it adds
+    no per-step CPU-GPU synchronization on vLLM's hot decode path.
+    """
+    all_pruned = mask.all(dim=-1, keepdim=True)            # (N, 1)
+    argmax_idx = probs.argmax(dim=-1, keepdim=True)        # (N, 1)
+    # Mask value at argmax becomes False iff the row was all-pruned; otherwise
+    # it keeps its current value (no-op for the common, non-degenerate case).
+    keep = mask.gather(-1, argmax_idx) & ~all_pruned
+    mask.scatter_(-1, argmax_idx, keep)
+    return mask
+
+
 def _pless_mask_logits(logits: torch.Tensor) -> torch.Tensor:
     """In-place: zero out (set to -inf) tokens below the p-less threshold."""
     probs = torch.softmax(logits.float(), dim=-1)
     p = probs.square().sum(dim=-1, keepdim=True)
     mask = probs < p
+    _restore_argmax_on_all_pruned(mask, probs)
     logits.masked_fill_(mask, float("-inf"))
     return logits
 
@@ -92,6 +116,7 @@ def _pless_norm_mask_logits(logits: torch.Tensor) -> torch.Tensor:
     v = probs.size(-1)
     p = (v * probs.square().sum(dim=-1, keepdim=True) - 1.0) / (v - 1.0)
     mask = probs < p
+    _restore_argmax_on_all_pruned(mask, probs)
     logits.masked_fill_(mask, float("-inf"))
     return logits
 
@@ -112,10 +137,7 @@ def _pless_alpha_mask_logits(logits: torch.Tensor, alpha: float) -> torch.Tensor
     else:
         threshold = probs.pow(alpha).sum(dim=-1, keepdim=True)
     mask = probs < threshold
-    all_pruned = mask.all(dim=-1)
-    if all_pruned.any():
-        fallback_idx = probs[all_pruned].argmax(dim=-1, keepdim=True)
-        mask[all_pruned] = mask[all_pruned].scatter(-1, fallback_idx, False)
+    _restore_argmax_on_all_pruned(mask, probs)
     logits.masked_fill_(mask, float("-inf"))
     return logits
 
@@ -177,7 +199,7 @@ def _build_pless_split_logits_processor_class() -> type:
 
     # Deferred imports — only loaded on first call.
     from vllm.sampling_params import SamplingParams  # noqa: F401  (used for type hints)
-    from vllm.v1.sample.logits_processor import LogitsProcessor
+    from vllm.v1.sample.logits_processor import LogitsProcessor, MoveDirectionality
 
     class PlessSplitLogitsProcessor(LogitsProcessor):
         """Pless / pless-norm / temp samplers + one-way think→code phase switch.
@@ -288,7 +310,10 @@ def _build_pless_split_logits_processor_class() -> type:
                     self._cfg[bdx] = a_cfg
                     self._out[bdx] = a_out  # type: ignore[assignment]
                     self._in_code[bdx] = a_code if a_code is not None else False
-                if direct == "swap" and b_cfg is not None:
+                # ``direct`` is a MoveDirectionality enum, NOT the string "swap".
+                # On a SWAP, B (the request now at adx) must keep its state too;
+                # comparing against "swap" silently dropped it.
+                if direct == MoveDirectionality.SWAP and b_cfg is not None:
                     self._cfg[adx] = b_cfg
                     self._out[adx] = b_out  # type: ignore[assignment]
                     self._in_code[adx] = b_code if b_code is not None else False
