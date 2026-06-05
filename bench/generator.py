@@ -390,13 +390,13 @@ def _expand_past_key_values(past_key_values, n: int):
     )
 
 
-# Uniform-mixing weight applied to probs before pless/pless_norm sampling.
-# The samplers claim "at least one token always satisfies the threshold" — true
-# mathematically (sum(p²) ≤ max(p) for any valid distribution) but false in float32:
-# GPU parallel reduction across 32256 vocab elements accumulates rounding errors that
-# can push the computed sum(p²) above max(p), zeroing all tokens → NaN → CUDA crash.
-# At α=1e-3, max_p changes by <0.1%, sampled tokens are always identical in practice.
-_PLESS_SMOOTH_ALPHA = 1e-3
+# NOTE: The float32 all-pruned → NaN → CUDA crash that pless/pless_norm could hit
+# (a parallel reduction pushing Σpᵢ² above max(pᵢ) at near-deterministic
+# positions) is handled inside the samplers themselves via an argmax fallback —
+# see bench/sampler_bridge.py:make_guarded_pless_sampler. The decode loop below
+# therefore passes the model's raw distribution straight to the sampler, with no
+# uniform smoothing, so pless/pless_norm match the authors' published method
+# byte-for-byte in the normal case.
 
 
 def _log_entropy_batch(
@@ -414,10 +414,10 @@ def _log_entropy_batch(
     distribution for each (currently-unfinished) sample at this step.
     No-op for samples whose ``finished`` flag is True.
 
-    ``probs`` has shape ``(N, vocab)`` and is the *raw, unsmoothed*
-    next-token distribution — i.e., before ``_PLESS_SMOOTH_ALPHA``
-    uniform-mixing is applied. We characterise the model's natural
-    output distribution, not the sampler's effective input.
+    ``probs`` has shape ``(N, vocab)`` and is the raw next-token
+    distribution — the same tensor handed to the sampler (the decode loop
+    passes a ``.clone()`` to the sampler so its in-place masking does not
+    corrupt this one). We characterise the model's natural output distribution.
     """
     sigma_p2 = probs.pow(2).sum(dim=-1)
     sigma_p3 = probs.pow(3).sum(dim=-1)
@@ -504,8 +504,8 @@ def generate_samples(
     if temperature != 1.0:
         logits = logits / temperature
     probs = torch.softmax(logits, dim=-1).unsqueeze(0).expand(N, -1).contiguous()  # (N, vocab)
-    probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
-    next_tokens = sampler_fn(probs_s)  # (N, 1)
+    # Clone: samplers mutate probs in-place; `probs` is reused below for entropy logging.
+    next_tokens = sampler_fn(probs.clone())  # (N, 1)
     next_tokens = next_tokens.view(N)  # (N,)
 
     # Log per-position entropy stats for step 0 if requested.
@@ -549,8 +549,8 @@ def generate_samples(
                 if temperature != 1.0:
                     logits = logits / temperature
                 probs = torch.softmax(logits, dim=-1)  # (N, vocab)
-                probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
-                next_tokens = sampler_fn(probs_s).view(N)  # (N,)
+                # Clone: samplers mutate probs in-place; `probs` is reused below for entropy logging.
+                next_tokens = sampler_fn(probs.clone()).view(N)  # (N,)
 
                 # Log per-position entropy BEFORE masking out finished samples.
                 # ``finished`` here reflects the previous step; samples that
@@ -670,8 +670,7 @@ def generate_samples_split(
     if temperature_think != 1.0:
         logits = logits / temperature_think
     probs = torch.softmax(logits, dim=-1).unsqueeze(0).expand(N, -1).contiguous()  # (N, vocab)
-    probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
-    next_tokens = sampler_fn_think(probs_s.clone()).view(N)
+    next_tokens = sampler_fn_think(probs.clone()).view(N)
 
     # Storage for generated token ids
     all_ids = torch.full((N, max_new_tokens), eos_id, dtype=torch.long, device=model.device)
@@ -710,7 +709,6 @@ def generate_samples_split(
                 logits = logits / temp_vec.unsqueeze(-1)
 
                 probs = torch.softmax(logits, dim=-1)  # (N, vocab)
-                probs_s = probs * (1.0 - _PLESS_SMOOTH_ALPHA) + (_PLESS_SMOOTH_ALPHA / probs.shape[-1])
 
                 # Split batch: apply appropriate sampler to each phase
                 next_tokens = torch.full((N,), eos_id, dtype=torch.long, device=model.device)
@@ -718,10 +716,10 @@ def generate_samples_split(
                 code_mask = ~inside_think & ~finished
                 if think_mask.any():
                     idx = think_mask.nonzero(as_tuple=True)[0]
-                    next_tokens[idx] = sampler_fn_think(probs_s[idx].clone()).view(-1)
+                    next_tokens[idx] = sampler_fn_think(probs[idx].clone()).view(-1)
                 if code_mask.any():
                     idx = code_mask.nonzero(as_tuple=True)[0]
-                    next_tokens[idx] = sampler_fn_code(probs_s[idx].clone()).view(-1)
+                    next_tokens[idx] = sampler_fn_code(probs[idx].clone()).view(-1)
 
                 # Write tokens for unfinished sequences
                 next_tokens = torch.where(finished, torch.tensor(eos_id, device=model.device), next_tokens)

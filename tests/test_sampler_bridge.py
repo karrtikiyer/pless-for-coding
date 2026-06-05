@@ -2,7 +2,26 @@
 
 import torch
 
-from bench.sampler_bridge import SAMPLERS, make_pless_post_temp_sampler
+from bench.sampler_bridge import (
+    SAMPLERS,
+    SPLIT_SAMPLERS,
+    make_guarded_pless_norm_sampler,
+    make_guarded_pless_sampler,
+    make_pless_post_temp_sampler,
+    p_less_decode,
+    p_less_norm_decode,
+)
+
+
+def _all_pruned_row(k: int = 8) -> torch.Tensor:
+    """A row that forces the degenerate all-pruned condition (Σpᵢ² > max(pᵢ)).
+
+    Impossible for a *normalized* distribution in exact arithmetic — this
+    un-normalized row stands in for the float32 case the guard defends against
+    (a parallel reduction computing Σpᵢ² slightly above max(pᵢ)). With every
+    entry = 0.5 and k ≥ 3, Σpᵢ² = 0.25k > 0.5 = max, so `probs < Σpᵢ²` holds for
+    every token. argmax is index 0 (first maximal element)."""
+    return torch.full((1, k), 0.5)
 
 
 def _make_probs(batch_size: int = 2, vocab_size: int = 100) -> torch.Tensor:
@@ -115,3 +134,65 @@ def test_post_temp_preserves_zero_mask():
 
     # All tokens that were below threshold should still be zero
     assert (probs_copy[should_be_zero] == 0.0).all()
+
+
+# ---------------------------------------------------------------------------
+# Crash-guard tests (argmax fallback on the degenerate all-pruned row)
+# ---------------------------------------------------------------------------
+
+
+def test_guarded_pless_never_nan_all_pruned():
+    """On a row where Σpᵢ² > max(pᵢ) (the float32 crash regime), the guarded
+    pless / pless_norm / post_temp samplers must return the argmax token and
+    never NaN — instead of the unmodified authors' code, which would divide by
+    zero (sum of an all-pruned row) and crash torch.multinomial."""
+    k = 8
+    argmax_idx = 0  # full(0.5): first maximal element
+    for name, fn in [
+        ("pless", make_guarded_pless_sampler()),
+        ("pless_norm", make_guarded_pless_norm_sampler()),
+        ("post_temp", make_pless_post_temp_sampler(2.0)),
+    ]:
+        tok = fn(_all_pruned_row(k))
+        assert tok.shape == (1, 1), name
+        assert tok.dtype == torch.long, name
+        assert not torch.isnan(tok.float()).any(), name
+        assert int(tok.item()) == argmax_idx, f"{name}: expected argmax fallback"
+        assert 0 <= int(tok.item()) < k, name
+
+
+def test_guarded_pless_byte_matches_authors_on_normal_dist():
+    """On a normal peaked distribution no row is fully pruned, so the guard is a
+    no-op and the guarded sampler is byte-identical to the authors' function:
+    same seed → same multinomial draw → identical token."""
+    probs = _make_probs(batch_size=8, vocab_size=500)
+
+    # Guard branch must never trigger on a normal distribution.
+    thr = probs.square().sum(dim=-1, keepdim=True)
+    assert not (probs < thr).all(dim=-1).any()
+    v = probs.size(-1)
+    thr_norm = (v * probs.square().sum(dim=-1, keepdim=True) - 1.0) / (v - 1.0)
+    assert not (probs < thr_norm).all(dim=-1).any()
+
+    torch.manual_seed(123)
+    t_guarded = make_guarded_pless_sampler()(probs.clone())
+    torch.manual_seed(123)
+    t_authors = p_less_decode(probs.clone())
+    assert torch.equal(t_guarded, t_authors)
+
+    torch.manual_seed(7)
+    tn_guarded = make_guarded_pless_norm_sampler()(probs.clone())
+    torch.manual_seed(7)
+    tn_authors = p_less_norm_decode(probs.clone())
+    assert torch.equal(tn_guarded, tn_authors)
+
+
+def test_split_samplers_pless_guarded():
+    """SPLIT_SAMPLERS pless / pless_norm route through the guarded wrappers:
+    callable, in-range, and crash-safe on the degenerate row."""
+    k = 8
+    for key in ("pless", "pless_norm"):
+        tok = SPLIT_SAMPLERS[key](_all_pruned_row(k))
+        assert tok.shape == (1, 1), key
+        assert int(tok.item()) == 0, key  # argmax fallback
+        assert 0 <= int(tok.item()) < k, key

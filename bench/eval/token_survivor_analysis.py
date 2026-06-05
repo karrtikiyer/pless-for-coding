@@ -20,7 +20,6 @@ import argparse
 import json
 import math
 import random
-import sys
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -30,18 +29,10 @@ from datasets import load_dataset
 from tqdm import tqdm
 
 # ---------------------------------------------------------------------------
-# Import p-less sampler via sys.path (same trick as bench/sampler_bridge.py)
-# ---------------------------------------------------------------------------
-_pless_dir = str(Path(__file__).resolve().parent.parent.parent / "p-less")
-if _pless_dir not in sys.path:
-    sys.path.insert(0, _pless_dir)
-
-from p_less_samplers import p_less_decode  # noqa: E402
-
-# ---------------------------------------------------------------------------
 # Project imports
 # ---------------------------------------------------------------------------
 from bench.generator import generate_samples, load_model_and_tokenizer  # noqa: E402
+from bench.sampler_bridge import make_guarded_pless_sampler  # noqa: E402
 from bench.prompts import (  # noqa: E402
     format_prompt_base_bigcode,
     format_prompt_instruct,
@@ -51,9 +42,6 @@ from bench.prompts import (  # noqa: E402
 # Stop sequences for base models using bigcode prompt style.
 # Duplicated from bench/runner.py:22 to avoid pulling in the full runner.
 MBPP_BIGCODE_STOP_SEQUENCES = ["\nassert", "\nclass", "\nprint", '\n"""', "\nif __name__"]
-
-# Smoothing constant — must match bench/generator.py:323
-_PLESS_SMOOTH_ALPHA = 1e-3
 
 
 # ── StepCollector ─────────────────────────────────────────────────────────
@@ -240,25 +228,27 @@ def make_instrumented_pless_sampler(collector: StepCollector):
     """Return a sampler_fn compatible with ``generate_samples``.
 
     The wrapper:
-    1. Clones probs BEFORE ``p_less_decode`` mutates them in-place.
+    1. Clones probs BEFORE the sampler mutates them in-place.
     2. Computes threshold and survivor mask on the clone.
-    3. Delegates to the real ``p_less_decode(probs)`` for actual sampling.
+    3. Delegates to the crash-guarded pless sampler for actual sampling.
     4. Records per-sample statistics in the collector.
     """
+    guarded_pless = make_guarded_pless_sampler()
 
     def sampler(probs: torch.Tensor) -> torch.Tensor:
-        # probs: (N, vocab) — may already have smoothing applied by generator
+        # probs: (N, vocab) — the raw model distribution (generator no longer smooths)
         N = probs.shape[0]
 
-        # Clone BEFORE p_less_decode modifies in-place
+        # Clone BEFORE the sampler modifies in-place
         pre_probs = probs.clone()
 
         # Compute threshold and mask (mirrors p_less_samplers.py:25-26)
         threshold = pre_probs.square().sum(dim=-1, keepdim=True)  # (N, 1)
         survivor_mask = pre_probs >= threshold  # (N, vocab)
 
-        # Delegate to real sampler
-        next_tokens = p_less_decode(probs)  # (N, 1) — probs mutated in-place
+        # Delegate to the crash-guarded sampler (byte-identical to p_less_decode
+        # in the normal case; argmax fallback on the degenerate all-pruned row).
+        next_tokens = guarded_pless(probs)  # (N, 1) — probs mutated in-place
 
         # Record per-sample statistics
         chosen_flat = next_tokens.view(N)
