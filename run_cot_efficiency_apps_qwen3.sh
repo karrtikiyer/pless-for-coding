@@ -40,7 +40,9 @@
 #   CALIB_BUDGET, N_SAMPLES, TOKENIZER, GPUS, BACKEND (hf|vllm), VLLM_VENV,
 #   WORKERS (eval parallelism, default 32), KEEP_DIVERSITY=1 (compute the O(n^2)
 #   diversity metrics; off by default since this study doesn't use them),
-#   DELTA_PROBLEMS, DELTA_SAMPLES, ONLY (single config key:
+#   HF_BATCH_SIZE (HF backend only: split n_samples into per-generate() chunks of
+#   this size to cap KV-cache memory; unset => bench.apps default of 10; no effect
+#   on vLLM), DELTA_PROBLEMS, DELTA_SAMPLES, ONLY (single config key:
 #   temp|topk|topp|combined|pless|pless_norm).
 
 set -euo pipefail
@@ -102,6 +104,7 @@ gen() {
       --n-samples "$nsamp" --max-new-tokens "$budget" \
       --max-problems "$maxprob" \
       --results-dir "$RESULTS_DIR" \
+      ${HF_BATCH_SIZE:+--hf-batch-size $HF_BATCH_SIZE} \
       "$@"
   fi
 }
