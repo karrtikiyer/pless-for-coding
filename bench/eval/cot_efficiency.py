@@ -180,6 +180,10 @@ def aggregate_rows(rows):
         "malformed_rate": sum(r["malformed"] for r in rows) / n,
         "near_cap_rate": sum(r["near_cap"] for r in rows) / n,
         "conditional_correctness": cond_acc,
+        # Coherence residual: passing samples NOT classed completed (a truncated
+        # trace can still contain a code block that passes). Nonzero => pass@1
+        # slightly exceeds compl%×cond. Reported in the coherence audit.
+        "passed_not_completed": sum(1 for r in rows if r["passed"] and not r["completed"]),
         "mean_think_tokens": _mean(tok_all),
         "median_think_tokens": _median(tok_all),
         "p90_think_tokens": _p90(tok_all),
@@ -269,6 +273,7 @@ def config_meta(record: dict, jsonl_path: Path, dataset="mbpp",
             "top_k": top_k,
             "alpha": alpha,
             "label": label,
+            "model": record.get("model"),
             "source": record.get("source"),
             "difficulty": record.get("difficulty"),
             "max_tokens": max_tokens_override,
@@ -300,6 +305,7 @@ def config_meta(record: dict, jsonl_path: Path, dataset="mbpp",
 
     return {
         "file": jsonl_path.name,
+        "model": record.get("model"),
         "method": method,
         "sampler_think": sampler_think,
         "temp_think": temp_think,
@@ -456,14 +462,24 @@ def _fmt(v, nd=4):
     return str(v)
 
 
-def write_report(configs: list[dict], dataset: str, path: Path) -> None:
+def _model_label(configs: list[dict]) -> str:
+    """Model name for report/plot titles — taken from the data, not hardcoded."""
+    for c in configs:
+        if c.get("model"):
+            return c["model"]
+    return "model"
+
+
+def write_report(configs: list[dict], dataset: str, path: Path,
+                 tokenizer_label: str = "tokenizer") -> None:
     pareto = [c for c in configs if c["max_tokens"] == PARETO_BUDGET]
+    model = _model_label(configs)
     lines = [
-        f"# CoT Token-Efficiency vs Accuracy — Qwen3-8B / {dataset.upper()}\n",
+        f"# CoT Token-Efficiency vs Accuracy — {model} / {dataset.upper()}\n",
         f"**Date:** {date.today().isoformat()}  ",
         f"**Configs analyzed:** {len(configs)} "
         f"({len(pareto)} at the {PARETO_BUDGET}-token budget used for the frontier)\n",
-        "Think length is measured in **tokens** (Qwen3 tokenizer). Efficiency is "
+        f"Think length is measured in **tokens** (`{tokenizer_label}`). Efficiency is "
         "decomposed per arXiv:2602.09805 into completion rate, conditional correctness "
         "(pass rate among completed samples), and think length.\n",
         # ── Grounded column definitions (computed in bench/eval/cot_efficiency.py
@@ -508,9 +524,12 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
         "- **cov@0.3 / cov@0.5** (CSV) — % of problems with ≥30% / ≥50% of their "
         "samples correct (`num_correct ≥ t·n`).",
         "\n**Coherence checks (should hold every run):**",
-        "- `pass@1 == compl% × cond-correctness` *exactly* per row — confirms every passing "
-        "sample is also classed completed (no passing sample lost to "
-        "truncated/malformed) and the decomposition is self-consistent.",
+        "- `pass@1 ≈ compl% × cond-correctness` per row, with residual = "
+        "`#(passed but NOT completed) / n`. Passing requires extracted code that "
+        "passes the tests, which *usually* implies a closed `</think>` — but a "
+        "**truncated** trace can still contain a passing code block, and such samples "
+        "count in pass@1 yet not in `completed`. So pass@1 can slightly EXCEED "
+        "compl%×cond; the residual is audited per-config below (0 = identity holds exactly).",
         "- `pass@10 ≥ pass@5 ≥ pass@1` per row (monotone in k).",
         "\n**No single length stat is clean under differing truncation — each is "
         "biased a different way:** `mean think tok` = avg tokens *spent* (counts "
@@ -538,6 +557,23 @@ def write_report(configs: list[dict], dataset: str, path: Path) -> None:
             f"| {_fmt(c.get('median_think_tokens'), 0)} "
             f"| {_fmt(c.get('median_think_tokens_completed'), 0)} "
             f"| {_fmt(c.get('pass@1'))} | {_fmt(c.get('pass@10'))} |"
+        )
+
+    # Coherence audit: per-config count of passing-but-not-completed (truncated)
+    # samples — the residual in `pass@1 ≈ compl% × cond-correctness`.
+    leaks = [(config_label(c), c.get("passed_not_completed") or 0) for c in configs]
+    nonzero = [f"{lbl} ({k})" for lbl, k in leaks if k]
+    if nonzero:
+        lines.append(
+            "\n**Coherence audit** — configs where a passing sample was truncated "
+            "(counted in pass@1 but not `completed`, so pass@1 > compl%×cond by that "
+            f"many samples / n): {', '.join(nonzero)}. All other configs: residual 0 "
+            "(identity exact)."
+        )
+    else:
+        lines.append(
+            "\n**Coherence audit** — `pass@1 == compl% × cond-correctness` exactly for "
+            "every config (no passing sample was truncated)."
         )
 
     lines += [
@@ -584,6 +620,7 @@ def make_plots(configs: list[dict], dataset: str, fig_dir: Path) -> None:
     from matplotlib.lines import Line2D
 
     fig_dir.mkdir(parents=True, exist_ok=True)
+    model = _model_label(configs)
     pareto = [c for c in configs
               if c["max_tokens"] == PARETO_BUDGET
               and c.get("mean_think_tokens") is not None]
@@ -615,7 +652,7 @@ def make_plots(configs: list[dict], dataset: str, fig_dir: Path) -> None:
         # points show position directly; non-dominance is in the report table.
         ax.set_xlabel("median think tokens (all samples)  —  marker size ∝ truncation %")
         ax.set_ylabel(metric)
-        ax.set_title(f"CoT length vs {metric} — Qwen3-8B / {dataset.upper()} "
+        ax.set_title(f"CoT length vs {metric} — {model} / {dataset.upper()} "
                      f"({PARETO_BUDGET}-tok budget)")
         ax.grid(True, alpha=0.3)
         ax.set_axisbelow(True)
@@ -650,7 +687,7 @@ def make_plots(configs: list[dict], dataset: str, fig_dir: Path) -> None:
         ax.set_xticks(range(1, len(samplers) + 1))
         ax.set_xticklabels(samplers, rotation=20, ha="right")
         ax.set_ylabel("think length (tokens, ALL samples; truncated pinned at cap)")
-        ax.set_title(f"Think-length distribution by sampler — Qwen3-8B / {dataset.upper()}")
+        ax.set_title(f"Think-length distribution by sampler — {model} / {dataset.upper()}")
         ax.grid(True, axis="y", alpha=0.3)
         fig.tight_layout()
         fig.savefig(fig_dir / "cot_think_length_dist.png", dpi=150, bbox_inches="tight")
@@ -768,7 +805,8 @@ def main() -> None:
     csv_path = out_dir / f"cot_efficiency_{args.dataset}.csv"
     report_path = out_dir / f"cot_efficiency_{args.dataset}_report.md"
     write_csv(configs, csv_path)
-    write_report(configs, args.dataset, report_path)
+    tok_label = "char counts (--no-tokens)" if args.no_tokens else args.tokenizer
+    write_report(configs, args.dataset, report_path, tokenizer_label=tok_label)
     make_plots(configs, args.dataset, out_dir / "figures")
     print(f"\nCSV:    {csv_path}")
     print(f"Report: {report_path}")
