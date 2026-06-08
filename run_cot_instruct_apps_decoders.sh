@@ -28,6 +28,9 @@
 #   MAX_NEW_TOKENS  token budget incl. CoT (default: 8192)
 #   RESULTS_DIR     output root (default: results/pless_cot_efficiency_instruct)
 #   BACKEND         hf | vllm (default: hf; use vllm on a CUDA pod)
+#   VLLM_VENV       vLLM venv root, used when BACKEND=vllm (default: .venv-vllm)
+#   VLLM_USE_FLASHINFER_SAMPLER  default 0 (off) — avoids the ninja/FlashInfer
+#                   JIT crash on the top_p/top_k arms; export 1 to re-enable
 #   REP_PENALTY     provider rep penalty for arm A (default: auto from MODEL)
 #   CONFIGS         comma-separated subset (default: PLESS,PNORM,A,B,C)
 #   ONLY            run a single config (e.g. ONLY=A)
@@ -43,6 +46,13 @@ MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-8192}"
 RESULTS_DIR="${RESULTS_DIR:-results/pless_cot_efficiency_instruct}"
 BACKEND="${BACKEND:-hf}"
 CONFIGS="${CONFIGS:-PLESS,PNORM,A,B,C}"
+VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
+
+# FlashInfer's top-k/top-p sampler JIT-compiles a CUDA kernel via `ninja`; if
+# ninja is absent it crashes vLLM at startup with FileNotFoundError. Arms A
+# (top_p+top_k) and B (top_p) hit exactly that path, so force it off (same as
+# run_apps_deepseek_*.sh). Harmless under --backend hf. Override by exporting it.
+export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
 
 # Provider rep_penalty (arm A): from each model's shipped generation_config.json.
 if [ -z "${REP_PENALTY:-}" ]; then
@@ -50,6 +60,24 @@ if [ -z "${REP_PENALTY:-}" ]; then
     *3B*) REP_PENALTY=1.05 ;;
     *)    REP_PENALTY=1.1  ;;
   esac
+fi
+
+# Pick the interpreter by backend: vLLM needs the parallel .venv-vllm (no vLLM
+# wheels on Mac); hf runs under the default uv venv (incl. local MPS smokes).
+if [ "$BACKEND" = "vllm" ]; then
+  if [ ! -x "$VLLM_VENV/bin/python" ]; then
+    echo "Error: vLLM venv not found at $VLLM_VENV (set VLLM_VENV). Bootstrap:" >&2
+    echo "  uv venv $VLLM_VENV --python 3.12" >&2
+    echo "  UV_PROJECT_ENVIRONMENT=$VLLM_VENV uv sync --project pyproject-vllm.toml" >&2
+    exit 2
+  fi
+  if ! "$VLLM_VENV/bin/python" -c "import vllm" 2>/dev/null; then
+    echo "Error: 'import vllm' failed inside $VLLM_VENV — re-sync from pyproject-vllm.toml." >&2
+    exit 3
+  fi
+  PYBIN=("$VLLM_VENV/bin/python")
+else
+  PYBIN=(uv run python)
 fi
 
 MAX_PROBLEMS_FLAG=""
@@ -62,7 +90,7 @@ run_one() {
   echo
   echo "──── $cfg : $MODEL on $SOURCE/$DIFFICULTY (backend=$BACKEND) ────"
   PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}" \
-  uv run python -m bench.apps \
+  "${PYBIN[@]}" -m bench.apps \
     --model "$MODEL" \
     --source "$SOURCE" --difficulty "$DIFFICULTY" \
     --prompt-format cot-prefill \
