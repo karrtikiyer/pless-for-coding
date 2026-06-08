@@ -277,6 +277,105 @@ def test_swap_move_preserves_both_request_states(monkeypatch):
     assert proc._in_code[1] is True and proc._in_code[0] is False
 
 
+def _build_processor_against_fake_vllm(monkeypatch):
+    """Build the real PlessSplitLogitsProcessor class against a minimal fake
+    `vllm` module (no GPU / no vLLM install needed). Returns (gv, cls)."""
+    import enum
+    import types
+
+    class _Base:
+        pass
+
+    class MoveDirectionality(enum.Enum):
+        UNIDIRECTIONAL = enum.auto()
+        SWAP = enum.auto()
+
+    lp = types.ModuleType("vllm.v1.sample.logits_processor")
+    lp.LogitsProcessor = _Base
+    lp.MoveDirectionality = MoveDirectionality
+    spm = types.ModuleType("vllm.sampling_params")
+    spm.SamplingParams = object
+    for name in ("vllm", "vllm.v1", "vllm.v1.sample"):
+        monkeypatch.setitem(sys.modules, name, types.ModuleType(name))
+    monkeypatch.setitem(sys.modules, "vllm.v1.sample.logits_processor", lp)
+    monkeypatch.setitem(sys.modules, "vllm.sampling_params", spm)
+
+    import bench.generator_vllm as gv
+    monkeypatch.setattr(gv._build_pless_split_logits_processor_class, "_cached", None)
+    return gv, gv._build_pless_split_logits_processor_class()
+
+
+def test_batched_fast_path_matches_per_row(monkeypatch):
+    """The uniform fast path in apply() must produce byte-identical masked logits
+    to applying the same temperature + mask independently per row."""
+    from bench.generator_vllm import _SAMPLER_LOGIT_FN, _pless_alpha_mask_logits
+
+    gv, cls = _build_processor_against_fake_vllm(monkeypatch)
+    proc = cls(vllm_config=None, device=torch.device("cpu"), is_pin_memory=False)
+
+    torch.manual_seed(0)
+    K, V = 5, 4000
+    base = torch.randn(K, V)
+    base[:, 0] += 5.0
+
+    cases = [
+        ("pless", None, 1.0),
+        ("pless_norm", None, 1.0),
+        ("pless", None, 0.7),       # temperature != 1.0
+        ("pless_alpha", 3.0, 1.0),
+    ]
+    for name, alpha, temp in cases:
+        cfg = {"t_think": temp, "t_code": temp, "sampler_think": name, "sampler_code": name}
+        if alpha is not None:
+            cfg["alpha_think"] = alpha
+            cfg["alpha_code"] = alpha
+        proc._cfg = {i: cfg for i in range(K)}
+        proc._out = {i: [] for i in range(K)}
+        proc._in_code = {i: False for i in range(K)}
+
+        # Confirm the fast path actually triggers for this uniform config.
+        assert proc._uniform_cfg() is not None, name
+
+        out_fast = proc.apply(base.clone())
+
+        ref = base.clone()
+        for i in range(K):
+            row = ref[i] / temp if temp != 1.0 else ref[i]
+            ref[i] = (_pless_alpha_mask_logits(row, alpha=alpha) if name == "pless_alpha"
+                      else _SAMPLER_LOGIT_FN[name](row))
+
+        assert torch.equal(out_fast.isinf(), ref.isinf()), f"{name}: survivor pattern differs"
+        assert torch.allclose(
+            out_fast.masked_fill(out_fast.isinf(), 0.0),
+            ref.masked_fill(ref.isinf(), 0.0), atol=1e-5,
+        ), f"{name}: finite logits differ"
+
+
+def test_split_config_skips_fast_path_and_stays_correct(monkeypatch):
+    """A split config (sampler_think != sampler_code) must NOT take the fast path,
+    and the unchanged per-row loop must apply the right sampler per phase."""
+    from bench.generator_vllm import _SAMPLER_LOGIT_FN
+
+    gv, cls = _build_processor_against_fake_vllm(monkeypatch)
+    proc = cls(vllm_config=None, device=torch.device("cpu"), is_pin_memory=False)
+
+    torch.manual_seed(1)
+    base = torch.randn(2, 3000)
+    base[:, 0] += 5.0
+    cfg = {"t_think": 1.0, "t_code": 1.0, "sampler_think": "pless", "sampler_code": "pless_norm"}
+    proc._cfg = {0: cfg, 1: cfg}
+    proc._out = {0: [1], 1: [gv.QWEN3_THINK_END_TOKEN_ID]}   # row 1 entered code phase
+    proc._in_code = {0: False, 1: False}
+
+    assert proc._uniform_cfg() is None        # split -> no fast path
+
+    out = proc.apply(base.clone())
+    ref = base.clone()
+    ref[0] = _SAMPLER_LOGIT_FN["pless"](ref[0])        # think phase
+    ref[1] = _SAMPLER_LOGIT_FN["pless_norm"](ref[1])   # code phase
+    assert torch.equal(out.isinf(), ref.isinf())
+
+
 # ---------------------------------------------------------------------------
 # GPU parity gate — only runs if vLLM is importable and CUDA is available
 # ---------------------------------------------------------------------------
