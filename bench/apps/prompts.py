@@ -119,6 +119,85 @@ def format_prompt_apps_bigcode_chat(
     return wrapped, ""
 
 
+def _user_message_cot(problem: AppsProblem) -> str:
+    """User message for the induced-CoT (``<think>`` prefill) prompt.
+
+    Unlike :func:`_user_message`, this asks the model to *reason first* and then
+    emit the program. Crucially it instructs the model to **close** the reasoning
+    block with ``</think>`` but does NOT ask it to *open* one — the opening
+    ``<think>`` is supplied by the prefill in
+    :func:`format_prompt_apps_cot_prefill` (asking for it again risks a doubled
+    ``<think><think>``). The closing-tag instruction is load-bearing: everything
+    downstream (``cot_efficiency.extract_think_span`` →
+    ``generator._strip_think_content``) keys on the literal ``</think>`` string.
+    """
+    parts = [
+        "Solve the following programming problem in Python. The program must "
+        "read input from standard input and write its answer to standard "
+        "output.",
+        "",
+        "First reason through your approach: identify the algorithm, the input "
+        "format, and the edge cases. When your reasoning is complete, write "
+        "</think> on its own line, then provide the complete Python program as "
+        "a single ```python ... ``` code block and nothing after it.",
+        "",
+        "Problem:",
+        problem.question.strip(),
+    ]
+    if problem.starter_code.strip():
+        parts += [
+            "",
+            "Starter code (use this as your starting point):",
+            "```python",
+            problem.starter_code.strip(),
+            "```",
+        ]
+    return "\n".join(parts)
+
+
+def format_prompt_apps_cot_prefill(
+    problem: AppsProblem,
+    tokenizer,
+) -> tuple[str, str]:
+    """Induce a chain-of-thought from an *instruct* (non-reasoning) model via a
+    ``<think>`` prefill, DeepSeek-R1-Distill style.
+
+    The rendered chat prompt ends with ``<think>\\n`` so generation starts
+    *mid-reasoning* — the model never decides whether to open a reasoning block,
+    it is already inside one. The user message (see :func:`_user_message_cot`)
+    tells it to close with ``</think>`` then write the program.
+
+    This mirrors how R1-Distill emits CoT (opening tag in the prompt, only the
+    closing ``</think>`` in the output), so the repo's text-based CoT machinery
+    reuses with zero changes:
+      * ``cot_efficiency.extract_think_span`` — ``start == -1`` branch.
+      * ``generator._strip_think_content`` — returns text after the last
+        ``</think>``.
+
+    Returns ``(prompt, code_prefix)``; ``code_prefix`` is always ``""``.
+
+    Only the modern string-template path is supported — old-Qwen tokenizers
+    (the ``_qwen_direct_tokenize`` flag) are not used by the instruct models
+    this mode targets, and a token-id prefill would need different handling.
+    """
+    if getattr(tokenizer, "_qwen_direct_tokenize", False):
+        raise NotImplementedError(
+            "cot-prefill prompt format does not support the old-Qwen "
+            "tokenize-direct path (string prefill only)."
+        )
+    messages = [
+        {"role": "system",
+         "content": "You are an expert competitive programmer. Reason "
+                    "carefully before writing code."},
+        {"role": "user", "content": _user_message_cot(problem)},
+    ]
+    prompt = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True,
+    )
+    prompt += "<think>\n"
+    return prompt, ""
+
+
 def format_prompt_apps_instruct(
     problem: AppsProblem,
     tokenizer,

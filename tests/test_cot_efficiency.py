@@ -14,6 +14,7 @@ from bench.eval.cot_efficiency import (
     build_sample_rows,
     config_meta,
     extract_think_span,
+    extract_think_span_fence,
     measure_lengths,
 )
 
@@ -56,6 +57,59 @@ def test_extract_think_span_r1_distill_truncated():
     think, closed = extract_think_span(swt)
     assert think == swt
     assert closed is False
+
+
+# ── extract_think_span_fence (code-fence delimiter) ─────────────────────────
+# For instruct (non-reasoning) models induced into CoT, </think> emits
+# unreliably (~53% on Qwen2.5-Coder). The ```python fence is 100% reliable, so
+# the fence delimits "reasoning before code". closed == a code fence is present.
+
+def test_fence_span_instruct_no_think_tag():
+    # Native instruct format: markdown analysis then a ```python fence, NO tag.
+    swt = "### Analysis\nwe loop over n\n```python\nx = 1\n```"
+    think, closed = extract_think_span_fence(swt)
+    assert think.strip() == "### Analysis\nwe loop over n"
+    assert closed is True
+
+
+def test_fence_span_strips_trailing_think_tag():
+    # When the model DID emit </think> before the fence, it shouldn't inflate
+    # the think text.
+    swt = "reasoning here</think>\n```python\nx = 1\n```"
+    think, closed = extract_think_span_fence(swt)
+    assert think.strip() == "reasoning here"
+    assert "</think>" not in think
+    assert closed is True
+
+
+def test_fence_span_generic_fence():
+    swt = "thinking\n```\nx = 1\n```"
+    think, closed = extract_think_span_fence(swt)
+    assert think.strip() == "thinking"
+    assert closed is True
+
+
+def test_fence_span_no_fence_is_truncated():
+    # No code fence at all => rambled without producing code => truncated.
+    swt = "reasoning that never produced any code block"
+    think, closed = extract_think_span_fence(swt)
+    assert think == swt
+    assert closed is False
+
+
+# ── build_sample_rows with delimiter="fence" ────────────────────────────────
+
+def test_build_sample_rows_fence_delimiter():
+    records = [_record(1,
+                       ["### plan\nstep\n```python\nok\n```",   # has fence
+                        "reasoning, no code fence here"],         # no fence
+                       ["ok", ""])]
+    metrics = _metrics([{"task_id": 1, "num_correct": 1,
+                         "pass_results": [True, False]}])
+    rows = build_sample_rows(records, metrics, _StubTokenizer(),
+                             max_tokens=8192, delimiter="fence")
+    assert rows[0]["completed"] is True and rows[0]["truncated"] is False
+    assert rows[1]["truncated"] is True and rows[1]["completed"] is False
 
 
 # ── measure_lengths ─────────────────────────────────────────────────────────

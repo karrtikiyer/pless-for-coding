@@ -624,6 +624,7 @@ def generate_samples_standard_vllm(
     stop_strings: list[str] | None = None,
     top_p: float = 1.0,
     top_k: int = 0,
+    repetition_penalty: float = 1.0,
 ) -> list[str]:
     """vLLM-backed standard temperature / top-p / top-k sampling. No custom processor.
 
@@ -637,6 +638,7 @@ def generate_samples_standard_vllm(
         temperature=temperature,
         top_p=top_p,
         top_k=top_k if top_k > 0 else -1,
+        repetition_penalty=repetition_penalty,
         stop=stop_strings or None,
     )
 

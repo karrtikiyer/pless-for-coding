@@ -80,6 +80,36 @@ def extract_think_span(swt: str) -> tuple[str, bool]:
     return (swt[start:end] if end != -1 else swt[start:]), closed
 
 
+def extract_think_span_fence(swt: str) -> tuple[str, bool]:
+    """Return (think_text, closed) using the ```` ``` ```` code fence as delimiter.
+
+    For *instruct* (non-reasoning) models induced into CoT via a ``<think>``
+    prefill, the ``</think>`` terminator emits unreliably (~53% on
+    Qwen2.5-Coder-7B-Instruct) — but the model still produces a code fence ~100%
+    of the time. So the fence is a far more robust delimiter for "reasoning
+    before code":
+
+      * ``think_text`` = everything before the first ```` ``` ```` fence (a
+        trailing ``</think>`` tag, if the model did emit one, is stripped so it
+        doesn't inflate the span).
+      * ``closed`` = a code fence is present (i.e. reasoning terminated and code
+        began). No fence at all => the model rambled without producing code =>
+        ``closed=False`` (the fence-delimiter analogue of truncation).
+
+    Mirrors :func:`extract_think_span`'s ``(text, closed)`` contract so it is a
+    drop-in alternative in :func:`build_sample_rows` via ``delimiter="fence"``.
+    """
+    swt = str(swt)
+    end = swt.find("```")
+    closed = end != -1
+    think = swt[:end] if closed else swt
+    # Drop a trailing </think> the model may have emitted just before the fence.
+    tag = think.rfind("</think>")
+    if tag != -1:
+        think = think[:tag]
+    return think, closed
+
+
 def measure_lengths(text: str, tokenizer) -> tuple[int | None, int]:
     """Return (n_tokens, n_chars). n_tokens is None when no tokenizer is given."""
     n_chars = len(text)
@@ -91,21 +121,30 @@ def measure_lengths(text: str, tokenizer) -> tuple[int | None, int]:
 
 # ── per-sample rows (join + classification) ─────────────────────────────────
 
-def build_sample_rows(records, metrics, tokenizer, max_tokens, has_code_by_task=None):
+def build_sample_rows(records, metrics, tokenizer, max_tokens,
+                      has_code_by_task=None, delimiter="think"):
     """Join each samples_with_thinking[i] to its pass/fail label and classify it.
 
     Classification (mutually exclusive, primary signal = `closed`):
-      - truncated : not closed (think phase hit the cap before `</think>`)
+      - truncated : not closed (think phase hit the cap before the delimiter)
       - completed : closed and produced code
       - malformed : closed but no extractable code
     `near_cap` is a secondary diagnostic (tokens >= NEAR_CAP_FRAC * max_tokens),
     reported separately — not merged into the truncation count.
+
+    `delimiter` selects how the think span and `closed` are derived:
+      - "think" (default) : `</think>` terminator — for native reasoning models
+        (Qwen3, DeepSeek-R1-Distill). Unchanged legacy behavior.
+      - "fence"           : first ```` ``` ```` code fence — for instruct models
+        induced into CoT, where `</think>` emits unreliably (~53%) but a code
+        fence is ~always present. See :func:`extract_think_span_fence`.
 
     `has_code_by_task` (optional {task_id: [bool]}) overrides the code-presence
     check — used for APPS, where the metrics `extraction_success` list is the
     authoritative signal the executor itself used (the APPS extractor is far
     more involved than `strip_code_fences`).
     """
+    extract = extract_think_span_fence if delimiter == "fence" else extract_think_span
     pass_by_task = {pt["task_id"]: pt["pass_results"] for pt in metrics["per_task"]}
     rows = []
     for rec in records:
@@ -123,7 +162,7 @@ def build_sample_rows(records, metrics, tokenizer, max_tokens, has_code_by_task=
             )
         code_flags = has_code_by_task.get(tid) if has_code_by_task else None
         for i, swt in enumerate(swt_list):
-            think, closed = extract_think_span(swt)
+            think, closed = extract(swt)
             n_tok, n_chars = measure_lengths(think, tokenizer)
             if code_flags is not None:
                 has_code = bool(code_flags[i])
@@ -331,8 +370,14 @@ def task_results_from_metrics(metrics: dict) -> list[dict]:
 
 
 def analyze_config(jsonl_path: Path, metrics_path: Path, tokenizer,
-                   dataset="mbpp", max_tokens=None) -> dict | None:
-    """Build the full per-config row (metadata + accuracy + efficiency)."""
+                   dataset="mbpp", max_tokens=None, delimiter="think") -> dict | None:
+    """Build the full per-config row (metadata + accuracy + efficiency).
+
+    `delimiter` selects the think-span boundary (see :func:`build_sample_rows`):
+    "think" (default, `</think>` — native reasoning models) or "fence" (first
+    ```` ``` ```` — instruct models induced into CoT, where `</think>` emits
+    unreliably).
+    """
     if not metrics_path.exists():
         print(f"  SKIP {jsonl_path.name}: no metrics JSON "
               f"(run `python -m bench.eval` first)")
@@ -370,10 +415,10 @@ def analyze_config(jsonl_path: Path, metrics_path: Path, tokenizer,
         } or None
 
     rows = build_sample_rows(records, metrics, tokenizer, meta["max_tokens"],
-                             has_code_by_task=has_code_by_task)
+                             has_code_by_task=has_code_by_task, delimiter=delimiter)
     agg = aggregate_rows(rows)
 
-    out = {**meta, "n_tasks": len(task_results), **agg}
+    out = {**meta, "think_delimiter": delimiter, "n_tasks": len(task_results), **agg}
     for k in K_VALUES:
         out[f"pass@{k}"] = pak.get(str(k))
     for t in T_VALUES:
@@ -756,6 +801,13 @@ def main() -> None:
     ap.add_argument("--tokenizer", default="Qwen/Qwen3-8B")
     ap.add_argument("--limit-files", type=int, default=None)
     ap.add_argument("--no-tokens", action="store_true")
+    ap.add_argument("--think-delimiter", choices=["think", "fence"],
+                    default="think",
+                    help="Think-span boundary. 'think' (default): </think> "
+                         "terminator — native reasoning models (Qwen3, "
+                         "DeepSeek-R1-Distill). 'fence': first ```python code "
+                         "fence — instruct models induced into CoT, where "
+                         "</think> emits unreliably (~53% on Qwen2.5-Coder).")
     ap.add_argument("--verify", action="store_true",
                     help="Run alignment + pass@1 assertions and exit.")
     args = ap.parse_args()
@@ -790,7 +842,8 @@ def main() -> None:
     configs = []
     for jsonl_path, metrics_path in files:
         c = analyze_config(jsonl_path, metrics_path, tokenizer,
-                           dataset=args.dataset, max_tokens=args.max_tokens)
+                           dataset=args.dataset, max_tokens=args.max_tokens,
+                           delimiter=args.think_delimiter)
         if c is not None:
             configs.append(c)
             print(f"  {c['file']}: budget={c['max_tokens']} "

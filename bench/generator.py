@@ -190,6 +190,7 @@ def generate_samples_standard(
     stop_strings: list[str] | None = None,
     top_p: float = 1.0,
     top_k: int = 0,
+    repetition_penalty: float = 1.0,
     hf_batch_size: int | None = None,
 ) -> list[str]:
     """Generate samples using standard model.generate() with batched generation.
@@ -237,6 +238,7 @@ def generate_samples_standard(
                 temperature=temperature,
                 top_k=top_k,
                 top_p=top_p,
+                repetition_penalty=repetition_penalty,
                 num_return_sequences=b,
                 **kwargs,
             )

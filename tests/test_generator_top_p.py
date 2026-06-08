@@ -29,6 +29,23 @@ def test_generate_samples_standard_default_top_p_is_1():
     assert model.generate.call_args.kwargs["top_p"] == 1.0
 
 
+def test_generate_samples_standard_passes_repetition_penalty():
+    """repetition_penalty must be forwarded to model.generate() — needed for the
+    provider-faithful baseline (Qwen2.5-Coder ships rep_penalty 1.1/1.05)."""
+    model, tokenizer = _make_mocks()
+    generate_samples_standard(model, tokenizer, "hello", 2, 10, 0.7,
+                              repetition_penalty=1.1)
+    assert model.generate.call_args.kwargs["repetition_penalty"] == 1.1
+
+
+def test_generate_samples_standard_default_repetition_penalty_is_1():
+    """Default rep_penalty=1.0 is a no-op (backward compat — pless and the
+    other benchmarks must be unaffected)."""
+    model, tokenizer = _make_mocks()
+    generate_samples_standard(model, tokenizer, "hello", 2, 10, 1.0)
+    assert model.generate.call_args.kwargs["repetition_penalty"] == 1.0
+
+
 # ─── hf_batch_size: chunked generation to avoid OOM at large n_samples ─────
 # Background: on a single H100 80GB, model.generate(num_return_sequences=100)
 # for Deepseek-6.7B + 1024 max_new_tokens triggers CUDA OOM (~100 GiB KV cache

@@ -38,6 +38,7 @@ from bench.apps.dataset import DIFFICULTIES, SOURCES, load_apps
 from bench.apps.prompts import (
     format_prompt_apps_bigcode_chat,
     format_prompt_apps_bigcode_default,
+    format_prompt_apps_cot_prefill,
     format_prompt_apps_instruct,
 )
 from bench.checkpointing import append_result, load_completed_ids
@@ -100,6 +101,8 @@ def _method_key(args: argparse.Namespace) -> str:
                 key = f"{key}_p{args.top_p}"
             if args.top_k > 0:
                 key = f"{key}_k{args.top_k}"
+            if args.repetition_penalty != 1.0:
+                key = f"{key}_rp{args.repetition_penalty}"
     if args.enable_thinking:
         key = f"{key}_think_t{args.temperature}"
     if args.post_temperature is not None:
@@ -137,6 +140,13 @@ def _build_argparser() -> argparse.ArgumentParser:
                         "Default 0 disables top-k. Qwen3 recommends 20. "
                         "Combine with --top-p 0.95 --temperature 0.6 for "
                         "Qwen3's full recommended generation config.")
+    p.add_argument("--repetition-penalty", type=float, default=1.0,
+                   help="Repetition penalty for --method temp (HF + vLLM "
+                        "standard paths). Default 1.0 = no-op. Qwen2.5-Coder "
+                        "ships 1.1 (7B) / 1.05 (3B) in its generation_config; "
+                        "set it for the provider-faithful standard-decoder "
+                        "baseline. pless/pless_norm ignore it (hyperparameter-"
+                        "free by design).")
     p.add_argument("--max-new-tokens", type=int, default=8192,
                    help="Default 8192 to accommodate Qwen3 thinking.")
     p.add_argument("--results-dir", default="results/pless_apps_results")
@@ -176,7 +186,8 @@ def _build_argparser() -> argparse.ArgumentParser:
                         "models like m-a-p/OpenCodeInterpreter-DS-1.3B that "
                         "are chat-tuned but not named accordingly.")
     p.add_argument("--prompt-format",
-                   choices=["auto", "bigcode-default", "bigcode-chat"],
+                   choices=["auto", "bigcode-default", "bigcode-chat",
+                            "cot-prefill"],
                    default="auto",
                    help="Which prompt formatter to use. 'auto' (default): "
                         "applies our chat-template-based formatter "
@@ -364,6 +375,13 @@ def main():
                 # the model as bare-completion. Used to isolate backend
                 # (HF vs vLLM) effects from prompt-format effects.
                 prompt_text, code_prefix = format_prompt_apps_bigcode_default(problem)
+            elif args.prompt_format == "cot-prefill":
+                # Induce CoT from an instruct (non-reasoning) model via a
+                # <think> prefill (DeepSeek-R1-Distill style). Prompt ends with
+                # "<think>\n"; model is told to close with </think> then code.
+                prompt_text, code_prefix = format_prompt_apps_cot_prefill(
+                    problem, tokenizer,
+                )
             elif args.prompt_format == "bigcode-chat":
                 # bigcode's bare prompt wrapped in the model's chat template
                 # — what paper authors most plausibly did to make
@@ -391,6 +409,7 @@ def main():
                         n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                         temperature=args.temperature, stop_strings=None,
                         top_p=args.top_p, top_k=args.top_k,
+                        repetition_penalty=args.repetition_penalty,
                     )
                 elif args.method == "split":
                     raw_samples = generate_samples_split_vllm(
@@ -418,6 +437,7 @@ def main():
                     n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                     temperature=args.temperature, stop_strings=None,
                     top_p=args.top_p, top_k=args.top_k,
+                    repetition_penalty=args.repetition_penalty,
                     hf_batch_size=args.hf_batch_size,
                 )
             elif args.method == "split":
@@ -464,8 +484,13 @@ def main():
                             entropy_log.append(rec2)
                     sample_offset += b
 
+            # Both native thinking (--enable-thinking) and induced CoT
+            # (--prompt-format cot-prefill) emit a </think> we must strip so
+            # `samples` holds the code that reaches eval; the raw trace is kept
+            # in `samples_with_thinking`.
+            has_cot = args.enable_thinking or args.prompt_format == "cot-prefill"
             samples_with_think = [code_prefix + s for s in raw_samples]
-            if args.enable_thinking:
+            if has_cot:
                 samples = [_strip_think_content(s) for s in samples_with_think]
             else:
                 samples = samples_with_think
@@ -486,10 +511,14 @@ def main():
             }
             if args.alpha is not None:
                 record["alpha"] = args.alpha
+            if args.repetition_penalty != 1.0:
+                record["repetition_penalty"] = args.repetition_penalty
             if args.paper_replica_model is not None:
                 record["paper_replica_model"] = args.paper_replica_model
-            if args.enable_thinking:
+            if has_cot:
                 record["samples_with_thinking"] = samples_with_think
+            if args.prompt_format == "cot-prefill":
+                record["prompt_format"] = args.prompt_format
             if args.method == "split":
                 record["sampler_think"] = args.sampler_think
                 record["sampler_code"] = args.sampler_code
