@@ -13,6 +13,7 @@ from bench.eval.cot_efficiency import (
     aggregate_rows,
     build_sample_rows,
     config_meta,
+    discover_config_files,
     extract_think_span,
     extract_think_span_fence,
     measure_lengths,
@@ -110,6 +111,33 @@ def test_build_sample_rows_fence_delimiter():
                              max_tokens=8192, delimiter="fence")
     assert rows[0]["completed"] is True and rows[0]["truncated"] is False
     assert rows[1]["truncated"] is True and rows[1]["completed"] is False
+
+
+# ── discover_config_files: gz-aware for APPS ────────────────────────────────
+# load_results + _stem already handle .jsonl.gz, but APPS discovery globbed only
+# *.jsonl — so gzipped APPS results (the repo's size-saving convention) were
+# invisible to the report. Discovery must find them too.
+
+def test_discover_apps_finds_gzipped(tmp_path):
+    (tmp_path / "pless_t1.0.jsonl.gz").write_bytes(b"")
+    found = discover_config_files(tmp_path, dataset="apps")
+    stems = [jp.name for jp, _ in found]
+    assert "pless_t1.0.jsonl.gz" in stems
+
+
+def test_discover_apps_prefers_uncompressed_when_both(tmp_path):
+    (tmp_path / "temp_t0.8.jsonl").write_bytes(b"")
+    (tmp_path / "temp_t0.8.jsonl.gz").write_bytes(b"")
+    found = discover_config_files(tmp_path, dataset="apps")
+    # one entry for the stem, and it's the plain .jsonl (dedup prefers uncompressed)
+    matches = [jp for jp, _ in found if jp.name.startswith("temp_t0.8")]
+    assert len(matches) == 1 and matches[0].name == "temp_t0.8.jsonl"
+
+
+def test_discover_apps_skips_entropy_gz(tmp_path):
+    (tmp_path / "pless_t1.0.jsonl.entropy.jsonl.gz").write_bytes(b"")
+    found = discover_config_files(tmp_path, dataset="apps")
+    assert found == []
 
 
 # ── measure_lengths ─────────────────────────────────────────────────────────

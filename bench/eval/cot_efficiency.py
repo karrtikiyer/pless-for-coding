@@ -253,7 +253,10 @@ def discover_config_files(results_dir: Path, extra_dirs=(), dataset="mbpp"):
     # APPS uses arbitrary temp-family filenames (temp_p0.95_k20_think_...); glob
     # all jsonl in the dir and let analyze_config skip files lacking thinking /
     # metrics. MBPP/HE use the fixed split/think filename families.
-    patterns = ("*.jsonl",) if dataset == "apps" \
+    # Include compressed variants — load_results + _stem already handle .gz/.xz,
+    # and gzipping JSONLs is the repo's size-saving convention. Without these the
+    # report silently finds nothing once results are compressed.
+    patterns = ("*.jsonl", "*.jsonl.gz", "*.jsonl.xz") if dataset == "apps" \
         else (*_THINK_GLOBS, "pless_alpha_think_*.jsonl")
     for d in search_dirs:
         if not d.exists():
