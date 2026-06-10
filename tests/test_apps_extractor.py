@@ -155,6 +155,66 @@ def test_complete_garbage_is_unrecoverable():
     assert not r.success
 
 
+# ─── Termination guards: raw-text rescue must be bounded ─────────────────
+#
+# The raw-text fallback strategies (steps 3-5 of extract_python_code_apps:
+# _trim_to_compilable / _strip_leading_to_compilable / _window_to_compilable)
+# are super-linear in input length — per-line compile attempts plus
+# textwrap.dedent, whose `^[ \t]+$` whitespace regex backtracks catastrophically
+# on very long whitespace-laden lines. A reasoning model (DeepSeek-R1-Distill)
+# that hits the token cap mid-`<think>` emits a 100-160 KB prose trace with NO
+# closing code fence, which fell straight into this path and wedged the executor
+# for HOURS per sample (observed 2026-06-09 on the DeepSeek ATCODER run). These
+# tests pin the requirement that extraction is bounded regardless of input size.
+
+
+def test_huge_unfenced_prose_terminates_fast():
+    """A 150 KB unfenced reasoning trace (no code) must fail FAST, not hang.
+
+    This is the exact shape of a truncated DeepSeek-R1 think trace: thousands
+    of prose lines, no ```python``` fence, no compilable program. The correct
+    answer is `not success`; the requirement under test is that we reach it in
+    well under a second instead of spinning O(n^2) over the whole blob.
+    """
+    import time
+    from bench.eval.apps_extractor import extract_python_code_apps
+    txt = ("Okay, I need to solve this programming problem. Let me think "
+           "about the approach carefully here.\n") * 4000  # ~150 KB, ~4000 lines
+    t0 = time.time()
+    r = extract_python_code_apps(txt)
+    dt = time.time() - t0
+    assert not r.success
+    assert dt < 5.0, f"raw rescue took {dt:.1f}s on 150KB prose — should be bounded"
+
+
+def test_pathological_whitespace_line_terminates_fast():
+    """A single very long whitespace-laden line must not trigger the
+    textwrap.dedent `^[ \\t]+$` ReDoS. (Signals can't interrupt a C-level
+    regex, so this must be prevented structurally, not via a timeout.)"""
+    import time
+    from bench.eval.apps_extractor import extract_python_code_apps
+    txt = "this is prose not code " + " " * 200_000 + "\nstill not code\n"
+    t0 = time.time()
+    r = extract_python_code_apps(txt)
+    dt = time.time() - t0
+    assert not r.success
+    assert dt < 5.0, f"dedent regex backtracked {dt:.1f}s on a long whitespace line"
+
+
+def test_tail_code_recovered_despite_huge_prose_prefix():
+    """A valid program at the END of a long prose blob is still recovered.
+
+    Guards that bounding the raw rescue to the trailing window (reasoning
+    models emit code, if any, last) does not throw away genuine tail code.
+    """
+    from bench.eval.apps_extractor import extract_python_code_apps
+    prose = ("Let me reason about this step by step in great detail.\n") * 3000
+    code = "n = int(input())\nprint(n * 2)\n"
+    r = extract_python_code_apps(prose + code)
+    assert r.success
+    assert "print(n * 2)" in r.code
+
+
 # ─── New: smart-dedent rescue (blank-line-aware) ─────────────────────────
 
 

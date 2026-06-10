@@ -40,6 +40,21 @@ import re
 import textwrap
 from dataclasses import dataclass
 
+# Raw-text rescue (steps 3-5 of extract_python_code_apps) is super-linear in
+# input length: per-line compile attempts plus textwrap.dedent, whose
+# `^[ \t]+$` whitespace regex backtracks catastrophically on very long
+# whitespace-laden lines. A real APPS program is at most a few KB; when the raw
+# text is far larger it is almost always a reasoning model's truncated `<think>`
+# trace (no closing code fence), where the rescue burns O(n^2) work only to
+# fail. Reasoning models emit code (if any) LAST, so the rescue operates on the
+# trailing window — bounding cost and sidestepping the dedent ReDoS without
+# losing real recoveries. Both caps are far larger than any genuine solution and
+# than every test fixture, so cleanly-fenced models (Qwen) are unaffected.
+# (Observed 2026-06-09: an unbounded rescue wedged the DeepSeek-R1 ATCODER eval
+# for hours per truncated sample.)
+_MAX_RAW_RESCUE_CHARS = 12_000
+_MAX_RAW_RESCUE_LINES = 300
+
 _PYTHON_FENCE_RE = re.compile(r"```python\s*\n(.*?)```", re.DOTALL)
 # Plain triple-backtick fence (no python tag). We accept these but
 # *score them lower* than ```python``` fences since they sometimes hold
@@ -277,11 +292,25 @@ def extract_python_code_apps(
             if win is not None:
                 winners.append((_score(win, is_python_fence=False, fn_name=fn_name), win, strat))
 
+    # Bound the raw-text rescue input to the trailing window. See the
+    # _MAX_RAW_RESCUE_* constants: the rescue is super-linear, and on an
+    # oversized input (a truncated reasoning trace) it would spin without
+    # finding a real program. Slicing the tail bounds cost and avoids the
+    # textwrap.dedent whitespace-regex ReDoS, while preserving recovery of code
+    # that a reasoning model emits at the end. On normal-sized samples
+    # (including every test fixture) rescue_text is `text` unchanged.
+    rescue_text = text
+    if len(rescue_text) > _MAX_RAW_RESCUE_CHARS:
+        rescue_text = rescue_text[-_MAX_RAW_RESCUE_CHARS:]
+    _rescue_lines = rescue_text.split("\n")
+    if len(_rescue_lines) > _MAX_RAW_RESCUE_LINES:
+        rescue_text = "\n".join(_rescue_lines[-_MAX_RAW_RESCUE_LINES:])
+
     # 3. Raw text (no fence found, or no fence-based rescue succeeded)
     if not winners:
         n_candidates_seen += 1
-        win, strat = _rescue(text, (STRATEGY_RAW_DEDENT, STRATEGY_RAW_DEDENT,
-                                    STRATEGY_RAW_TRIM))
+        win, strat = _rescue(rescue_text, (STRATEGY_RAW_DEDENT, STRATEGY_RAW_DEDENT,
+                                           STRATEGY_RAW_TRIM))
         if win is not None:
             winners.append((_score(win, is_python_fence=False, fn_name=fn_name), win, strat))
 
@@ -291,7 +320,7 @@ def extract_python_code_apps(
     #    can recover it. ~67% of our Phase A Deepseek ParsingErrors fell
     #    into this pattern (cell1 corpus audit 2026-05-26).
     if not winners:
-        recovered = _strip_leading_to_compilable(text)
+        recovered = _strip_leading_to_compilable(rescue_text)
         if recovered is not None:
             winners.append((
                 _score(recovered, is_python_fence=False, fn_name=fn_name),
@@ -304,7 +333,7 @@ def extract_python_code_apps(
     #    on top of prefix-strip alone. Bounded by max_iter=100 to keep
     #    cost predictable on huge samples.
     if not winners:
-        recovered = _window_to_compilable(text, max_iter=100)
+        recovered = _window_to_compilable(rescue_text, max_iter=100)
         if recovered is not None:
             winners.append((
                 _score(recovered, is_python_fence=False, fn_name=fn_name),
