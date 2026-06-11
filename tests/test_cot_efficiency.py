@@ -244,6 +244,10 @@ def test_apps_label():
     assert _apps_label("temp", 0.95, 0, 1.0) == "temp 1.0 (top_p 0.95)"
     assert _apps_label("temp", 0.95, 20, 0.6) == "temp 0.6 (top_p 0.95 + top_k 20)"
     assert _apps_label("pless", 1.0, 0, 1.0) == "pless (t1.0)"
+    # pless_alpha arms must carry the alpha value, else every arm renders
+    # identically as "pless_alpha (t1.0)" in the report (regression guard).
+    assert _apps_label("pless_alpha", 1.0, 0, 1.0, 3.0) == "pless_alpha a3.0 (t1.0)"
+    assert _apps_label("pless_alpha", 1.0, 0, 1.0, 5.0) == "pless_alpha a5.0 (t1.0)"
 
 
 def test_config_meta_apps_reads_filters_and_budget():

@@ -276,8 +276,12 @@ def discover_config_files(results_dir: Path, extra_dirs=(), dataset="mbpp"):
     return out
 
 
-def _apps_label(method: str, top_p, top_k, temp) -> str:
+def _apps_label(method: str, top_p, top_k, temp, alpha=None) -> str:
     """Descriptive label for a unified APPS config (temp-family by filter)."""
+    if method == "pless_alpha":
+        # alpha is the distinguishing knob across pless_alpha arms — without it
+        # every pless_alpha row renders identically (e.g. "pless_alpha (t1.0)").
+        return f"pless_alpha a{alpha} (t{temp})"
     if method != "temp":
         return f"{method} (t{temp})"
     parts = []
@@ -303,7 +307,15 @@ def config_meta(record: dict, jsonl_path: Path, dataset="mbpp",
         top_k = record.get("top_k", 0)
         temp = record.get("temperature")
         alpha = record.get("alpha")
-        label = _apps_label(method, top_p, top_k, temp)
+        if alpha is None and method == "pless_alpha":
+            # Fallback: the filename always encodes alpha (e.g. ..._a3.0_t1.0).
+            # Guards against any record that didn't persist the field, so the
+            # report never collapses pless_alpha arms into one label.
+            import re
+            mm = re.search(r"_a(\d+(?:\.\d+)?)", stem)
+            if mm:
+                alpha = float(mm.group(1))
+        label = _apps_label(method, top_p, top_k, temp, alpha)
         return {
             "file": jsonl_path.name,
             "method": method,

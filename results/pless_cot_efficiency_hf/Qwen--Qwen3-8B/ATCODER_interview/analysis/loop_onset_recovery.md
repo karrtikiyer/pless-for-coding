@@ -80,3 +80,38 @@ NOT help the 12 S or 6 L tasks (no solution to recover), but it avoids wasting t
 **For the 18 S+L tasks:** The problem is upstream — pless never formed a solution before
 looping. This is a harder failure mode: the sampling itself is failing to explore the
 right reasoning paths, not just failing to terminate after finding one.
+
+---
+
+## EMPIRICAL RESULTS — all-27 forced-</think> screen (2026-06-11, n=1, MPS)
+
+Ran the forced-</think> intervention on all 27 solvable tasks (`scripts/forced_think_all27.py`):
+cut each pless truncated trace at loop onset, force `</think>` + ```python, generate
+with pless (n=1, near-deterministic), execute against the real APPS tests.
+
+**RECOVERED: 11/27** (or ~11/25 ≈ 44% excluding 2 generation exceptions).
+
+Per category (vs the a-priori prediction above):
+
+| category | recovered | note |
+|----------|-----------|------|
+| R2 (concrete code at loop onset) | **5/5** | prediction HOLDS — reliable positive signal |
+| R1 (loop>ref depth)              | **0/4** | prediction WRONG (had ranked these "strongest") |
+| S (still searching)              | 2/12    | ≈ right (mostly no recovery) |
+| L (pure loop early)              | 4/6     | prediction WRONG (predicted no recovery) |
+
+Recovered: 616, 927, 990, 1087, 1090, 1126, 1171, 1224, 1226, 1369, 1373.
+Failure modes (16): 11 Failed (wrong code), 1 RuntimeError, 2 ParsingError (739, 1125 —
+possible prose-after-fence undercount), 2 EXC:RuntimeError (711, 1277 — MPS errors mid
+generation, INCONCLUSIVE, re-run on GPU).
+
+**Corrected takeaway**: the only reliable predictor of recovery is whether CONCRETE CODE
+exists in the pre-loop reasoning (R2: 5/5). The loop-timing (R1) and loop-onset-snippet
+(S/L) heuristics do NOT track recovery — R1 (loop after ref depth) recovered nothing, and
+L (degenerate snippet) recovered 4/6 because real reasoning preceded the degenerate tail.
+A loop-onset detector (A28) should fire on the loop, but a "is there a solution to recover"
+gate should look for concrete code in the full pre-loop trace, not the onset snippet.
+
+**Caveats**: n=1 (pless near-deterministic, and NOT bit-stable across MPS process runs —
+558 gave ParsingError in one run, RuntimeError here). The GPU n=10-with-sampling pass
+(A31-adjacent) is needed for real per-task recovery rates.
