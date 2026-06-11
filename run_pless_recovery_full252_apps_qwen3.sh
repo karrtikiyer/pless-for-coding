@@ -95,13 +95,23 @@ if [ "$SEED_27" = "1" ]; then
     echo "NOTE: SEED_27=1 but MAX_TOKENS=$MAX_TOKENS != 32768 (the 27-sweep cap). The 27-sweep" >&2
     echo "      results aren't cap-comparable; NOT pre-seeding — all 252 will be generated." >&2
   else
+    missing=0
     for a in "${ARMS_ARR[@]}"; do
       src="$SWEEP27_DIR/$(arm_jsonl "$a")"; dst="$OUT_DIR/$(arm_jsonl "$a")"
-      if [ -f "$src" ] && [ ! -f "$dst" ]; then
+      if [ -f "$dst" ]; then
+        echo "pre-seed: $(arm_jsonl "$a") already in OUT_DIR ($(wc -l < "$dst") tasks) — leaving as-is"
+      elif [ -f "$src" ]; then
         cp "$src" "$dst"
         echo "pre-seeded $(arm_jsonl "$a") with $(wc -l < "$dst") completed tasks (27-sweep) — runner will skip them"
+      else
+        echo "WARNING: pre-seed source MISSING: $src" >&2
+        echo "         → arm '$a' will generate ALL 252 (no skip-27). If you expected to" >&2
+        echo "         reuse the 27-sweep results, ensure SWEEP27_DIR points to them" >&2
+        echo "         (default: $SWEEP27_DIR) or set SEED_27=0 to silence this." >&2
+        missing=$((missing+1))
       fi
     done
+    [ "$missing" -gt 0 ] && echo "pre-seed: $missing/${#ARMS_ARR[@]} arms had no 27-sweep source (see warnings above)." >&2
   fi
 fi
 
