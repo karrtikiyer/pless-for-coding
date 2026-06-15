@@ -1,0 +1,417 @@
+[
+  {
+    "task_id": 417,
+    "sample": 0,
+    "chops": 3,
+    "end": "cap",
+    "gen_tokens": 6144,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 1458,
+        "round_len": 1541
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 113,
+        "round_len": 329
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 110,
+        "round_len": 405
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 558,
+    "sample": 0,
+    "chops": 3,
+    "end": "loop",
+    "gen_tokens": 4933,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 1884,
+        "round_len": 2149
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 413,
+        "round_len": 791
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 2037,
+        "round_len": 2285
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 616,
+    "sample": 0,
+    "chops": 1,
+    "end": "cap",
+    "gen_tokens": 6144,
+    "closed_think": true,
+    "exec": "Failed",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 439,
+        "round_len": 726
+      }
+    ],
+    "code": "\n\n```python\nimport sys\nimport heapq\n\ndef main():\n    n, m = map(int, sys.stdin.readline().split())\n    keys = []\n    for _ in range(m):\n        a, b = map(int, sys.stdin.readline().split())\n        c_list = list(map(int, sys.stdin.readline().split()))\n        mask = 0\n        for c in c_list:\n            mask |= 1 << (c - 1)\n        keys.append((a, mask))\n    \n    target = (1 << n) - 1\n    INF = float('inf')\n    distance = [INF] * (1 << n)\n    distance[0] = 0\n    heap = [(0, 0)]\n    \n    while heap:\n        cost, mask = heapq.heappop(heap)\n        if mask == target:\n            print(cost)\n            return\n        if cost > distance[mask]:\n            continue\n        for a, key_mask in keys:\n            new_mask = mask | key_mask\n            new_cost = cost + a\n            if new_cost < distance[new_mask]:\n                distance[new_mask] = new_cost\n                heapq.heappush(heap, (new_cost, new_mask))\n    \n    print(-1)\n\nif __name__ =="
+  },
+  {
+    "task_id": 711,
+    "sample": 0,
+    "chops": 3,
+    "end": "loop",
+    "gen_tokens": 1593,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 758,
+        "round_len": 1133
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 254,
+        "round_len": 539
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 165,
+        "round_len": 308
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 739,
+    "sample": 0,
+    "chops": 3,
+    "end": "loop",
+    "gen_tokens": 2751,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 1463,
+        "round_len": 1557
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 875,
+        "round_len": 1164
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 95,
+        "round_len": 236
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 793,
+    "sample": 0,
+    "chops": 3,
+    "end": "loop",
+    "gen_tokens": 3611,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 1490,
+        "round_len": 1640
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 72,
+        "round_len": 297
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 280,
+        "round_len": 677
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 927,
+    "sample": 0,
+    "chops": 2,
+    "end": "cap",
+    "gen_tokens": 6144,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 2677,
+        "round_len": 3000
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 135,
+        "round_len": 422
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 930,
+    "sample": 0,
+    "chops": 3,
+    "end": "loop",
+    "gen_tokens": 2497,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 1568,
+        "round_len": 1887
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 406,
+        "round_len": 635
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 166,
+        "round_len": 440
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 990,
+    "sample": 0,
+    "chops": 3,
+    "end": "loop",
+    "gen_tokens": 1333,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 406,
+        "round_len": 791
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 45,
+        "round_len": 266
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 612,
+        "round_len": 815
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 1037,
+    "sample": 0,
+    "chops": 3,
+    "end": "cap",
+    "gen_tokens": 6144,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 4421,
+        "round_len": 4641
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 318,
+        "round_len": 525
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 397,
+        "round_len": 763
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 1085,
+    "sample": 0,
+    "chops": 1,
+    "end": "cap",
+    "gen_tokens": 6144,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 2208,
+        "round_len": 2531
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 1086,
+    "sample": 0,
+    "chops": 3,
+    "end": "cap",
+    "gen_tokens": 6144,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 1653,
+        "round_len": 1819
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 10,
+        "round_len": 408
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 2182,
+        "round_len": 2394
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 1087,
+    "sample": 0,
+    "chops": 0,
+    "end": "cap",
+    "gen_tokens": 6144,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [],
+    "code": ""
+  },
+  {
+    "task_id": 1090,
+    "sample": 0,
+    "chops": 3,
+    "end": "loop",
+    "gen_tokens": 4250,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 2811,
+        "round_len": 3031
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 543,
+        "round_len": 865
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 75,
+        "round_len": 447
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 1125,
+    "sample": 0,
+    "chops": 3,
+    "end": "loop",
+    "gen_tokens": 1264,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 711,
+        "round_len": 900
+      },
+      {
+        "chop": 2,
+        "onset_in_round": 61,
+        "round_len": 180
+      },
+      {
+        "chop": 3,
+        "onset_in_round": 94,
+        "round_len": 192
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 1126,
+    "sample": 0,
+    "chops": 1,
+    "end": "cap",
+    "gen_tokens": 6144,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 778,
+        "round_len": 1064
+      }
+    ],
+    "code": ""
+  },
+  {
+    "task_id": 1171,
+    "sample": 0,
+    "chops": 1,
+    "end": "cap",
+    "gen_tokens": 6144,
+    "closed_think": false,
+    "exec": "no_code",
+    "recovered": false,
+    "chop_events": [
+      {
+        "chop": 1,
+        "onset_in_round": 2843,
+        "round_len": 3185
+      }
+    ],
+    "code": ""
+  }
+]
