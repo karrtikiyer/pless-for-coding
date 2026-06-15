@@ -180,6 +180,17 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="Rényi exponent for --method pless_alpha. "
                         "Threshold = Σpᵢ^α. α=2 reproduces standard pless; "
                         "α>2 keeps more tokens at high-entropy positions.")
+    # Live loop-force (vLLM only): detect a think-phase n-gram loop and force </think>.
+    p.add_argument("--force-think-on-loop", action="store_true",
+                   help="vLLM only: live n-gram loop detection in the think phase; on "
+                        "detection, force </think> and switch to code (deployable "
+                        "detect-rambling->end-thinking). Off by default.")
+    p.add_argument("--loop-ngram-n", type=int, default=8,
+                   help="n-gram length for loop detection (with --force-think-on-loop).")
+    p.add_argument("--loop-ngram-k", type=int, default=4,
+                   help="fire when an n-gram recurs >=k times in the window.")
+    p.add_argument("--loop-window", type=int, default=400,
+                   help="recent-token window for loop detection.")
     p.add_argument("--treat-as-instruct", action="store_true",
                    help="Force instruct-prompt formatting even when the model "
                         "id does not contain 'Instruct' or 'Chat'. Use for "
@@ -428,6 +439,9 @@ def main():
                         n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                         temperature=args.temperature, stop_strings=None,
                         alpha=args.alpha,
+                        loop_ngram_n=args.loop_ngram_n if args.force_think_on_loop else None,
+                        loop_ngram_k=args.loop_ngram_k if args.force_think_on_loop else None,
+                        loop_window=args.loop_window,
                     )
             elif args.method == "temp":
                 # generate_samples_standard handles chunking internally via

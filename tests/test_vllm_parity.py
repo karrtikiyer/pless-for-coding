@@ -424,3 +424,50 @@ def test_distributional_parity_qwen3_h7p_codeforces(tmp_path):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+def test_loop_force_forces_think_end_on_ngram_loop(monkeypatch):
+    """Live loop-force: a think-phase request whose recent tokens contain an n-gram
+    loop must have its logits forced to </think> (argmax == THINK_END). A request
+    WITHOUT a loop must be untouched by the force path (normal pless masking)."""
+    gv, cls = _build_processor_against_fake_vllm(monkeypatch)
+    proc = cls(vllm_config=None, device=torch.device("cpu"), is_pin_memory=False)
+    TE = gv.QWEN3_THINK_END_TOKEN_ID
+
+    # row 0: looping (8-tok unit x6, len divisible by check-every so it scans) → should force </think>
+    loop_unit = [101, 102, 103, 104, 105, 106, 107, 108]
+    looping = loop_unit * 6
+    looping = looping[: (len(looping) // gv._LOOP_CHECK_EVERY) * gv._LOOP_CHECK_EVERY]  # land on a scan step
+    # row 1: varied, no loop → must NOT be forced
+    varied = list(range(200, 200 + len(looping)))
+
+    loopcfg = {"t_think": 1.0, "t_code": 1.0, "sampler_think": "pless", "sampler_code": "pless",
+               "loop_n": 8, "loop_k": 4, "loop_window": 400}
+    proc._cfg = {0: dict(loopcfg), 1: dict(loopcfg)}
+    proc._out = {0: looping, 1: varied}
+    proc._in_code = {0: False, 1: False}
+    proc._loop_fired = {0: False, 1: False}
+
+    V = 151936
+    logits = torch.randn(2, V)
+    out = proc.apply(logits.clone())
+
+    assert int(out[0].argmax()) == TE, "looping row should be forced to </think>"
+    assert proc._loop_fired[0] is True
+    # non-looping row: not forced — its argmax should NOT be coerced to TE by the force path
+    # (pless masking may keep many tokens; just assert the loop flag stayed False)
+    assert proc._loop_fired[1] is False
+
+
+def test_loop_force_off_is_unchanged(monkeypatch):
+    """With no loop_n in cfg (default), loop-force is inert: the row is pless-masked,
+    not forced to </think>."""
+    gv, cls = _build_processor_against_fake_vllm(monkeypatch)
+    proc = cls(vllm_config=None, device=torch.device("cpu"), is_pin_memory=False)
+    cfg = {"t_think": 1.0, "t_code": 1.0, "sampler_think": "pless", "sampler_code": "pless"}
+    proc._cfg = {0: cfg}
+    proc._out = {0: [101, 102, 103, 104, 105, 106, 107, 108] * 6}  # looping, but loop-force OFF
+    proc._in_code = {0: False}
+    proc._loop_fired = {0: False}
+    out = proc.apply(torch.randn(1, 151936).clone())
+    assert proc._loop_fired[0] is False, "no loop_n in cfg → detector must not run"

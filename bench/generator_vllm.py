@@ -49,6 +49,10 @@ if TYPE_CHECKING:  # pragma: no cover — type hints only, never executed at imp
 # is mirrored here.
 QWEN3_THINK_END_TOKEN_ID = 151668
 
+# Live n-gram loop detection → force </think> (opt-in via cfg["loop_n"]/["loop_k"]).
+from bench.loop_detect import ngram_loop_fired
+_LOOP_CHECK_EVERY = 8   # run the n-gram scan every N think-tokens (throttle; a loop needs ~n*k tokens to form)
+
 
 # ---------------------------------------------------------------------------
 # Pless logit transforms (vLLM operates on raw logits, not probs)
@@ -245,6 +249,9 @@ def _build_pless_split_logits_processor_class() -> type:
             # Once a request has emitted </think>, cache the result so we
             # don't re-scan the (growing) output_token_ids list every step.
             self._in_code: dict[int, bool] = {}
+            # Live loop-force: once the n-gram detector fires for a request, keep
+            # forcing </think> until it's emitted (then in_code flips to True).
+            self._loop_fired: dict[int, bool] = {}
 
         @classmethod
         def validate_params(cls, sampling_params):
@@ -291,15 +298,18 @@ def _build_pless_split_logits_processor_class() -> type:
                     self._cfg.pop(idx, None)
                     self._out.pop(idx, None)
                     self._in_code.pop(idx, None)
+                    self._loop_fired.pop(idx, None)
                     continue
                 self._cfg[idx] = cfg
                 self._out[idx] = output_ids  # reference; grows automatically
                 self._in_code[idx] = False
+                self._loop_fired[idx] = False
             # Removed requests
             for idx in batch_update.removed:
                 self._cfg.pop(idx, None)
                 self._out.pop(idx, None)
                 self._in_code.pop(idx, None)
+                self._loop_fired.pop(idx, None)
             # Moved requests — adx → bdx; ``direct`` distinguishes move vs swap.
             for adx, bdx, direct in batch_update.moved:
                 a_cfg = self._cfg.pop(adx, None)
@@ -308,10 +318,13 @@ def _build_pless_split_logits_processor_class() -> type:
                 b_out = self._out.pop(bdx, None)
                 a_code = self._in_code.pop(adx, None)
                 b_code = self._in_code.pop(bdx, None)
+                a_loop = self._loop_fired.pop(adx, None)
+                b_loop = self._loop_fired.pop(bdx, None)
                 if a_cfg is not None:
                     self._cfg[bdx] = a_cfg
                     self._out[bdx] = a_out  # type: ignore[assignment]
                     self._in_code[bdx] = a_code if a_code is not None else False
+                    self._loop_fired[bdx] = a_loop if a_loop is not None else False
                 # ``direct`` is a MoveDirectionality enum, NOT the string "swap".
                 # On a SWAP, B (the request now at adx) must keep its state too;
                 # comparing against "swap" silently dropped it.
@@ -319,6 +332,7 @@ def _build_pless_split_logits_processor_class() -> type:
                     self._cfg[adx] = b_cfg
                     self._out[adx] = b_out  # type: ignore[assignment]
                     self._in_code[adx] = b_code if b_code is not None else False
+                    self._loop_fired[adx] = b_loop if b_loop is not None else False
 
         def _uniform_cfg(self):
             """If every tracked request uses ONE phase-independent sampler config
@@ -362,7 +376,11 @@ def _build_pless_split_logits_processor_class() -> type:
             # Fast path: one phase-independent config across all rows → mask the
             # whole sub-batch in a single call (avoids the launch-bound per-row
             # loop). Byte-equivalent to the per-row path (same dim=-1 reductions).
-            uniform = self._uniform_cfg()
+            # Loop-force needs per-row n-gram detection, so it cannot use the
+            # batched fast path. When no request opts into loop-force (the
+            # default), this is False and behaviour is unchanged.
+            loop_active = any("loop_n" in c for c in self._cfg.values())
+            uniform = None if loop_active else self._uniform_cfg()
             if uniform is not None:
                 idxs = [i for i in self._cfg if i < logits.size(0)]
                 if len(idxs) >= 2:
@@ -396,6 +414,24 @@ def _build_pless_split_logits_processor_class() -> type:
                         # restore from snapshot); pay the O(n) scan once.
                         in_code = True
                         self._in_code[idx] = True
+
+                # Live loop-force: in the think phase, if the n-gram detector has
+                # fired (or fires now), force </think> this step — mask the row to
+                # the THINK_END token only. vLLM then samples </think>, and next
+                # step in_code flips to True (code phase). Opt-in via cfg["loop_n"].
+                if not in_code and "loop_n" in cfg:
+                    out = self._out.get(idx) or []
+                    if not self._loop_fired.get(idx, False):
+                        if len(out) % _LOOP_CHECK_EVERY == 0 and ngram_loop_fired(
+                            out, cfg["loop_n"], cfg["loop_k"], cfg.get("loop_window", 400)
+                        ):
+                            self._loop_fired[idx] = True
+                    if self._loop_fired.get(idx, False):
+                        row = logits[idx]
+                        row[:] = float("-inf")
+                        row[QWEN3_THINK_END_TOKEN_ID] = 0.0
+                        logits[idx] = row
+                        continue   # skip normal pless masking for this forced row
 
                 if in_code:
                     temp = float(cfg["t_code"])
@@ -622,6 +658,9 @@ def generate_samples_vllm(
     temperature: float,
     stop_strings: list[str] | None = None,
     alpha: float | None = None,
+    loop_ngram_n: int | None = None,
+    loop_ngram_k: int | None = None,
+    loop_window: int = 400,
 ) -> list[str]:
     """vLLM-backed single-sampler generation (no think/code split).
 
@@ -630,6 +669,10 @@ def generate_samples_vllm(
 
     ``alpha`` is required when ``sampler_name == "pless_alpha"`` and is
     propagated to both phases (uniform α across think + code).
+
+    When ``loop_ngram_n`` and ``loop_ngram_k`` are set, the processor runs live
+    n-gram loop detection in the THINK phase and forces </think> on detection
+    (the deployable "detect-rambling → end-thinking" intervention).
     """
     from vllm import SamplingParams
 
@@ -648,6 +691,10 @@ def generate_samples_vllm(
     if sampler_name == "pless_alpha":
         cfg["alpha_think"] = float(alpha)
         cfg["alpha_code"] = float(alpha)
+    if loop_ngram_n and loop_ngram_k:
+        cfg["loop_n"] = int(loop_ngram_n)
+        cfg["loop_k"] = int(loop_ngram_k)
+        cfg["loop_window"] = int(loop_window)
     # NOTE: vLLM 0.21+ removed SamplingParams.logits_processors; the
     # processor class is pre-registered at engine load (see load_engine).
     sp = SamplingParams(
