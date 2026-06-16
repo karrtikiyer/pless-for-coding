@@ -185,10 +185,13 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="vLLM only: live n-gram loop detection in the think phase; on "
                         "detection, force </think> and switch to code (deployable "
                         "detect-rambling->end-thinking). Off by default.")
-    p.add_argument("--loop-ngram-n", type=int, default=8,
-                   help="n-gram length for loop detection (with --force-think-on-loop).")
-    p.add_argument("--loop-ngram-k", type=int, default=4,
-                   help="fire when an n-gram recurs >=k times in the window.")
+    p.add_argument("--loop-ngram-n", type=int, default=30,
+                   help="n-gram length for loop detection (with --force-think-on-loop). "
+                        "Default 30 VALIDATED: 0.3%% false-positive on productive reasoning vs "
+                        "90%% for n=8 (which broke the first run). Do not lower without re-checking.")
+    p.add_argument("--loop-ngram-k", type=int, default=6,
+                   help="fire when an n-gram recurs >=k times in the window. Default 6 "
+                        "(catches ~70%% of genuine loops; k=20 lit-default catches only ~18%%).")
     p.add_argument("--loop-window", type=int, default=400,
                    help="recent-token window for loop detection.")
     p.add_argument("--treat-as-instruct", action="store_true",

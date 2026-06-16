@@ -20,8 +20,14 @@
 #   GPUS=0,1 ./run_loop_forcethink_apps_qwen3.sh
 #   MAX_PROBLEMS=4 ./run_loop_forcethink_apps_qwen3.sh         # smoke
 # Env: MODEL, SOURCE, DIFFICULTY, RESULTS_DIR, N_SAMPLES(10), MAX_TOKENS(32768),
-#   LOOP_N(8), LOOP_K(4), LOOP_WINDOW(400), VLLM_VENV, WORKERS(32), TOKENIZER,
+#   LOOP_N(30), LOOP_K(6), LOOP_WINDOW(400), VLLM_VENV, WORKERS(32), TOKENIZER,
 #   GPUS, ONLY (pless|pless_norm), MAX_PROBLEMS.
+#
+# DETECTOR DEFAULTS n=30/k=6 are VALIDATED (scripts/detector_falsepos_check.py, no GPU):
+# false-positive on productive reasoning 0.3% (vs 90.3% for the old n=8/k=4 that broke the
+# first run — fired at median ~1.5K, cratering cond-correctness 0.73->0.53), catches 70%
+# of genuine loops at median ~7K tokens. NO min-think floor needed — the detector's
+# strictness self-separates loops from reasoning. Do NOT use n=8/k=4.
 
 set -euo pipefail
 
@@ -31,8 +37,8 @@ DIFFICULTY="${DIFFICULTY:-interview}"
 RESULTS_DIR="${RESULTS_DIR:-results/loop_forcethink}"
 N_SAMPLES="${N_SAMPLES:-10}"
 MAX_TOKENS="${MAX_TOKENS:-32768}"
-LOOP_N="${LOOP_N:-8}"
-LOOP_K="${LOOP_K:-4}"
+LOOP_N="${LOOP_N:-30}"
+LOOP_K="${LOOP_K:-6}"
 LOOP_WINDOW="${LOOP_WINDOW:-400}"
 VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
 WORKERS="${WORKERS:-32}"
