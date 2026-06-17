@@ -17,10 +17,13 @@
 # trunc% drops vs baseline before the full run.
 #
 # Usage:
-#   GPUS=0,1 ./run_loop_forcethink_apps_qwen3.sh
-#   MAX_PROBLEMS=4 ./run_loop_forcethink_apps_qwen3.sh         # smoke
+#   GPUS=0,1 ./run_loop_forcethink_apps_qwen3.sh                                                          # Qwen3, w1200 (default)
+#   MAX_PROBLEMS=4 ./run_loop_forcethink_apps_qwen3.sh                                                     # smoke
+#   LOOP_WINDOW=800 RESULTS_DIR=results/loop_forcethink_w800 GPUS=0,1 ./run_loop_forcethink_apps_qwen3.sh  # coverage-protecting (half the FP)
+#   MODEL=deepseek-ai/DeepSeek-R1-Distill-Llama-8B TOKENIZER=deepseek-ai/DeepSeek-R1-Distill-Llama-8B \
+#     LOOP_WINDOW=3000 RESULTS_DIR=results/loop_forcethink_deepseek_w3000 GPUS=0,1 ./run_loop_forcethink_apps_qwen3.sh  # DeepSeek
 # Env: MODEL, SOURCE, DIFFICULTY, RESULTS_DIR, N_SAMPLES(10), MAX_TOKENS(32768),
-#   LOOP_N(30), LOOP_K(6), LOOP_WINDOW(400), VLLM_VENV, WORKERS(32), TOKENIZER,
+#   LOOP_N(30), LOOP_K(6), LOOP_WINDOW(1200), VLLM_VENV, WORKERS(32), TOKENIZER,
 #   GPUS, ONLY (pless|pless_norm), MAX_PROBLEMS.
 #
 # DETECTOR DEFAULTS n=30/k=6 are VALIDATED (scripts/detector_falsepos_check.py, no GPU):
@@ -28,6 +31,14 @@
 # first run — fired at median ~1.5K, cratering cond-correctness 0.73->0.53), catches 70%
 # of genuine loops at median ~7K tokens. NO min-think floor needed — the detector's
 # strictness self-separates loops from reasoning. Do NOT use n=8/k=4.
+#
+# WINDOW is the truncation<->coverage dial (validated full-252, n=30/k=6, Qwen3):
+#   w400  cut truncation only ~5pp (too conservative — periods >400 tok escape it).
+#   w1200 (DEFAULT): trunc 14.5->1.5% (pless) / 16.0->1.6% (pnorm), pass@1 +2-3pp, mean think
+#         ~25% fewer — BUT pass@10 -1.2/-2.3pp (the FP cuts genuine long-reasoners).
+#   w800  (offline 91% catch / 1.1% FP — HALF the FP): protects pass@10 at ~3-4% residual trunc.
+# DeepSeek-R1-Distill needs a WIDER window (~3000): its loops have longer periods (offline
+# 98.5% catch / 1.2% FP at w3000; w1200 only 80.5%). See docs/loopforce_w1200_comparison_apps_qwen3.md.
 
 set -euo pipefail
 
@@ -39,7 +50,7 @@ N_SAMPLES="${N_SAMPLES:-10}"
 MAX_TOKENS="${MAX_TOKENS:-32768}"
 LOOP_N="${LOOP_N:-30}"
 LOOP_K="${LOOP_K:-6}"
-LOOP_WINDOW="${LOOP_WINDOW:-400}"
+LOOP_WINDOW="${LOOP_WINDOW:-1200}"
 VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
 WORKERS="${WORKERS:-32}"
 TOKENIZER="${TOKENIZER:-Qwen/Qwen3-8B}"

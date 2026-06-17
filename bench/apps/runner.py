@@ -192,8 +192,11 @@ def _build_argparser() -> argparse.ArgumentParser:
     p.add_argument("--loop-ngram-k", type=int, default=6,
                    help="fire when an n-gram recurs >=k times in the window. Default 6 "
                         "(catches ~70%% of genuine loops; k=20 lit-default catches only ~18%%).")
-    p.add_argument("--loop-window", type=int, default=400,
-                   help="recent-token window for loop detection.")
+    p.add_argument("--loop-window", type=int, default=1200,
+                   help="recent-token window for loop detection. Default 1200 VALIDATED on "
+                        "Qwen3 (full-252): catches 97%% of loops at 2.2%% FP; w400 only ~70%% "
+                        "(long-period loops escape a 400-tok window). w800 = half the FP "
+                        "(91%% catch) to protect pass@10; DeepSeek needs ~3000 (longer periods).")
     p.add_argument("--treat-as-instruct", action="store_true",
                    help="Force instruct-prompt formatting even when the model "
                         "id does not contain 'Instruct' or 'Chat'. Use for "
