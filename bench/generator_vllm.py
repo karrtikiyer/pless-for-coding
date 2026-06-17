@@ -49,6 +49,26 @@ if TYPE_CHECKING:  # pragma: no cover — type hints only, never executed at imp
 # is mirrored here.
 QWEN3_THINK_END_TOKEN_ID = 151668
 
+
+def resolve_think_end_id(tokenizer) -> int:
+    """Resolve a model's single-token ``</think>`` id from its own tokenizer.
+
+    Model-aware replacement for the hardcoded ``QWEN3_THINK_END_TOKEN_ID``: the
+    split / loop-force processor needs the integer id both to detect the
+    think→code boundary and to force ``</think>`` on a loop. Qwen3 → 151668,
+    DeepSeek-R1-Distill → 128014. Raises if ``</think>`` is not a single token —
+    the processor can only force one id, so a multi-token result is a hard error
+    (and on a smaller-vocab model the stale Qwen3 default would IndexError).
+    """
+    ids = tokenizer.encode("</think>", add_special_tokens=False)
+    if len(ids) != 1:
+        raise AssertionError(
+            f"</think> must be a single token for split/loop-force decoding, "
+            f"got {ids} from tokenizer {tokenizer.__class__.__name__}"
+        )
+    return ids[0]
+
+
 # Live n-gram loop detection → force </think> (opt-in via cfg["loop_n"]/["loop_k"]).
 from bench.loop_detect import ngram_loop_fired
 _LOOP_CHECK_EVERY = 8   # run the n-gram scan every N think-tokens (throttle; a loop needs ~n*k tokens to form)
@@ -401,15 +421,18 @@ def _build_pless_split_logits_processor_class() -> type:
                     # Stale dict entry; should not happen if update_state is
                     # called every step but defensive.
                     continue
+                # Model-aware </think> id (set per-request in cfg; falls back to
+                # the Qwen3 default if a caller didn't supply one).
+                think_end_id = cfg.get("think_end_id", QWEN3_THINK_END_TOKEN_ID)
                 in_code = self._in_code.get(idx, False)
                 if not in_code:
                     # Cheap check: scan only the last token (the one just
                     # appended this step). If it was THINK_END, flip phase.
                     out = self._out.get(idx)
-                    if out and out[-1] == QWEN3_THINK_END_TOKEN_ID:
+                    if out and out[-1] == think_end_id:
                         in_code = True
                         self._in_code[idx] = True
-                    elif out and QWEN3_THINK_END_TOKEN_ID in out:
+                    elif out and think_end_id in out:
                         # Defensive (e.g. tokens appended in bulk after a
                         # restore from snapshot); pay the O(n) scan once.
                         in_code = True
@@ -429,7 +452,7 @@ def _build_pless_split_logits_processor_class() -> type:
                     if self._loop_fired.get(idx, False):
                         row = logits[idx]
                         row[:] = float("-inf")
-                        row[QWEN3_THINK_END_TOKEN_ID] = 0.0
+                        row[think_end_id] = 0.0
                         logits[idx] = row
                         continue   # skip normal pless masking for this forced row
 
@@ -560,21 +583,16 @@ def _extract_completion_texts(request_output, engine) -> list[str]:
     ]
 
 
-def _verify_think_end_id(engine) -> None:
-    """Runtime assertion: tokenizer's </think> id matches QWEN3_THINK_END_TOKEN_ID.
+def _verify_think_end_id(engine) -> int:
+    """Resolve and return the loaded model's single-token ``</think>`` id from the
+    engine tokenizer (model-aware; see :func:`resolve_think_end_id`).
 
-    This is the vLLM equivalent of the assertion in
-    ``bench/generator.py:generate_samples_split:517-521``. If the tokenizer
-    disagrees, fail loudly so we don't silently sample from the wrong
-    phase forever.
+    Replaces the old hardcoded-equality assertion: we still fail loudly if
+    ``</think>`` is not a single token (the processor can force only one id, and
+    would otherwise sample from the wrong phase forever), but the id itself comes
+    from whatever model is loaded — Qwen3 → 151668, DeepSeek → 128014.
     """
-    tok = engine.get_tokenizer()
-    ids = tok.encode("</think>", add_special_tokens=False)
-    if not (len(ids) == 1 and ids[0] == QWEN3_THINK_END_TOKEN_ID):
-        raise AssertionError(
-            f"Expected </think> to be single token id {QWEN3_THINK_END_TOKEN_ID}, "
-            f"got {ids} from tokenizer {tok.__class__.__name__}"
-        )
+    return resolve_think_end_id(engine.get_tokenizer())
 
 
 # ---------------------------------------------------------------------------
@@ -593,7 +611,7 @@ def generate_samples_split_vllm(
     temperature_think: float,
     temperature_code: float,
     stop_strings: list[str] | None = None,
-    think_end_token_id: int = QWEN3_THINK_END_TOKEN_ID,  # noqa: ARG001 — pinned by Qwen3
+    think_end_token_id: int | None = None,  # default: resolve from the model tokenizer
 ) -> list[str]:
     """vLLM-backed split decoding. Same return type as the HF version.
 
@@ -609,7 +627,10 @@ def generate_samples_split_vllm(
     """
     from vllm import SamplingParams
 
-    _verify_think_end_id(engine)
+    think_end_id = (
+        think_end_token_id if think_end_token_id is not None
+        else _verify_think_end_id(engine)
+    )
     processor_cls = _build_pless_split_logits_processor_class()
 
     # NOTE: vLLM 0.21+ removed SamplingParams.logits_processors. The
@@ -630,6 +651,7 @@ def generate_samples_split_vllm(
                 "t_code":        float(temperature_code),
                 "sampler_think": sampler_fn_think,
                 "sampler_code":  sampler_fn_code,
+                "think_end_id":  think_end_id,
             },
         },
     )
@@ -695,6 +717,10 @@ def generate_samples_vllm(
         cfg["loop_n"] = int(loop_ngram_n)
         cfg["loop_k"] = int(loop_ngram_k)
         cfg["loop_window"] = int(loop_window)
+    # Model-aware </think> id for think→code detection + loop-force masking
+    # (Qwen3 → 151668, DeepSeek-R1-Distill → 128014). Without this the processor
+    # falls back to the Qwen3 default and IndexErrors on smaller-vocab models.
+    cfg["think_end_id"] = resolve_think_end_id(engine.get_tokenizer())
     # NOTE: vLLM 0.21+ removed SamplingParams.logits_processors; the
     # processor class is pre-registered at engine load (see load_engine).
     sp = SamplingParams(
