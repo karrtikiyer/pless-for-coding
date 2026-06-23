@@ -79,13 +79,21 @@ MAX_CTX_TOKENS        = 38000   # leave headroom below model's 40960 limit
 # N-gram onset simulation (mirrors bench/loop_detect.py exactly)
 # ---------------------------------------------------------------------------
 
+_CHECK_EVERY = 8   # matches bench/generator_vllm.py _LOOP_CHECK_EVERY
+
 def simulate_onset(token_ids: list[int], n: int, k: int, window: int) -> int | None:
     """Return the token index at which the streaming n-gram detector first fires,
-    or None if it never fires on this sequence."""
+    or None if it never fires on this sequence.
+
+    Checks every _CHECK_EVERY tokens (matches the live vLLM throttle) — a loop
+    needs at least n*k tokens to form so skipping steps is safe and gives ~8x speedup.
+    """
     buf: list[int] = []
     for i, tid in enumerate(token_ids):
         buf.append(tid)
         if len(buf) < n * k:
+            continue
+        if i % _CHECK_EVERY != 0:
             continue
         t = buf[-window:]
         counts = Counter(tuple(t[j:j + n]) for j in range(len(t) - n + 1))
