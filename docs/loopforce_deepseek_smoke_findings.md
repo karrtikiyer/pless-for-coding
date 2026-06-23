@@ -1,8 +1,42 @@
-# DeepSeek-R1-Distill-Llama-8B loop-force — smoke (25-task) findings
+# DeepSeek-R1-Distill-Llama-8B loop-force — findings
 
-**Status:** smoke only (25 hardest tasks, 8/25 globally-unsolvable). **Full 252 pending.**
-Run: `results/loop_forcethink_deepseek_w3000/` (n=30, k=6, window=3000). Numbers below are
-reproduced by `scripts/completion_breakdown.py` and `scripts/detector_deepseek_nk_grid.py`.
+**Status:** FULL 252 DONE (n=30, **k=8**, window=3000), `results/loop_forcethink_deepseek_w3000_k8/`.
+All numbers reproduced by `scripts/deepseek_full252_analysis.py` (matched comparison + the
+over-truncation token check) and `scripts/completion_breakdown.py` / `scripts/detector_deepseek_nk_grid.py`.
+
+---
+
+## 0. FULL-252 VERDICT (supersedes the 25-smoke verdict in §2–3 below)
+
+On the full 252 — where solvable tasks dominate, unlike the dead-end-heavy 25-slice — loop-force
+is the method's **best showcase**, not a failure-relabeler. Matched vs the no-force baseline:
+
+| config | trunc% | compl%(+code) | closed-no-code% | cond | pass@1 | pass@5 | pass@10 |
+|---|---|---|---|---|---|---|---|
+| pless baseline | 64.9 | 35.1 | 0.0 | 0.495 | 0.174 | 0.368 | 0.464 |
+| **pless loop-force k8** | **4.1** | 68.3 | 27.6 | 0.327 | **0.223** | 0.451 | **0.528** |
+| pnorm baseline | 63.8 | 36.2 | 0.0 | 0.450 | 0.163 | 0.357 | 0.444 |
+| **pnorm loop-force k8** | **4.0** | 67.8 | 28.2 | 0.347 | **0.235** | 0.473 | **0.556** |
+
+- **Truncation 64.9→4.1% / 63.8→4.0%**; **pass@1 +4.9 / +7.2pp**; **pass@10 (coverage) +6.4 / +11.2pp**.
+- **Not over-truncating** (the token-length check): forced/cut traces median **6,094** / mean 6,527
+  sit squarely in the *productive* reasoning band (temp passed+completed: median 6,746 / mean 7,215,
+  p25–p75 4,413–9,564) and are **longer** than the model's own natural closes (median 5,026). The
+  ~5–6K overall mean is DeepSeek's intrinsic short-close behaviour, not the detector clipping good
+  reasoning. Decisive corroboration: pass@1 **and** pass@10 both rose — over-truncation would drop
+  coverage. (k=8 was tuned for ~0% false-positive on productive reasoning; see §4.)
+- **Cross-model law:** loop-force *improves* DeepSeek coverage (pass@10 ↑) but *hurt* Qwen3's
+  (−1–2pp). The payoff **scales with the baseline truncation rate** — DeepSeek wastes 64.9% to
+  truncation (huge headroom; gains swamp the false-positive cost), Qwen3 only 14.5% (FP cost
+  dominates). DeepSeek is therefore the stronger showcase for the method.
+- **The residual cost** is conditional-correctness (0.495→0.327) + ~28% closed-no-code — the
+  *dead-end loops* (forcing a stuck loop with no solution yields no/wrong code), not over-cutting.
+  Net is strongly positive.
+
+The §2–3 25-task smoke below was the **worst-case subset** (8/25 globally unsolvable, baseline
+pass@1 0.10) and is kept as the conservative bound; the full-252 numbers above are the verdict.
+
+---
 
 ## 1. The model-aware `</think>` fix (E8) works end-to-end
 
