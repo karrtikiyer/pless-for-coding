@@ -179,29 +179,46 @@ def teacher_forced_signals(
     model,
     input_ids,       # (1, seq_len) torch tensor on model.device
     prompt_len: int,
+    chunk_size: int = 512,
 ) -> tuple[list[float], list[float]]:
     """Single forward pass → (shannon_H list, collision_prob Σpᵢ² list).
 
     Returns one value per think-block token (positions prompt_len … seq_len-1).
+
+    Memory note: the per-position softmax over the full vocab (~152k for Qwen3)
+    is the memory hot-spot. Materialising probs+log_probs in float32 for the
+    whole think block at once is ~11 GB for a 9k-token trace. We process the
+    sequence in `chunk_size`-row chunks so peak extra memory is bounded to
+    chunk_size × vocab × 4 bytes (~0.3 GB at 512), and move results to CPU per
+    chunk so nothing accumulates on-device.
     """
     import torch
     with torch.no_grad():
-        logits = model(input_ids).logits[0]  # (seq_len, vocab)
+        logits = model(input_ids).logits[0]  # (seq_len, vocab), model dtype
 
     n_think = input_ids.shape[1] - prompt_len
     if n_think <= 0:
         return [], []
 
-    # logits[t] predicts token at position t+1
-    # think-block token i is at input position prompt_len + i
-    # so its predictive logit is at logits[prompt_len - 1 + i]
-    think_logits = logits[prompt_len - 1: prompt_len - 1 + n_think].float()
+    # logits[t] predicts token at position t+1; think-block token i is at input
+    # position prompt_len + i, so its predictive logit is at logits[prompt_len-1+i].
+    think_logits = logits[prompt_len - 1: prompt_len - 1 + n_think]  # keep model dtype
 
-    probs = torch.softmax(think_logits, dim=-1)           # (n_think, vocab)
-    log_probs = torch.log(probs + 1e-12)
-    H    = -(probs * log_probs).sum(dim=-1).cpu().tolist()  # Shannon entropy
-    coll = (probs ** 2).sum(dim=-1).cpu().tolist()          # Σpᵢ²
+    H_parts: list = []
+    coll_parts: list = []
+    with torch.no_grad():
+        for start in range(0, n_think, chunk_size):
+            chunk = think_logits[start: start + chunk_size].float()   # (c, vocab)
+            log_p = torch.log_softmax(chunk, dim=-1)                  # numerically stable
+            p     = log_p.exp()
+            H_chunk    = -(p * log_p).sum(dim=-1)                     # Shannon entropy (nats)
+            coll_chunk = (p * p).sum(dim=-1)                          # Σpᵢ²
+            H_parts.append(H_chunk.cpu())
+            coll_parts.append(coll_chunk.cpu())
+            del chunk, log_p, p, H_chunk, coll_chunk
 
+    H    = torch.cat(H_parts).tolist()
+    coll = torch.cat(coll_parts).tolist()
     return H, coll
 
 
@@ -513,7 +530,12 @@ def main() -> None:
                     H, coll = teacher_forced_signals(model, input_ids, prompt_len)
                 except Exception as e:
                     print(f"  [warn] {task_id}[{s_idx}] failed: {e}", file=sys.stderr)
+                    if "out of memory" in str(e).lower():
+                        torch.cuda.empty_cache()
                     continue
+                finally:
+                    del input_ids
+                    torch.cuda.empty_cache()
 
                 # Guard: onset must lie within the (possibly truncated) signal array
                 onset_in_range = onset is not None and onset < len(coll)
