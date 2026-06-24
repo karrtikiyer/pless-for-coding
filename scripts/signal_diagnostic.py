@@ -54,6 +54,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Make `bench` importable regardless of CWD (script lives in scripts/).
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 # ---------------------------------------------------------------------------
 # Per-model validated detector params (DO NOT change without re-running
 # detector_nk_grid.py / detector_falsepos_check.py)
