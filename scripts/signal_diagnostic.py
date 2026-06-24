@@ -73,6 +73,9 @@ SUSTAIN_TOKENS  = 20     # consecutive steps above threshold before declaring ri
 
 MAX_SAMPLES_PER_CLASS = 100
 MAX_CTX_TOKENS        = 38000   # leave headroom below model's 40960 limit
+POST_ONSET_MARGIN     = 500     # for terminal loops: teacher-force only up to
+                                # onset + this many tokens (we don't need the
+                                # 30k-token repeat tail to confirm a sustained rise)
 
 
 # ---------------------------------------------------------------------------
@@ -264,21 +267,29 @@ def plot_mean_trajectory(
     For clean samples: align to the median onset position from looping set.
     """
     half = 500
-    lo_traces, cl_traces = [], []
 
-    for r in looping_results:
-        coll = np.array(r["coll"])
-        onset = r["onset_token"]
-        if onset is None or onset < 10:
-            continue
-        rm = _rolling_mean(coll, rolling_w)
-        start = max(0, onset - half)
-        end   = min(len(rm), onset + half)
-        pad_left  = half - (onset - start)
-        pad_right = half - (end - onset)
-        trace = np.pad(rm[start:end], (pad_left, pad_right), constant_values=np.nan)
-        lo_traces.append(trace)
+    def _aligned_to_onset(results: list[dict]) -> list[np.ndarray]:
+        out = []
+        for r in results:
+            coll = np.array(r["coll"])
+            onset = r["onset_token"]
+            if onset is None or onset < 10 or onset >= len(coll):
+                continue
+            rm = _rolling_mean(coll, rolling_w)
+            start = max(0, onset - half)
+            end   = min(len(rm), onset + half)
+            pad_left  = half - (onset - start)
+            pad_right = half - (end - onset)
+            out.append(np.pad(rm[start:end], (pad_left, pad_right), constant_values=np.nan))
+        return out
 
+    # Split loops into transient (completed) vs terminal (truncated)
+    completed = [r for r in looping_results if r["cls"] == "looping_completed"]
+    truncated = [r for r in looping_results if r["cls"] == "looping_truncated"]
+    transient_traces = _aligned_to_onset(completed)
+    terminal_traces  = _aligned_to_onset(truncated)
+
+    cl_traces = []
     for r in clean_results:
         coll = np.array(r["coll"])
         rm = _rolling_mean(coll, rolling_w)
@@ -302,8 +313,9 @@ def plot_mean_trajectory(
         ax.plot(xs, mean, color=color, linewidth=1.8, label=f"{label} (n={len(traces)})")
         ax.fill_between(xs, mean - std, mean + std, color=color, alpha=0.15)
 
-    _plot_band(lo_traces, "#e74c3c", "looping_completed")
-    _plot_band(cl_traces, "#2ecc71", "clean")
+    _plot_band(terminal_traces,  "#e74c3c", "terminal (truncated)")
+    _plot_band(transient_traces, "#9b59b6", "transient (completed)")
+    _plot_band(cl_traces,        "#2ecc71", "clean")
 
     ax.axvline(0, color="black", linestyle="--", linewidth=1.2, label="n-gram onset (x=0)")
     ax.set_xlabel("Token offset from n-gram onset", fontsize=12)
@@ -381,8 +393,9 @@ def parse_args() -> argparse.Namespace:
                    help="HuggingFace model id (used to look up loop params and load weights)")
     p.add_argument("--output-dir", type=Path, default=None,
                    help="Output directory (default: results/signal_diagnostic/<model_slug>)")
-    p.add_argument("--max-samples", type=int, default=MAX_SAMPLES_PER_CLASS,
-                   help="Max samples per class (clean / looping_completed)")
+    p.add_argument("--max-clean", type=int, default=200,
+                   help="Max clean samples (negative control). ALL loop samples "
+                        "with a usable onset are always processed.")
     p.add_argument("--classify-only", action="store_true",
                    help="Only classify samples and print stats; skip model inference")
     p.add_argument("--seed", type=int, default=42)
@@ -422,13 +435,16 @@ def main() -> None:
         return
 
     # ---- Step 2: subsample ----
-    print(f"\n[2/4] Subsampling (max {args.max_samples} per class) ...")
-    clean_pool    = random.sample(buckets["clean"],
-                                  min(args.max_samples, len(buckets["clean"])))
-    looping_pool  = random.sample(buckets["looping_completed"],
-                                  min(args.max_samples, len(buckets["looping_completed"])))
-    print(f"  clean:             {len(clean_pool)}")
-    print(f"  looping_completed: {len(looping_pool)}")
+    print(f"\n[2/4] Subsampling ...")
+    # Loops are the scarce, high-value data — take ALL of them (with a usable
+    # onset). Clean is the abundant negative control — subsample to --max-clean.
+    completed_pool = [e for e in buckets["looping_completed"] if e["onset_token"] is not None]
+    truncated_pool = [e for e in buckets["looping_truncated"] if e["onset_token"] is not None]
+    clean_pool     = random.sample(buckets["clean"],
+                                   min(args.max_clean, len(buckets["clean"])))
+    print(f"  looping_completed (transient, all w/ onset): {len(completed_pool)}")
+    print(f"  looping_truncated (terminal, all w/ onset):  {len(truncated_pool)}")
+    print(f"  clean (negative control, subsampled):        {len(clean_pool)}")
 
     # ---- Step 3: teacher-forced inference ----
     per_sample_path = out_dir / "per_sample.jsonl"
@@ -441,8 +457,11 @@ def main() -> None:
         print(f"  [resume] {len(done_keys)} samples already done")
 
     to_process = [
-        (entry, "looping_completed") for entry in looping_pool
+        (entry, "looping_completed") for entry in completed_pool
         if (entry["task_id"], entry["sample_idx"], "looping_completed") not in done_keys
+    ] + [
+        (entry, "looping_truncated") for entry in truncated_pool
+        if (entry["task_id"], entry["sample_idx"], "looping_truncated") not in done_keys
     ] + [
         (entry, "clean") for entry in clean_pool
         if (entry["task_id"], entry["sample_idx"], "clean") not in done_keys
@@ -463,6 +482,14 @@ def main() -> None:
                 s_idx     = entry["sample_idx"]
                 onset     = entry["onset_token"]
                 think_tok = entry["think_tokens"]
+                is_loop   = cls in ("looping_completed", "looping_truncated")
+
+                # Terminal loops run to the ~38k context limit. We only need the
+                # pre-onset trajectory + a short post-onset margin to confirm a
+                # sustained rise — not the 30k-token repeat tail. Cap the think
+                # block at onset + POST_ONSET_MARGIN to bound the forward-pass cost.
+                if cls == "looping_truncated" and onset is not None:
+                    think_tok = think_tok[: onset + POST_ONSET_MARGIN]
 
                 # build full input: prompt + think tokens
                 prompt_ids  = tokenizer.encode(entry["prompt_text"],
@@ -483,9 +510,11 @@ def main() -> None:
                     print(f"  [warn] {task_id}[{s_idx}] failed: {e}", file=sys.stderr)
                     continue
 
+                # Guard: onset must lie within the (possibly truncated) signal array
+                onset_in_range = onset is not None and onset < len(coll)
                 signal_rise = (
-                    find_signal_rise(coll, onset) if (onset is not None and cls == "looping_completed")
-                    else None
+                    find_signal_rise(coll, onset)
+                    if (is_loop and onset_in_range) else None
                 )
                 lead_time = (
                     (onset - signal_rise) if (signal_rise is not None and onset is not None)
@@ -507,7 +536,7 @@ def main() -> None:
                 f_out.flush()
 
                 marker = (f"onset={onset}  rise={signal_rise}  lead={lead_time}"
-                          if cls == "looping_completed" else "clean")
+                          if is_loop else "clean")
                 print(f"  [{i+1}/{len(to_process)}] {task_id}[{s_idx}] {cls}  {marker}")
 
         del model
@@ -516,66 +545,92 @@ def main() -> None:
 
     # ---- Step 4: analyse + plot ----
     print("\n[4/4] Analysing and plotting ...")
-    looping_results, clean_results = [], []
+    by_cls: dict[str, list[dict]] = {
+        "looping_completed": [], "looping_truncated": [], "clean": []
+    }
     with open(per_sample_path) as f:
         for line in f:
             r = json.loads(line)
-            if r["cls"] == "looping_completed":
-                looping_results.append(r)
-            elif r["cls"] == "clean":
-                clean_results.append(r)
+            if r["cls"] in by_cls:
+                by_cls[r["cls"]].append(r)
 
-    # Lead-time statistics
-    lead_times = [r["lead_time"] for r in looping_results if r["lead_time"] is not None]
-    detected   = [r for r in looping_results if r["signal_rise_token"] is not None]
+    completed_results = by_cls["looping_completed"]
+    truncated_results = by_cls["looping_truncated"]
+    clean_results     = by_cls["clean"]
+    all_loops         = completed_results + truncated_results
+
+    def _group_stats(results: list[dict]) -> dict:
+        """Lead-time stats for one loop group."""
+        lts      = [r["lead_time"] for r in results if r["lead_time"] is not None]
+        detected = [r for r in results if r["signal_rise_token"] is not None]
+        return {
+            "n":                    len(results),
+            "signal_rise_detected": len(detected),
+            "detection_rate":       len(detected) / len(results) if results else 0,
+            "lead_time_tokens": {
+                "n":            len(lts),
+                "median":       float(np.median(lts))         if lts else None,
+                "mean":         float(np.mean(lts))           if lts else None,
+                "p10":          float(np.percentile(lts, 10)) if lts else None,
+                "p25":          float(np.percentile(lts, 25)) if lts else None,
+                "p75":          float(np.percentile(lts, 75)) if lts else None,
+                "p90":          float(np.percentile(lts, 90)) if lts else None,
+                "negative_pct": float(100 * sum(1 for x in lts if x < 0) / len(lts)) if lts else None,
+            },
+        }
+
+    # Verdict is driven by the high-value TERMINAL loops (truncated). Fall back
+    # to all-loops if no truncated samples were processed.
+    verdict_group = truncated_results if truncated_results else all_loops
+    verdict_lts   = [r["lead_time"] for r in verdict_group if r["lead_time"] is not None]
+    verdict_median = float(np.median(verdict_lts)) if verdict_lts else None
+    interpretation = (
+        "STRONG SIGNAL — proceed to CUSUM" if verdict_median and verdict_median > 200
+        else "MARGINAL — add SpecRA confirmation layer" if verdict_median and verdict_median > 50
+        else "WEAK — logit signal lags; consider hidden-state probe"
+    )
 
     stats = {
         "model": args.model,
         "loop_params": lp,
-        "n_looping": len(looping_results),
-        "n_clean":   len(clean_results),
-        "signal_rise_detection_rate": len(detected) / len(looping_results) if looping_results else 0,
-        "lead_time_tokens": {
-            "n":      len(lead_times),
-            "median": float(np.median(lead_times)) if lead_times else None,
-            "mean":   float(np.mean(lead_times))   if lead_times else None,
-            "p10":    float(np.percentile(lead_times, 10)) if lead_times else None,
-            "p25":    float(np.percentile(lead_times, 25)) if lead_times else None,
-            "p75":    float(np.percentile(lead_times, 75)) if lead_times else None,
-            "p90":    float(np.percentile(lead_times, 90)) if lead_times else None,
-            "negative_pct": float(100 * sum(1 for x in lead_times if x < 0) / len(lead_times)) if lead_times else None,
+        "post_onset_margin": POST_ONSET_MARGIN,
+        "n_clean": len(clean_results),
+        "groups": {
+            "looping_completed": _group_stats(completed_results),  # transient
+            "looping_truncated": _group_stats(truncated_results),  # terminal
+            "all_loops":         _group_stats(all_loops),          # pooled (reference)
         },
-        "interpretation": (
-            "STRONG SIGNAL — proceed to CUSUM" if lead_times and float(np.median(lead_times)) > 200
-            else "MARGINAL — add SpecRA confirmation layer" if lead_times and float(np.median(lead_times)) > 50
-            else "WEAK — logit signal lags; consider hidden-state probe"
-        ),
+        "verdict_driver": "looping_truncated" if truncated_results else "all_loops",
+        "interpretation": interpretation,
     }
 
     stats_path = out_dir / "lead_time_stats.json"
     stats_path.write_text(json.dumps(stats, indent=2))
 
-    print("\n" + "=" * 60)
-    print("SIGNAL DIAGNOSTIC RESULTS")
-    print("=" * 60)
-    print(f"  looping samples:        {stats['n_looping']}")
-    print(f"  clean samples:          {stats['n_clean']}")
-    print(f"  signal rise detected:   {len(detected)}/{len(looping_results)} "
-          f"({100*stats['signal_rise_detection_rate']:.0f}%)")
-    if lead_times:
-        lt = stats["lead_time_tokens"]
-        print(f"  lead time (tokens):")
-        print(f"    median  {lt['median']:>8.0f}")
-        print(f"    mean    {lt['mean']:>8.0f}")
-        print(f"    p10     {lt['p10']:>8.0f}")
-        print(f"    p90     {lt['p90']:>8.0f}")
-        print(f"    negative (signal LAGS onset): {lt['negative_pct']:.0f}%")
-    print(f"\n  VERDICT: {stats['interpretation']}")
-    print("=" * 60)
+    def _print_group(name: str, label: str) -> None:
+        g = stats["groups"][name]
+        lt = g["lead_time_tokens"]
+        print(f"  {label} (n={g['n']}):")
+        print(f"    signal rise detected: {g['signal_rise_detected']}/{g['n']} "
+              f"({100*g['detection_rate']:.0f}%)")
+        if lt["median"] is not None:
+            print(f"    lead time median={lt['median']:.0f}  mean={lt['mean']:.0f}  "
+                  f"p10={lt['p10']:.0f}  p90={lt['p90']:.0f}  "
+                  f"neg={lt['negative_pct']:.0f}%")
 
-    plot_mean_trajectory(looping_results, clean_results,
-                         out_dir / "mean_trajectory.png")
-    plot_individual_traces(looping_results, out_dir / "individual_traces.png")
+    print("\n" + "=" * 64)
+    print("SIGNAL DIAGNOSTIC RESULTS")
+    print("=" * 64)
+    print(f"  clean (negative control): {len(clean_results)}")
+    _print_group("looping_completed", "TRANSIENT loops (completed)")
+    _print_group("looping_truncated", "TERMINAL  loops (truncated)")
+    _print_group("all_loops",         "ALL loops (pooled)")
+    print(f"\n  VERDICT (driven by {stats['verdict_driver']}): {interpretation}")
+    print("=" * 64)
+
+    # Plots use all loops; the trajectory plot separates the two loop types.
+    plot_mean_trajectory(all_loops, clean_results, out_dir / "mean_trajectory.png")
+    plot_individual_traces(all_loops, out_dir / "individual_traces.png")
     print(f"\n[diagnostic] done.  stats → {stats_path}")
 
 
