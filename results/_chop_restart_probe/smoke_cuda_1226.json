@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "config": "pless_think_t1.0_t1.0",
+    "n": 1,
+    "cont": "a5",
+    "skipped": []
+  },
+  "results": [
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 297,
+      "task_id": 1226,
+      "arm": "A_force",
+      "cut": 14800
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 595,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_only",
+      "cut": 14800
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 303,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_pivot",
+      "cut": 14800
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 314,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_restart",
+      "cut": 14800
+    }
+  ]
+}

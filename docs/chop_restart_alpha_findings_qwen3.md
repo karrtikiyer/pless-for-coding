@@ -1,109 +1,147 @@
-# Chop + Restart-Thinking Nudge + α=5 — Findings
+# Chop-and-Continue Loop Rescue — Findings (Qwen3-8B, APPS ATCODER-interview)
 
-**Date**: 2026-06-23  
-**Experiment**: Pre-registered fair test — chop real saved traces at loop onset, inject restart nudge, continue at α=5 vs α=2 vs forced-`</think>`.  
-**Script**: `scripts/chop_restart_alpha_compare.py`  
-**Results file**: `results/_chop_restart_probe/qwen3_restart_alpha_n2.json`  
-**Log**: `results/_chop_restart_probe/full_n2.log`
+**Date**: 2026-06-25
+**Question**: while running pless @ α=2 (the confident-case default — best pass@1), can we
+DETECT a thinking-phase loop and ESCAPE it — recovering a task that would otherwise
+truncate-and-fail — and is that escape better than the current rescue (force `</think>` and
+extract whatever solution already exists)?
 
----
+**Method**: for each task, take its REAL saved pless ramble (the α=2 generation that looped to
+the 32768-token cap, emitted no `</think>`, produced no code → auto-failed), chop it at the loop
+onset (`find_loop`), and run four arms on the IDENTICAL chopped prefix (only the post-chop action
+differs):
 
-## Pre-registered arms
+| Arm | Action after chop |
+|-----|-------------------|
+| A_force | force `</think>` + ```` ```python ````, extract the existing solution (baseline rescue) |
+| chop_only | continue thinking, NO nudge (bare-chop control) |
+| chop_pivot | nudge "step back, try a different approach" + continue thinking |
+| chop_restart | nudge "discard it, reconsider from scratch" + continue thinking |
 
-| Arm | Action |
-|-----|--------|
-| A_force | inject `</think>` + python fence → extract existing solution |
-| C_restart | chop + restart nudge + continue at pless_alpha(α=5) |
-| B_restart | chop + restart nudge + continue at pless_alpha(α=2) (mechanism control) |
+All three chop arms re-detect loops live (30-gram × 6 / window 1200) and re-chop up to 3×.
 
-**Pre-registered win condition**: C recovers ≥1 task A_force misses AND C_total ≥ A_total.  
-**Null hypothesis** (expected per 2506.10979): C ≈ B ≤ A.
+**Two runs**, identical except the chop-arm continuation sampler:
+- **Phase 1 (α=5)**: `results/_chop_restart_probe/qwen3_chop_restart_phase1_n4.json`
+- **α=2 control**: `results/_chop_restart_probe/qwen3_chop_restart_a2_n4.json`
 
----
-
-## Executed results
-
-**Run scope**: 40 tasks (pless_think_t1.0_t1.0, Qwen3-8B ATCODER_interview), n=2, MAX_CONT=2048.
-
-**Run outcome: crashed at task 3 of 40 (task 326). Only 2 tasks completed.**
-
-| Arm | recovered samples / total | tasks recovered |
-|-----|--------------------------|-----------------|
-| A_force | 0 / 4 | 0 / 2 |
-| C_restart | 0 / 4 | 0 / 2 |
-| B_restart | 0 / 4 | 0 / 2 |
-
-Per-task breakdown (2 tasks):
-
-| task_id | cut | cut% | A_force | C_restart | B_restart |
-|---------|-----|------|---------|-----------|-----------|
-| 117 | 14080 chars | 9% | Failed (both) | cap/no_</think> (both) | cap/no_</think> (both) |
-| 280 | 3680 chars | 3% | Failed (both) | cap/no_</think> (both) | cap/no_</think> (both) |
-
-**Pre-registered conclusion: null — C ≈ B = A = 0.**  
-No arm recovered any task. The null matches the prediction from 2506.10979.
+**Scope**: the 14 "signal-before-loop" anchored tasks (A30 / `proxy_reasoning_depth.md`) — the
+subset with a passing-config reference depth, so MAX_CONT=16384 is known-adequate. n=4 per arm.
+HF token-by-token on CUDA. This is the **optimistic subset** (solvable, signal present); it does
+not give a deployment-wide recovery rate (that is the deferred all-40 Phase 2).
 
 ---
 
-## Root-cause analysis
+## Results (pass-count per arm, α=5 ‖ α=2)
 
-### Why the run crashed
+Totals:
 
-Task 326 (cut@66080 chars ≈ 15K tokens) triggered an unrecoverable Metal assertion:  
-`Failed to allocate private MTLBuffer for size 33439048832`
+| run | A_force | chop_only | chop_pivot | chop_restart |
+|-----|---------|-----------|------------|--------------|
+| **α=5** | 33/56 (9 tasks) | 41/56 (12 t) | 42/56 (12 t) | 37/56 (10 t) |
+| **α=2** | 34/56 (9 t) | **20/56 (8 t)** | 24/56 (11 t) | 28/56 (10 t) |
 
-MPS does not support flash attention — attention matrices are O(n²) in memory. At ~15K tokens, each layer's attention matrix is ~32 heads × 15360² × 2 bytes ≈ 14 GB. Two layers of activations in flight → ~33 GB allocation request, exceeding the 64 GB MPS pool.
+Per task (pass/4, shown α5/α2; ★ = A_force scored 0):
 
-This is not catchable by the try/except block (Metal assertion, not a Python exception).
+| task | A_force | chop_only | chop_pivot | chop_restart |
+|------|---------|-----------|------------|--------------|
+| 417 ★ | 0/0 | 1/1 | 2/1 | 0/0 |
+| 558 | 4/4 | 4/3 | 4/4 | 4/4 |
+| 616 | 4/4 | 4/2 | 4/1 | 4/0 |
+| 927 | 4/4 | 4/4 | 4/4 | 4/4 |
+| 990 | 4/4 | 4/**0** | 4/1 | 4/4 |
+| 1085 ★ | 0/0 | 4/1 | 4/3 | 4/2 |
+| 1086 | 1/2 | 1/0 | 2/2 | 1/2 |
+| 1125 ★ | 0/0 | 0/0 | 0/0 | 0/0 |
+| 1126 | 4/4 | 4/4 | 4/2 | 4/4 |
+| 1171 | 4/4 | 4/1 | 4/0 | 4/1 |
+| 1178 ★ | 0/0 | 0/0 | 0/0 | 0/0 |
+| 1224 | 4/4 | 4/4 | 4/1 | 4/2 |
+| 1226 | 4/4 | 4/**0** | 4/4 | 4/4 |
+| 1328 ★ | 0/0 | 3/0 | 2/1 | 0/1 |
 
-**3 of 40 tasks have cuts ≥40K chars** (risky for MPS):
-
-| task_id | cut (chars) | cut% |
-|---------|-------------|------|
-| 326 | 66080 | 47% |
-| 1175 | 59040 | 80% |
-| 739 | 43680 | 45% |
-
-### Why MAX_CONT=2048 was too small
-
-**Cut distribution across all 40 tasks** (computed by running `find_loop` offline):
-
-| percentile | cut (chars) | cut% through trace |
-|-----------|-------------|-------------------|
-| p10 | 6000 | 6% |
-| p25 | 9200 | 7% |
-| p50 | 16240 | 12% |
-| p75 | 30640 | 26% |
-| p90 | 36720 | 41% |
-| max | 66080 | 47% |
-
-The plan assumed "cap ~2048 tokens (we only generate the short continuation)". This assumed cuts would be late in reasoning. In practice, loop detection fires at **median 12%** through the reasoning trace. A restart from 12% through a hard ATCODER problem requires the model to redo ~88% of its reasoning — easily 5K–20K tokens. 2048 tokens is not a short continuation.
-
-Both completed tasks confirm this: C/B restart hits the 2048-token cap with `end=cap, exec=no_</think>` on all 4 samples — the model starts thinking again but cannot converge within budget.
-
-### Why A_force also failed
-
-A_force injects `</think>` + code fence at the cut point and extracts code. Both tasks had cuts at 3-9% through reasoning — the model hadn't developed any solution yet. Forcing code from 3-9% of a complete reasoning chain produces incorrect solutions.
+(A_force re-ran in both passes as a consistency check: 33 vs 34 samples — matches within 1, the
+small drift is executor flakiness, RuntimeError/Timeout on generated code.)
 
 ---
 
-## Conclusions
+## Findings
 
-**On the pre-registered question (C vs A)**: cannot conclude — the run did not produce meaningful data. The 2 completed tasks show a degenerate outcome (all arms = 0) driven by the design mismatch below.
+### 1. The chop is a real rescue lever (recovers tasks force-extract cannot), at BOTH α
+A_force fails completely (0/4) on 5 tasks: **417, 1085, 1125, 1178, 1328**. On **417, 1085, 1328**
+some chop arm recovers — at **both** α=5 and α=2. These are tasks whose pre-loop trace contained no
+extractable solution (A_force = 0), yet continuing to think after the chop reached one. Because it
+holds at α=2 as well as α=5, the **chop itself** earns the recovery — not merely the α-switch.
+(1125, 1178 never recover under any arm — capability ceiling for the chop, see §4.)
 
-**Design mismatch discovered**: The experiment assumed loop detection fires late (so 2048-token continuation is a "short" extension). Actual data shows it fires at **median 12%** of the reasoning trace. The restart arms need a continuation budget ≫ 2048 to have any chance of closing `</think>` and writing code.
+### 2. α=5's specific role is RE-ENTRY SUPPRESSION — and it is the reliability engine
+Dropping α=5 → α=2, bare **chop_only collapses: 41→20 samples, 12→8 tasks — falling *below*
+A_force** (9 tasks). The mechanism, quantified over the 168 chop-arm samples per run:
 
-**What would be needed for a valid experiment**:
-- MAX_CONT ≥ 8192 (to cover the median case; ideally 16384)
-- Filter out 3 tasks with cuts ≥40K chars (MPS OOM), leaving 37 tasks
-- Or run on CUDA server (no quadratic attention limit)
+| | end=eos (closed think) | end=loop (re-entry death) | re-chopped (chops>0) | never closed `</think>` |
+|---|---|---|---|---|
+| α=5 | 159 | **0** | 4 | 6 |
+| α=2 | 92 | **54** | 81 | 67 |
 
-**Standing conclusion (unaffected by this experiment)**: Prevention via α=5 from start (A31: 0.80 pass@1, 0.4% trunc) remains the dominant strategy. Among rescue approaches, forced-`</think>` (11/27 recovery, verified) is the only empirically validated lever.
+At α=2 the chopped context re-derives its loop: the detector re-fires 81× (vs 4×), and 54 samples
+re-loop through all 3 chops and die with no code. At α=5 there are **zero** loop-deaths — the
+flatter distribution prevents re-entry. Cleanest single proof: **task 990, chop_only 4/4 at α5 →
+0/4 at α2** (same chop point, only the sampler changed; all four α2 samples re-looped to death).
+
+### 3. The nudge flips from REDUNDANT (α=5) to LOAD-BEARING (α=2) — but its direction is unreliable
+- At α=5, chop_only ≈ chop_pivot (both 12 tasks, 41/42 samples) — the nudge adds nothing, because
+  α=5 already suppresses re-entry.
+- At α=2, bare chop_only drops to 8 tasks, but the nudge recovers **990, 1086, 1226, 1328** that
+  bare chop loses (chop_pivot 11 t, chop_restart 10 t). So a nudge **partially substitutes** for
+  α=5's re-entry suppression.
+- But which nudge wins is task-dependent and reverses: restart saves 990 (0→4/4) yet kills 417
+  (1→0); pivot best on 1085; both hurt 616. **No deployable "best nudge."** Consistent with
+  2506.10979 (nudge-to-reconsider effects are real but unreliable).
+
+### 4. Prevention still numerically dominates rescue
+α=5 run **from the start** (full-252 recovery sweep, vLLM, n=10) solves the A_force-fail tasks at
+higher rates than any rescue here: **417 = 5/10, 1085 = 9/10, 1328 = 10/10, 1125 = 7/10,
+1178 = 2/10**. Two implications:
+- The looped-prefix seed can **handicap**: on **1125**, α=5-from-start gets 7/10 but chop (both α)
+  gets 0/4 — seeding from the degenerate trace prevented a recovery a clean start achieves.
+- Prevention (just run α=5) beats rescue on this subset. Rescue is only relevant if one is
+  committed to α=2 for its confident-case pass@1 and willing to accept flaky recovery on the
+  looping subset.
+
+### 5. Cross-check — the chop does NOT exceed the capability ceiling
+Of the 13 tasks unsolvable across all 6 original configs (`truncated_solvability.md`:
+117, 280, 326, 370, 454, 455, 512, 661, 962, 1122, 1175, 1223, 1368), the α3/α4/α5 recovery arms
+solved **0**; only 280 ever cracked, and only via **pless T2.0** (1/10) — temperature, not α. The
+chop arms continue with α — i.e. a handicapped α-from-start — so a chop probe on those tasks is a
+near-certain 0. The dedicated unsolvable-task probe was therefore **dropped** (the alpha sweep
+already answered it). This confirms chop rescues *within* capability, it does not manufacture
+solutions for tasks the model cannot solve.
 
 ---
 
-## Relationship to prior A28 findings
+## Deployable hierarchy (established by this experiment)
 
-This experiment was designed as the "fair test" to resolve the confound identified 2026-06-13: `chop_regen_probe.py` used freshly regenerated traces (confounded) while this script uses real saved traces. That design fix was correct. The new failure was in the continuation cap assumption and MPS context limits.
+**α=5 from start (prevention) > chop + α=5 (rescue) > chop + nudge + α=2 (flaky rescue) >
+A_force ≈ chop-only + α=2 > do nothing.**
 
-The 2506.10979 null prediction (C ≈ B ≤ A, restart nudge is weak) remains unrefuted — but also untested at the scale needed to be informative.
+Answer to "can we adaptively escape while staying on α=2?": **Yes, but only with a nudge, and
+flakily.** Bare chop on α=2 fails (re-entry). chop+nudge on α=2 recovers more *distinct tasks*
+than A_force (11 vs 9) but at *lower per-draw reliability* (24 vs 34 samples) — it trades precision
+for coverage. The dependable rescue is **chop + α=5**; the most reliable option overall is
+**prevention (α=5 from start)**.
+
+---
+
+## Caveats
+- **n=4, 14 optimistic tasks.** Per-task rates are directional, not precise; the nudge
+  direction-flip (restart 4/4 on 990 vs 0/4 on 417) is suggestive, not settled.
+- **Subset bias.** These 14 are signal-before-loop + solvable; they overstate recovery vs the full
+  40 truncated tasks (let alone all 252). A real recovery *rate* needs the deferred Phase 2.
+- **n/backend not fully paired** for the prevention comparison: chop runs are n=4 HF; the α5-from-
+  start rates are n=10 vLLM. The qualitative signals (seed handicap on 1125; α5 > α2 reliability)
+  are too large to be artifacts, but the exact rates are not directly comparable.
+
+## Artifacts
+- `results/_chop_restart_probe/qwen3_chop_restart_phase1_n4.json` (α=5) + `.log`
+- `results/_chop_restart_probe/qwen3_chop_restart_a2_n4.json` (α=2 control) + `.log`
+- Prevention/unsolvable cross-check: `results/pless_recovery_full252/.../metrics/*.json`
+- Script: `scripts/chop_restart_alpha_compare.py`; launcher: `run_chop_restart_apps_qwen3.sh`

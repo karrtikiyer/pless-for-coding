@@ -1,0 +1,3972 @@
+{
+  "meta": {
+    "config": "pless_think_t1.0_t1.0",
+    "n": 4,
+    "cont": "a2",
+    "skipped": []
+  },
+  "results": [
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "task_id": 417,
+      "arm": "A_force",
+      "cut": 26000
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "RuntimeError",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "task_id": 417,
+      "arm": "A_force",
+      "cut": 26000
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "task_id": 417,
+      "arm": "A_force",
+      "cut": 26000
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "task_id": 417,
+      "arm": "A_force",
+      "cut": 26000
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 3,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 15461,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 12157,
+          "round_len": 12998
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 859
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 1195
+        }
+      ],
+      "task_id": 417,
+      "arm": "chop_only",
+      "cut": 26000
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 9187,
+      "chop_events": [],
+      "task_id": 417,
+      "arm": "chop_only",
+      "cut": 26000
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 10333,
+      "chop_events": [],
+      "task_id": 417,
+      "arm": "chop_only",
+      "cut": 26000
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 9270,
+      "chop_events": [],
+      "task_id": 417,
+      "arm": "chop_only",
+      "cut": 26000
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 8035,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 6027,
+          "round_len": 6827
+        },
+        {
+          "chop": 2,
+          "onset": 151,
+          "round_len": 462
+        },
+        {
+          "chop": 3,
+          "onset": 1047,
+          "round_len": 1415
+        }
+      ],
+      "task_id": 417,
+      "arm": "chop_pivot",
+      "cut": 26000
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 12232,
+      "chop_events": [],
+      "task_id": 417,
+      "arm": "chop_pivot",
+      "cut": 26000
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 8745,
+      "chop_events": [],
+      "task_id": 417,
+      "arm": "chop_pivot",
+      "cut": 26000
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 15636,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 8342,
+          "round_len": 9131
+        }
+      ],
+      "task_id": 417,
+      "arm": "chop_pivot",
+      "cut": 26000
+    },
+    {
+      "sample": 0,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 417,
+      "arm": "chop_restart",
+      "cut": 26000
+    },
+    {
+      "sample": 1,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 417,
+      "arm": "chop_restart",
+      "cut": 26000
+    },
+    {
+      "sample": 2,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 417,
+      "arm": "chop_restart",
+      "cut": 26000
+    },
+    {
+      "sample": 3,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 417,
+      "arm": "chop_restart",
+      "cut": 26000
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 401,
+      "task_id": 558,
+      "arm": "A_force",
+      "cut": 31840
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 401,
+      "task_id": 558,
+      "arm": "A_force",
+      "cut": 31840
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 401,
+      "task_id": 558,
+      "arm": "A_force",
+      "cut": 31840
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 401,
+      "task_id": 558,
+      "arm": "A_force",
+      "cut": 31840
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 730,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_only",
+      "cut": 31840
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 809,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_only",
+      "cut": 31840
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 1080,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_only",
+      "cut": 31840
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 841,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1,
+          "round_len": 180
+        },
+        {
+          "chop": 2,
+          "onset": 212,
+          "round_len": 565
+        },
+        {
+          "chop": 3,
+          "onset": 303,
+          "round_len": 408
+        }
+      ],
+      "task_id": 558,
+      "arm": "chop_only",
+      "cut": 31840
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 394,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_pivot",
+      "cut": 31840
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 395,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_pivot",
+      "cut": 31840
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 394,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_pivot",
+      "cut": 31840
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 394,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_pivot",
+      "cut": 31840
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 395,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_restart",
+      "cut": 31840
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 394,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_restart",
+      "cut": 31840
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 394,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_restart",
+      "cut": 31840
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 394,
+      "chop_events": [],
+      "task_id": 558,
+      "arm": "chop_restart",
+      "cut": 31840
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 307,
+      "task_id": 616,
+      "arm": "A_force",
+      "cut": 16240
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 307,
+      "task_id": 616,
+      "arm": "A_force",
+      "cut": 16240
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 313,
+      "task_id": 616,
+      "arm": "A_force",
+      "cut": 16240
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 307,
+      "task_id": 616,
+      "arm": "A_force",
+      "cut": 16240
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 2071,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 685,
+          "round_len": 1613
+        },
+        {
+          "chop": 2,
+          "onset": 778,
+          "round_len": 1625
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 560
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_only",
+      "cut": 16240
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 4108,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 363,
+          "round_len": 1325
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_only",
+      "cut": 16240
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1022,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 19,
+          "round_len": 991
+        },
+        {
+          "chop": 2,
+          "onset": 293,
+          "round_len": 1372
+        },
+        {
+          "chop": 3,
+          "onset": 111,
+          "round_len": 1018
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_only",
+      "cut": 16240
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 3686,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1442,
+          "round_len": 2008
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_only",
+      "cut": 16240
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1279,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 202,
+          "round_len": 1389
+        },
+        {
+          "chop": 2,
+          "onset": 327,
+          "round_len": 1353
+        },
+        {
+          "chop": 3,
+          "onset": 191,
+          "round_len": 971
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_pivot",
+      "cut": 16240
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1560,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 243,
+          "round_len": 1351
+        },
+        {
+          "chop": 2,
+          "onset": 293,
+          "round_len": 739
+        },
+        {
+          "chop": 3,
+          "onset": 15,
+          "round_len": 532
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_pivot",
+      "cut": 16240
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 2,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 5357,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 565,
+          "round_len": 1138
+        },
+        {
+          "chop": 2,
+          "onset": 1943,
+          "round_len": 2891
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_pivot",
+      "cut": 16240
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 2048,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1260,
+          "round_len": 1577
+        },
+        {
+          "chop": 2,
+          "onset": 122,
+          "round_len": 553
+        },
+        {
+          "chop": 3,
+          "onset": 122,
+          "round_len": 698
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_pivot",
+      "cut": 16240
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1613,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 572,
+          "round_len": 1335
+        },
+        {
+          "chop": 2,
+          "onset": 119,
+          "round_len": 769
+        },
+        {
+          "chop": 3,
+          "onset": 99,
+          "round_len": 978
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_restart",
+      "cut": 16240
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1632,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 246,
+          "round_len": 1058
+        },
+        {
+          "chop": 2,
+          "onset": 40,
+          "round_len": 636
+        },
+        {
+          "chop": 3,
+          "onset": 81,
+          "round_len": 504
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_restart",
+      "cut": 16240
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1331,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 118,
+          "round_len": 977
+        },
+        {
+          "chop": 2,
+          "onset": 253,
+          "round_len": 936
+        },
+        {
+          "chop": 3,
+          "onset": 64,
+          "round_len": 885
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_restart",
+      "cut": 16240
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1383,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 532,
+          "round_len": 1076
+        },
+        {
+          "chop": 2,
+          "onset": 166,
+          "round_len": 603
+        },
+        {
+          "chop": 3,
+          "onset": 111,
+          "round_len": 567
+        }
+      ],
+      "task_id": 616,
+      "arm": "chop_restart",
+      "cut": 16240
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 276,
+      "task_id": 927,
+      "arm": "A_force",
+      "cut": 12560
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 276,
+      "task_id": 927,
+      "arm": "A_force",
+      "cut": 12560
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 276,
+      "task_id": 927,
+      "arm": "A_force",
+      "cut": 12560
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 289,
+      "task_id": 927,
+      "arm": "A_force",
+      "cut": 12560
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 5282,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_only",
+      "cut": 12560
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 6592,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_only",
+      "cut": 12560
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 5453,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_only",
+      "cut": 12560
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 5740,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_only",
+      "cut": 12560
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 5187,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_pivot",
+      "cut": 12560
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 5686,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_pivot",
+      "cut": 12560
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 8024,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_pivot",
+      "cut": 12560
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 8389,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_pivot",
+      "cut": 12560
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 6027,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_restart",
+      "cut": 12560
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 5171,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_restart",
+      "cut": 12560
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 7367,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_restart",
+      "cut": 12560
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 5872,
+      "chop_events": [],
+      "task_id": 927,
+      "arm": "chop_restart",
+      "cut": 12560
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 429,
+      "task_id": 990,
+      "arm": "A_force",
+      "cut": 31200
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 425,
+      "task_id": 990,
+      "arm": "A_force",
+      "cut": 31200
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 429,
+      "task_id": 990,
+      "arm": "A_force",
+      "cut": 31200
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 425,
+      "task_id": 990,
+      "arm": "A_force",
+      "cut": 31200
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 306,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 102,
+          "round_len": 301
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 204
+        },
+        {
+          "chop": 3,
+          "onset": 24,
+          "round_len": 229
+        }
+      ],
+      "task_id": 990,
+      "arm": "chop_only",
+      "cut": 31200
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 282,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 46,
+          "round_len": 318
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 3,
+          "onset": 32,
+          "round_len": 211
+        }
+      ],
+      "task_id": 990,
+      "arm": "chop_only",
+      "cut": 31200
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 321,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 21,
+          "round_len": 249
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 203
+        },
+        {
+          "chop": 3,
+          "onset": 27,
+          "round_len": 182
+        }
+      ],
+      "task_id": 990,
+      "arm": "chop_only",
+      "cut": 31200
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 349,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 0,
+          "round_len": 203
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 206
+        },
+        {
+          "chop": 3,
+          "onset": 125,
+          "round_len": 349
+        }
+      ],
+      "task_id": 990,
+      "arm": "chop_only",
+      "cut": 31200
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 3,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 1092,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 144,
+          "round_len": 326
+        },
+        {
+          "chop": 2,
+          "onset": 227,
+          "round_len": 458
+        },
+        {
+          "chop": 3,
+          "onset": 112,
+          "round_len": 292
+        }
+      ],
+      "task_id": 990,
+      "arm": "chop_pivot",
+      "cut": 31200
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 689,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 195,
+          "round_len": 577
+        },
+        {
+          "chop": 2,
+          "onset": 92,
+          "round_len": 303
+        },
+        {
+          "chop": 3,
+          "onset": 63,
+          "round_len": 228
+        }
+      ],
+      "task_id": 990,
+      "arm": "chop_pivot",
+      "cut": 31200
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 640,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 179,
+          "round_len": 360
+        },
+        {
+          "chop": 2,
+          "onset": 81,
+          "round_len": 263
+        },
+        {
+          "chop": 3,
+          "onset": 81,
+          "round_len": 261
+        }
+      ],
+      "task_id": 990,
+      "arm": "chop_pivot",
+      "cut": 31200
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 772,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 186,
+          "round_len": 391
+        },
+        {
+          "chop": 2,
+          "onset": 134,
+          "round_len": 339
+        },
+        {
+          "chop": 3,
+          "onset": 117,
+          "round_len": 297
+        }
+      ],
+      "task_id": 990,
+      "arm": "chop_pivot",
+      "cut": 31200
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 434,
+      "chop_events": [],
+      "task_id": 990,
+      "arm": "chop_restart",
+      "cut": 31200
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 434,
+      "chop_events": [],
+      "task_id": 990,
+      "arm": "chop_restart",
+      "cut": 31200
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 434,
+      "chop_events": [],
+      "task_id": 990,
+      "arm": "chop_restart",
+      "cut": 31200
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 434,
+      "chop_events": [],
+      "task_id": 990,
+      "arm": "chop_restart",
+      "cut": 31200
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "task_id": 1085,
+      "arm": "A_force",
+      "cut": 7360
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "task_id": 1085,
+      "arm": "A_force",
+      "cut": 7360
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "task_id": 1085,
+      "arm": "A_force",
+      "cut": 7360
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 9523,
+      "task_id": 1085,
+      "arm": "A_force",
+      "cut": 7360
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1356,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1125,
+          "round_len": 1200
+        },
+        {
+          "chop": 2,
+          "onset": 51,
+          "round_len": 180
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1085,
+      "arm": "chop_only",
+      "cut": 7360
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 15887,
+      "chop_events": [],
+      "task_id": 1085,
+      "arm": "chop_only",
+      "cut": 7360
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1807,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1274,
+          "round_len": 1925
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 428
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 461
+        }
+      ],
+      "task_id": 1085,
+      "arm": "chop_only",
+      "cut": 7360
+    },
+    {
+      "sample": 3,
+      "end": "cap",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 678,
+          "round_len": 1620
+        }
+      ],
+      "task_id": 1085,
+      "arm": "chop_only",
+      "cut": 7360
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 14046,
+      "chop_events": [],
+      "task_id": 1085,
+      "arm": "chop_pivot",
+      "cut": 7360
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 13837,
+      "chop_events": [],
+      "task_id": 1085,
+      "arm": "chop_pivot",
+      "cut": 7360
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 8281,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 2204,
+          "round_len": 2635
+        },
+        {
+          "chop": 2,
+          "onset": 332,
+          "round_len": 1181
+        },
+        {
+          "chop": 3,
+          "onset": 2298,
+          "round_len": 3073
+        }
+      ],
+      "task_id": 1085,
+      "arm": "chop_pivot",
+      "cut": 7360
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 11351,
+      "chop_events": [],
+      "task_id": 1085,
+      "arm": "chop_pivot",
+      "cut": 7360
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 15516,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 6770,
+          "round_len": 7698
+        }
+      ],
+      "task_id": 1085,
+      "arm": "chop_restart",
+      "cut": 7360
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 8955,
+      "chop_events": [],
+      "task_id": 1085,
+      "arm": "chop_restart",
+      "cut": 7360
+    },
+    {
+      "sample": 2,
+      "end": "cap",
+      "chops": 2,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 7028,
+          "round_len": 8160
+        },
+        {
+          "chop": 2,
+          "onset": 884,
+          "round_len": 1727
+        }
+      ],
+      "task_id": 1085,
+      "arm": "chop_restart",
+      "cut": 7360
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 3441,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 102,
+          "round_len": 488
+        },
+        {
+          "chop": 2,
+          "onset": 1079,
+          "round_len": 1595
+        },
+        {
+          "chop": 3,
+          "onset": 1471,
+          "round_len": 1726
+        }
+      ],
+      "task_id": 1085,
+      "arm": "chop_restart",
+      "cut": 7360
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 618,
+      "task_id": 1086,
+      "arm": "A_force",
+      "cut": 7360
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 574,
+      "task_id": 1086,
+      "arm": "A_force",
+      "cut": 7360
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Timeout",
+      "recovered": false,
+      "gen_tokens": 476,
+      "task_id": 1086,
+      "arm": "A_force",
+      "cut": 7360
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Timeout",
+      "recovered": false,
+      "gen_tokens": 687,
+      "task_id": 1086,
+      "arm": "A_force",
+      "cut": 7360
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 180,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1086,
+      "arm": "chop_only",
+      "cut": 7360
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 180,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1086,
+      "arm": "chop_only",
+      "cut": 7360
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 180,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1086,
+      "arm": "chop_only",
+      "cut": 7360
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 180,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1086,
+      "arm": "chop_only",
+      "cut": 7360
+    },
+    {
+      "sample": 0,
+      "end": "cap",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 7822,
+          "round_len": 7942
+        }
+      ],
+      "task_id": 1086,
+      "arm": "chop_pivot",
+      "cut": 7360
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 3,
+      "closed_think": true,
+      "exec": "Timeout",
+      "recovered": false,
+      "gen_tokens": 14530,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 450,
+          "round_len": 570
+        },
+        {
+          "chop": 2,
+          "onset": 4006,
+          "round_len": 4126
+        },
+        {
+          "chop": 3,
+          "onset": 3378,
+          "round_len": 3498
+        }
+      ],
+      "task_id": 1086,
+      "arm": "chop_pivot",
+      "cut": 7360
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 10924,
+      "chop_events": [],
+      "task_id": 1086,
+      "arm": "chop_pivot",
+      "cut": 7360
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 13631,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 10689,
+          "round_len": 10809
+        }
+      ],
+      "task_id": 1086,
+      "arm": "chop_pivot",
+      "cut": 7360
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 10661,
+      "chop_events": [],
+      "task_id": 1086,
+      "arm": "chop_restart",
+      "cut": 7360
+    },
+    {
+      "sample": 1,
+      "end": "cap",
+      "chops": 1,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 11123,
+          "round_len": 11178
+        }
+      ],
+      "task_id": 1086,
+      "arm": "chop_restart",
+      "cut": 7360
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Timeout",
+      "recovered": false,
+      "gen_tokens": 13196,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 2279,
+          "round_len": 2399
+        }
+      ],
+      "task_id": 1086,
+      "arm": "chop_restart",
+      "cut": 7360
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 14557,
+      "chop_events": [],
+      "task_id": 1086,
+      "arm": "chop_restart",
+      "cut": 7360
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 187,
+      "task_id": 1125,
+      "arm": "A_force",
+      "cut": 36720
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 187,
+      "task_id": 1125,
+      "arm": "A_force",
+      "cut": 36720
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 187,
+      "task_id": 1125,
+      "arm": "A_force",
+      "cut": 36720
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 187,
+      "task_id": 1125,
+      "arm": "A_force",
+      "cut": 36720
+    },
+    {
+      "sample": 0,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_only",
+      "cut": 36720
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 7945,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_only",
+      "cut": 36720
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 7456,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 4900,
+          "round_len": 6068
+        }
+      ],
+      "task_id": 1125,
+      "arm": "chop_only",
+      "cut": 36720
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 13003,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_only",
+      "cut": 36720
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 192,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_pivot",
+      "cut": 36720
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 192,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_pivot",
+      "cut": 36720
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 192,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_pivot",
+      "cut": 36720
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 192,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_pivot",
+      "cut": 36720
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 192,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_restart",
+      "cut": 36720
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 192,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_restart",
+      "cut": 36720
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 192,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_restart",
+      "cut": 36720
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 192,
+      "chop_events": [],
+      "task_id": 1125,
+      "arm": "chop_restart",
+      "cut": 36720
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 271,
+      "task_id": 1126,
+      "arm": "A_force",
+      "cut": 25280
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 271,
+      "task_id": 1126,
+      "arm": "A_force",
+      "cut": 25280
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 271,
+      "task_id": 1126,
+      "arm": "A_force",
+      "cut": 25280
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 271,
+      "task_id": 1126,
+      "arm": "A_force",
+      "cut": 25280
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 3587,
+      "chop_events": [],
+      "task_id": 1126,
+      "arm": "chop_only",
+      "cut": 25280
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 5806,
+      "chop_events": [],
+      "task_id": 1126,
+      "arm": "chop_only",
+      "cut": 25280
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 4530,
+      "chop_events": [],
+      "task_id": 1126,
+      "arm": "chop_only",
+      "cut": 25280
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 4624,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 3120,
+          "round_len": 4284
+        }
+      ],
+      "task_id": 1126,
+      "arm": "chop_only",
+      "cut": 25280
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 5477,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 4357,
+          "round_len": 4412
+        },
+        {
+          "chop": 2,
+          "onset": 680,
+          "round_len": 735
+        },
+        {
+          "chop": 3,
+          "onset": 91,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1126,
+      "arm": "chop_pivot",
+      "cut": 25280
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 4175,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 3603,
+          "round_len": 3658
+        },
+        {
+          "chop": 2,
+          "onset": 211,
+          "round_len": 266
+        },
+        {
+          "chop": 3,
+          "onset": 118,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1126,
+      "arm": "chop_pivot",
+      "cut": 25280
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 3518,
+      "chop_events": [],
+      "task_id": 1126,
+      "arm": "chop_pivot",
+      "cut": 25280
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 4529,
+      "chop_events": [],
+      "task_id": 1126,
+      "arm": "chop_pivot",
+      "cut": 25280
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 4447,
+      "chop_events": [],
+      "task_id": 1126,
+      "arm": "chop_restart",
+      "cut": 25280
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 4278,
+      "chop_events": [],
+      "task_id": 1126,
+      "arm": "chop_restart",
+      "cut": 25280
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 3824,
+      "chop_events": [],
+      "task_id": 1126,
+      "arm": "chop_restart",
+      "cut": 25280
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 4534,
+      "chop_events": [],
+      "task_id": 1126,
+      "arm": "chop_restart",
+      "cut": 25280
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 248,
+      "task_id": 1171,
+      "arm": "A_force",
+      "cut": 26960
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 248,
+      "task_id": 1171,
+      "arm": "A_force",
+      "cut": 26960
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 248,
+      "task_id": 1171,
+      "arm": "A_force",
+      "cut": 26960
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 248,
+      "task_id": 1171,
+      "arm": "A_force",
+      "cut": 26960
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1298,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 0,
+          "round_len": 1006
+        },
+        {
+          "chop": 2,
+          "onset": 70,
+          "round_len": 737
+        },
+        {
+          "chop": 3,
+          "onset": 122,
+          "round_len": 817
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_only",
+      "cut": 26960
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1560,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 669,
+          "round_len": 1503
+        },
+        {
+          "chop": 2,
+          "onset": 89,
+          "round_len": 810
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 825
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_only",
+      "cut": 26960
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 2548,
+      "chop_events": [],
+      "task_id": 1171,
+      "arm": "chop_only",
+      "cut": 26960
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1007,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 190,
+          "round_len": 892
+        },
+        {
+          "chop": 2,
+          "onset": 12,
+          "round_len": 573
+        },
+        {
+          "chop": 3,
+          "onset": 161,
+          "round_len": 813
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_only",
+      "cut": 26960
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1143,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 168,
+          "round_len": 752
+        },
+        {
+          "chop": 2,
+          "onset": 68,
+          "round_len": 614
+        },
+        {
+          "chop": 3,
+          "onset": 293,
+          "round_len": 827
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_pivot",
+      "cut": 26960
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1302,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 266,
+          "round_len": 993
+        },
+        {
+          "chop": 2,
+          "onset": 39,
+          "round_len": 699
+        },
+        {
+          "chop": 3,
+          "onset": 117,
+          "round_len": 782
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_pivot",
+      "cut": 26960
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1243,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 191,
+          "round_len": 968
+        },
+        {
+          "chop": 2,
+          "onset": 253,
+          "round_len": 931
+        },
+        {
+          "chop": 3,
+          "onset": 100,
+          "round_len": 647
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_pivot",
+      "cut": 26960
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1199,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 204,
+          "round_len": 1065
+        },
+        {
+          "chop": 2,
+          "onset": 136,
+          "round_len": 891
+        },
+        {
+          "chop": 3,
+          "onset": 86,
+          "round_len": 697
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_pivot",
+      "cut": 26960
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1579,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 248,
+          "round_len": 909
+        },
+        {
+          "chop": 2,
+          "onset": 262,
+          "round_len": 896
+        },
+        {
+          "chop": 3,
+          "onset": 180,
+          "round_len": 765
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_restart",
+      "cut": 26960
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1916,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 406,
+          "round_len": 1123
+        },
+        {
+          "chop": 2,
+          "onset": 341,
+          "round_len": 1168
+        },
+        {
+          "chop": 3,
+          "onset": 239,
+          "round_len": 923
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_restart",
+      "cut": 26960
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 1118,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 240,
+          "round_len": 803
+        },
+        {
+          "chop": 2,
+          "onset": 281,
+          "round_len": 861
+        },
+        {
+          "chop": 3,
+          "onset": 39,
+          "round_len": 701
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_restart",
+      "cut": 26960
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 2744,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 593,
+          "round_len": 1531
+        }
+      ],
+      "task_id": 1171,
+      "arm": "chop_restart",
+      "cut": 26960
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 590,
+      "task_id": 1178,
+      "arm": "A_force",
+      "cut": 22160
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "task_id": 1178,
+      "arm": "A_force",
+      "cut": 22160
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 690,
+      "task_id": 1178,
+      "arm": "A_force",
+      "cut": 22160
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 475,
+      "task_id": 1178,
+      "arm": "A_force",
+      "cut": 22160
+    },
+    {
+      "sample": 0,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1178,
+      "arm": "chop_only",
+      "cut": 22160
+    },
+    {
+      "sample": 1,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1178,
+      "arm": "chop_only",
+      "cut": 22160
+    },
+    {
+      "sample": 2,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1178,
+      "arm": "chop_only",
+      "cut": 22160
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 15634,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 14779,
+          "round_len": 15754
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 953
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 835
+        }
+      ],
+      "task_id": 1178,
+      "arm": "chop_only",
+      "cut": 22160
+    },
+    {
+      "sample": 0,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1178,
+      "arm": "chop_pivot",
+      "cut": 22160
+    },
+    {
+      "sample": 1,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1178,
+      "arm": "chop_pivot",
+      "cut": 22160
+    },
+    {
+      "sample": 2,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1178,
+      "arm": "chop_pivot",
+      "cut": 22160
+    },
+    {
+      "sample": 3,
+      "end": "cap",
+      "chops": 1,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 13434,
+          "round_len": 14507
+        }
+      ],
+      "task_id": 1178,
+      "arm": "chop_pivot",
+      "cut": 22160
+    },
+    {
+      "sample": 0,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1178,
+      "arm": "chop_restart",
+      "cut": 22160
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "RuntimeError",
+      "recovered": false,
+      "gen_tokens": 3826,
+      "chop_events": [],
+      "task_id": 1178,
+      "arm": "chop_restart",
+      "cut": 22160
+    },
+    {
+      "sample": 2,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1178,
+      "arm": "chop_restart",
+      "cut": 22160
+    },
+    {
+      "sample": 3,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1178,
+      "arm": "chop_restart",
+      "cut": 22160
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 143,
+      "task_id": 1224,
+      "arm": "A_force",
+      "cut": 13600
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 143,
+      "task_id": 1224,
+      "arm": "A_force",
+      "cut": 13600
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 143,
+      "task_id": 1224,
+      "arm": "A_force",
+      "cut": 13600
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 143,
+      "task_id": 1224,
+      "arm": "A_force",
+      "cut": 13600
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 2,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 3070,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 507,
+          "round_len": 775
+        },
+        {
+          "chop": 2,
+          "onset": 510,
+          "round_len": 785
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_only",
+      "cut": 13600
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 3,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 3374,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 2288,
+          "round_len": 2765
+        },
+        {
+          "chop": 2,
+          "onset": 33,
+          "round_len": 520
+        },
+        {
+          "chop": 3,
+          "onset": 13,
+          "round_len": 891
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_only",
+      "cut": 13600
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 3391,
+      "chop_events": [],
+      "task_id": 1224,
+      "arm": "chop_only",
+      "cut": 13600
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 2,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 4081,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1072,
+          "round_len": 1578
+        },
+        {
+          "chop": 2,
+          "onset": 1124,
+          "round_len": 2088
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_only",
+      "cut": 13600
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 4571,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 2699,
+          "round_len": 2974
+        },
+        {
+          "chop": 2,
+          "onset": 398,
+          "round_len": 623
+        },
+        {
+          "chop": 3,
+          "onset": 869,
+          "round_len": 1155
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_pivot",
+      "cut": 13600
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 2070,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 847,
+          "round_len": 1077
+        },
+        {
+          "chop": 2,
+          "onset": 242,
+          "round_len": 506
+        },
+        {
+          "chop": 3,
+          "onset": 343,
+          "round_len": 607
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_pivot",
+      "cut": 13600
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 3,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 4855,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1484,
+          "round_len": 1704
+        },
+        {
+          "chop": 2,
+          "onset": 565,
+          "round_len": 995
+        },
+        {
+          "chop": 3,
+          "onset": 557,
+          "round_len": 1320
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_pivot",
+      "cut": 13600
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 2703,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1130,
+          "round_len": 1473
+        },
+        {
+          "chop": 2,
+          "onset": 874,
+          "round_len": 1094
+        },
+        {
+          "chop": 3,
+          "onset": 69,
+          "round_len": 334
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_pivot",
+      "cut": 13600
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 4525,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1324,
+          "round_len": 1753
+        },
+        {
+          "chop": 2,
+          "onset": 1146,
+          "round_len": 2173
+        },
+        {
+          "chop": 3,
+          "onset": 330,
+          "round_len": 869
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_restart",
+      "cut": 13600
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 5578,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1420,
+          "round_len": 1688
+        },
+        {
+          "chop": 2,
+          "onset": 2280,
+          "round_len": 3362
+        },
+        {
+          "chop": 3,
+          "onset": 523,
+          "round_len": 799
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_restart",
+      "cut": 13600
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 3948,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 2588,
+          "round_len": 3742
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_restart",
+      "cut": 13600
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 3,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 6497,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 2805,
+          "round_len": 2855
+        },
+        {
+          "chop": 2,
+          "onset": 289,
+          "round_len": 928
+        },
+        {
+          "chop": 3,
+          "onset": 1126,
+          "round_len": 1549
+        }
+      ],
+      "task_id": 1224,
+      "arm": "chop_restart",
+      "cut": 13600
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 297,
+      "task_id": 1226,
+      "arm": "A_force",
+      "cut": 14800
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 297,
+      "task_id": 1226,
+      "arm": "A_force",
+      "cut": 14800
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 297,
+      "task_id": 1226,
+      "arm": "A_force",
+      "cut": 14800
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 297,
+      "task_id": 1226,
+      "arm": "A_force",
+      "cut": 14800
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 180,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1226,
+      "arm": "chop_only",
+      "cut": 14800
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 180,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1226,
+      "arm": "chop_only",
+      "cut": 14800
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 180,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1226,
+      "arm": "chop_only",
+      "cut": 14800
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 180,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 180
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 180
+        }
+      ],
+      "task_id": 1226,
+      "arm": "chop_only",
+      "cut": 14800
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 303,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_pivot",
+      "cut": 14800
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 303,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_pivot",
+      "cut": 14800
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 303,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_pivot",
+      "cut": 14800
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 303,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_pivot",
+      "cut": 14800
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 303,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_restart",
+      "cut": 14800
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 318,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_restart",
+      "cut": 14800
+    },
+    {
+      "sample": 2,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 318,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_restart",
+      "cut": 14800
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 303,
+      "chop_events": [],
+      "task_id": 1226,
+      "arm": "chop_restart",
+      "cut": 14800
+    },
+    {
+      "sample": 0,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 390,
+      "task_id": 1328,
+      "arm": "A_force",
+      "cut": 18160
+    },
+    {
+      "sample": 1,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 390,
+      "task_id": 1328,
+      "arm": "A_force",
+      "cut": 18160
+    },
+    {
+      "sample": 2,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 390,
+      "task_id": 1328,
+      "arm": "A_force",
+      "cut": 18160
+    },
+    {
+      "sample": 3,
+      "end": "force",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 390,
+      "task_id": 1328,
+      "arm": "A_force",
+      "cut": 18160
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 12192,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 11307,
+          "round_len": 12141
+        },
+        {
+          "chop": 2,
+          "onset": 0,
+          "round_len": 808
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 730
+        }
+      ],
+      "task_id": 1328,
+      "arm": "chop_only",
+      "cut": 18160
+    },
+    {
+      "sample": 1,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 10669,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 5087,
+          "round_len": 6180
+        },
+        {
+          "chop": 2,
+          "onset": 1262,
+          "round_len": 2192
+        },
+        {
+          "chop": 3,
+          "onset": 3447,
+          "round_len": 4460
+        }
+      ],
+      "task_id": 1328,
+      "arm": "chop_only",
+      "cut": 18160
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 9219,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 6701,
+          "round_len": 7871
+        },
+        {
+          "chop": 2,
+          "onset": 1582,
+          "round_len": 2613
+        },
+        {
+          "chop": 3,
+          "onset": 0,
+          "round_len": 330
+        }
+      ],
+      "task_id": 1328,
+      "arm": "chop_only",
+      "cut": 18160
+    },
+    {
+      "sample": 3,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1328,
+      "arm": "chop_only",
+      "cut": 18160
+    },
+    {
+      "sample": 0,
+      "end": "eos",
+      "chops": 0,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 12655,
+      "chop_events": [],
+      "task_id": 1328,
+      "arm": "chop_pivot",
+      "cut": 18160
+    },
+    {
+      "sample": 1,
+      "end": "cap",
+      "chops": 1,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 6476,
+          "round_len": 7481
+        }
+      ],
+      "task_id": 1328,
+      "arm": "chop_pivot",
+      "cut": 18160
+    },
+    {
+      "sample": 2,
+      "end": "cap",
+      "chops": 0,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 16384,
+      "chop_events": [],
+      "task_id": 1328,
+      "arm": "chop_pivot",
+      "cut": 18160
+    },
+    {
+      "sample": 3,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Failed",
+      "recovered": false,
+      "gen_tokens": 14909,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 8549,
+          "round_len": 9422
+        }
+      ],
+      "task_id": 1328,
+      "arm": "chop_pivot",
+      "cut": 18160
+    },
+    {
+      "sample": 0,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 5826,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 1385,
+          "round_len": 2472
+        },
+        {
+          "chop": 2,
+          "onset": 2638,
+          "round_len": 3738
+        },
+        {
+          "chop": 3,
+          "onset": 301,
+          "round_len": 862
+        }
+      ],
+      "task_id": 1328,
+      "arm": "chop_restart",
+      "cut": 18160
+    },
+    {
+      "sample": 1,
+      "end": "eos",
+      "chops": 1,
+      "closed_think": true,
+      "exec": "Passed",
+      "recovered": true,
+      "gen_tokens": 10770,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 3906,
+          "round_len": 5029
+        }
+      ],
+      "task_id": 1328,
+      "arm": "chop_restart",
+      "cut": 18160
+    },
+    {
+      "sample": 2,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 10709,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 7234,
+          "round_len": 8337
+        },
+        {
+          "chop": 2,
+          "onset": 2711,
+          "round_len": 3890
+        },
+        {
+          "chop": 3,
+          "onset": 18,
+          "round_len": 896
+        }
+      ],
+      "task_id": 1328,
+      "arm": "chop_restart",
+      "cut": 18160
+    },
+    {
+      "sample": 3,
+      "end": "loop",
+      "chops": 3,
+      "closed_think": false,
+      "exec": "no_</think>",
+      "recovered": false,
+      "gen_tokens": 9589,
+      "chop_events": [
+        {
+          "chop": 1,
+          "onset": 6185,
+          "round_len": 7112
+        },
+        {
+          "chop": 2,
+          "onset": 1105,
+          "round_len": 1955
+        },
+        {
+          "chop": 3,
+          "onset": 779,
+          "round_len": 1770
+        }
+      ],
+      "task_id": 1328,
+      "arm": "chop_restart",
+      "cut": 18160
+    }
+  ]
+}
