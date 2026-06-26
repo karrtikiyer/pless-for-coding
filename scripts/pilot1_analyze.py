@@ -36,11 +36,11 @@ from pathlib import Path
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import GroupKFold, cross_val_predict
+from sklearn.model_selection import StratifiedGroupKFold, cross_val_predict
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-GAP = 3            # cosine: skip GAP most-recent sentences (avoid trivial adjacency)
+GAP = 3            # cosine: compare to priors >= GAP positions back (skips self + GAP-1 nearest; avoids trivial adjacency)
 CUSUM_ALPHA = 1.5  # h = alpha * max-CUSUM-on-calibration-clean
 CUSUM_P = 3        # consecutive steps above h required to fire (paper uses p>=3)
 N_SPLITS = 5       # grouped CV folds
@@ -151,6 +151,11 @@ def main() -> None:
             "all_loop_vs_normal": _auc(np.ones(len(s), bool)),
             "terminal_vs_clean": _auc((loop & term) | clean),
             "transient_vs_clean": _auc((loop & trans) | clean),
+            # within-loop-trace contrast: post-onset vs pre-onset of the SAME traces.
+            # Controls for the trace-identity confound that can inflate the
+            # *_vs_clean framings (clean traces may differ from loop traces for
+            # reasons unrelated to onset).
+            "pre_vs_post_within_loop": _auc(term | trans),
         }
 
     results = {"layers": layers, "n_traces": len(traces), "by_layer": {}}
@@ -161,7 +166,10 @@ def main() -> None:
         # ---- (C) supervised probe: per-layer std fit inside grouped CV ----
         pipe = make_pipeline(StandardScaler(),
                              LogisticRegression(max_iter=2000, C=1.0))
-        cv = GroupKFold(n_splits=eff_splits)
+        # StratifiedGroupKFold keeps each trace wholly in one fold (no leakage)
+        # AND balances loop/normal across folds (avoids a single-class train fold,
+        # which crashes LogisticRegression).
+        cv = StratifiedGroupKFold(n_splits=eff_splits)
         proba = cross_val_predict(pipe, X, y, groups=groups, cv=cv,
                                   method="predict_proba")[:, 1]
         probe_auc = auc_framings(proba)
@@ -190,13 +198,15 @@ def main() -> None:
             for ti in calib_clean:
                 seq = seq_by_trace[ti]; S = 0.0
                 for x in seq:
-                    xi = r if np.isnan(x) else x
+                    xi = r if np.isnan(x) else float(x)   # float() -> keep python float (json-safe, matches cusum_fire)
                     S = max(0.0, S + (xi - r)); maxS = max(maxS, S)
             h = CUSUM_ALPHA * maxS
-            # FPR on held-out clean
+            if maxS <= 0:           # cannot calibrate (no/degenerate clean signal)
+                h = float("inf")    # -> never fire, rather than h=0 firing everything
+            # FPR on held-out clean (None if no held-out clean to measure on)
             fp = sum(1 for ti in test_clean
                      if cusum_fire(seq_by_trace[ti], r, h) is not None)
-            fpr = fp / max(1, len(test_clean))
+            fpr = (fp / len(test_clean)) if test_clean else None
             # lead-time on loop traces, per group
             lead = {"looping_truncated": [], "looping_completed": []}
             fired = {"looping_truncated": 0, "looping_completed": 0}
@@ -231,24 +241,36 @@ def main() -> None:
             "probe_auc": probe_auc, "cosine_auc": cos_auc,
             "probe_cusum": probe_lead, "cosine_cusum": cos_lead,
         }
+        def _a(v):  # AUC formatter (None-safe)
+            return f"{v:.3f}" if v is not None else "  -  "
+        def _f(v):  # FPR formatter (None-safe)
+            return f"{v:.2f}" if v is not None else "n/a"
         print(f"\n=== layer {L} ===")
-        print(f"  probe  AUC  all={probe_auc['all_loop_vs_normal']}  "
-              f"term_vs_clean={probe_auc['terminal_vs_clean']}  "
-              f"trans_vs_clean={probe_auc['transient_vs_clean']}")
-        print(f"  cosine AUC  all={cos_auc['all_loop_vs_normal']}  "
-              f"term_vs_clean={cos_auc['terminal_vs_clean']}  "
-              f"trans_vs_clean={cos_auc['transient_vs_clean']}")
-        print(f"  probe  CUSUM  FPR={probe_lead['fpr_heldout_clean']:.2f}  "
+        print(f"  probe  AUC  all={_a(probe_auc['all_loop_vs_normal'])}  "
+              f"term_v_clean={_a(probe_auc['terminal_vs_clean'])}  "
+              f"trans_v_clean={_a(probe_auc['transient_vs_clean'])}  "
+              f"pre_v_post={_a(probe_auc['pre_vs_post_within_loop'])}")
+        print(f"  cosine AUC  all={_a(cos_auc['all_loop_vs_normal'])}  "
+              f"term_v_clean={_a(cos_auc['terminal_vs_clean'])}  "
+              f"trans_v_clean={_a(cos_auc['transient_vs_clean'])}  "
+              f"pre_v_post={_a(cos_auc['pre_vs_post_within_loop'])}")
+        print(f"  probe  CUSUM  FPR={_f(probe_lead['fpr_heldout_clean'])}  "
               f"term lead={probe_lead['looping_truncated']['lead_median']} "
               f"(fired {probe_lead['looping_truncated']['fired']}/{probe_lead['looping_truncated']['n']})  "
               f"trans lead={probe_lead['looping_completed']['lead_median']} "
               f"(fired {probe_lead['looping_completed']['fired']}/{probe_lead['looping_completed']['n']})")
-        print(f"  cosine CUSUM  FPR={cos_lead['fpr_heldout_clean']:.2f}  "
+        print(f"  cosine CUSUM  FPR={_f(cos_lead['fpr_heldout_clean'])}  "
               f"term lead={cos_lead['looping_truncated']['lead_median']} "
               f"trans lead={cos_lead['looping_completed']['lead_median']}")
 
+    def _json_default(o):  # coerce any stray numpy scalars
+        if isinstance(o, np.floating):
+            return float(o)
+        if isinstance(o, np.integer):
+            return int(o)
+        raise TypeError(f"not serializable: {type(o)}")
     out_path = args.out_dir / "pilot1_results.json"
-    out_path.write_text(json.dumps(results, indent=2))
+    out_path.write_text(json.dumps(results, indent=2, default=_json_default))
 
     # ---- decision gates ----
     best = max(layers, key=lambda L: (results["by_layer"][L]["probe_auc"]["all_loop_vs_normal"] or 0))
