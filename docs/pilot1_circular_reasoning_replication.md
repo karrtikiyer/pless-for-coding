@@ -91,10 +91,27 @@ Their random 50/50 holdout risks same-trace sentences spanning train/test (leaka
 inflates AUC). Leave-trace-out `StratifiedGroupKFold` is strictly cleaner. We report CV
 as primary; a 50/50-random secondary can be added if a closer numeric match is wanted.
 
-### D-periodicity — **underspecified in paper; our operationalization.** K-means K=200
-per trace on layer-36 sentence vectors; detect periodicity via autocorrelation (FFT) of
-the integer cluster-label sequence over a sliding window; "semantic onset" = first
-sustained autocorrelation peak. Flagged as ours, not the authors'.
+### D-periodicity — **underspecified in paper; our operationalization (corrected).**
+The paper shows cluster-label periodicity precedes onset (Fig 22c) but never specifies
+*how* periodicity is detected. Our first draft ("autocorrelation of the integer
+cluster-label sequence") was **wrong** — K-means labels are *nominal*, so numeric
+autocorrelation is meaningless. Corrected method, run BOTH ways:
+
+- **Method 1 (faithful — keeps K-means K=200):** label-**match** autocorrelation.
+  K-means K=min(200, n_sent) on layer-36 sentence vectors → label sequence; for lag d,
+  `τ(d) = mean_i [label_i == label_{i+d}]` (autocorrelation of the *match indicator*,
+  not the integer values). Periodicity = a τ(d) peak well above the chance floor
+  `Σ_k (n_k/N)²`. This is the correct categorical-sequence autocorrelation.
+- **Method 2 (cross-check — K-means-free):** autocorrelation of the *mean-centred*
+  hidden-state trajectory: subtract the trace's mean sentence vector, then
+  `ρ(d) = mean_i⟨c_i,c_{i+d}⟩ / mean_i⟨c_i,c_i⟩`. Reveals periodic structure above the
+  high baseline self-similarity. Tests the "trajectory cycles" claim directly; if it
+  agrees with Method 1, the K-means step isn't an artefact.
+
+For both: **semantic onset** = first sliding-window position where the windowed
+periodicity metric stays above a threshold θ (calibrated on held-out clean traces) for
+p consecutive steps; **lead = n-gram-onset − semantic-onset**. Clean false-periodicity
+rate measured on held-out clean. Both flagged as OUR operationalization, not the authors'.
 
 ### Kept identical (no deviation)
 per-sentence last-layer mean features; linear probe; CUSUM formula; K=200;
@@ -121,8 +138,12 @@ trace-identity confound control?"
 - **Phase 3b-1** (`pilot1_replicate.py`): faithful probe+CUSUM on **layer 36**,
   grid-searched α/p, reporting **EDR/FPR/ASE/ATE** per group (terminal/transient/clean),
   plus the within-trace (pre-vs-post) control. Layers 6/16/24 reported as an extension.
-- **Phase 3b-2**: K-means K=200 cluster-trajectory periodicity; measure semantic-onset
-  lead vs the n-gram onset, per group.
+- **Phase 3b-2** (`pilot1_periodicity.py`): periodicity precursor, BOTH methods above
+  (label-match autocorrelation on K-means K=200, and mean-centred trajectory
+  autocorrelation). Reports: (i) periodicity-strength separation loop-vs-clean (does the
+  precursor exist at all), (ii) semantic-onset lead vs n-gram onset per loop group,
+  (iii) clean false-periodicity rate. Tests whether the signal exists in the geometry
+  even where the linear probe (3b-1) is a poor readout.
 
 Both run offline on the existing vectors (no GPU).
 

@@ -1,0 +1,42 @@
+{
+  "layer": 36,
+  "n_traces": 90,
+  "preonset_auc": {
+    "method1_labelmatch": 0.5638888888888889,
+    "method2_centered": 0.38555555555555554
+  },
+  "onset_lead": {
+    "method1_labelmatch": {
+      "theta": 0.5555636363636363,
+      "fpr_heldout_clean": 0.06666666666666667,
+      "looping_truncated": {
+        "n_loop": 30,
+        "fired": 10,
+        "fired_before_onset": 3,
+        "lead_median": -152.5
+      },
+      "looping_completed": {
+        "n_loop": 30,
+        "fired": 2,
+        "fired_before_onset": 0,
+        "lead_median": -6706.5
+      }
+    },
+    "method2_centered": {
+      "theta": 0.6825313086715423,
+      "fpr_heldout_clean": 0.06666666666666667,
+      "looping_truncated": {
+        "n_loop": 30,
+        "fired": 12,
+        "fired_before_onset": 6,
+        "lead_median": -41.0
+      },
+      "looping_completed": {
+        "n_loop": 30,
+        "fired": 5,
+        "fired_before_onset": 1,
+        "lead_median": -730.0
+      }
+    }
+  }
+}
