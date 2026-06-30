@@ -1,0 +1,19 @@
+{
+  "model": "Qwen/Qwen3-8B",
+  "n_scanned": 2520,
+  "cells": {
+    "completed|noloop|wrong": 578,
+    "truncated|noloop|wrong": 228,
+    "truncated|loop|wrong": 138,
+    "completed|noloop|correct": 1576
+  },
+  "onset_cells": {
+    "completed|noNgram|wrong": 529,
+    "truncated|ngram|wrong": 336,
+    "completed|noNgram|correct": 1508,
+    "completed|ngram|correct": 68,
+    "completed|ngram|wrong": 49,
+    "truncated|noNgram|wrong": 30
+  },
+  "completed_loop_correct_examples": []
+}
