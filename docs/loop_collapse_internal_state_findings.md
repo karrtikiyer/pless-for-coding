@@ -1,6 +1,6 @@
 # Findings — the Circular-Reasoning "internal-state collapse" (Figs 3b & 4): the rigid-loop **endpoint** reproduces on both 8B models; the collapse **transient** appears to differ (DeepSeek gradual, Qwen instant) but is **confounded** — controls pending
 
-**Date:** 2026-06-30 · **Status:** endpoint result solid; transient cross-model claim PENDING controls
+**Date:** 2026-06-30 · **Status:** endpoint solid; transient onset-confound **ruled out** (matched early-onset Qwen control), anchor-confound reduced → transient now read as a model property
 · **Paper:** Duan, Pang et al., *Circular Reasoning* (arXiv:2601.05693), Fig 3b (statement-loop
 entropy/probability) + Fig 4 (layer-wise cosine/L₂ collapse across cycles), case study on DS-Qwen-14B.
 · **Code:** `scripts/loop_collapse_{screen,extract,plot,control}.py`
@@ -24,7 +24,9 @@ me think" impasse cycles). The careful reading separates **two questions**:
   confounded.** DeepSeek ramps gradually (last-layer consecutive cosine R1=**0.795** → R5=**0.997**;
   L₂ 74.4 → 9.5; entropy collapse 0.300 → 0.134 nats, 5/5), matching Fig 4's "Repeat-k" deepening.
   Qwen is **instant** (R1≈**0.997** already; L₂ 6.1 → 3.2; entropy barely moves 0.180 → 0.123, 1/5).
-  BUT this transient difference is **not yet attributable to the model** — two confounds (below).
+  A matched **early-onset Qwen control** (mean onset 3822 ≈ DeepSeek's 4813) is *still* instant
+  (R1=0.995) → the onset-depth confound is **ruled out**; with 10 Qwen traces across 10 anchors all
+  instant, the transient is now best read as a **genuine model property** (see confounds section).
 
 **Verified (no GPU): both models lock into *exact verbatim* repetition within ~1 cycle** (per-cycle
 token-match to the steady block jumps 0→1.0 at the first captured cycle). So the activation-ramp
@@ -77,22 +79,31 @@ synthetic 0.64–0.76 number our detection-thread negative compared against — 
 "Robust across architectures" is this detector-efficacy claim; the **Fig-4 ramp shape was only run
 on DS-Qwen-14B**, never per-model, so our transient observation neither confirms nor contradicts it.
 
-### Two confounds blocking a model-level transient claim (controls planned)
+### Confounds — one RULED OUT by a matched control, one reduced to a small residual
 
-1. **Anchor-token type differs across models.** Anchor = "rarest once-per-period token"; the two
-   tokenizers selected different *kinds* — Qwen word-initial/punctuation (`No`,` yes`,` =`,` stuck`),
-   DeepSeek some mid-word BPE fragments (`md`,`odel`,`ther`). **Control:** block-average cosine/L₂
-   over **all P period positions** (the paper's "activation vectors of identical tokens" read
-   literally), removing anchor-choice dependence — needs an extractor that stores all-position acts.
-2. **Loop-onset depth differs cleanly.** Qwen onsets late (3576/8352/13328/13760/15112; mean ≈10.8k)
-   vs DeepSeek early (2592/3672/4688/6144/6968; mean ≈4.8k) → Qwen loops begin with ~2× more
-   preceding context already in the KV cache, which could pre-stabilize the representation (less room
-   for new repeats to move it). **Control:** onset-matched selection — early-onset Qwen loops vs
-   late-onset DeepSeek loops (both catalogs hold hundreds of candidates).
+1. **Loop-onset depth — RULED OUT (control run).** Qwen's main 5 onset late (mean ≈10.8k) vs
+   DeepSeek early (≈4.8k), so Qwen loops carry ~2× more preceding KV-cache context, which *could*
+   pre-stabilize the representation. We ran the matched control: 5 **early-onset** Qwen reflective
+   loops (`manifest_early.jsonl`; tasks 1085/1172/2505/2367/2522; mean onset **3822**, *matched to
+   DeepSeek's 4813*; periods 46–190, same reflective bar). Result: early-onset Qwen is **just as
+   instant** — last-layer cosine **R1=0.995** → R5=0.999 (vs late Qwen R1=0.997; DeepSeek R1=0.795).
+   All 5 have R1≥0.989. ⇒ deep context was **not** the cause. (Bonus: early-onset Qwen has *higher*
+   pre-onset entropy, 0.385 vs late 0.180, yet still instant — so Qwen's directional rigidity is
+   **decoupled** from pre-loop confidence.)
+2. **Anchor-token type — reduced to a small residual.** Anchor = "rarest once-per-period token"; the
+   two tokenizers picked different *kinds* (Qwen word-initial/punctuation; DeepSeek some mid-word BPE
+   fragments). With the early-onset set we now have **10 Qwen traces across 10 different anchors**
+   (`follows`,`then`,`as`,`avoid`,`efficiently`,`No`,`solved`,`yes`,`=`,`stuck`) — **all instant**
+   (R1≥0.989). Such consistency across varied anchors makes an anchor-artifact explanation unlikely.
+   **Optional remaining hardening:** block-average cosine/L₂ over all P period positions (the paper's
+   "activation vectors of identical tokens" read literally) would formally close it.
 
-Until both controls run, the defensible claim is the **endpoint** (separable rigid loop on both
-models); the transient (DeepSeek gradual / Qwen instant) is **real in this sample but not yet
-attributable to the model**.
+**Updated claim (confound-controlled):** the transient difference is now best read as a **genuine
+model property** — Qwen3-8B's repeated-token representation is rigid from the first verbatim cycle
+(robust to onset depth and anchor choice), while DeepSeek-R1-Distill's keeps relocating for ~4 cycles
+(cos→0.58 from cycle 0) before locking. The **endpoint** (separable rigid loop) holds for both; only
+the **route in** differs. Both are consistent with the paper, which measured only the endpoint
+(detector) universally and the ramp on a single model (DS-Qwen-14B).
 
 ## Control — is this loop signature specific to FAILURE? (`loop_collapse_control.py`)
 
