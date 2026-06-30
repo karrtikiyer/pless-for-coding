@@ -1,0 +1,45 @@
+{
+  "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "n_scanned": 2520,
+  "cells": {
+    "truncated|noloop|wrong": 902,
+    "completed|noloop|wrong": 444,
+    "truncated|loop|wrong": 733,
+    "completed|noloop|correct": 435,
+    "completed|loop|wrong": 2,
+    "completed|loop|correct": 3,
+    "truncated|loop|correct": 1
+  },
+  "onset_cells": {
+    "truncated|ngram|wrong": 1598,
+    "completed|noNgram|wrong": 343,
+    "completed|ngram|wrong": 103,
+    "completed|noNgram|correct": 384,
+    "truncated|noNgram|wrong": 37,
+    "completed|ngram|correct": 54,
+    "truncated|ngram|correct": 1
+  },
+  "completed_loop_correct_examples": [
+    {
+      "task_id": 1924,
+      "sample_idx": 1,
+      "n_cycles": 113,
+      "period": 29.0,
+      "unit": ",no,theproblemstatementsays:Constraints:1r1,r210^6-11c1,c210^6-1Wait"
+    },
+    {
+      "task_id": 1924,
+      "sample_idx": 6,
+      "n_cycles": 93,
+      "period": 29.0,
+      "unit": "Constraints:1r1,r21e6-11c1,c21e6-1Wait,no,theproblemstatementsays:"
+    },
+    {
+      "task_id": 1924,
+      "sample_idx": 9,
+      "n_cycles": 98,
+      "period": 28.0,
+      "unit": "1,r21e6-11c1,c21e6-1Wait,no,theproblemsays:Constraints:1r"
+    }
+  ]
+}
