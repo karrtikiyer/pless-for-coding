@@ -134,6 +134,60 @@ Implication for Fig 4: a stronger control than the paper's non-repeating "Normal
 (the 3 completed+correct task-1924 loops) — an **untested extension**: if those collapse *less* /
 recover, the collapse is diagnostic of being terminally stuck rather than a tautology of repetition.
 
+## Truncation taxonomy — does verbatim-loop detection cover the failures? (`loop_collapse_categorize.py`)
+
+We studied **verbatim statement loops** (Fig 3b/4). But what fraction of *all* truncations are they?
+Categorizing every truncated sample (`truncation_taxonomy.json` per model):
+
+| failure mode | Qwen | DeepSeek | caught by verbatim n-gram / Fig-4 collapse? |
+|---|---|---|---|
+| **Verbatim statement loop** (periodic, P 10–800; the studied kind) | 40.7% (reflective 18.0%) | 49.8% (reflective 32.5%) | ✅ yes |
+| **Paraphrastic / semantic drift** (n-gram fires, but aperiodic) | **41.3%** | **46.8%** | ❌ no |
+| Short / degenerate (<10 tok: digit runs + short code fragments) | 9.9% | 1.3% | partial |
+| No detected loop (n-gram never fires) | 8.2% | 2.3% | ❌ no |
+| (long period >800) | 0% | 0% | — (empty; dropped) |
+
+**The paraphrastic class is real, not a threshold artifact** (dissected): among "paraphrastic" traces
+the *best* periodicity strength (max token self-match over any lag 10–800) is below 0.5 for **74%
+(Qwen) / 73% (DeepSeek)**, median **0.23 / 0.26**. Reading them confirms the mechanism — the model
+re-explores the *same idea in drifting words* (e.g. *"But how to compute this? One approach is BFS…
+but that's impossible. So perhaps a different approach. Wait, perhaps…"* → next pass, same theme, new
+words). No minimal repeating unit recurs, so there is no verbatim period and **no identical token
+across cycles** for the Fig-4 collapse to be computed on.
+
+**Answer: verbatim-loop detection covers ≤41% (Qwen) / ~50% (DeepSeek) of truncations.** A roughly
+equal share (~41–47%) is genuine paraphrastic/semantic drift that *neither* the n-gram detector nor
+the hidden-state collapse can catch, plus ~10–18% short/degenerate/no-loop. The "numerical loop" I
+earlier guessed dominates is in fact only the **single-token digit runs = 3.3% (Qwen) / 0.4%
+(DeepSeek)**.
+
+### Reconciliation with LoopBench — paraphrastic drift is *outside the paper's loop definition*
+
+The paper's loop definitions (Appendix B, p13) are both **unit-recurrence** criteria: *Numerical
+Loop* = `k·l > 500` (minimal repeating unit length `l`, `k` consecutive repeats); *Statement Loop* =
+sentence-unit recurs **`k > 3`**. Both require a **minimal repeating *unit* that recurs** — i.e.
+verbatim/near-verbatim repetition. A purely paraphrastic case (same idea, new words, no recurring
+unit) **cannot satisfy either** → it is not labeled a loop in LoopBench, and the Table-3 detection
+set ("repetitive vs non-repetitive cases") is verbatim by construction. The paper *does* describe a
+semantic-drift phase (Fig 5c, *"semantic circularity precedes textual repetition,"* sentences
+*"lexically distinct"* but cluster-recurrent) — but strictly as the **precursor that ends in verbatim
+repetition**, not a standalone failure mode. LoopBench's tasks (high-precision arithmetic with a
+500-digit cap; recursive state tracking — Table 4) are engineered to induce exactly that verbatim
+digit/state recurrence.
+
+Consequences:
+1. **Our paraphrastic class (~41–47%) is outside the paper's loop definition entirely** — those
+   traces have no unit recurring `k>3` (median self-match 0.23–0.26), so the paper would not count
+   them as loops. Its detector + intervention target only the verbatim half.
+2. **This mechanistically explains the detection-transfer failure** (with `pilot1_findings`): on
+   LoopBench every loop *by definition* reaches verbatim repetition with a semantic precursor, so
+   "semantic circularity precedes textual repetition" always has a textual onset to precede; on our
+   naturalistic data ~half the loops never converge to verbatim (they drift to the token cap), so the
+   precursor mechanism has nothing to anticipate — hence their synthetic EDR 0.64 → our 0.17–0.20.
+3. **So paraphrastic semantic drift is a loop class the paper's benchmark construction and `k>3`
+   definition structurally exclude** — a novel-relative-to-the-paper failure mode, and the one most
+   resistant to both verbatim and hidden-state detection.
+
 ## Caveats / scope
 
 1. **5 traces/model**, single dataset (ATCODER-interview), single p-less config. The aggregate

@@ -1,0 +1,176 @@
+{
+  "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "n_truncated": 1636,
+  "counts": {
+    "paraphrastic": 765,
+    "statement_reflective": 531,
+    "statement_other": 283,
+    "no_onset": 37,
+    "short_fragment": 14,
+    "single_token": 6
+  },
+  "examples": {
+    "paraphrastic": [
+      {
+        "task_id": 117,
+        "sample_idx": 0,
+        "unit": "ofthatpolygon.Ifthepolygonisunbounded,outputINF.Buthowtomodelthis.Letmethinkaboutthelinesasconstraints.Eachnorth-southlineisaverticalsegmentatx=C_i,fromy=A_itoy"
+      },
+      {
+        "task_id": 117,
+        "sample_idx": 5,
+        "unit": "ifthesegmentsactuallyblockthoseextremes.Sothestepsare:1.Findtheminimalx-coordinateamongallA_i(north-southlines)andD_j(east-westlines).Letthisbemin_x.2.Findthema"
+      },
+      {
+        "task_id": 117,
+        "sample_idx": 9,
+        "unit": "F_M.So,thefirsttwonumbersareNandM.Then,foreachoftheNlines,wehaveA_i,B_i,C_i.Then,foreachoftheMlines,wehaveE_j,F_j.So,thetotalnumberoftokensafterNandMis3*N+2*M.I"
+      },
+      {
+        "task_id": 160,
+        "sample_idx": 0,
+        "unit": "77,whichisnotadivisorof28.So,perhapsthesampleiswrong,orI'mmisunderstanding.Alternatively,perhapsthesampleinputis23820asN=2,K=3,A_1=20,A_2=8.Sumis28.Themaximumpo"
+      },
+      {
+        "task_id": 160,
+        "sample_idx": 4,
+        "unit": "increasethesum.Butthat'snotpossible.Wait,perhapstheproblemallowsustoperformoperationsthatcanaddtooneelementandsubtractfromanother,butthesumremainsthesame.So,the"
+      }
+    ],
+    "statement_reflective": [
+      {
+        "task_id": 117,
+        "sample_idx": 2,
+        "unit": "progress.Wait,perhapsIshouldthinkabouttheproblemdifferently.Thecowcan'tcrossanyofthesegments,sotheaccessibleareaistheregionthatisonthesamesideofallthesegmentsas"
+      },
+      {
+        "task_id": 117,
+        "sample_idx": 3,
+        "unit": "areseparatedbyhyphens.Butthat'sunclear.Giventhetime,perhapsIshouldproceedwiththecodethatreadsthesegmentscorrectly,assumingthateachtokenisasegment,andthatthefirs"
+      },
+      {
+        "task_id": 117,
+        "sample_idx": 4,
+        "unit": "oinfinityontheright.Similarly,iftherearenoa<0,max_a_negis-infinity,soxcangotoinfinityontheleft.Samefory.So,incode:Computemax_a_neg,min_a_pos,max_b_neg,min_b_pos"
+      },
+      {
+        "task_id": 117,
+        "sample_idx": 8,
+        "unit": "shouldproceedundertheassumptionthattheproblemiscorrect,andtheeast-westlineisaverticalline.Butthat'sconflictingwiththeproblem'sdescription.SoperhapsIshouldprocee"
+      },
+      {
+        "task_id": 160,
+        "sample_idx": 1,
+        "unit": "umis10.ThemaximumpossibleGCDis5,butthesampleoutputis77.Thatcan'tbe.SoperhapsI'mmisunderstandingtheproblem.Wait,perhapsthesampleinputis23820,whichisN=2,K=3,A1=2,"
+      }
+    ],
+    "statement_other": [
+      {
+        "task_id": 117,
+        "sample_idx": 6,
+        "unit": "owcanbebelowy=C_iifC_i>0,orabovey=C_iifC_i<0.Similarlyforeast-westsegments.So,theaccessibleregionistherectangledefinedbytheminimalandmaximalxandyvalues.Butinthe"
+      },
+      {
+        "task_id": 117,
+        "sample_idx": 7,
+        "unit": ":N=56,M=12.Thenthenorth-southlinesare:A_1=0,B_1=1,C_1=0A_2=0,B_2=1,C_2=1A_3=-34,B_3=-1,C_3=0A_4=-26,B_4=310,C_4=1Wait,butthat's4lines,butN=56.Soperhapsthesample"
+      },
+      {
+        "task_id": 160,
+        "sample_idx": 5,
+        "unit": "S=40,whichisnotdivisibleby77.SoperhapsI'mmisinterpretingthesampleinput.Wait,perhapsthesampleinputis23820,whichisN=2,K=8,A_1=20,A_2=20.Butthatcan'tbebecausetheou"
+      },
+      {
+        "task_id": 160,
+        "sample_idx": 8,
+        "unit": "doesn'thave77asadivisor.Alternatively,perhapsthesampleinputisN=2,K=8,A_1=20,A_2=20.Wait,butthat'ssum40,whichdoesn'thave77asadivisor.So,perhapsI'mmissingsomethin"
+      },
+      {
+        "task_id": 270,
+        "sample_idx": 1,
+        "unit": ",1415.So,theexitisroom46,butthere'snowaytogetthere.Thatcan'tbe.Wait,perhapsthesampleinputis:46142313123424WhichisN=46,M=14,andtheedgesare:12,23,34,45,56,67,78,8"
+      }
+    ],
+    "no_onset": [
+      {
+        "task_id": 270,
+        "sample_idx": 3,
+        "unit": ""
+      },
+      {
+        "task_id": 369,
+        "sample_idx": 7,
+        "unit": ""
+      },
+      {
+        "task_id": 417,
+        "sample_idx": 0,
+        "unit": ""
+      },
+      {
+        "task_id": 559,
+        "sample_idx": 7,
+        "unit": ""
+      },
+      {
+        "task_id": 579,
+        "sample_idx": 9,
+        "unit": ""
+      }
+    ],
+    "short_fragment": [
+      {
+        "task_id": 326,
+        "sample_idx": 2,
+        "unit": "[::-1]='cbaaabc'"
+      },
+      {
+        "task_id": 827,
+        "sample_idx": 0,
+        "unit": "is110110110,which"
+      },
+      {
+        "task_id": 962,
+        "sample_idx": 9,
+        "unit": "1424312244"
+      },
+      {
+        "task_id": 991,
+        "sample_idx": 6,
+        "unit": "1251"
+      },
+      {
+        "task_id": 991,
+        "sample_idx": 9,
+        "unit": "1251234"
+      }
+    ],
+    "single_token": [
+      {
+        "task_id": 616,
+        "sample_idx": 1,
+        "unit": "00"
+      },
+      {
+        "task_id": 2306,
+        "sample_idx": 5,
+        "unit": "00"
+      },
+      {
+        "task_id": 2502,
+        "sample_idx": 3,
+        "unit": "ab"
+      },
+      {
+        "task_id": 2502,
+        "sample_idx": 6,
+        "unit": "ab"
+      },
+      {
+        "task_id": 2640,
+        "sample_idx": 2,
+        "unit": ".#"
+      }
+    ]
+  }
+}

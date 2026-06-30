@@ -1,0 +1,176 @@
+{
+  "model": "Qwen/Qwen3-8B",
+  "n_truncated": 366,
+  "counts": {
+    "paraphrastic": 151,
+    "statement_reflective": 66,
+    "statement_other": 83,
+    "no_onset": 30,
+    "short_fragment": 24,
+    "single_token": 12
+  },
+  "examples": {
+    "paraphrastic": [
+      {
+        "task_id": 117,
+        "sample_idx": 1,
+        "unit": ",0) is in.\n\nBut how to compute this? One possible approach is to use a BFS that explores the regions, but since the plane is infinite, we need to find a way to "
+      },
+      {
+        "task_id": 117,
+        "sample_idx": 4,
+        "unit": " I'm not sure.\n\nGiven the time constraints, I'll proceed with a code that checks for the presence of a path to infinity by checking if there's a way to move in "
+      },
+      {
+        "task_id": 117,
+        "sample_idx": 8,
+        "unit": " To compute this, we can use a BFS or DFS, but how to represent the regions?\n\nPerhaps the key is to realize that the segments are only vertical and horizontal, "
+      },
+      {
+        "task_id": 280,
+        "sample_idx": 0,
+        "unit": " the subset. \n\nBut this is still not clear. \n\nAt this point, I think I need to look for a different approach. \n\nLet me think of the following: For a given permu"
+      },
+      {
+        "task_id": 280,
+        "sample_idx": 1,
+        "unit": ". \n\nBut how to model this. \n\nLet me think of the camels as being in a line. The distance between adjacent camels is d. For a bridge part of length l, the camels"
+      }
+    ],
+    "statement_reflective": [
+      {
+        "task_id": 117,
+        "sample_idx": 5,
+        "unit": " and using a BFS to find the connected regions. \n\nBut how to represent the regions? \n\nPerhaps the problem can be modeled as a graph where each node is a segment"
+      },
+      {
+        "task_id": 117,
+        "sample_idx": 7,
+        "unit": " compute its area. But how to represent the regions?\n\nAnother idea: the problem can be modeled as a graph where each node is a segment, and edges represent adja"
+      },
+      {
+        "task_id": 280,
+        "sample_idx": 3,
+        "unit": " is d_j. \n\nThe entire line of camels has length S = sum(d_j). \n\nThe bridge part has length l_i. \n\nThe camels will pass through the part. The maximum number of c"
+      },
+      {
+        "task_id": 370,
+        "sample_idx": 2,
+        "unit": "1)*K, Y). If this is not possible, then adjust.\n\nBut this is not working for the sample input.\n\nAt this point, I think I need to give up and write the code that"
+      },
+      {
+        "task_id": 455,
+        "sample_idx": 0,
+        "unit": " m=2, and set d1 and d2 to be such that for each point, X_j and Y_j can be expressed as a combination of \u00b1d1 and \u00b1d2. This would require that for each point, X_"
+      }
+    ],
+    "statement_other": [
+      {
+        "task_id": 230,
+        "sample_idx": 0,
+        "unit": "            # So, the code for check function is:\n\n"
+      },
+      {
+        "task_id": 454,
+        "sample_idx": 5,
+        "unit": " Let's think of the problem as a permutation and the sum. For each position i, the contribution is |i - p_i|."
+      },
+      {
+        "task_id": 454,
+        "sample_idx": 7,
+        "unit": " a permutation and the sum. For each position i, the contribution is |i - p_i|. Let's think of the problem as"
+      },
+      {
+        "task_id": 455,
+        "sample_idx": 2,
+        "unit": "). But since each d_i is used in exactly one of x or y, the total sum is the sum of all d_i's multiplied by some combination of signs. No, that's not correct. F"
+      },
+      {
+        "task_id": 455,
+        "sample_idx": 3,
+        "unit": " for each point, the sum of the x group (with signs) is X_j, and the sum of the y group (with signs) is Y_j. \n\nBut how to find such d_i's. Let's think of the fo"
+      }
+    ],
+    "no_onset": [
+      {
+        "task_id": 370,
+        "sample_idx": 0,
+        "unit": ""
+      },
+      {
+        "task_id": 454,
+        "sample_idx": 6,
+        "unit": ""
+      },
+      {
+        "task_id": 454,
+        "sample_idx": 9,
+        "unit": ""
+      },
+      {
+        "task_id": 661,
+        "sample_idx": 7,
+        "unit": ""
+      },
+      {
+        "task_id": 1087,
+        "sample_idx": 9,
+        "unit": ""
+      }
+    ],
+    "short_fragment": [
+      {
+        "task_id": 558,
+        "sample_idx": 1,
+        "unit": ", the code:\n\nNow"
+      },
+      {
+        "task_id": 558,
+        "sample_idx": 9,
+        "unit": ":\n\nNow, code"
+      },
+      {
+        "task_id": 615,
+        "sample_idx": 0,
+        "unit": "    # Now, the code is written.\n\n"
+      },
+      {
+        "task_id": 1224,
+        "sample_idx": 4,
+        "unit": " 3^40 is"
+      },
+      {
+        "task_id": 1224,
+        "sample_idx": 7,
+        "unit": " 5. So the code is"
+      }
+    ],
+    "single_token": [
+      {
+        "task_id": 827,
+        "sample_idx": 6,
+        "unit": "9"
+      },
+      {
+        "task_id": 1175,
+        "sample_idx": 2,
+        "unit": "1"
+      },
+      {
+        "task_id": 2494,
+        "sample_idx": 1,
+        "unit": "0"
+      },
+      {
+        "task_id": 2494,
+        "sample_idx": 8,
+        "unit": "0"
+      },
+      {
+        "task_id": 2499,
+        "sample_idx": 0,
+        "unit": "1"
+      }
+    ]
+  }
+}
