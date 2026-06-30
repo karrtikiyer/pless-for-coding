@@ -267,6 +267,8 @@ def main() -> None:
                     "task_id": c["task_id"], "sample_idx": c["sample_idx"],
                     "n_cycles": c["n_cycles"], "period_median": c["period_median"],
                     "period_cv": c["period_cv"],
+                    "onset_token": c["onset_token"],           # for onset-matched selection
+                    "n_think": len(c["think_token_ids"]),
                     "anchor_str": tok.decode([c["anchor_token_id"]]),
                     "unit_str": tok.decode(c["gram"])[:240],
                 }) + "\n")
