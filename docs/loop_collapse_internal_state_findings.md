@@ -188,6 +188,40 @@ Consequences:
    definition structurally exclude** — a novel-relative-to-the-paper failure mode, and the one most
    resistant to both verbatim and hidden-state detection.
 
+### Related benchmarks / positioning (does any benchmark capture paraphrastic drift?)
+
+Literature scan (2026-07; WebSearch + abstract fetches). No drop-in "LoopBench for paraphrastic
+loops" exists; the concept is split across two neighbors, neither framing it as a loop-to-truncation
+failure:
+
+- **Verbatim loop benchmarks** — **LoopBench** (arXiv:2601.05693; unit-recurrence, above) and the
+  neural-text-degeneration lineage (Holtzman et al. 2020; n-gram `rep-n`/`seq-rep-n`) are all
+  **verbatim**. They do not label non-verbatim drift.
+- **`[Likely]` PRMBench** (arXiv:2501.03124) — closest *labeled* benchmark with a semantic-circular
+  category: a **"Non-Circular Logic (NCL)"** task (confirmed on prmbench.github.io) testing whether a
+  *process-reward model* can flag reasoning that "loops back to a previous step" (semantic, not
+  verbatim). BUT it is **step-level PRM evaluation**, not a loop/truncation dataset — "can a reward
+  model detect a circular step," not "does the model get trapped drifting to the token cap."
+  ⚠️ **needs primary-source confirmation:** the semantic-vs-verbatim definition is from the search
+  index; the paper HTML 404'd and the landing page doesn't define NCL — confirm before citing in a paper.
+- **`[Certain]` Overthinking / redundant-reasoning literature** — the conceptual home of paraphrastic
+  drift, but framed as *efficiency/length*, not loops. **"Reconsidering Overthinking"** (arXiv:2508.02178,
+  fetched) defines **"internal redundancy = informational stagnation before the first correct answer,"**
+  measured by a **sliding-window *semantic* similarity** metric — essentially our drift, but as a
+  verbosity penalty, not a labeled failure mode. **"Word Salad Chopper"** (arXiv:2511.00536, cited by
+  the LoopBench paper) detects "useless self-repetitions" via `\n\n`-token hidden states (implies
+  semantic; no verbatim/paraphrastic taxonomy or benchmark). **ENTRA** (arXiv:2601.07123) targets
+  "redundant verification steps with structural and semantic similarity."
+- **Metrics** (not benchmarks): Self-BLEU, SBERT cosine, sliding-window semantic similarity quantify
+  non-verbatim repetition and could *measure* drift — but no dataset labels drift *loops*.
+
+**Gap / positioning:** `[Likely]` no benchmark labels+quantifies **semantic-drift looping as a
+truncation failure mode**. PRMBench splits it as a step-level reward-model error; the overthinking
+lit folds it into length/efficiency. Our result — that ~41–47% of *truncating* reasoning loops are
+aperiodic semantic drift (median self-match 0.23–0.26), invisible to both verbatim n-gram detection
+and the Fig-4 hidden-state collapse — sits in that gap. (Absence claim is bounded by the searches
+run: circular-reasoning / repetition / overthinking framings, 2026-07.)
+
 ## Caveats / scope
 
 1. **5 traces/model**, single dataset (ATCODER-interview), single p-less config. The aggregate
