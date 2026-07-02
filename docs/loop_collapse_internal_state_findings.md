@@ -222,6 +222,40 @@ aperiodic semantic drift (median self-match 0.23–0.26), invisible to both verb
 and the Fig-4 hidden-state collapse — sits in that gap. (Absence claim is bounded by the searches
 run: circular-reasoning / repetition / overthinking framings, 2026-07.)
 
+### Escape is hard even when detection is feasible (literature)
+
+Detection and escape are asymmetric — the literature is clear that once a loop locks in, plain
+decoding does not get out:
+
+- **`[Certain, verified]` LoopGuard (arXiv:2604.10044)** makes this its thesis: once a self-reinforcing
+  loop forms, *"normal decoding cannot escape"* it — attention collapses onto a narrow recent suffix
+  and **KV-cache importance scoring preferentially retains the repetitive tokens** (self-perpetuating).
+  Its fix is **detect-onset → actively prune the repetitive tail from the KV cache** (−90pp loop
+  incidence). So escape requires active intervention, not self-correction — and it separates the two
+  steps (detect vs escape) explicitly.
+- **`[Certain]` The Circular-Reasoning paper (2601.05693)** itself calls loops an *"inescapable cycle
+  driven by a self-reinforcing V-shaped attention mechanism"*; its early-CUSUM-*prediction* design
+  exists **because** escape after lock-in is hard (intervene before the trap closes).
+- **`[Certain]` Self-reinforcement is long-established** (RIRO, arXiv:2310.10226, NeurIPS 2023; Penalty
+  Decoding, arXiv:2310.14971): a token gains probability the more it has repeated, so the loop feeds
+  itself; RIRO argues the *fundamental* fix is at the **training-data** level (attention-dropout on
+  repeated data), i.e. decoding-time fixes are downstream. Working escape methods all **actively
+  perturb** decoding (KV pruning, repetition penalty, contrastive search); unaided escape is slow
+  (accumulated pre-loop context must eventually overwhelm) → under a fixed budget it usually truncates
+  first.
+
+**Our data corroborates:** clean statement loops escape <1% within the 32k budget (138/138 Qwen,
+734/739 DeepSeek truncate); transient escape is the minority (68/54 completed+correct with n-gram
+repeats; 3 DeepSeek completed+correct clean loops that escaped after ~100 cycles).
+
+**Crucial caveat + our gap:** every escape-difficulty mechanism above requires **identical recent
+tokens** (attention collapse / KV amplification of *repeats*). Our paraphrastic-drift class (~41–47%,
+median self-match 0.23) has none — so (a) the mechanism doesn't straightforwardly apply, and
+(b) **LoopGuard-style KV-tail-pruning cannot help it** (no repetitive tail to prune). The one viable
+verbatim pipeline the literature offers — **detect the *established* loop (easy, per our endpoint
+result) → KV-prune to escape** — defeats on the paraphrastic half. The escape mechanism (and whether
+escape is even possible mid-drift) for paraphrastic loops is **open**.
+
 ## Caveats / scope
 
 1. **5 traces/model**, single dataset (ATCODER-interview), single p-less config. The aggregate

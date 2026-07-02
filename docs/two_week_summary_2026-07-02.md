@@ -94,6 +94,16 @@ and **p-less prevention doesn't beat standard decoding**. The mechanistic culpri
 hidden-state methods, and (b) structurally outside the current loop-benchmark literature (LoopBench =
 verbatim; PRMBench = step-level reward-model eval; overthinking work = efficiency framing).
 
+And the *escape* side is independently hard, per literature `[Certain, verified]`: once a loop locks
+in, *"normal decoding cannot escape"* — LoopGuard (arXiv:2604.10044) shows escape needs active
+KV-cache intervention (detect-onset → prune the repetitive tail); the Circular-Reasoning paper calls
+loops an "inescapable" self-reinforcing V-shaped-attention cycle; self-reinforcement is long
+established (RIRO, NeurIPS 2023). Our data agrees (clean loops escape <1% within budget). **But** all
+these escape mechanisms assume *identical recent tokens* (attention/KV amplification of repeats), so
+the one viable verbatim pipeline — detect-established-loop → KV-prune — **cannot touch the paraphrastic
+half** (no repetitive tail). So detect-and-escape is *doubly* hard on real code loops: late detection
+*and* an escape mechanism that only addresses the verbatim ~half.
+
 ## Scope / limitations (state these when presenting)
 - Finding #4 = **n=5 case studies/model**; #2 = 90 traces; #3, #5, control = full 252×10.
 - Two models, one dataset (ATCODER-interview), one sampling config (p-less T=1.0).
