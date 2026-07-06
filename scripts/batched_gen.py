@@ -60,7 +60,10 @@ def batched_gen_round(model, prefixes, sampler, temp, max_new, eos_id, think_end
     B = ids.shape[0]
     real_len = mask.sum(-1)                          # (B,) per-row real token count
     with torch.no_grad():
-        out = model(input_ids=ids, attention_mask=mask, position_ids=pos, use_cache=True)
+        # logits_to_keep=1: only materialize the last-position logits. Without it the prefill
+        # builds (B, seq_len, vocab) — 40+ GB for 10 long fired prefixes → OOM. Mirrors decode_round.
+        out = model(input_ids=ids, attention_mask=mask, position_ids=pos, use_cache=True,
+                    logits_to_keep=1)
     past = out.past_key_values
     logits = out.logits[:, -1].float()               # (B,vocab); left-pad → col -1 aligns
 
@@ -96,7 +99,8 @@ def batched_gen_round(model, prefixes, sampler, temp, max_new, eos_id, think_end
         step_pos = (real_len + step).view(B, 1)       # new token's position per row
         with torch.no_grad():
             out = model(input_ids=nxt.view(B, 1), attention_mask=cur_mask,
-                        position_ids=step_pos, past_key_values=past, use_cache=True)
+                        position_ids=step_pos, past_key_values=past, use_cache=True,
+                        logits_to_keep=1)
         past = out.past_key_values
         logits = out.logits[:, -1].float()
     for i in range(B):

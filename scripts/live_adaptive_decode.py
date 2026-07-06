@@ -80,7 +80,7 @@ def batched_phase1(model, prompt_ids, n, sampler, temp, max_new, eos_id, think_e
     dev = model.device
     input_ids = torch.tensor([prompt_ids], device=dev)
     with torch.no_grad():
-        pf = model(input_ids=input_ids, use_cache=True)
+        pf = model(input_ids=input_ids, use_cache=True, logits_to_keep=1)
     past = _expand_past_key_values(pf.past_key_values, n)
     logits = pf.logits[0, -1].float().unsqueeze(0).expand(n, -1).contiguous()
 
@@ -113,7 +113,8 @@ def batched_phase1(model, prompt_ids, n, sampler, temp, max_new, eos_id, think_e
         if bool(finished.all()) or step == max_new - 1:
             break
         with torch.no_grad():
-            out = model(input_ids=nxt.view(n, 1), past_key_values=past, use_cache=True)
+            out = model(input_ids=nxt.view(n, 1), past_key_values=past, use_cache=True,
+                        logits_to_keep=1)
         past = out.past_key_values
         logits = out.logits[:, -1].float()
         if step % 128 == 127 and torch.backends.mps.is_available():
@@ -262,8 +263,22 @@ def main():
     if out:
         os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
 
+    # Resume: if OUT exists, keep its completed tasks and skip them (a restart after a crash
+    # must not overwrite prior work — the incremental write uses mode "w").
     results, skipped = [], []
+    done_tasks = set()
+    if out and os.path.exists(out):
+        try:
+            prev = json.load(open(out))
+            results = prev.get("results", [])
+            done_tasks = {r["task_id"] for r in results}
+            print(f"resume: {len(done_tasks)} tasks already in {out}, skipping them", flush=True)
+        except Exception as e:
+            print(f"resume: could not read {out} ({e}); starting fresh", flush=True)
+            results = []
     for tid in task_ids:
+        if tid in done_tasks:
+            continue
         if tid not in pmap:
             skipped.append(tid); continue
         problem = pmap[tid]
