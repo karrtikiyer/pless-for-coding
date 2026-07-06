@@ -42,7 +42,7 @@ def left_pad_batch(prefix_lists, pad_id):
 
 
 def batched_gen_round(model, prefixes, sampler, temp, max_new, eos_id, think_end_id,
-                      n_g, k_g, w_g, pad_id):
+                      n_g, k_g, w_g, pad_id, label="", log_every=512):
     """One batched decode round over RAGGED prefixes at a single sampler. Left-pads the
     prefixes, prefills once (batched), then decodes token-by-token; each row stops on
     eos / loop-detected(onset) / cap. Rows that emit </think> keep generating code
@@ -87,6 +87,9 @@ def batched_gen_round(model, prefixes, sampler, temp, max_new, eos_id, think_end
                 in_code[i] = True
             elif not in_code[i] and dets[i].update(tid):
                 finished[i] = True; reason[i] = "loop"; onset[i] = dets[i].onset
+        if log_every and step % log_every == 0:
+            print(f"    {label} step {step}/{max_new} finished={int(finished.sum())}/{B}",
+                  flush=True)
         if bool(finished.all()) or step == max_new - 1:
             break
         cur_mask = torch.cat([cur_mask, torch.ones((B, 1), dtype=cur_mask.dtype, device=dev)], dim=1)

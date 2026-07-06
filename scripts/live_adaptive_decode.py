@@ -69,7 +69,7 @@ def extract_and_eval(text, problem):
 
 
 def batched_phase1(model, prompt_ids, n, sampler, temp, max_new, eos_id, think_end_id,
-                   n_g, k_g, w_g):
+                   n_g, k_g, w_g, label="", log_every=512):
     """Phase 1: batched alpha=2 generation of n samples from the shared prompt, with per-row
     live n-gram detection during the think phase. Mirrors bench.generator.generate_samples
     (prefill once -> expand KV -> batched decode) but stops a row on the FIRST loop and
@@ -107,6 +107,9 @@ def batched_phase1(model, prompt_ids, n, sampler, temp, max_new, eos_id, think_e
                 in_code[i] = True
             elif not in_code[i] and dets[i].update(tid):
                 finished[i] = True; reason[i] = "loop"; onset[i] = dets[i].onset
+        if log_every and step % log_every == 0:
+            print(f"    {label} phase1 step {step}/{max_new} finished={int(finished.sum())}/{n}",
+                  flush=True)
         if bool(finished.all()) or step == max_new - 1:
             break
         with torch.no_grad():
@@ -156,13 +159,14 @@ def run_task_batched(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new,
 
 
 def run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new, max_chops,
-                       eos_id, think_end_id, n_g, k_g, w_g, pad_id, round_cap):
+                       eos_id, think_end_id, n_g, k_g, w_g, pad_id, round_cap, tid="?"):
     """Fully batched: batched Phase-1 (alpha=2 + detect) then BATCHED Phase-2 (alpha=5
     chop-continue) over this task's fired rows together, via batched_phase2 +
     batched_gen_round. Turns DeepSeek's ~6-7 sequential per-task continuations into batched
     rounds. Falls back to no Phase-2 work when nothing fired."""
+    print(f"[task {tid}] phase1 start: n={n} prompt={len(prompt_ids)}tok cap={max_new}", flush=True)
     p1 = batched_phase1(model, prompt_ids, n, base_s, 1.0, max_new, eos_id, think_end_id,
-                        n_g, k_g, w_g)
+                        n_g, k_g, w_g, label=f"[task {tid}]")
     recs = [None] * n
     fired = []
     for i, r in enumerate(p1):
@@ -172,12 +176,14 @@ def run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s, max_ne
             fired.append({"idx": i, "pre": r["gen"][:r["onset"]],
                           "prefix": list(prompt_ids) + r["gen"][:r["onset"]],
                           "budget": max(1, max_new - r["onset"])})
+    print(f"[task {tid}] phase1 done: fired {len(fired)}/{n}"
+          + (f" -> phase2 (batched)" if fired else " (no rescue needed)"), flush=True)
     if fired:
         _free()
 
         def round_fn(prefixes, mn):
             return batched_gen_round(model, prefixes, esc_s, 1.0, mn, eos_id, think_end_id,
-                                     n_g, k_g, w_g, pad_id)
+                                     n_g, k_g, w_g, pad_id, label=f"[task {tid}] p2")
 
         batched_phase2(fired, round_fn, max_chops - 1, round_cap)
         for f in fired:
@@ -267,7 +273,7 @@ def main():
         if batched:
             recs = run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s,
                                       eff_new, max_chops, eos_id, think_end_id, n_g, k_g, w_g,
-                                      pad_id, round_cap)
+                                      pad_id, round_cap, tid=tid)
         else:
             recs = run_task(model, tok, problem, prompt_ids, n, base_s, esc_s, eff_new,
                             max_chops, eos_id, think_end_id, n_g, k_g, w_g)
