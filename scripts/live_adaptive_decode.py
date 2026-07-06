@@ -31,13 +31,14 @@ import os
 
 import torch
 
-from bench.generator import load_model_and_tokenizer
+from bench.generator import (load_model_and_tokenizer, _expand_past_key_values)
 from bench.apps.prompts import format_prompt_apps_instruct
 from bench.apps.dataset import load_apps_test_map
 from bench.eval.apps_executor import evaluate_apps_sample
 from bench.sampler_bridge import make_pless_alpha_sampler
 from scripts.chop_restart_alpha_compare import decode_round, make_safe
 from scripts.adaptive_loop import adaptive_continue
+from scripts.repeat_detector import RepeatDetector
 
 
 def _free():
@@ -64,6 +65,93 @@ def extract_and_eval(text, problem):
     sample = code if "```" in code else "```python\n" + code
     res, _ = evaluate_apps_sample(sample, problem)
     return res.status, res.status == "Passed"
+
+
+def batched_phase1(model, prompt_ids, n, sampler, temp, max_new, eos_id, think_end_id,
+                   n_g, k_g, w_g):
+    """Phase 1: batched alpha=2 generation of n samples from the shared prompt, with per-row
+    live n-gram detection during the think phase. Mirrors bench.generator.generate_samples
+    (prefill once -> expand KV -> batched decode) but stops a row on the FIRST loop and
+    records its onset. Rows that close </think> keep generating code (detection off) until
+    eos/cap. Returns per row: {gen, reason in {eos,loop,cap}, onset, closed_think}.
+    NOTE: model loop validated by GPU smoke, not unit tests (batched forward needs a model).
+    """
+    dev = model.device
+    input_ids = torch.tensor([prompt_ids], device=dev)
+    with torch.no_grad():
+        pf = model(input_ids=input_ids, use_cache=True)
+    past = _expand_past_key_values(pf.past_key_values, n)
+    logits = pf.logits[0, -1].float().unsqueeze(0).expand(n, -1).contiguous()
+
+    dets = [RepeatDetector(n=n_g, k=k_g, window=w_g) for _ in range(n)]
+    in_code = [False] * n
+    reason = [None] * n
+    onset = [None] * n
+    gens = [[] for _ in range(n)]
+    finished = torch.zeros(n, dtype=torch.bool, device=dev)
+
+    for step in range(max_new):
+        lg = logits / temp if temp != 1.0 else logits
+        probs = torch.softmax(lg, dim=-1)
+        nxt = sampler(probs.clone()).view(n)
+        nxt = torch.where(finished, torch.full_like(nxt, eos_id), nxt)
+        for i in range(n):
+            if bool(finished[i]):
+                continue
+            tid = int(nxt[i])
+            gens[i].append(tid)
+            if tid == eos_id:
+                finished[i] = True; reason[i] = "eos"
+            elif tid == think_end_id:
+                in_code[i] = True
+            elif not in_code[i] and dets[i].update(tid):
+                finished[i] = True; reason[i] = "loop"; onset[i] = dets[i].onset
+        if bool(finished.all()) or step == max_new - 1:
+            break
+        with torch.no_grad():
+            out = model(input_ids=nxt.view(n, 1), past_key_values=past, use_cache=True)
+        past = out.past_key_values
+        logits = out.logits[:, -1].float()
+        if step % 128 == 127 and torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+    for i in range(n):
+        if reason[i] is None:
+            reason[i] = "cap"
+    return [{"gen": gens[i], "reason": reason[i], "onset": onset[i],
+             "closed_think": in_code[i]} for i in range(n)]
+
+
+def run_task_batched(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new, max_chops,
+                     eos_id, think_end_id, n_g, k_g, w_g):
+    """Batched Phase 1 (alpha=2 + detect) then SEQUENTIAL Phase 2 (alpha=5 chop-continue with
+    re-chop) on the fired rows only. Phase 2 reuses the tested adaptive_continue + decode_round.
+    """
+    p1 = batched_phase1(model, prompt_ids, n, base_s, 1.0, max_new, eos_id, think_end_id,
+                        n_g, k_g, w_g)
+
+    def round_fn(ctx, sampler, temp, budget):
+        ids = torch.tensor([ctx], device=model.device)
+        return decode_round(model, ids, sampler, temp, budget, eos_id, think_end_id,
+                            n_g, k_g, w_g)
+
+    recs = []
+    for i, r in enumerate(p1):
+        if r["reason"] != "loop":                      # healthy / cap: no rescue
+            toks, fired, chops, reason = r["gen"], False, 0, r["reason"]
+        else:                                          # fired: chop -> continue at alpha=5
+            _free()
+            chopped = list(prompt_ids) + r["gen"][:r["onset"]]
+            budget = max(0, max_new - r["onset"])
+            out2 = adaptive_continue(chopped, round_fn, esc_s, 1.0, esc_s, 1.0,
+                                     budget, max_chops - 1)
+            toks = r["gen"][:r["onset"]] + out2["tokens"]
+            fired, chops, reason = True, 1 + out2["chops"], out2["reason"]
+        text = tok.decode(toks, skip_special_tokens=False)
+        st, ok = extract_and_eval(text, problem)
+        recs.append({"sample": i, "fired": fired, "chops": chops, "reason": reason,
+                     "closed_think": "</think>" in text, "exec": st, "recovered": ok,
+                     "baseline_recovered": ok and not fired, "gen_tokens": len(toks)})
+    return recs
 
 
 def run_task(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new, max_chops,
@@ -103,6 +191,7 @@ def main():
     k_g = int(os.environ.get("NGRAM_K", "6"))
     w_g = int(os.environ.get("NGRAM_WINDOW", "1600"))
     max_ctx = int(os.environ.get("MAX_CTX", "32768"))
+    batched = os.environ.get("BATCHED", "1") == "1"   # batched Phase 1 (default); 0 = sequential
     out = os.environ.get("OUT", "")
 
     pmap = load_apps_test_map(source=source, difficulty=difficulty)
@@ -116,9 +205,11 @@ def main():
     base_s = make_safe(make_pless_alpha_sampler(base_alpha))
     esc_s = make_safe(make_pless_alpha_sampler(esc_alpha))
 
+    run_fn = run_task_batched if batched else run_task
     print(f"model={model_id} | {source}/{difficulty} | tasks={len(task_ids)} n={n} | "
           f"base=a{int(base_alpha)}->esc=a{int(esc_alpha)} | detect {n_g}-gram k{k_g}/w{w_g} | "
-          f"max_new={max_new} max_chops={max_chops} think_end={think_end_id}", flush=True)
+          f"max_new={max_new} max_chops={max_chops} think_end={think_end_id} | "
+          f"{'BATCHED phase1' if batched else 'sequential'}", flush=True)
     if out:
         os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
 
@@ -130,8 +221,8 @@ def main():
         prefix, _ = format_prompt_apps_instruct(problem, tok, enable_thinking=True)
         prompt_ids = tok.encode(prefix)
         eff_new = min(max_new, max_ctx - len(prompt_ids) - 64)
-        recs = run_task(model, tok, problem, prompt_ids, n, base_s, esc_s, eff_new,
-                        max_chops, eos_id, think_end_id, n_g, k_g, w_g)
+        recs = run_fn(model, tok, problem, prompt_ids, n, base_s, esc_s, eff_new,
+                      max_chops, eos_id, think_end_id, n_g, k_g, w_g)
         fired = sum(r["fired"] for r in recs)
         ad9 = sum(r["recovered"] for r in recs)
         base9 = sum(r["baseline_recovered"] for r in recs)

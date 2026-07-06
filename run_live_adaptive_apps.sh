@@ -16,7 +16,9 @@
 # Weights: defaults to HF_HUB_OFFLINE=1 (both models were run before → cached). On a FRESH
 # pod with no cache, run with HF_HUB_OFFLINE=0 and export HF_TOKEN (e.g. from .env) to allow
 # the download. Unlisted driver knobs (TASK_IDS, SOURCE, DIFFICULTY, BASE_ALPHA, ESC_ALPHA,
-# MAX_CTX) have defaults in the driver and still pass through via env inheritance.
+# MAX_CTX, BATCHED) have defaults in the driver and still pass through via env inheritance.
+# BATCHED=1 (default) batches Phase-1 alpha=2 gen across the n samples (prefill once, expand
+# KV) then rescues fired rows sequentially at alpha=5; BATCHED=0 = fully sequential fallback.
 # SMOKE FIRST (validate the method + token-level detector before the full run):
 #   MODEL_KEY=qwen   MAX_PROBLEMS=4 N=4 ./run_live_adaptive_apps.sh
 #   MODEL_KEY=deepseek MAX_PROBLEMS=4 N=4 ./run_live_adaptive_apps.sh
