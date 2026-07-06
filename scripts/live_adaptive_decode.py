@@ -39,6 +39,7 @@ from bench.sampler_bridge import make_pless_alpha_sampler
 from scripts.chop_restart_alpha_compare import decode_round, make_safe
 from scripts.adaptive_loop import adaptive_continue
 from scripts.repeat_detector import RepeatDetector
+from scripts.batched_gen import batched_gen_round, batched_phase2
 
 
 def _free():
@@ -154,6 +155,47 @@ def run_task_batched(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new,
     return recs
 
 
+def run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new, max_chops,
+                       eos_id, think_end_id, n_g, k_g, w_g, pad_id, round_cap):
+    """Fully batched: batched Phase-1 (alpha=2 + detect) then BATCHED Phase-2 (alpha=5
+    chop-continue) over this task's fired rows together, via batched_phase2 +
+    batched_gen_round. Turns DeepSeek's ~6-7 sequential per-task continuations into batched
+    rounds. Falls back to no Phase-2 work when nothing fired."""
+    p1 = batched_phase1(model, prompt_ids, n, base_s, 1.0, max_new, eos_id, think_end_id,
+                        n_g, k_g, w_g)
+    recs = [None] * n
+    fired = []
+    for i, r in enumerate(p1):
+        if r["reason"] != "loop":
+            recs[i] = {"gen": r["gen"], "fired": False, "chops": 0, "reason": r["reason"]}
+        else:
+            fired.append({"idx": i, "pre": r["gen"][:r["onset"]],
+                          "prefix": list(prompt_ids) + r["gen"][:r["onset"]],
+                          "budget": max(1, max_new - r["onset"])})
+    if fired:
+        _free()
+
+        def round_fn(prefixes, mn):
+            return batched_gen_round(model, prefixes, esc_s, 1.0, mn, eos_id, think_end_id,
+                                     n_g, k_g, w_g, pad_id)
+
+        batched_phase2(fired, round_fn, max_chops - 1, round_cap)
+        for f in fired:
+            recs[f["idx"]] = {"gen": f["pre"] + f["cont"], "fired": True,
+                              "chops": 1 + f["chops"], "reason": f["reason"]}
+
+    out = []
+    for i in range(n):
+        rr = recs[i]
+        text = tok.decode(rr["gen"], skip_special_tokens=False)
+        st, ok = extract_and_eval(text, problem)
+        out.append({"sample": i, "fired": rr["fired"], "chops": rr["chops"],
+                    "reason": rr["reason"], "closed_think": "</think>" in text, "exec": st,
+                    "recovered": ok, "baseline_recovered": ok and not rr["fired"],
+                    "gen_tokens": len(rr["gen"])})
+    return out
+
+
 def run_task(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new, max_chops,
              eos_id, think_end_id, n_g, k_g, w_g):
     def round_fn(ctx, sampler, temp, budget):
@@ -191,7 +233,8 @@ def main():
     k_g = int(os.environ.get("NGRAM_K", "6"))
     w_g = int(os.environ.get("NGRAM_WINDOW", "1600"))
     max_ctx = int(os.environ.get("MAX_CTX", "32768"))
-    batched = os.environ.get("BATCHED", "1") == "1"   # batched Phase 1 (default); 0 = sequential
+    batched = os.environ.get("BATCHED", "1") == "1"   # 1 = fully batched (default); 0 = sequential
+    round_cap = int(os.environ.get("PHASE2_CAP", "16384"))  # per Phase-2 batched round budget
     out = os.environ.get("OUT", "")
 
     pmap = load_apps_test_map(source=source, difficulty=difficulty)
@@ -202,14 +245,14 @@ def main():
     model, tok = load_model_and_tokenizer(model_id, dtype="bfloat16")
     eos_id = tok.eos_token_id or tok.convert_tokens_to_ids("<|im_end|>")
     think_end_id = resolve_think_end(tok)
+    pad_id = tok.pad_token_id if tok.pad_token_id is not None else eos_id
     base_s = make_safe(make_pless_alpha_sampler(base_alpha))
     esc_s = make_safe(make_pless_alpha_sampler(esc_alpha))
 
-    run_fn = run_task_batched if batched else run_task
     print(f"model={model_id} | {source}/{difficulty} | tasks={len(task_ids)} n={n} | "
           f"base=a{int(base_alpha)}->esc=a{int(esc_alpha)} | detect {n_g}-gram k{k_g}/w{w_g} | "
-          f"max_new={max_new} max_chops={max_chops} think_end={think_end_id} | "
-          f"{'BATCHED phase1' if batched else 'sequential'}", flush=True)
+          f"max_new={max_new} max_chops={max_chops} think_end={think_end_id} pad={pad_id} | "
+          f"{'FULLY BATCHED (p2 cap ' + str(round_cap) + ')' if batched else 'sequential'}", flush=True)
     if out:
         os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
 
@@ -221,8 +264,13 @@ def main():
         prefix, _ = format_prompt_apps_instruct(problem, tok, enable_thinking=True)
         prompt_ids = tok.encode(prefix)
         eff_new = min(max_new, max_ctx - len(prompt_ids) - 64)
-        recs = run_fn(model, tok, problem, prompt_ids, n, base_s, esc_s, eff_new,
-                      max_chops, eos_id, think_end_id, n_g, k_g, w_g)
+        if batched:
+            recs = run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s,
+                                      eff_new, max_chops, eos_id, think_end_id, n_g, k_g, w_g,
+                                      pad_id, round_cap)
+        else:
+            recs = run_task(model, tok, problem, prompt_ids, n, base_s, esc_s, eff_new,
+                            max_chops, eos_id, think_end_id, n_g, k_g, w_g)
         fired = sum(r["fired"] for r in recs)
         ad9 = sum(r["recovered"] for r in recs)
         base9 = sum(r["baseline_recovered"] for r in recs)
