@@ -255,6 +255,14 @@ def main():
 
     pmap = load_apps_test_map(source=source, difficulty=difficulty)
     task_ids = ([int(x) for x in task_env.split()] if task_env else sorted(pmap))
+    # SKIP_TASKS: opt-in exclusion (e.g. the 13 known-unsolvable ATCODER-interview tasks, which
+    # cost the most compute — heavy loopers → longest Phase-2 — yet yield 0 for BOTH adaptive
+    # and baseline, so excluding them leaves the rescue delta unchanged).
+    skip_env = os.environ.get("SKIP_TASKS", "").strip()
+    if skip_env:
+        skip = {int(x) for x in skip_env.split()}
+        task_ids = [t for t in task_ids if t not in skip]
+        print(f"skipping {len(skip)} tasks via SKIP_TASKS", flush=True)
     if max_problems:
         task_ids = task_ids[:max_problems]
 
