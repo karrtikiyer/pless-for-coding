@@ -48,7 +48,7 @@ MAX_PROBLEMS="${MAX_PROBLEMS:-0}"
 MAX_NEW="${MAX_NEW:-32768}"
 MAX_CHOPS="${MAX_CHOPS:-3}"
 TAG="${TAG:-$( [ "$MAX_PROBLEMS" = 0 ] && echo full || echo smoke${MAX_PROBLEMS} )}"
-OUT="${OUT:-results/_live_adaptive/${MODEL_KEY}_${TAG}_n${N}.json}"
+OUT="${OUT:-results/_live_adaptive/${MODEL_KEY}_${TAG}_n${N}.jsonl}"
 
 mkdir -p "$(dirname "$OUT")"
 echo "live-adaptive | $MODEL | n=$N max_problems=$MAX_PROBLEMS | detect ${NGRAM_N}/${NGRAM_K}/${NGRAM_WINDOW} | out=$OUT"

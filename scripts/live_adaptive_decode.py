@@ -28,10 +28,12 @@ Env: MODEL, SOURCE(ATCODER), DIFFICULTY(interview), TASK_IDS(""=all), MAX_PROBLE
 import gc
 import json
 import os
+from datetime import datetime, timezone
 
 import torch
 
-from bench.generator import (load_model_and_tokenizer, _expand_past_key_values)
+from bench.generator import (load_model_and_tokenizer, _expand_past_key_values,
+                             _strip_think_content)
 from bench.apps.prompts import format_prompt_apps_instruct
 from bench.apps.dataset import load_apps_test_map
 from bench.eval.apps_executor import evaluate_apps_sample
@@ -205,7 +207,7 @@ def run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s, max_ne
         out.append({"sample": i, "fired": rr["fired"], "chops": rr["chops"],
                     "reason": rr["reason"], "closed_think": "</think>" in text, "exec": st,
                     "recovered": ok, "baseline_recovered": ok and not rr["fired"],
-                    "gen_tokens": len(rr["gen"])})
+                    "gen_tokens": len(rr["gen"]), "text": text})
     return out
 
 
@@ -227,7 +229,7 @@ def run_task(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new, max_cho
                      "switched_at": out["switched_at"], "reason": out["reason"],
                      "closed_think": "</think>" in text, "exec": st,
                      "recovered": ok, "baseline_recovered": ok and not out["fired"],
-                     "gen_tokens": len(out["tokens"])})
+                     "gen_tokens": len(out["tokens"]), "text": text})
     return recs
 
 
@@ -272,17 +274,29 @@ def main():
 
     # Resume: if OUT exists, keep its completed tasks and skip them (a restart after a crash
     # must not overwrite prior work — the incremental write uses mode "w").
-    results, skipped = [], []
+    skipped = []
+    # Output is base-run JSONL (one record/task with samples + samples_with_thinking), so it
+    # feeds the existing eval/diversity tooling; the adaptive per-sample metadata rides in an
+    # extra "adaptive" field. Resume: read completed task_ids from the JSONL and append new.
     done_tasks = set()
+    adaptive_all = []                                    # flat per-sample dicts for the summary
     if out and os.path.exists(out):
-        try:
-            prev = json.load(open(out))
-            results = prev.get("results", [])
-            done_tasks = {r["task_id"] for r in results}
-            print(f"resume: {len(done_tasks)} tasks already in {out}, skipping them", flush=True)
-        except Exception as e:
-            print(f"resume: could not read {out} ({e}); starting fresh", flush=True)
-            results = []
+        with open(out) as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                    tid_prev = rec["task_id"]
+                except Exception:
+                    continue                             # skip a torn/foreign line
+                done_tasks.add(tid_prev)
+                for a in rec.get("adaptive", []):
+                    adaptive_all.append(a)
+        print(f"resume: {len(done_tasks)} tasks already in {out}, skipping them", flush=True)
+
+    fh_out = open(out, "a") if out else None
     for tid in task_ids:
         if tid in done_tasks:
             continue
@@ -302,24 +316,38 @@ def main():
         fired = sum(r["fired"] for r in recs)
         ad9 = sum(r["recovered"] for r in recs)
         base9 = sum(r["baseline_recovered"] for r in recs)
+        texts = [r.pop("text", "") for r in recs]        # full generations (post-prompt)
         for r in recs:
             r["task_id"] = tid
-            results.append(r)
+            adaptive_all.append(r)
         print(f"task {tid}: fired {fired}/{n} | recovered adaptive {ad9}/{n} vs "
               f"baseline(a2) {base9}/{n} | rescue +{ad9 - base9}", flush=True)
-        if out:
-            with open(out, "w") as fh:
-                json.dump({"meta": {"model": model_id, "n": n, "detector": [n_g, k_g, w_g],
-                                    "base_alpha": base_alpha, "esc_alpha": esc_alpha,
-                                    "skipped": skipped}, "results": results}, fh)
+        if fh_out:
+            record = {
+                "model": model_id, "backend": "hf", "method": "pless_adaptive",
+                "temperature": 1.0, "top_p": 1.0, "top_k": 0,
+                "task_id": tid, "source": source, "difficulty": difficulty,
+                "prompt_text": problem.question,
+                "samples": [_strip_think_content(t) for t in texts],
+                "samples_with_thinking": texts,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "base_alpha": base_alpha, "esc_alpha": esc_alpha,
+                "detector": [n_g, k_g, w_g],
+                "adaptive": recs,                        # per-sample fired/recovered/baseline/...
+            }
+            fh_out.write(json.dumps(record) + "\n")
+            fh_out.flush()
+    if fh_out:
+        fh_out.close()
 
-    # --- summary: deployment pass@1 (adaptive) vs plain-a2 baseline, both from this run ---
-    tot = len(results)
-    ad = sum(r["recovered"] for r in results)
-    base = sum(r["baseline_recovered"] for r in results)
-    fired = sum(r["fired"] for r in results)
+    # --- summary: deployment pass@1 (adaptive) vs plain-a2 baseline, over ALL tasks in file ---
+    tot = len(adaptive_all)
+    ad = sum(r["recovered"] for r in adaptive_all)
+    base = sum(r["baseline_recovered"] for r in adaptive_all)
+    fired = sum(r["fired"] for r in adaptive_all)
+    ntasks = len({r["task_id"] for r in adaptive_all})
     print("\n" + "=" * 60)
-    print(f"LIVE ADAPTIVE — {len(task_ids) - len(skipped)} tasks x n={n} = {tot} samples")
+    print(f"LIVE ADAPTIVE — {ntasks} tasks x n={n} = {tot} samples (skipped {len(skipped)})")
     print(f"  detector fired: {fired}/{tot} ({fired / max(1, tot):.1%})")
     print(f"  pass@1 plain a2 (baseline): {base}/{tot} = {base / max(1, tot):.3f}")
     print(f"  pass@1 adaptive (a2->chop->a5): {ad}/{tot} = {ad / max(1, tot):.3f}")
