@@ -160,7 +160,8 @@ def run_task_batched(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new,
 
 
 def run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new, max_chops,
-                       eos_id, think_end_id, n_g, k_g, w_g, pad_id, round_cap, tid="?"):
+                       eos_id, think_end_id, n_g, k_g, w_g, pad_id, round_cap,
+                       phase2_batch=4, tid="?"):
     """Fully batched: batched Phase-1 (alpha=2 + detect) then BATCHED Phase-2 (alpha=5
     chop-continue) over this task's fired rows together, via batched_phase2 +
     batched_gen_round. Turns DeepSeek's ~6-7 sequential per-task continuations into batched
@@ -177,16 +178,21 @@ def run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s, max_ne
             fired.append({"idx": i, "pre": r["gen"][:r["onset"]],
                           "prefix": list(prompt_ids) + r["gen"][:r["onset"]],
                           "budget": max(1, max_new - r["onset"])})
+    nchunk = (len(fired) + phase2_batch - 1) // phase2_batch if fired else 0
     print(f"[task {tid}] phase1 done: fired {len(fired)}/{n}"
-          + (f" -> phase2 (batched)" if fired else " (no rescue needed)"), flush=True)
+          + (f" -> phase2 ({nchunk} chunk(s) of <={phase2_batch})" if fired
+             else " (no rescue needed)"), flush=True)
     if fired:
-        _free()
-
         def round_fn(prefixes, mn):
             return batched_gen_round(model, prefixes, esc_s, 1.0, mn, eos_id, think_end_id,
                                      n_g, k_g, w_g, pad_id, label=f"[task {tid}] p2")
 
-        batched_phase2(fired, round_fn, max_chops - 1, round_cap)
+        # Cap Phase-2 batch width: B rows each carry a long context (chopped prefix +
+        # continuation, up to ~32k) → KV cache ~ B x context. All 10 at once OOMs an 80GB
+        # card; chunks of ~4 keep it bounded. Still batched (4x fewer forwards than sequential).
+        for s in range(0, len(fired), phase2_batch):
+            _free()
+            batched_phase2(fired[s:s + phase2_batch], round_fn, max_chops - 1, round_cap)
         for f in fired:
             recs[f["idx"]] = {"gen": f["pre"] + f["cont"], "fired": True,
                               "chops": 1 + f["chops"], "reason": f["reason"]}
@@ -242,6 +248,7 @@ def main():
     max_ctx = int(os.environ.get("MAX_CTX", "32768"))
     batched = os.environ.get("BATCHED", "1") == "1"   # 1 = fully batched (default); 0 = sequential
     round_cap = int(os.environ.get("PHASE2_CAP", "16384"))  # per Phase-2 batched round budget
+    phase2_batch = int(os.environ.get("PHASE2_BATCH", "4"))  # max rows per Phase-2 batch (KV cap)
     out = os.environ.get("OUT", "")
 
     pmap = load_apps_test_map(source=source, difficulty=difficulty)
@@ -288,7 +295,7 @@ def main():
         if batched:
             recs = run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s,
                                       eff_new, max_chops, eos_id, think_end_id, n_g, k_g, w_g,
-                                      pad_id, round_cap, tid=tid)
+                                      pad_id, round_cap, phase2_batch=phase2_batch, tid=tid)
         else:
             recs = run_task(model, tok, problem, prompt_ids, n, base_s, esc_s, eff_new,
                             max_chops, eos_id, think_end_id, n_g, k_g, w_g)

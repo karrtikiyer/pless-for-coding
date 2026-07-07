@@ -29,6 +29,8 @@ set -euo pipefail
 
 # Cache/env hygiene (parity with the pod vLLM launch scripts).
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+# Reduce CUDA fragmentation (the Phase-2 OOM left ~16GB reserved-but-unallocated).
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 
 MODEL_KEY="${MODEL_KEY:-qwen}"
 case "$MODEL_KEY" in
