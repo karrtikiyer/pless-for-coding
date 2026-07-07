@@ -41,6 +41,24 @@ def left_pad_batch(prefix_lists, pad_id):
     return input_ids, attention_mask, position_ids
 
 
+def compact_step(orig_idx, finished):
+    """Compaction bookkeeping (pure): given the current batch's original-row ids
+    (orig_idx[p] = which original row sits at batch position p) and a per-position
+    `finished` mask, return:
+      keep_pos  : batch positions still ACTIVE — used to index_select the KV cache and the
+                  running tensors so finished rows stop being forwarded (the #2 waste fix).
+      keep_orig : their original row ids (= the new orig_idx after compaction).
+      done_orig : original row ids that finished this step — record their outputs at those
+                  ORIGINAL slots (this is what prevents result misattribution across drops).
+    No tensors here; the GPU loop applies keep_pos. Tracking orig ids across repeated
+    compaction is the whole point — it guarantees a row's result lands in its own slot.
+    """
+    keep_pos = [p for p, f in enumerate(finished) if not f]
+    keep_orig = [orig_idx[p] for p in keep_pos]
+    done_orig = [orig_idx[p] for p, f in enumerate(finished) if f]
+    return keep_pos, keep_orig, done_orig
+
+
 def batched_gen_round(model, prefixes, sampler, temp, max_new, eos_id, think_end_id,
                       n_g, k_g, w_g, pad_id, label="", log_every=512):
     """One batched decode round over RAGGED prefixes at a single sampler. Left-pads the

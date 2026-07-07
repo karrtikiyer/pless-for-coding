@@ -3,7 +3,7 @@ ragged-prefill piece. No model/GPU: pure tensor logic.
 """
 import torch
 
-from scripts.batched_gen import left_pad_batch, batched_phase2
+from scripts.batched_gen import left_pad_batch, batched_phase2, compact_step
 
 
 def test_shapes_and_left_alignment():
@@ -106,3 +106,32 @@ def test_phase2_round_cap_bounds_max_new():
     rf = _scripted_round([[{"gen": [7], "reason": "eos", "onset": None}]])
     batched_phase2(fired, rf, max_chops=3, round_cap=8192)
     assert rf.calls[0]["max_new"] == 5             # min(remaining budget, round_cap)
+
+
+# --- compact_step: drop-finished-rows bookkeeping (the wasted-forwards fix) -----------
+
+def test_compact_none_finished_keeps_all():
+    keep_pos, keep_orig, done_orig = compact_step([0, 1, 2], [False, False, False])
+    assert keep_pos == [0, 1, 2]
+    assert keep_orig == [0, 1, 2]
+    assert done_orig == []
+
+
+def test_compact_some_finished_drops_and_tracks_orig_ids():
+    keep_pos, keep_orig, done_orig = compact_step([0, 1, 2, 3], [False, True, False, True])
+    assert keep_pos == [0, 2]          # batch positions still active
+    assert keep_orig == [0, 2]         # their original row ids
+    assert done_orig == [1, 3]         # finished rows -> record at these ORIGINAL slots
+
+
+def test_compact_repeated_preserves_original_ids_no_misattribution():
+    # after a prior compaction the batch holds original rows [0, 2]; now row 0 finishes
+    keep_pos, keep_orig, done_orig = compact_step([0, 2], [True, False])
+    assert keep_pos == [1]             # position 1 in the *current* (already-compacted) batch
+    assert keep_orig == [2]            # which is original row 2
+    assert done_orig == [0]            # original row 0 finished — result lands in slot 0, not 1
+
+
+def test_compact_all_finished_empties():
+    keep_pos, keep_orig, done_orig = compact_step([5, 6], [True, True])
+    assert keep_pos == [] and keep_orig == [] and done_orig == [5, 6]
