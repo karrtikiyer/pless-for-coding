@@ -20,7 +20,7 @@ import os
 
 import torch
 
-from bench.generator import load_model_and_tokenizer
+from bench.generator import load_model_and_tokenizer, _expand_past_key_values
 from scripts.batched_gen import left_pad_batch
 
 
@@ -28,6 +28,34 @@ def last_logits_solo(model, ids):
     with torch.no_grad():
         out = model(input_ids=ids, use_cache=True, logits_to_keep=1)
     return out.logits[0, -1].float().cpu(), out.past_key_values
+
+
+def teacher_decode_row0(model, prompt_ids, n, steps, dev, drop_step=None, keep=None):
+    """Compaction primitive check. Prefill n copies of a shared prompt, then teacher-force a
+    per-row-DISTINCT fixed token (row with original id o always gets token 1000+o) so rows
+    diverge. Optionally at `drop_step` compact the batch to `keep` (via batch_select_indices).
+    Return row-0's next-logits at each step. Row 0 is always kept and always fed 1000, so a
+    correct compaction must leave row-0's logits unchanged whether or not other rows are
+    dropped — any divergence means batch_select_indices corrupted/misaligned the cache.
+    """
+    with torch.no_grad():
+        pf = model(input_ids=torch.tensor([prompt_ids], device=dev), use_cache=True,
+                   logits_to_keep=1)
+    past = _expand_past_key_values(pf.past_key_values, n)
+    active = list(range(n))
+    row0 = []
+    for step in range(steps):
+        toks = torch.tensor([[1000 + o] for o in active], device=dev)
+        with torch.no_grad():
+            out = model(input_ids=toks, past_key_values=past, use_cache=True, logits_to_keep=1)
+        past = out.past_key_values
+        logits = out.logits[:, -1].float()
+        row0.append(logits[active.index(0)].cpu())
+        if drop_step is not None and step == drop_step:
+            kp = [p for p, o in enumerate(active) if o in keep]
+            past.batch_select_indices(torch.tensor(kp, device=dev))
+            active = [active[p] for p in kp]
+    return row0
 
 
 def main():
@@ -104,9 +132,23 @@ def main():
             ok = ok and good
             print(f"  row {i} [{tag}] max|Δlogit|={d:.4f} argmax_match={am} "
                   f"{'OK' if good else 'FAIL'}", flush=True)
-    print("\n" + ("PASS — batched forward is per-row equivalent to solo (argmax agrees; "
+    # --- Test C: compaction primitive — dropping rows must not change a survivor ---
+    print("\n[Test C] compaction: drop rows {1,3} at step 2, row-0 logits must be unchanged",
+          flush=True)
+    full = teacher_decode_row0(model, seqs[1], n=4, steps=6, dev=dev)
+    drop = teacher_decode_row0(model, seqs[1], n=4, steps=6, dev=dev, drop_step=2, keep={0, 2})
+    for t in range(len(full)):
+        d = (full[t] - drop[t]).abs().max().item()
+        am = int(full[t].argmax()) == int(drop[t].argmax())
+        good = am and d <= thresh
+        ok = ok and good
+        tagpost = " (post-drop)" if t > 2 else ""
+        print(f"  step {t}{tagpost} max|Δlogit|={d:.4f} argmax_match={am} "
+              f"{'OK' if good else 'FAIL'}", flush=True)
+
+    print("\n" + ("PASS — batched forward + compaction are per-row equivalent (argmax agrees; "
                   "Δ within noise)" if ok else
-                  "FAIL — batched path diverges beyond noise / flips argmax (real bug)"),
+                  "FAIL — a path diverges beyond noise / flips argmax (real bug)"),
           flush=True)
     raise SystemExit(0 if ok else 1)
 

@@ -71,13 +71,20 @@ def extract_and_eval(text, problem):
 
 
 def batched_phase1(model, prompt_ids, n, sampler, temp, max_new, eos_id, think_end_id,
-                   n_g, k_g, w_g, label="", log_every=512):
+                   n_g, k_g, w_g, label="", log_every=512, compact=True):
     """Phase 1: batched alpha=2 generation of n samples from the shared prompt, with per-row
-    live n-gram detection during the think phase. Mirrors bench.generator.generate_samples
-    (prefill once -> expand KV -> batched decode) but stops a row on the FIRST loop and
-    records its onset. Rows that close </think> keep generating code (detection off) until
-    eos/cap. Returns per row: {gen, reason in {eos,loop,cap}, onset, closed_think}.
-    NOTE: model loop validated by GPU smoke, not unit tests (batched forward needs a model).
+    live n-gram detection. Prefill once -> expand KV -> batched decode; a row stops on the
+    FIRST loop (records onset); rows that close </think> keep generating code (detection off)
+    until eos/cap. Returns per row: {gen, reason in {eos,loop,cap}, onset, closed_think}.
+
+    COMPACTION (compact=True): when rows finish, drop them from the active batch via
+    DynamicCache.batch_select_indices — so finished rows stop being forwarded (the #2
+    wasted-forwards fix; a wanderer no longer drags 9 done rows to the 32K cap). All active
+    rows share the same length (they decode in lockstep and are dropped at finish), so no
+    padding/position complications. compact=False reproduces the old mask-and-forward-all
+    behavior for A/B verification. Per-row state is keyed by ORIGINAL row id (via `active`)
+    so results never get misattributed as the batch shrinks.
+    Correctness gated by scripts/verify_batched_equivalence.py; the bookkeeping by compact_step.
     """
     dev = model.device
     input_ids = torch.tensor([prompt_ids], device=dev)
@@ -91,41 +98,53 @@ def batched_phase1(model, prompt_ids, n, sampler, temp, max_new, eos_id, think_e
     reason = [None] * n
     onset = [None] * n
     gens = [[] for _ in range(n)]
-    finished = torch.zeros(n, dtype=torch.bool, device=dev)
+    done = [False] * n
+    active = list(range(n))                      # batch position p -> original row active[p]
 
     for step in range(max_new):
+        B = len(active)
         lg = logits / temp if temp != 1.0 else logits
         probs = torch.softmax(lg, dim=-1)
-        nxt = sampler(probs.clone()).view(n)
-        nxt = torch.where(finished, torch.full_like(nxt, eos_id), nxt)
-        for i in range(n):
-            if bool(finished[i]):
+        nxt = sampler(probs.clone()).view(B)
+        for p in range(B):
+            o = active[p]
+            if done[o]:                          # only possible in the non-compact path
                 continue
-            tid = int(nxt[i])
-            gens[i].append(tid)
+            tid = int(nxt[p])
+            gens[o].append(tid)
             if tid == eos_id:
-                finished[i] = True; reason[i] = "eos"
+                done[o] = True; reason[o] = "eos"
             elif tid == think_end_id:
-                in_code[i] = True
-            elif not in_code[i] and dets[i].update(tid):
-                finished[i] = True; reason[i] = "loop"; onset[i] = dets[i].onset
+                in_code[o] = True
+            elif not in_code[o] and dets[o].update(tid):
+                done[o] = True; reason[o] = "loop"; onset[o] = dets[o].onset
         if log_every and step % log_every == 0:
-            print(f"    {label} phase1 step {step}/{max_new} finished={int(finished.sum())}/{n}",
+            print(f"    {label} phase1 step {step}/{max_new} active={sum(not d for d in done)}/{n}",
                   flush=True)
-        if bool(finished.all()) or step == max_new - 1:
+        if all(done) or step == max_new - 1:
             break
+        if compact:
+            keep = [p for p in range(B) if not done[active[p]]]
+            if len(keep) < B:
+                idx = torch.tensor(keep, device=dev)
+                past.batch_select_indices(idx)
+                nxt = nxt[idx]
+                active = [active[p] for p in keep]
+        else:
+            mask = torch.tensor([done[active[p]] for p in range(B)], device=dev)
+            nxt = torch.where(mask, torch.full_like(nxt, eos_id), nxt)
         with torch.no_grad():
-            out = model(input_ids=nxt.view(n, 1), past_key_values=past, use_cache=True,
-                        logits_to_keep=1)
+            out = model(input_ids=nxt.view(len(active), 1), past_key_values=past,
+                        use_cache=True, logits_to_keep=1)
         past = out.past_key_values
         logits = out.logits[:, -1].float()
         if step % 128 == 127 and torch.backends.mps.is_available():
             torch.mps.empty_cache()
-    for i in range(n):
-        if reason[i] is None:
-            reason[i] = "cap"
-    return [{"gen": gens[i], "reason": reason[i], "onset": onset[i],
-             "closed_think": in_code[i]} for i in range(n)]
+    for o in range(n):
+        if reason[o] is None:
+            reason[o] = "cap"
+    return [{"gen": gens[o], "reason": reason[o], "onset": onset[o],
+             "closed_think": in_code[o]} for o in range(n)]
 
 
 def run_task_batched(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new, max_chops,
@@ -163,14 +182,15 @@ def run_task_batched(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new,
 
 def run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s, max_new, max_chops,
                        eos_id, think_end_id, n_g, k_g, w_g, pad_id, round_cap,
-                       phase2_batch=4, tid="?"):
+                       phase2_batch=4, tid="?", compact=True):
     """Fully batched: batched Phase-1 (alpha=2 + detect) then BATCHED Phase-2 (alpha=5
     chop-continue) over this task's fired rows together, via batched_phase2 +
     batched_gen_round. Turns DeepSeek's ~6-7 sequential per-task continuations into batched
-    rounds. Falls back to no Phase-2 work when nothing fired."""
+    rounds. Falls back to no Phase-2 work when nothing fired. `compact` drops finished rows
+    from the Phase-1 batch (efficiency; set 0 to reproduce the old forward-all behavior)."""
     print(f"[task {tid}] phase1 start: n={n} prompt={len(prompt_ids)}tok cap={max_new}", flush=True)
     p1 = batched_phase1(model, prompt_ids, n, base_s, 1.0, max_new, eos_id, think_end_id,
-                        n_g, k_g, w_g, label=f"[task {tid}]")
+                        n_g, k_g, w_g, label=f"[task {tid}]", compact=compact)
     recs = [None] * n
     fired = []
     for i, r in enumerate(p1):
@@ -251,6 +271,7 @@ def main():
     batched = os.environ.get("BATCHED", "1") == "1"   # 1 = fully batched (default); 0 = sequential
     round_cap = int(os.environ.get("PHASE2_CAP", "16384"))  # per Phase-2 batched round budget
     phase2_batch = int(os.environ.get("PHASE2_BATCH", "4"))  # max rows per Phase-2 batch (KV cap)
+    compact = os.environ.get("COMPACT", "1") == "1"  # drop finished rows from Phase-1 batch
     out = os.environ.get("OUT", "")
 
     pmap = load_apps_test_map(source=source, difficulty=difficulty)
@@ -317,7 +338,8 @@ def main():
         if batched:
             recs = run_task_fullbatch(model, tok, problem, prompt_ids, n, base_s, esc_s,
                                       eff_new, max_chops, eos_id, think_end_id, n_g, k_g, w_g,
-                                      pad_id, round_cap, phase2_batch=phase2_batch, tid=tid)
+                                      pad_id, round_cap, phase2_batch=phase2_batch, tid=tid,
+                                      compact=compact)
         else:
             recs = run_task(model, tok, problem, prompt_ids, n, base_s, esc_s, eff_new,
                             max_chops, eos_id, think_end_id, n_g, k_g, w_g)
