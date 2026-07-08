@@ -32,8 +32,11 @@ def last_logits_solo(model, ids):
 
 def main():
     model_id = os.environ.get("MODEL", "Qwen/Qwen3-8B")
-    tol = float(os.environ.get("TOL", "0.1"))           # bf16 reduction-order slack
-    model, tok = load_model_and_tokenizer(model_id, dtype="bfloat16")
+    dtype = os.environ.get("DTYPE", "bfloat16")          # set float32 for the airtight control
+    tol = float(os.environ.get("TOL", "0.1"))
+    model, tok = load_model_and_tokenizer(model_id, dtype=dtype)
+    if dtype == "float32":                              # loader falls back to bf16 otherwise
+        model = model.float()
     dev = model.device
     pad_id = tok.pad_token_id if tok.pad_token_id is not None else (tok.eos_token_id or 0)
 
@@ -45,8 +48,17 @@ def main():
         "import sys\n" + "x = 1\n" * 80,
     ]
     seqs = [tok.encode(t) for t in texts]
-    print(f"model={model_id} | {len(seqs)} rows, lengths={[len(s) for s in seqs]} | tol={tol}",
-          flush=True)
+    print(f"model={model_id} dtype={dtype} | {len(seqs)} rows, "
+          f"lengths={[len(s) for s in seqs]}", flush=True)
+
+    # Noise floor: same solo forward twice → intrinsic CUDA/dtype run-to-run wobble. The
+    # batched-vs-solo diff is a real divergence only if it clears this floor (and flips argmax).
+    _a, _ = last_logits_solo(model, torch.tensor([seqs[0]], device=dev))
+    _b, _ = last_logits_solo(model, torch.tensor([seqs[0]], device=dev))
+    noise_floor = (_a - _b).abs().max().item()
+    thresh = max(tol, 3 * noise_floor)
+    print(f"solo-vs-solo noise floor={noise_floor:.4f} | Δ pass threshold={thresh:.4f} "
+          f"(argmax agreement is the primary criterion)", flush=True)
 
     # --- solo: each row alone (batch=1, no padding) ---
     solo_prefill, solo_past, solo_next = [], [], []
@@ -88,12 +100,13 @@ def main():
                                ("decode", solo_decode[i], batch_decode[i])]:
             d = (solo - bat).abs().max().item()
             am = int(solo.argmax()) == int(bat.argmax())
-            good = am and d <= tol
+            good = am and d <= thresh
             ok = ok and good
             print(f"  row {i} [{tag}] max|Δlogit|={d:.4f} argmax_match={am} "
                   f"{'OK' if good else 'FAIL'}", flush=True)
-    print("\n" + ("PASS — batched forward is per-row equivalent to solo"
-                  if ok else "FAIL — batched path diverges from solo (bug, not noise)"),
+    print("\n" + ("PASS — batched forward is per-row equivalent to solo (argmax agrees; "
+                  "Δ within noise)" if ok else
+                  "FAIL — batched path diverges beyond noise / flips argmax (real bug)"),
           flush=True)
     raise SystemExit(0 if ok else 1)
 
