@@ -314,7 +314,12 @@ def main():
         from bench.generator_vllm import load_engine
         engine = load_engine(args.model, dtype=args.dtype)
         model = engine          # alias for downstream code that holds it
-        tokenizer = engine.get_tokenizer()
+        # Prefer the safe tokenizer when vLLM's default mangles whitespace
+        # (DeepSeek-R1-Distill / #45488) so prompt FORMATTING matches the HF
+        # backend; falls back to the engine tokenizer for well-behaved models
+        # (Qwen3 → None → unchanged). Prompt ENCODING is fixed separately via
+        # encode_prompt_for_vllm below (vLLM re-tokenizes strings internally).
+        tokenizer = getattr(engine, "_safe_tokenizer", None) or engine.get_tokenizer()
     else:
         model, tokenizer = load_model_and_tokenizer(
             args.model, dtype=args.dtype, attn_impl=args.attn_impl,
@@ -416,9 +421,18 @@ def main():
             if args.backend == "vllm":
                 # vLLM dispatches by sampler name string, not callable.
                 from bench.generator_vllm import (
+                    encode_prompt_for_vllm,
                     generate_samples_split_vllm,
                     generate_samples_standard_vllm,
                     generate_samples_vllm,
+                )
+                # Bypass vLLM's broken internal tokenizer for models whose
+                # default mangles whitespace (DeepSeek-R1-Distill / #45488):
+                # pre-encode with the safe tokenizer so the model sees the same
+                # ids as the HF backend. No-op (returns the string) when no safe
+                # tokenizer was installed (e.g. Qwen3) → zero regression.
+                prompt_text = encode_prompt_for_vllm(
+                    prompt_text, getattr(model, "_safe_tokenizer", None)
                 )
                 if args.method == "temp":
                     raw_samples = generate_samples_standard_vllm(

@@ -569,6 +569,35 @@ def _maybe_install_safe_tokenizer(engine, model_id: str) -> None:
     )
 
 
+def encode_prompt_for_vllm(prompt_text, safe_tokenizer):
+    """Return the prompt to hand vLLM, pre-encoding it to token ids when a safe
+    tokenizer is present.
+
+    Why: ``engine.generate([str])`` tokenizes the string with vLLM's *internal*
+    tokenizer. For models whose transformers-v5 ``AutoTokenizer`` mangles
+    whitespace — DeepSeek-R1-Distill via LlamaTokenizer's Metaspace override
+    (HF issue #45488) — that silently strips the spaces/newlines from the (code)
+    prompt, so the model sees ``deff(a,b):`` instead of ``def f(a, b):``. Our
+    ``_safe_tokenizer`` was only wired into output *decoding*
+    (``_extract_completion_texts``), never prompt *encoding*, so the vLLM backend
+    fed DeepSeek mangled prompts while the HF backend (which reloads the safe
+    tokenizer in ``load_model_and_tokenizer``) did not — the source of the
+    HF-vs-vLLM DeepSeek divergence.
+
+    Fix: when a safe tokenizer exists, pre-encode the string prompt with it and
+    return token ids (→ vLLM ``TokensPrompt``), bypassing the broken internal
+    encode. This mirrors the HF backend's ``tokenizer.encode(prompt_text)``
+    exactly (default ``add_special_tokens=True``) so both backends feed
+    byte-identical ids. When ``safe_tokenizer`` is None (well-behaved tokenizers
+    such as Qwen3's Qwen2Tokenizer) or the prompt is already token ids, return it
+    unchanged — a strict no-op for every model that never needed the safe
+    tokenizer, so there is no regression risk outside the broken-tokenizer models.
+    """
+    if safe_tokenizer is not None and isinstance(prompt_text, str):
+        return safe_tokenizer.encode(prompt_text)
+    return prompt_text
+
+
 def _extract_completion_texts(request_output, engine) -> list[str]:
     """Return decoded text per completion, using engine._safe_tokenizer
     to re-decode token_ids if vLLM's default decoder is broken for this
