@@ -63,9 +63,19 @@ elif [ "$MODE" = "validate" ]; then
   N_SAMPLES="${N_SAMPLES:-10}"; MAX_TOKENS="${MAX_TOKENS:-32768}"
   TASK_IDS="${TASK_IDS:-117 370 587 827 962 1038 1123 1177 1274 1370}"
   RESULTS_DIR="results/_backend_delta_deepseek/vllm_fixed"
+elif [ "$MODE" = "full" ]; then
+  # ALL 252 (omit --task-ids). The corrected DeepSeek baseline — fast on vLLM
+  # (paged attention) vs a multi-day HF run. Only run once the smoke/validate
+  # confirms fixed-vLLM ≈ HF. Resume skips task_ids already in the JSONL.
+  N_SAMPLES="${N_SAMPLES:-10}"; MAX_TOKENS="${MAX_TOKENS:-32768}"
+  TASK_IDS="${TASK_IDS:-}"
+  RESULTS_DIR="results/_backend_delta_deepseek/vllm_fixed_full"
 else
-  echo "unknown MODE '$MODE' (smoke|validate)" >&2; exit 2
+  echo "unknown MODE '$MODE' (smoke|validate|full)" >&2; exit 2
 fi
+# --task-ids present for smoke/validate; omitted for full (whole bucket = 252).
+if [ -n "$TASK_IDS" ]; then TASKID_ARGS=(--task-ids $TASK_IDS)
+else TASKID_ARGS=(); TASK_IDS="all-252"; fi
 
 OUT_DIR="$RESULTS_DIR/$MODEL_DIR/${SOURCE}_${DIFFICULTY}"
 JSONL="$OUT_DIR/pless_think_t1.0_t1.0.jsonl"
@@ -84,7 +94,7 @@ echo "=================================================================="
   --enable-thinking \
   --n-samples "$N_SAMPLES" --max-new-tokens "$MAX_TOKENS" \
   --temperature 1.0 --top-p 1.0 --top-k 0 \
-  --task-ids $TASK_IDS \
+  "${TASKID_ARGS[@]}" \
   --results-dir "$RESULTS_DIR"
 
 if [ "$MODE" = "smoke" ]; then
@@ -112,7 +122,7 @@ echo ">>> scoring (bench.eval) + paired compare vs broken-vLLM and vs HF"
   --hf-jsonl     "$JSONL" \
   --vllm-metrics "$BASELINE_DIR/metrics/pless_think_t1.0_t1.0_metrics.json" \
   --vllm-jsonl   "$BASELINE_DIR/pless_think_t1.0_t1.0.jsonl" \
-  --task-ids $TASK_IDS \
+  "${TASKID_ARGS[@]}" \
   --out "$OUT_DIR/vs_broken_vllm.md" || echo "(compare vs broken skipped)"
 
 # Compare fixed-vLLM vs HF (should now MATCH — same ids fed to the model).
@@ -122,7 +132,7 @@ if [ -f "$HF_DIR/metrics/pless_think_t1.0_t1.0_metrics.json" ]; then
     --hf-jsonl     "$HF_DIR/pless_think_t1.0_t1.0.jsonl" \
     --vllm-metrics "$OUT_DIR/metrics/pless_think_t1.0_t1.0_metrics.json" \
     --vllm-jsonl   "$JSONL" \
-    --task-ids $TASK_IDS \
+    "${TASKID_ARGS[@]}" \
     --out "$OUT_DIR/vs_hf.md" || echo "(compare vs HF skipped)"
 fi
 echo ">>> Prediction: vs broken-vLLM truncation drops (~62%→~35%), pass@1 up (~0.19→~0.41);"

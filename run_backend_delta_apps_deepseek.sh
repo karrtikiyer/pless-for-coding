@@ -52,8 +52,14 @@ case "$TIER" in
   tier1) IDS="$TIER1" ;;
   tier2) IDS="$TIER1 $TIER2" ;;                 # cumulative: 50
   tier3) IDS="$TIER1 $TIER2 $TIER3" ;;          # cumulative: 100 (matches Qwen check N)
-  *) echo "unknown TIER '$TIER' (tier1|tier2|tier3)" >&2; exit 2 ;;
+  full)  IDS="" ;;                              # ALL 252 — omit --task-ids (whole bucket)
+  *) echo "unknown TIER '$TIER' (tier1|tier2|tier3|full)" >&2; exit 2 ;;
 esac
+# --task-ids present for tiered subsets; omitted for full so the runner takes the
+# whole (source,difficulty) bucket. Resume skips task_ids already in the JSONL,
+# so `full` continues from whatever a prior tier already generated.
+if [ -n "$IDS" ]; then TASKID_ARGS=(--task-ids $IDS); NTASKS=$(echo $IDS | wc -w)
+else TASKID_ARGS=(); NTASKS="all-252"; fi
 
 export MPLBACKEND="${MPLBACKEND:-Agg}"
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
@@ -64,7 +70,7 @@ mkdir -p "$OUT_DIR"
 JSONL="$OUT_DIR/pless_think_t1.0_t1.0.jsonl"
 
 echo "=================================================================="
-echo " Backend-delta HF run — DeepSeek pless α=2 ($TIER, $(echo $IDS | wc -w) tasks)"
+echo " Backend-delta HF run — DeepSeek pless α=2 ($TIER, $NTASKS tasks)"
 echo "   model=$MODEL  backend=hf  cap=$MAX_TOKENS  n=$N_SAMPLES"
 echo "   baseline (vLLM, NOT regenerated): $BASELINE_DIR/pless_think_t1.0_t1.0.jsonl"
 echo "=================================================================="
@@ -76,7 +82,7 @@ CUDA_VISIBLE_DEVICES="${GPUS:-0}" PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}" \
   --enable-thinking \
   --n-samples "$N_SAMPLES" --max-new-tokens "$MAX_TOKENS" \
   --temperature 1.0 --top-p 1.0 --top-k 0 \
-  --task-ids $IDS \
+  "${TASKID_ARGS[@]}" \
   --results-dir "$RESULTS_DIR"
 
 echo ">>> scoring the HF run through the standard pipeline (bench.eval)"
@@ -89,5 +95,5 @@ PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" scripts/compare_backend_d
   --hf-jsonl     "$JSONL" \
   --vllm-metrics "$BASELINE_DIR/metrics/pless_think_t1.0_t1.0_metrics.json" \
   --vllm-jsonl   "$BASELINE_DIR/pless_think_t1.0_t1.0.jsonl" \
-  --task-ids $IDS \
+  "${TASKID_ARGS[@]}" \
   --out "$OUT_DIR/backend_delta_${TIER}.md"
