@@ -33,7 +33,7 @@ VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
 PYTHON="$VLLM_VENV/bin/python"
 MODEL_DIR="${MODEL//\//--}"
 RESULTS_DIR="${RESULTS_DIR:-results/_deepseek_fixed_full252}"   # SAME tree as α=2/α=5
-read -ra ARMS_ARR <<< "${ARMS:-pless_norm temp_k20 temp_p0.95_k20_t0.6 temp_p0.95_t1.0 temp_t0.6}"
+read -ra ARMS_ARR <<< "${ARMS:-pless_norm temp_k20 temp_p0.95_k20_t0.6 temp_p0.95_t1.0 temp_t0.6 temp_rec_t0.6}"
 
 export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
 export MPLBACKEND="${MPLBACKEND:-Agg}"
@@ -55,6 +55,9 @@ arm_flags() {
     temp_p0.95_k20_t0.6) echo "--method temp --temperature 0.6 --top-p 0.95 --top-k 20" ;;
     temp_p0.95_t1.0)     echo "--method temp --temperature 1.0 --top-p 0.95 --top-k 0" ;;
     temp_t0.6)           echo "--method temp --temperature 0.6 --top-p 1.0 --top-k 0" ;;
+    # DeepSeek-R1-Distill AUTHOR-RECOMMENDED config (model card + generation_config.json:
+    # temp 0.6, top_p 0.95, no top_k). The fair "good decoding" baseline for DeepSeek.
+    temp_rec_t0.6)       echo "--method temp --temperature 0.6 --top-p 0.95 --top-k 0" ;;
     *) echo "unknown arm '$1'" >&2; return 1 ;;
   esac
 }
@@ -66,6 +69,7 @@ arm_jsonl() {
     temp_p0.95_k20_t0.6) echo "temp_p0.95_k20_think_t0.6_t0.6.jsonl" ;;
     temp_p0.95_t1.0)     echo "temp_p0.95_think_t1.0_t1.0.jsonl" ;;
     temp_t0.6)           echo "temp_think_t0.6_t0.6.jsonl" ;;
+    temp_rec_t0.6)       echo "temp_p0.95_think_t0.6_t0.6.jsonl" ;;
   esac
 }
 
