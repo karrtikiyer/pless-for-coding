@@ -1,6 +1,10 @@
 #!/bin/bash
-# CORRECTED DeepSeek-R1-Distill cross-method configs (pless_norm + 4 temp variants) on the
+# CORRECTED DeepSeek-R1-Distill cross-method configs (pless_norm + temp variants) on the
 # full 252 ATCODER-interview, POST the vLLM prompt-tokenizer fix (#45488 whitespace-mangling).
+#
+# GENERATION ONLY — does NOT score. Scoring is bench.eval (CPU, GPU-idle), split into
+# run_crossmethod_eval_apps_deepseek.sh so it doesn't waste GPU time between arms and can be
+# run later / repeatedly as generations complete.
 #
 # WHY: EVERY config in results/pless_cot_efficiency_vllm/deepseek-ai--…/ATCODER_interview was
 # generated on vLLM with mangled prompts — not just pless. The mangling is a prompt-ENCODING
@@ -33,7 +37,8 @@ VLLM_VENV="${VLLM_VENV:-.venv-vllm}"
 PYTHON="$VLLM_VENV/bin/python"
 MODEL_DIR="${MODEL//\//--}"
 RESULTS_DIR="${RESULTS_DIR:-results/_deepseek_fixed_full252}"   # SAME tree as α=2/α=5
-read -ra ARMS_ARR <<< "${ARMS:-pless_norm temp_k20 temp_p0.95_k20_t0.6 temp_p0.95_t1.0 temp_t0.6 temp_rec_t0.6}"
+# Order: fast-terminating temp arms FIRST, pless_norm LAST (it loops → slowest, like pless).
+read -ra ARMS_ARR <<< "${ARMS:-temp_k20 temp_p0.95_k20_t0.6 temp_p0.95_t1.0 temp_t0.6 temp_rec_t0.6 pless_norm}"
 
 export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
 export MPLBACKEND="${MPLBACKEND:-Agg}"
@@ -81,7 +86,7 @@ echo "=================================================================="
 
 for arm in "${ARMS_ARR[@]}"; do
   JSONL="$OUT_DIR/$(arm_jsonl "$arm")"
-  echo ">>> arm=$arm  ($(arm_flags "$arm"))  [FULL 252]"
+  echo ">>> arm=$arm  ($(arm_flags "$arm"))  [FULL 252]  (generation only)"
   "$PYTHON" -m bench.apps \
     --model "$MODEL" --backend vllm \
     --source "$SOURCE" --difficulty "$DIFFICULTY" \
@@ -89,10 +94,8 @@ for arm in "${ARMS_ARR[@]}"; do
     --n-samples "$N_SAMPLES" --max-new-tokens "$MAX_TOKENS" \
     $(arm_flags "$arm") \
     --results-dir "$RESULTS_DIR"
-  echo ">>> scoring arm=$arm via bench.eval"
-  "$PYTHON" -m bench.eval --results-file "$JSONL" --dataset apps
-  echo ">>> arm=$arm done -> $JSONL"
+  echo ">>> arm=$arm generated -> $JSONL"
 done
 
-echo ">>> Done. Corrected cross-method configs in $OUT_DIR (+ metrics/)."
-echo "    Combine with fixed α=2/α=5 (same dir) for the corrected DeepSeek cross-method table."
+echo ">>> GENERATION done for ${ARMS_ARR[*]} in $OUT_DIR."
+echo "    Score later (GPU-free): ./run_crossmethod_eval_apps_deepseek.sh"
