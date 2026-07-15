@@ -140,9 +140,12 @@ def main():
         return
 
     # ---- Phase 2 (GPU): continue each chopped prefix at α=5 on vLLM ----
+    # GPU pinning + sampler-path parity (set before vLLM/CUDA init).
+    if os.environ.get("GPUS") and not os.environ.get("CUDA_VISIBLE_DEVICES"):
+        os.environ["CUDA_VISIBLE_DEVICES"] = os.environ["GPUS"]
+    os.environ.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
     from bench.generator_vllm import load_engine, resolve_think_end_id
     from vllm import SamplingParams, TokensPrompt
-    os.environ.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
     engine = load_engine(MODEL)
     safe = getattr(engine, "_safe_tokenizer", None) or engine.get_tokenizer()
     think_end_id = resolve_think_end_id(engine.get_tokenizer())
