@@ -70,6 +70,13 @@ def _think_phase_text(sample_text: str) -> tuple[str, bool]:
 
 
 def main():
+    # Line-buffer stdout so phase-1 [recon]/dataset logs appear immediately under nohup
+    # (non-tty → Python block-buffers by default; the vLLM subprocess logs flush on their
+    # own, which otherwise makes it look like nothing ran before the engine loaded).
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except Exception:
+        pass
     # --- tokenizer: safe one if the model's default mangles whitespace (DeepSeek), else
     #     the model tokenizer (Qwen is fine). Loaded without vLLM so DETECT_ONLY runs on Mac.
     from transformers import AutoTokenizer, PreTrainedTokenizerFast
