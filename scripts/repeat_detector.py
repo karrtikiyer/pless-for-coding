@@ -43,6 +43,60 @@ class RepeatDetector:
         return False
 
 
+def scan(tokens, n: int, k: int, window: int):
+    """Fast, allocation-light equivalent of replaying ``RepeatDetector(n,k,window).update``
+    over ``tokens`` and reporting the FIRST fire. Returns ``(fired, fire_pos, onset)``.
+
+    Semantics are identical to ``RepeatDetector`` (proven bit-for-bit in
+    ``tests/test_repeat_detector.py`` against a brute replay), but it maintains the n-gram
+    counts incrementally (add the new rightmost n-gram, drop the one that slid out of the
+    window) instead of rebuilding a Counter over the whole window every token. That turns
+    per-token cost from O(window) into O(n), which makes full-trace sweeps feasible with
+    the SAME logic the live detector deploys — no separate strided approximation.
+    """
+    buf: list[int] = []
+    counts: dict[tuple, int] = {}
+    first_checked = False
+    prev_lo = 0
+    for step, tk in enumerate(tokens):
+        buf.append(int(tk))
+        hi = len(buf)
+        lo = hi - window if hi > window else 0
+        # An n-gram slides out of the window iff lo advanced past a start that had been a
+        # full n-gram in the previous window.
+        if lo > prev_lo and prev_lo + n <= hi - 1:
+            dg = tuple(buf[prev_lo:prev_lo + n])
+            c = counts.get(dg, 0) - 1
+            if c <= 0:
+                counts.pop(dg, None)
+            else:
+                counts[dg] = c
+        prev_lo = lo
+        new_ng = None
+        if hi - lo >= n:
+            new_ng = tuple(buf[hi - n:hi])
+            counts[new_ng] = counts.get(new_ng, 0) + 1
+        if (hi - lo) < n * k:          # same guard as RepeatDetector.update
+            continue
+        winner = None
+        if not first_checked:
+            # First step past the guard: an n-gram may have reached k while checks were
+            # suppressed, so do one full max scan (matches update()'s per-step max check).
+            first_checked = True
+            wn, cnt = max(counts.items(), key=lambda kv: kv[1])
+            if cnt >= k:
+                winner = wn
+        elif new_ng is not None and counts.get(new_ng, 0) >= k:
+            # After the first check, max can only rise via the newly added n-gram
+            # (evictions only decrease counts), so checking new_ng is sufficient.
+            winner = new_ng
+        if winner is not None:
+            onset = next(i for i in range(lo, hi - n + 1)
+                         if tuple(buf[i:i + n]) == winner)
+            return True, step, onset
+    return False, None, None
+
+
 if __name__ == "__main__":
     # Unit test: must FIRE on a verbatim loop, must NOT fire on varied/productive text.
     def run(tokens, **kw):

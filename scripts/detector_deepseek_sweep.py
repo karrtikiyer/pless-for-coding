@@ -1,82 +1,75 @@
-"""Offline detector tuning for DeepSeek-R1-Distill-Llama-8B (NO GPU).
+"""Offline detector window/k tuning for DeepSeek-R1-Distill-Llama-8B (NO GPU).
 
-DeepSeek pless truncates 64.9% on ATCODER_interview. This sweeps window (and a small
-n/k grid) on DeepSeek-tokenized traces to find the loop-force operating point, the same
-way we did for Qwen3 — FP on productive reasoning vs catch on truncated/looping traces.
+Sweeps window and k on real traces — FP on productive reasoning (closed </think>) vs catch
+on looping traces (never closed </think>) — to pick the n-gram loop-detector operating point.
 
-Run: HF_HUB_OFFLINE=1 PYTHONPATH=. uv run python scripts/detector_deepseek_sweep.py
+CONSISTENCY: this uses ``scripts.repeat_detector.scan`` — the SAME detection logic the live
+detector deploys (``RepeatDetector.update``), proven bit-identical in
+``tests/test_repeat_detector.py``. It does NOT re-implement a strided approximation (the old
+``fires()`` did, which under/over-counted vs the deployed detector and drifted from it).
+
+Also uses the SAFE ``PreTrainedTokenizerFast`` (not ``AutoTokenizer`` → the broken DeepSeek
+LlamaTokenizer that mangles whitespace, #45488), so the token stream matches generation.
+
+Run (post-fix traces): HF_HUB_OFFLINE=1 PYTHONPATH=. \\
+    DS=results/_deepseek_fixed_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview \\
+    uv run python scripts/detector_deepseek_sweep.py
 """
 import json
-import statistics as st
-from collections import Counter
-from transformers import AutoTokenizer
+import os
 
-DS = "results/pless_cot_efficiency_vllm/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview"
-N = 30
-K = 6
-STEP = 200
-WINDOWS = [400, 800, 1200, 1600, 2000, 3000, 4000]
-N_TRUNC = 200      # sample sizes (traces are ~33K tokens -> cap for runtime)
-N_SUCC = 400
+from transformers import PreTrainedTokenizerFast
+
+from scripts.repeat_detector import scan
+
+MODEL = os.environ.get("MODEL", "deepseek-ai/DeepSeek-R1-Distill-Llama-8B")
+# Default to the UN-MANGLED (post-fix) traces. Override DS for another config dir.
+DS = os.environ.get(
+    "DS",
+    "results/_deepseek_fixed_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview",
+)
+ALPHA2_JSONL = os.environ.get("ALPHA2_JSONL", "pless_think_t1.0_t1.0.jsonl")
+N = int(os.environ.get("N", "30"))
+WINDOWS = [int(w) for w in os.environ.get("WINDOWS", "1200,1600,2000,3000,4000").split(",")]
+KS = [int(x) for x in os.environ.get("KS", "6,8").split(",")]
+N_SUCC = int(os.environ.get("N_SUCC", "400"))   # cap productive sample for runtime
 
 
-def fires(toks, window, n=N, k=K, step=STEP):
-    if len(toks) < n:
-        return False
-    for end in range(n, len(toks) + 1, step):
-        t = toks[max(0, end - window):end]
-        if len(t) < n:
-            continue
-        if max(Counter(tuple(t[i:i + n]) for i in range(len(t) - n + 1)).values()) >= k:
-            return True
-    return False
+def fired(toks, n, k, window):
+    """True iff the deployed detector would fire anywhere in ``toks`` (via scan())."""
+    return scan(toks, n, k, window)[0]
 
 
 def main():
-    tok = AutoTokenizer.from_pretrained("deepseek-ai/DeepSeek-R1-Distill-Llama-8B")
+    tok = PreTrainedTokenizerFast.from_pretrained(MODEL)   # SAFE tokenizer
 
-    # truncated pless samples = the looping ones (no closing </think>)
-    trunc_txt = []
-    for line in open(f"{DS}/pless_think_t1.0_t1.0.jsonl"):
+    loop_txt, prod_txt = [], []
+    for line in open(f"{DS}/{ALPHA2_JSONL}"):
         r = json.loads(line)
         for sw in r.get("samples_with_thinking", []):
             if "</think>" not in sw:
-                trunc_txt.append(sw)
+                loop_txt.append(sw)                        # looping (catch target)
+            else:
+                prod_txt.append(sw.split("</think>")[0])   # productive think (FP target)
+    prod_txt = prod_txt[:N_SUCC]
 
-    # successful productive reasoning (completed + passed) from the temp configs — FP must stay ~0
-    succ_txt = []
-    for cfg in ("temp_k20_think_t1.0_t1.0", "temp_p0.95_think_t1.0_t1.0", "temp_think_t0.6_t0.6"):
-        m = json.load(open(f"{DS}/metrics/{cfg}_metrics.json"))
-        passed = {t["task_id"]: t["pass_results"] for t in m["per_task"]}
-        for line in open(f"{DS}/{cfg}.jsonl"):
-            r = json.loads(line)
-            pr = passed.get(r["task_id"], [])
-            for i, sw in enumerate(r.get("samples_with_thinking", [])):
-                if i < len(pr) and pr[i] and "</think>" in sw:
-                    succ_txt.append(sw.split("</think>", 1)[0])
+    print(f"tokenizing {len(loop_txt)} loopers + {len(prod_txt)} productive (safe tok)...",
+          flush=True)
+    loops = [tok.encode(s, add_special_tokens=False) for s in loop_txt]
+    prods = [tok.encode(s, add_special_tokens=False) for s in prod_txt]
 
-    # deterministic subsample (no RNG): even stride
-    def stride(xs, k):
-        if len(xs) <= k:
-            return xs
-        step = len(xs) / k
-        return [xs[int(i * step)] for i in range(k)]
-
-    trunc = [tok.encode(s, add_special_tokens=False) for s in stride(trunc_txt, N_TRUNC)]
-    succ = [tok.encode(s, add_special_tokens=False) for s in stride(succ_txt, N_SUCC)]
-    print(f"DeepSeek-R1-Distill-Llama-8B | n={N} k={K} step={STEP}")
-    print(f"truncated sampled {len(trunc)} (of {len(trunc_txt)}), success sampled {len(succ)} (of {len(succ_txt)})")
-    print(f"trunc median len={int(st.median([len(t) for t in trunc]))} tok, "
-          f"success median len={int(st.median([len(t) for t in succ]))} tok\n")
-
-    print(f"{'window':>8} | {'FP% (good cut)':>14} | {'catch% (loops)':>15}")
-    print("-" * 44)
+    print(f"detector sweep via scan() (== deployed RepeatDetector), n={N}", flush=True)
+    print(f"  data: {DS}/{ALPHA2_JSONL}", flush=True)
+    header = "  window | " + " | ".join(f"k={k} catch/FP" for k in KS)
+    print(header, flush=True)
     for w in WINDOWS:
-        fp = sum(fires(t, w) for t in succ) / len(succ) * 100
-        ca = sum(fires(t, w) for t in trunc) / len(trunc) * 100
-        print(f"{w:>8} | {fp:>13.1f}% | {ca:>14.1f}%")
-    print("\nFP% = % of GOOD reasoning wrongly cut (keep ~0). catch% = % of looping traces caught.")
-    print("Compare to Qwen3 (window=1200 -> 2.2% FP / 97% catch). DeepSeek periods may differ.")
+        cells = []
+        for k in KS:
+            ca = sum(fired(t, N, k, w) for t in loops) / len(loops) * 100
+            fp = sum(fired(t, N, k, w) for t in prods) / len(prods) * 100
+            cells.append(f"{ca:.1f}/{fp:.1f}")
+        print(f"  {w:<6} | " + " | ".join(f"{c:<12}" for c in cells), flush=True)
+    print("catch% = looping traces caught; FP% = productive reasoning wrongly cut.", flush=True)
 
 
 if __name__ == "__main__":
