@@ -19,6 +19,10 @@ Modes:
                    to validate detection before spending GPU.
   (default)      → phase-1 + phase-2 (needs vLLM/GPU) → writes OUT jsonl.
 
+Crash-safe: phase-2 checkpoints each chunk to ``OUT.ckpt.jsonl`` (fsync'd); a re-run with the
+same OUT resumes, skipping already-continued (task_id, sample). Final OUT is written
+atomically (tmp+rename). PHASE2_BATCH sets the chunk / checkpoint granularity.
+
 Run (DeepSeek, pod):
   VLLM_VENV=/workspace/vllm_env/.venv MODEL=deepseek-ai/DeepSeek-R1-Distill-Llama-8B \
   ALPHA2=results/_deepseek_fixed_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_think_t1.0_t1.0.jsonl \
@@ -163,28 +167,47 @@ def main():
                 "alpha_think": ESC_ALPHA, "alpha_code": ESC_ALPHA,
                 "think_end_id": think_end_id}
 
-    # ONE continuous-batched call — vLLM schedules all fired continuations optimally
-    # (better than a chunk-barrier), and use_tqdm=True gives a live progress bar + ETA.
-    print(f"[recon] phase-2: generating {n_fired} α=5 continuations "
-          f"(vLLM continuous-batched, live tqdm)...", flush=True)
-    prompts = [TokensPrompt(prompt_token_ids=it[2]) for it in fired_items]
-    sps = [SamplingParams(n=1, max_tokens=it[3], temperature=1.0, top_p=1.0, top_k=-1,
-                          extra_args={"pless_split": cfg_alpha5()}) for it in fired_items]
-    outs = engine.generate(prompts, sps, use_tqdm=True)
-    cont_text = {}     # (tid, si) -> full decoded generation (chopped + α=5 continuation)
-    for it, out in zip(fired_items, outs):
-        tid, si, _combined, _budget, _onset, chopped = it
-        cont_ids = list(out.outputs[0].token_ids)
-        full = list(chopped) + cont_ids                      # generation = kept prefix + α=5 continuation
-        cont_text[(tid, si)] = safe.decode(full, skip_special_tokens=True)
-    print(f"[recon] phase-2 done: {n_fired} continued", flush=True)
-
-    # ---- Reassemble + write base-schema JSONL ----
+    # CHECKPOINTED phase-2: generate in chunks (vLLM continuous-batches WITHIN a chunk),
+    # append each chunk's continuations to a .ckpt.jsonl and fsync, so a crash loses at most
+    # one chunk. On restart, already-continued (task_id, sample) are skipped. Chunk size =
+    # PHASE2_BATCH (checkpoint granularity vs the small per-chunk barrier cost).
     if not OUT:
         raise SystemExit("set OUT=<path.jsonl> to write results")
+    ckpt_path = OUT + ".ckpt.jsonl"
+    cont_text = {}     # (tid, si) -> full decoded generation (chopped + α=5 continuation)
+    if os.path.exists(ckpt_path):
+        for line in open(ckpt_path):
+            d = json.loads(line)
+            cont_text[(d["task_id"], d["sample"])] = d["text"]
+        print(f"[recon] resume: {len(cont_text)} continuations loaded from {ckpt_path}", flush=True)
+    todo = [it for it in fired_items if (it[0], it[1]) not in cont_text]
+    print(f"[recon] phase-2: {len(todo)} to generate, {len(cont_text)} resumed "
+          f"(of {n_fired} fired); chunk={PHASE2_BATCH}", flush=True)
+    ck = open(ckpt_path, "a")
+    for start in range(0, len(todo), PHASE2_BATCH):
+        chunk = todo[start:start + PHASE2_BATCH]
+        prompts = [TokensPrompt(prompt_token_ids=it[2]) for it in chunk]
+        sps = [SamplingParams(n=1, max_tokens=it[3], temperature=1.0, top_p=1.0, top_k=-1,
+                              extra_args={"pless_split": cfg_alpha5()}) for it in chunk]
+        outs = engine.generate(prompts, sps, use_tqdm=True)
+        for it, out in zip(chunk, outs):
+            tid, si, _combined, _budget, onset, chopped = it
+            cont_ids = list(out.outputs[0].token_ids)
+            text = safe.decode(list(chopped) + cont_ids, skip_special_tokens=True)
+            cont_text[(tid, si)] = text
+            ck.write(json.dumps({"task_id": tid, "sample": si, "onset": onset, "text": text}) + "\n")
+        ck.flush()
+        os.fsync(ck.fileno())
+        print(f"[recon] phase-2 {min(start + PHASE2_BATCH, len(todo))}/{len(todo)} continued "
+              f"(ckpt saved, {len(cont_text)}/{n_fired} total)", flush=True)
+    ck.close()
+    print(f"[recon] phase-2 done: {len(cont_text)}/{n_fired} continued", flush=True)
+
+    # ---- Reassemble + write base-schema JSONL (atomic: tmp then rename) ----
     os.makedirs(os.path.dirname(OUT) or ".", exist_ok=True)
     now = datetime.now(timezone.utc).isoformat()
-    with open(OUT, "w") as f:
+    tmp = OUT + ".tmp"
+    with open(tmp, "w") as f:
         for tid, v in per_task.items():
             r = v["rec"]
             texts, adaptive = [], []
@@ -207,7 +230,9 @@ def main():
                 "detector": [LOOP_N, LOOP_K, LOOP_WINDOW], "adaptive": adaptive,
             }
             f.write(json.dumps(out) + "\n")
-    print(f"[recon] wrote {OUT} ({len(per_task)} tasks). Score with: "
+    os.replace(tmp, OUT)                         # atomic: OUT is complete-or-untouched
+    print(f"[recon] wrote {OUT} ({len(per_task)} tasks). Checkpoint kept at {OUT}.ckpt.jsonl "
+          f"(delete to force full regen). Score with: "
           f"python -m bench.eval --results-file {OUT} --dataset apps")
 
 
