@@ -26,11 +26,18 @@ Run (DeepSeek, pod):
   OUT=results/_deepseek_fixed_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_adaptive_recon.jsonl \
   uv run python scripts/vllm_adaptive_reconstruct.py
 """
+import gzip
 import json
 import os
 from datetime import datetime, timezone
 
 from scripts.repeat_detector import scan
+
+
+def _open_text(path):
+    """Open a JSONL, transparently handling gzip (.gz) — the α=2 traces are large
+    (100-300 MB) so they're often transferred/kept compressed (~9x smaller)."""
+    return gzip.open(path, "rt") if path.endswith(".gz") else open(path)
 
 MODEL = os.environ["MODEL"]
 ALPHA2 = os.environ["ALPHA2"]
@@ -76,7 +83,7 @@ def main():
     want = {int(x) for x in TASK_IDS.split()} if TASK_IDS else None
     problems = {p.problem_id: p for p in load_apps(source=SOURCE, difficulty=DIFFICULTY)}
 
-    recs = [json.loads(l) for l in open(ALPHA2)]
+    recs = [json.loads(l) for l in _open_text(ALPHA2)]
     if want is not None:
         recs = [r for r in recs if r["task_id"] in want]
     if MAX_PROBLEMS:
