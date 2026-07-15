@@ -156,19 +156,21 @@ def main():
                 "alpha_think": ESC_ALPHA, "alpha_code": ESC_ALPHA,
                 "think_end_id": think_end_id}
 
+    # ONE continuous-batched call — vLLM schedules all fired continuations optimally
+    # (better than a chunk-barrier), and use_tqdm=True gives a live progress bar + ETA.
+    print(f"[recon] phase-2: generating {n_fired} α=5 continuations "
+          f"(vLLM continuous-batched, live tqdm)...", flush=True)
+    prompts = [TokensPrompt(prompt_token_ids=it[2]) for it in fired_items]
+    sps = [SamplingParams(n=1, max_tokens=it[3], temperature=1.0, top_p=1.0, top_k=-1,
+                          extra_args={"pless_split": cfg_alpha5()}) for it in fired_items]
+    outs = engine.generate(prompts, sps, use_tqdm=True)
     cont_text = {}     # (tid, si) -> full decoded generation (chopped + α=5 continuation)
-    for start in range(0, n_fired, PHASE2_BATCH):
-        chunk = fired_items[start:start + PHASE2_BATCH]
-        prompts = [TokensPrompt(prompt_token_ids=it[2]) for it in chunk]
-        sps = [SamplingParams(n=1, max_tokens=it[3], temperature=1.0, top_p=1.0, top_k=-1,
-                              extra_args={"pless_split": cfg_alpha5()}) for it in chunk]
-        outs = engine.generate(prompts, sps, use_tqdm=False)
-        for it, out in zip(chunk, outs):
-            tid, si, _combined, _budget, _onset, chopped = it
-            cont_ids = list(out.outputs[0].token_ids)
-            full = list(chopped) + cont_ids                  # generation = kept prefix + α=5 continuation
-            cont_text[(tid, si)] = safe.decode(full, skip_special_tokens=True)
-        print(f"[recon] phase-2 {min(start+PHASE2_BATCH, n_fired)}/{n_fired} continued", flush=True)
+    for it, out in zip(fired_items, outs):
+        tid, si, _combined, _budget, _onset, chopped = it
+        cont_ids = list(out.outputs[0].token_ids)
+        full = list(chopped) + cont_ids                      # generation = kept prefix + α=5 continuation
+        cont_text[(tid, si)] = safe.decode(full, skip_special_tokens=True)
+    print(f"[recon] phase-2 done: {n_fired} continued", flush=True)
 
     # ---- Reassemble + write base-schema JSONL ----
     if not OUT:
