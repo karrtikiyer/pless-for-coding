@@ -29,7 +29,13 @@ Run (DeepSeek, pod):
 import gzip
 import json
 import os
+import sys
 from datetime import datetime, timezone
+
+# Make `import scripts.*` / `import bench.*` resolve when invoked as
+# `python scripts/vllm_adaptive_reconstruct.py` without PYTHONPATH set (running a file
+# puts its own dir on sys.path, not the repo root).
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scripts.repeat_detector import scan
 
