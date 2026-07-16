@@ -1,86 +1,113 @@
 # Pless α-schedule comparison — APPS ATCODER-interview (Qwen3-8B & DeepSeek-R1-Distill)
 
-**Date:** 2026-07-13
+**Date:** 2026-07-16 (supersedes the 2026-07-13 version — its DeepSeek numbers were confounded
+by a vLLM prompt-tokenizer bug, and its adaptive column was cross-backend; see **Correction
+history** below).
+
 **Scope:** ATCODER-interview, 252 problems, n=10 samples/problem, per-token pless family.
-Three conditions compared per model:
+All three conditions are now on **one footing — fixed-vLLM backend, `bench.eval` scoring** — so
+the comparison is apple-to-apple (no HF↔vLLM crossing, no mangled prompts).
+
+Conditions:
 - **α=2 (default):** standard pless (`p = Σpᵢ²`).
 - **α=5 (prevention):** `pless_alpha(5)` from the start — flatter survivor set, avoids the loop.
 - **adaptive (α=2 → detect → chop → α=5):** run α=2; on live n-gram loop detection, chop the
-  looping span and continue the same sample at α=5 (no nudge). Detector: Qwen 30-gram/k=6/
-  window=1600; DeepSeek 30-gram/k=8/window=3000.
-
-> **Status of the adaptive column: PROVISIONAL / UNRECONCILED.** Its numbers were produced by
-> *inline* scoring during a *fresh HF* generation, and they fail two consistency checks (below).
-> They are NOT comparable to the α=2/α=5 columns yet and must be re-scored through the standard
-> pipeline before use. The α=2 and α=5 columns are standard-pipeline-scored and trusted.
+  looping span back to onset and continue that sample at α=5 (no nudge). Detector: Qwen
+  30-gram/k=6/window=1600; DeepSeek 30/k=8/window=3000. **Single-chop** (see caveats).
 
 ## Qwen3-8B
 
 | condition | pass@1 | pass@3 | pass@5 | pass@10 | no-code (≈trunc) |
 |---|---|---|---|---|---|
-| pless α=2 (default) | 0.625 | 0.757 | 0.792 | **0.825** | 10.5% |
-| pless α=5 (prevention) | **0.686** | 0.781 | 0.803 | **0.833** | 0.4% |
-| adaptive α=2→α=5 *(provisional)* | 0.673 | 0.762 | 0.782 | 0.798 | 3.7% |
+| pless α=2 (default) | 0.625 | 0.757 | 0.792 | 0.825 | 14.5% |
+| adaptive α=2→α=5 | 0.682 | 0.787 | **0.818** | **0.845** | 2.7% |
+| pless α=5 (prevention) | **0.686** | **0.781** | 0.803 | 0.833 | 0.6% |
 
 ## DeepSeek-R1-Distill-Llama-8B
 
 | condition | pass@1 | pass@3 | pass@5 | pass@10 | no-code (≈trunc) |
 |---|---|---|---|---|---|
-| pless α=2 (default) | 0.174 | 0.301 | 0.368 | 0.464 | 49.3% |
-| pless α=5 (prevention) | **0.295** | **0.442** | **0.500** | **0.560** | 0.8% |
-| adaptive α=2→α=5 *(provisional)* | 0.447 | 0.594 | 0.642 | 0.690 | 6.0% |
+| pless α=2 (default) | 0.392 | 0.527 | 0.574 | 0.627 | 41.7% |
+| adaptive α=2→α=5 | 0.457 | 0.589 | 0.633 | 0.687 | 7.1% |
+| pless α=5 (prevention) | **0.483** | **0.619** | **0.663** | **0.714** | 0.3% |
 
-(`no-code` = fraction of samples with no extractable code, i.e. the sample never closed
-`</think>`/produced code — the truncation proxy. Computed from `per_task.extraction_success`
-for α=2/α=5; from `closed_think` for adaptive.)
-
-## Source files (provenance — all numbers pulled live, none from memory)
-- **α=2:** `results/pless_cot_efficiency_vllm/{Qwen--Qwen3-8B/ATCODER_interview_all_252,
-  deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview}/metrics/pless_think_t1.0_t1.0_metrics.json`
-- **α=5:** `results/pless_recovery_full252/{…}/metrics/pless_alpha_think_t1.0_a5.0_t1.0_metrics.json`
-- **adaptive:** `results/_live_adaptive/{qwen,deepseek}_full_n10.jsonl` (pass@k via the unbiased
-  estimator from per-task correct counts; inline-scored).
+(`no-code` = fraction of samples that never closed `</think>` — the loop-truncation proxy.)
 
 ## Findings
 
-### 1. Prevention (α=5) is the clean, trusted winner
-On the standard-scored columns, α=5 beats α=2 on pass@1 for both models — Qwen **0.625→0.686**,
-DeepSeek **0.174→0.295** — and eliminates truncation (no-code **10.5%→0.4%** Qwen, **49.3%→0.8%**
-DeepSeek). The DeepSeek gain is large because its α=2 truncation is severe (~half of samples
-produce no code); flattening the distribution removes the loop. Prevention also holds or improves
-pass@10 (Qwen 0.825→0.833; DeepSeek 0.464→0.560). This is the established result.
+### 1. Prevention (α=5) is the robust winner; adaptive is competitive only on the low-loop model
+- **DeepSeek (40.8% of samples loop):** α=5 > adaptive > α=2 at **every** k — α=5 beats adaptive
+  by **+2.6pp pass@1** (0.483 vs 0.457) and **+2.7pp pass@10** (0.714 vs 0.687). Prevention is
+  clearly best.
+- **Qwen (20.2% loop):** α=5 ≈ adaptive at pass@1 (0.686 vs 0.682, within noise), and adaptive
+  **edges** α=5 at pass@3/5/10 (pass@10 **0.845 vs 0.833**). Essentially a tie, adaptive
+  marginally ahead on coverage.
+- **Interpretation:** the more a model loops, the more "α=5 everywhere" (prevention) beats
+  surgical rescue. On a low-loop model, adaptive's "α=2 where the model is fine, α=5 only where
+  it loops" captures the union of both regimes and ties/edges prevention on coverage; on a
+  high-loop model, pervasive looping + the α=2-prefix cost + the single-chop limit let
+  prevention pull ahead.
 
-### 2. Qwen adaptive is plausible but trades pass@10 for pass@1
-Adaptive pass@1 (0.673) sits **below** α=5 (0.686) — the expected ordering (prevention ≥ rescue) —
-and above α=2 (0.625). But adaptive pass@10 (**0.798**) is **below both** α=2 (0.825) and α=5
-(0.833): the rescue lifts per-draw accuracy but **loses coverage**, consistent with false-positive
-chopping cutting some genuine long-reasoners (the A35 loop-force finding). Even here, treat as
-provisional until re-scored.
+### 2. Adaptive strongly beats the α=2 default on both models (rescue works)
+pass@1 **+5.7pp** Qwen (0.625→0.682), **+6.5pp** DeepSeek (0.392→0.457); truncation collapses
+(Qwen 14.5%→2.7%, DeepSeek 41.7%→7.1%). So the chop→α=5 rescue is real — it just doesn't
+outperform doing α=5 from the start (except marginally on Qwen).
 
-### 3. DeepSeek adaptive is NOT believable as-is — two failed checks
-- **Baseline mismatch:** the adaptive run's own plain-α=2 baseline (non-fired samples' pass rate,
-  which should reproduce benchmark α=2) is **0.386 vs the benchmark α=2 of 0.174 — 2.2× too high.**
-  (Qwen's equivalent is 0.587 vs 0.625 — close, tolerable.)
-- **Sanity violation:** adaptive pass@1 **0.447 > α=5 prevention 0.295.** Rescue cannot beat
-  prevention on the same generation — prevention (α=5 from the start) strictly dominates
-  "α=2 then rescue only the loopers." So the number is logically backwards.
+### 3. The earlier "adaptive ≫ α=5" (DeepSeek) result was 100% artifact — now resolved
+See Correction history. Short version: the old DeepSeek α=5 (0.295) was generated on
+whitespace-mangled prompts, and adaptive (HF, un-mangled) was compared against it cross-backend.
+Both defects removed, the ordering flips to the expected α=5 ≥ adaptive.
 
-### 4. Why "unreconciled" — the gap we must close
-The adaptive numbers were produced by **inline scoring** on a **fresh HF α=2 generation**; the
-α=2/α=5 columns by the **standard eval pipeline** on the **base vLLM runs**. Two unseparated
-differences: (a) scoring path (inline extraction+exec vs standard), and (b) generation (fresh HF
-α=2 loops far less than base vLLM — DeepSeek fired 40.2% vs base no-code 49.3%, so it completes and
-passes more). Until the adaptive outputs are re-scored through the same standard pipeline (and the
-live α=2 baseline matches benchmark α=2, or we understand why not), the adaptive column is measured
-on a different footing and the DeepSeek row proves that gap is biting.
+## Correction history (why the 2026-07-13 numbers were wrong)
 
-## Next step (required before the adaptive column is usable)
-Re-score both live runs (`*_full_n10.jsonl`, which store `samples`/`samples_with_thinking`) through
-the standard eval pipeline; recompute the adaptive column; re-check that the live α=2 baseline
-reproduces benchmark α=2 (0.625 Qwen / 0.174 DeepSeek) and that adaptive ≤ α=5. Only then report
-the rescue gain.
+1. **Tokenizer bug (DeepSeek only).** Every DeepSeek **vLLM** run — α=2, α=5, and the temp
+   cross-method arms — was generated with WHITESPACE-MANGLED prompts: transformers-v5 routed
+   DeepSeek's tokenizer through `LlamaTokenizer`, whose Metaspace override strips spaces/newlines
+   (HF #45488), so the model saw `deff(a,b):` instead of `def f(a, b):`. Fixed in `abdc0dc`
+   (`bench/generator_vllm.py:encode_prompt_for_vllm` pre-encodes with the safe tokenizer).
+   Effect: **α=5 0.295 → 0.483 (+19pp); α=2 0.174 → 0.392 (+22pp)**. α=5 got the biggest
+   correction because it was fully mangled — which is exactly what fabricated the paradox
+   (a broken α=5 compared against a healthy adaptive). Qwen was immune (Qwen2Tokenizer).
+2. **Cross-backend adaptive.** The chop rescue needs mid-stream KV rollback, which vLLM can't do,
+   so the original adaptive was HF-native. The 2026-07-13 table compared **HF adaptive** to
+   **vLLM α=5** — different backend *and* (for DeepSeek) a mangled α=5.
+3. **Resolution.** (a) Fix + regenerate all vLLM DeepSeek configs; (b) reconstruct the adaptive
+   on vLLM (`scripts/vllm_adaptive_reconstruct.py`): reuse the fixed vLLM α=2 as phase-1 (so the
+   non-fired samples ARE the α=2 baseline — zero offset), detect the loop onset with the deployed
+   `RepeatDetector`, and continue fired samples at α=5 via `TokensPrompt`. Now all three share the
+   vLLM footing + `bench.eval`.
+   - **Port check (DeepSeek):** recon adaptive **0.457 ≈ HF adaptive 0.447** (within ~1pp at every
+     k) → the reconstruction is faithful.
+   - **Qwen footing note:** the recon adaptive pass@10 (0.845) is ~4.7pp **above** the HF-inline
+     adaptive (0.798). That gap is the HF-adaptive-run's pipeline offset (its own α=2 baseline read
+     ~4pp below vLLM α=2), *not* a scoring artifact (HF bench.eval == HF inline == 0.798 here). The
+     recon removes that offset, so **the recon is the apple-to-apple number** vs vLLM α=2/α=5.
 
-## Deployable takeaway so far (trusted columns only)
-**Prevention (α=5 from the start) is the recommended lever** — it beats default α=2 on pass@1 and
-removes truncation, with no detector needed. The adaptive rescue's value over prevention is
-**not established** (and cannot exceed prevention); pending reconciliation.
+## Provenance (all numbers pulled live from metrics, none from memory)
+- **Qwen α=2 / α=5:** `results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/metrics/pless_think_t1.0_t1.0_metrics.json`;
+  `results/pless_recovery_full252/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_alpha_think_t1.0_a5.0_t1.0_metrics.json`.
+- **DeepSeek α=2 / α=5 (fixed vLLM):** `results/_deepseek_fixed_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/metrics/{pless_think_t1.0_t1.0, pless_alpha_think_t1.0_a5.0_t1.0}_metrics.json`.
+- **adaptive (both):** `.../pless_adaptive_recon.jsonl` from `scripts/vllm_adaptive_reconstruct.py`
+  (fixed vLLM α=2 phase-1 + α=5 continuation), scored `python -m bench.eval --dataset apps
+  --skip-diversity`.
+- HF-adaptive references (port check): `results/_live_adaptive/{qwen,deepseek}_full_n10.jsonl`.
+
+## Caveats
+- **Single-chop.** HF adaptive re-chopped up to 3×; the vLLM reconstruction chops once. ~10% of
+  fired samples re-looped at α=5 and never closed `</think>`. Re-chop would lift adaptive
+  somewhat (narrowing DeepSeek's α=5 gap, possibly widening Qwen's edge) but is unlikely to flip
+  DeepSeek's +2.6pp.
+- **Diversity axis not recomputed** here (`--skip-diversity` for speed); `struct_div`/`cb_div`
+  can be added if the diversity comparison is needed.
+- **Detector configs are per-model** (Qwen 30/6/1600, DeepSeek 30/8/3000). The DeepSeek window was
+  re-validated on un-mangled traces with the deployed detector: 30/8/3000 → 92.3% catch / 2.5% FP;
+  30/8/4000 → 96.6% / 2.5% (so 3000 is slightly conservative — it under-rescues, which biases
+  *against* adaptive, not for it).
+
+## Deployable takeaway
+**Prevention (α=5 from the start) is the recommended lever** — it wins outright on the high-loop
+model (DeepSeek) and ties the surgical adaptive on the low-loop model (Qwen), with no detector
+required. Adaptive is worth its complexity only where looping is mild (Qwen), and even there the
+gain over α=5 is marginal (coverage only). The chop rescue does clearly beat the α=2 default on
+both models, so it remains the right move *if you are stuck on α=2*; but if you can choose the
+sampler up front, α=5 is simpler and at least as good.
