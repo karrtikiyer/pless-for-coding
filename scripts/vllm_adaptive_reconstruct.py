@@ -19,9 +19,14 @@ Modes:
                    to validate detection before spending GPU.
   (default)      → phase-1 + phase-2 (needs vLLM/GPU) → writes OUT jsonl.
 
-Crash-safe: phase-2 checkpoints each chunk to ``OUT.ckpt.jsonl`` (fsync'd); a re-run with the
-same OUT resumes, skipping already-continued (task_id, sample). Final OUT is written
-atomically (tmp+rename). PHASE2_BATCH sets the chunk / checkpoint granularity.
+Re-chop: if an α=5 continuation loops again, it is re-detected, re-chopped to the new onset, and
+resubmitted at α=5 — up to MAX_CHOPS total chops (default 3, matching the HF adaptive). Each
+round batches the still-looping subset.
+
+Crash-safe: phase-2 checkpoints each FINALIZED sample to ``OUT.ckpt.jsonl`` (fsync'd); a re-run
+with the same OUT resumes, skipping finalized (task_id, sample) — in-progress samples restart
+from their initial chop. Final OUT written atomically (tmp+rename). PHASE2_BATCH = chunk /
+checkpoint granularity; MAX_CHOPS = re-chop depth.
 
 Run (DeepSeek, pod):
   VLLM_VENV=/workspace/vllm_env/.venv MODEL=deepseek-ai/DeepSeek-R1-Distill-Llama-8B \
@@ -59,6 +64,7 @@ LOOP_WINDOW = int(os.environ.get("LOOP_WINDOW", "3000"))
 ESC_ALPHA = float(os.environ.get("ESC_ALPHA", "5"))
 MAX_TOKENS = int(os.environ.get("MAX_TOKENS", "32768"))
 MIN_CONT = int(os.environ.get("MIN_CONT", "512"))     # floor on the α=5 continuation budget
+MAX_CHOPS = int(os.environ.get("MAX_CHOPS", "3"))     # total chops incl. the first (HF used 3)
 PHASE2_BATCH = int(os.environ.get("PHASE2_BATCH", "64"))
 DETECT_ONLY = os.environ.get("DETECT_ONLY", "") not in ("", "0", "false")
 OUT = os.environ.get("OUT", "")
@@ -110,7 +116,7 @@ def main():
     # Per task we keep: prompt_ids, and per-sample either a kept α=2 text (non-fired) or a
     # phase-2 work item (fired: combined prefix ids + continuation budget).
     per_task = {}          # task_id -> {"prompt_ids", "samples": [ {..} per sample ]}
-    fired_items = []       # flat list of phase-2 work: (task_id, s_idx, combined_ids, budget, onset, chopped_ids)
+    fired_items = []       # flat list of phase-2 work: (task_id, s_idx, prompt_ids, chopped_ids, onset)
     n_samp = None
     for r in recs:
         tid = r["task_id"]
@@ -128,9 +134,7 @@ def main():
             think_toks = tok.encode(think_text, add_special_tokens=False)
             fired, fire_pos, onset = scan(think_toks, LOOP_N, LOOP_K, LOOP_WINDOW)
             if fired:
-                chopped = think_toks[:onset]
-                budget = max(MIN_CONT, MAX_TOKENS - onset)
-                fired_items.append((tid, si, prompt_ids + chopped, budget, onset, chopped))
+                fired_items.append((tid, si, prompt_ids, think_toks[:onset], onset))
                 slots.append({"fired": True, "onset": onset, "closed_think_alpha2": closed,
                               "text": None})           # filled in phase-2
             else:
@@ -167,41 +171,71 @@ def main():
                 "alpha_think": ESC_ALPHA, "alpha_code": ESC_ALPHA,
                 "think_end_id": think_end_id}
 
-    # CHECKPOINTED phase-2: generate in chunks (vLLM continuous-batches WITHIN a chunk),
-    # append each chunk's continuations to a .ckpt.jsonl and fsync, so a crash loses at most
-    # one chunk. On restart, already-continued (task_id, sample) are skipped. Chunk size =
-    # PHASE2_BATCH (checkpoint granularity vs the small per-chunk barrier cost).
+    # CHECKPOINTED RE-CHOP phase-2 (matches HF's MAX_CHOPS): continue each fired sample's chopped
+    # prefix at α=5; if that α=5 continuation ALSO loops, re-detect the onset (scan() over the
+    # grown think), chop again, and resubmit — up to MAX_CHOPS total chops. Each round batches the
+    # still-looping subset (vLLM continuous-batches within a chunk). A sample is FINALIZED when it
+    # closes </think>, fails to re-loop, runs out of budget, or hits MAX_CHOPS — finalized samples
+    # are appended to .ckpt.jsonl (fsync'd), so a crash keeps finalized work; resume skips them
+    # (in-progress samples restart from their initial chop — correct, just redoes their rounds).
     if not OUT:
         raise SystemExit("set OUT=<path.jsonl> to write results")
     ckpt_path = OUT + ".ckpt.jsonl"
-    cont_text = {}     # (tid, si) -> full decoded generation (chopped + α=5 continuation)
+    cont_text, cont_chops = {}, {}     # (tid,si) -> final decoded generation / #chops used
     if os.path.exists(ckpt_path):
         for line in open(ckpt_path):
             d = json.loads(line)
             cont_text[(d["task_id"], d["sample"])] = d["text"]
-        print(f"[recon] resume: {len(cont_text)} continuations loaded from {ckpt_path}", flush=True)
-    todo = [it for it in fired_items if (it[0], it[1]) not in cont_text]
-    print(f"[recon] phase-2: {len(todo)} to generate, {len(cont_text)} resumed "
-          f"(of {n_fired} fired); chunk={PHASE2_BATCH}", flush=True)
+            cont_chops[(d["task_id"], d["sample"])] = d.get("chops", 1)
+        print(f"[recon] resume: {len(cont_text)} finalized samples loaded from {ckpt_path}", flush=True)
     ck = open(ckpt_path, "a")
-    for start in range(0, len(todo), PHASE2_BATCH):
-        chunk = todo[start:start + PHASE2_BATCH]
-        prompts = [TokensPrompt(prompt_token_ids=it[2]) for it in chunk]
-        sps = [SamplingParams(n=1, max_tokens=it[3], temperature=1.0, top_p=1.0, top_k=-1,
-                              extra_args={"pless_split": cfg_alpha5()}) for it in chunk]
-        outs = engine.generate(prompts, sps, use_tqdm=True)
-        for it, out in zip(chunk, outs):
-            tid, si, _combined, _budget, onset, chopped = it
-            cont_ids = list(out.outputs[0].token_ids)
-            text = safe.decode(list(chopped) + cont_ids, skip_special_tokens=True)
-            cont_text[(tid, si)] = text
-            ck.write(json.dumps({"task_id": tid, "sample": si, "onset": onset, "text": text}) + "\n")
-        ck.flush()
-        os.fsync(ck.fileno())
-        print(f"[recon] phase-2 {min(start + PHASE2_BATCH, len(todo))}/{len(todo)} continued "
-              f"(ckpt saved, {len(cont_text)}/{n_fired} total)", flush=True)
+
+    def finalize(tid, si, kept, cont, chops):
+        text = safe.decode(list(kept) + list(cont), skip_special_tokens=True)
+        cont_text[(tid, si)] = text
+        cont_chops[(tid, si)] = chops
+        ck.write(json.dumps({"task_id": tid, "sample": si, "chops": chops,
+                             "closed": think_end_id in cont, "text": text}) + "\n")
+
+    # active state per unfinalized fired sample: [tid, si, prompt_ids, kept_think, chops]
+    active = [[it[0], it[1], it[2], list(it[3]), 1]
+              for it in fired_items if (it[0], it[1]) not in cont_text]
+    print(f"[recon] phase-2: {len(active)} to (re)generate, {len(cont_text)} resumed "
+          f"(of {n_fired} fired); MAX_CHOPS={MAX_CHOPS} chunk={PHASE2_BATCH}", flush=True)
+
+    for rnd in range(1, MAX_CHOPS + 1):
+        if not active:
+            break
+        print(f"[recon] phase-2 round {rnd}/{MAX_CHOPS}: {len(active)} samples at α={int(ESC_ALPHA)}", flush=True)
+        next_active = []
+        for start in range(0, len(active), PHASE2_BATCH):
+            chunk = active[start:start + PHASE2_BATCH]
+            prompts = [TokensPrompt(prompt_token_ids=pids + kept) for _, _, pids, kept, _ in chunk]
+            sps = [SamplingParams(n=1, max_tokens=max(MIN_CONT, MAX_TOKENS - len(kept)),
+                                  temperature=1.0, top_p=1.0, top_k=-1,
+                                  extra_args={"pless_split": cfg_alpha5()})
+                   for _, _, _, kept, _ in chunk]
+            outs = engine.generate(prompts, sps, use_tqdm=True)
+            for (tid, si, pids, kept, chops), out in zip(chunk, outs):
+                cont = list(out.outputs[0].token_ids)
+                if (think_end_id in cont) or rnd == MAX_CHOPS:
+                    finalize(tid, si, kept, cont, chops)                    # closed, or last round
+                    continue
+                full = list(kept) + cont
+                refired, _, new_onset = scan(full, LOOP_N, LOOP_K, LOOP_WINDOW)
+                if refired and (MAX_TOKENS - new_onset) >= MIN_CONT:
+                    next_active.append([tid, si, pids, full[:new_onset], chops + 1])   # re-chop → next round
+                else:
+                    finalize(tid, si, kept, cont, chops)                    # no re-loop / out of budget
+            ck.flush(); os.fsync(ck.fileno())
+            print(f"[recon]   round {rnd}: {min(start+PHASE2_BATCH,len(active))}/{len(active)} done "
+                  f"({len(cont_text)}/{n_fired} finalized, {len(next_active)} re-chopped)", flush=True)
+        active = next_active
     ck.close()
-    print(f"[recon] phase-2 done: {len(cont_text)}/{n_fired} continued", flush=True)
+    import statistics as _st
+    ch = list(cont_chops.values())
+    print(f"[recon] phase-2 done: {len(cont_text)}/{n_fired} finalized; "
+          f"chops mean={_st.mean(ch):.2f} max={max(ch)} (>1 = re-chopped)", flush=True)
 
     # ---- Reassemble + write base-schema JSONL (atomic: tmp then rename) ----
     os.makedirs(os.path.dirname(OUT) or ".", exist_ok=True)
@@ -217,7 +251,8 @@ def main():
                 else:
                     txt = slot["text"]
                 texts.append(txt)
-                adaptive.append({"sample": si, "fired": slot["fired"], "chops": 1 if slot["fired"] else 0,
+                adaptive.append({"sample": si, "fired": slot["fired"],
+                                 "chops": cont_chops.get((tid, si), 0) if slot["fired"] else 0,
                                  "onset": slot["onset"], "closed_think": "</think>" in txt, "task_id": tid})
             out = {
                 "model": MODEL, "backend": "vllm", "method": "pless_adaptive",
