@@ -93,10 +93,13 @@ Both defects removed, the ordering flips to the expected α=5 ≥ adaptive.
 - HF-adaptive references (port check): `results/_live_adaptive/{qwen,deepseek}_full_n10.jsonl`.
 
 ## Caveats
-- **Single-chop.** HF adaptive re-chopped up to 3×; the vLLM reconstruction chops once. ~10% of
-  fired samples re-looped at α=5 and never closed `</think>`. Re-chop would lift adaptive
-  somewhat (narrowing DeepSeek's α=5 gap, possibly widening Qwen's edge) but is unlikely to flip
-  DeepSeek's +2.6pp.
+- **Re-chop tested (DeepSeek) — does NOT close the gap.** The 1-chop reconstruction left ~10% of
+  fired samples re-looping at α=5. Running MAX_CHOPS=3 (matching HF) raised closure 90.5%→94.6%
+  and cut truncation 7.1%→5.4%, **but pass@1/@10 stayed flat** (0.452/0.687 vs 1-chop 0.457/0.687)
+  — the re-rescued samples are the hardest ones (48 needed 2 chops, 70 needed 3); escaping the
+  loop makes them *complete with wrong code*, not pass. So adaptive ≈ 0.45–0.46 on DeepSeek at any
+  chop depth, and α=5 (0.483) still wins — the gap is real, not a single-chop artifact. (Qwen
+  re-chop not yet run.)
 - **Diversity axis not recomputed** here (`--skip-diversity` for speed); `struct_div`/`cb_div`
   can be added if the diversity comparison is needed.
 - **Detector configs are per-model** (Qwen 30/6/1600, DeepSeek 30/8/3000). The DeepSeek window was
