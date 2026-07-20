@@ -39,9 +39,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from anthropic import Anthropic
-from anthropic._exceptions import APIError, RateLimitError
-
+# NOTE: the ``anthropic`` SDK is imported lazily (inside the functions that call
+# it), not at module top — so importing this module for its shared constants
+# (SYSTEM_PROMPT, TASK_IDS, _looks_like_code, ...) from bench.apps.gen_scaffolds_qwen
+# does NOT require anthropic to be installed (e.g. in a vLLM-only env).
 from bench.apps.dataset import load_apps
 
 # The 26 APPS ATCODER-interview task_ids never solved by any of 23 full-252
@@ -140,12 +141,15 @@ def _accumulate(stats: GenStats, msg) -> None:
 def _call_opus(client, *, model, user_content, stats, max_tokens, max_retries=5) -> str:
     """One Opus call. No sampling params (rejected on 4.8); adaptive thinking.
 
+    Imports the anthropic exception types lazily (see the module-top note).
+
     Streams and reads the final message: with adaptive thinking, the budget is
     shared between reasoning and the answer, so ``max_tokens`` must be large
     enough that hard problems don't spend the whole budget thinking and return
     an empty text block (observed at 8192). Streaming also avoids the SDK's
     non-streaming timeout guard at large ``max_tokens``.
     """
+    from anthropic._exceptions import APIError, RateLimitError
     for attempt in range(max_retries):
         try:
             with client.messages.stream(
@@ -266,6 +270,7 @@ def main() -> None:
     print(f"Generating {len(todo)} scaffolds with {args.workers} workers "
           f"(model={args.model})")
 
+    from anthropic import Anthropic
     client = Anthropic()
     stats = GenStats()
     with args.out.open("a") as fh:
