@@ -14,11 +14,25 @@ Run: SET=deepseek_fixed PYTHONPATH=. uv run python scripts/build_decoder_compari
      SET=qwen           PYTHONPATH=. uv run python scripts/build_decoder_comparison_table.py   (default)
 """
 import csv
+import gzip
 import json
 import math
 import os
 
 from bench.eval.metrics import add_self_codebleu, compute_self_codebleu_diversity
+
+
+def _load_records(path):
+    """Read a results JSONL, transparently handling gzip (committed runs are often gzipped).
+    Returns None if neither <path> nor <path>.gz exists."""
+    if os.path.exists(path):
+        op = open(path)
+    elif os.path.exists(path + ".gz"):
+        op = gzip.open(path + ".gz", "rt")
+    else:
+        return None
+    with op as f:
+        return [json.loads(l) for l in f]
 
 # ---- config sets ----------------------------------------------------------
 _Q_FULL = "results/pless_recovery_full252/Qwen--Qwen3-8B/ATCODER_interview"
@@ -46,6 +60,7 @@ SETS = {
             ("pless α=3",        _Q_FULL,  "pless_alpha_think_t1.0_a3.0_t1.0"),
             ("pless_norm @α2",   _Q_CANON, "pless_norm_think_t1.0_t1.0"),
             ("pless @α2 (base)", _Q_CANON, "pless_think_t1.0_t1.0"),
+            ("adaptive (1-chop)", _Q_CANON, "pless_adaptive_recon"),
             ("pless_norm @T0.6", _Q_DEC06, "pless_norm_think_t0.6_t0.6"),
             ("pless @T0.6",      _Q_DEC06, "pless_think_t0.6_t0.6"),
         ],
@@ -108,9 +123,12 @@ def main():
         if not os.path.exists(mpath):
             pending.append(name)
             continue
+        records = _load_records(f"{d}/{base}.jsonl")
+        if records is None:                       # metrics exist but raw jsonl gone → can't do cb_div/trunc
+            pending.append(name)
+            continue
         m = json.load(open(mpath))
         pt = m["per_task"]
-        records = [json.loads(l) for l in open(f"{d}/{base}.jsonl")]
         n_samp = len(pt[0]["pass_results"])
         ntasks = len(pt)
 
