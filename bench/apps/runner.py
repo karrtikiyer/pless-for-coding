@@ -40,7 +40,9 @@ from bench.apps.prompts import (
     format_prompt_apps_bigcode_default,
     format_prompt_apps_cot_prefill,
     format_prompt_apps_instruct,
+    format_prompt_apps_scaffold,
 )
+from bench.apps.scaffolds import load_scaffolds
 from bench.checkpointing import append_result, load_completed_ids
 from bench.generator import (
     _strip_think_content,
@@ -166,6 +168,13 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="Cap problems within the (source, difficulty) bucket (for smoke tests).")
     p.add_argument("--task-ids", type=int, nargs="+", default=None,
                    help="Only run these specific APPS problem_ids.")
+    p.add_argument("--scaffold-file", type=Path, default=None,
+                   help="JSONL of {task_id, scaffold} (see bench.apps.gen_scaffolds). "
+                        "When set, each problem's instruct prompt is augmented with "
+                        "its external algorithm scaffold (external-reasoning transfer "
+                        "experiment: run with thinking OFF, i.e. WITHOUT --enable-thinking, "
+                        "so Qwen codes from Claude's outline rather than its own CoT). "
+                        "Only valid with --prompt-format auto and no --paper-replica-model.")
     p.add_argument("--dtype", choices=["bfloat16", "float16"], default="bfloat16")
     p.add_argument("--attn-impl", choices=["sdpa", "eager"], default=None)
     p.add_argument("--enable-thinking", action="store_true")
@@ -267,6 +276,13 @@ def parse_args():
         p.error(f"--prompt-format {args.prompt_format} is incompatible with "
                 "--paper-replica-model (both override the default formatter; "
                 "pick one)")
+    if args.scaffold_file is not None:
+        if args.prompt_format != "auto":
+            p.error("--scaffold-file only works with --prompt-format auto "
+                    "(it augments the chat-template instruct prompt).")
+        if args.paper_replica_model:
+            p.error("--scaffold-file is incompatible with --paper-replica-model "
+                    "(both control the prompt; pick one).")
     if args.log_entropy:
         # Only generate_samples (the manual token-by-token decode) exposes
         # the entropy_log hook. temp / split / vllm paths don't capture the
@@ -349,6 +365,18 @@ def main():
     if args.max_problems is not None:
         problems = problems[:args.max_problems]
 
+    # Optional: load external algorithm scaffolds (external-reasoning transfer).
+    # When set, the instruct-prompt branch augments each problem's user message
+    # with its scaffold (keyed by problem_id). Missing keys fall back to the
+    # plain instruct prompt (i.e. the control formatter), so a partial scaffold
+    # file degrades gracefully per-task rather than crashing.
+    scaffolds: dict[int, str] | None = None
+    if args.scaffold_file is not None:
+        scaffolds = load_scaffolds(args.scaffold_file)
+        matched = sum(1 for p in problems if p.problem_id in scaffolds)
+        print(f"[scaffold] loaded {len(scaffolds)} scaffolds; "
+              f"{matched}/{len(problems)} problems in this run have one")
+
     # Optional: load paper-replica prompts (Phase A Deepseek comparison).
     # When set, we filter problems to only those the paper has prompts for,
     # and the inner loop injects the paper's prompt string instead of calling
@@ -412,6 +440,17 @@ def main():
                 # off-topic output as seen in our smoke).
                 prompt_text, code_prefix = format_prompt_apps_bigcode_chat(
                     problem, tokenizer,
+                )
+            elif scaffolds is not None:
+                # External-reasoning transfer: augment the instruct prompt with
+                # this problem's algorithm scaffold. scaffold=None (problem not
+                # in the file) delegates to the plain instruct formatter, so the
+                # rendered prompt is byte-identical to the control for missing
+                # tasks.
+                prompt_text, code_prefix = format_prompt_apps_scaffold(
+                    problem, tokenizer,
+                    scaffold=scaffolds.get(problem.problem_id),
+                    enable_thinking=args.enable_thinking,
                 )
             else:
                 prompt_text, code_prefix = format_prompt_apps_instruct(
@@ -549,6 +588,11 @@ def main():
                 record["repetition_penalty"] = args.repetition_penalty
             if args.paper_replica_model is not None:
                 record["paper_replica_model"] = args.paper_replica_model
+            if scaffolds is not None:
+                # prompt_text stores problem.question (not the chat string), so
+                # the scaffold injection is otherwise invisible in the record.
+                record["scaffold_used"] = problem.problem_id in scaffolds
+                record["scaffold_file"] = str(args.scaffold_file)
             if has_cot:
                 record["samples_with_thinking"] = samples_with_think
             if args.prompt_format == "cot-prefill":

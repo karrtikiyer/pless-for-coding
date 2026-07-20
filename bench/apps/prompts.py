@@ -198,6 +198,80 @@ def format_prompt_apps_cot_prefill(
     return prompt, ""
 
 
+_SCAFFOLD_HEADER = "A correct high-level approach (algorithm outline, no code):"
+_SCAFFOLD_IMPLEMENT = (
+    "Now implement this approach as a complete Python program that reads from "
+    "standard input and writes its answer to standard output. Provide only the "
+    "complete Python program in a single ```python ... ``` code block, with no "
+    "surrounding explanation."
+)
+
+
+def _user_message_scaffold(problem: AppsProblem, scaffold: str) -> str:
+    """User message that augments the baseline prompt with an EXTERNAL
+    algorithm scaffold (e.g. from Claude Opus) and then asks for code.
+
+    Reuses :func:`_user_message` as the base so the control (no scaffold) and
+    treatment (with scaffold) prompts differ only by the appended block — the
+    injected outline plus a final "now implement it" instruction. The scaffold
+    is deliberately code-free (a numbered algorithm / flowchart in words); see
+    :mod:`bench.apps.gen_scaffolds` for the generation-side guardrails.
+    """
+    base = _user_message(problem)
+    return "\n".join([
+        base,
+        "",
+        _SCAFFOLD_HEADER,
+        scaffold.strip(),
+        "",
+        _SCAFFOLD_IMPLEMENT,
+    ])
+
+
+def format_prompt_apps_scaffold(
+    problem: AppsProblem,
+    tokenizer,
+    scaffold: str | None = None,
+    enable_thinking: bool = False,
+) -> tuple[str | list[int], str]:
+    """Chat-template prompt for the external-scaffold transfer experiment.
+
+    When ``scaffold`` is ``None`` this delegates to
+    :func:`format_prompt_apps_instruct` so the control path is byte-identical
+    (asserted in ``tests/test_apps_scaffold_prompt.py``). Otherwise it mirrors
+    that function exactly (same system message, same old-Qwen tokenize-direct
+    handling, same ``enable_thinking`` forwarding) but swaps in the
+    scaffold-augmented user message.
+
+    ``enable_thinking`` is forwarded unchanged; the experiment always runs with
+    it ``False`` (Qwen3 codes with its own reasoning OFF, using the external
+    scaffold instead).
+    """
+    if scaffold is None:
+        return format_prompt_apps_instruct(
+            problem, tokenizer, enable_thinking=enable_thinking,
+        )
+    user_msg = _user_message_scaffold(problem, scaffold)
+    messages = [
+        {"role": "system",
+         "content": "You are a helpful coding assistant. Write clean, correct "
+                    "Python programs."},
+        {"role": "user", "content": user_msg},
+    ]
+    extra_kwargs = {"enable_thinking": enable_thinking}
+    if getattr(tokenizer, "_qwen_direct_tokenize", False):
+        prompt = tokenizer.apply_chat_template(
+            messages, tokenize=True, add_generation_prompt=True,
+            return_dict=False, **extra_kwargs,
+        )
+    else:
+        prompt = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True,
+            **extra_kwargs,
+        )
+    return prompt, ""
+
+
 def format_prompt_apps_instruct(
     problem: AppsProblem,
     tokenizer,
