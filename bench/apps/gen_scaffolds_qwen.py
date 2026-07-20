@@ -19,11 +19,13 @@ Design notes:
   * The raw generation is ``<think>...</think>`` + the answer; the scaffold is
     the post-``</think>`` text (via generator._strip_think_content).
 
-Usage (run AFTER the MPS GPU is free — do not run concurrently with a Qwen
-generation job):
+Usage — HF backend (default; Mac/MPS or CUDA):
     PYTORCH_ENABLE_MPS_FALLBACK=1 uv run python -m bench.apps.gen_scaffolds_qwen \\
-        --model Qwen/Qwen3-8B --source ATCODER --difficulty interview \\
-        --out results/scaffold_transfer/scaffolds_qwen.jsonl
+        --out results/scaffold_transfer/scaffolds_qwen.jsonl --max-new-tokens 16384
+Usage — vLLM backend (CUDA / RTX 4090, faster; needs the vLLM env):
+    uv run python -m bench.apps.gen_scaffolds_qwen --backend vllm \\
+        --out results/scaffold_transfer/scaffolds_qwen.jsonl \\
+        --max-new-tokens 16384 --max-model-len 20000
 """
 from __future__ import annotations
 
@@ -71,18 +73,32 @@ def _build_scaffold_prompt(tokenizer, problem, extra_system: str = "") -> str:
     )
 
 
-def _generate_one(model, tokenizer, problem, *, temperature, top_p, top_k,
-                  max_new_tokens, extra_system) -> tuple[str, str]:
-    """Return (scaffold, raw_with_thinking) for one problem."""
+def _generate_one(backend, model, tokenizer, problem, *, temperature, top_p,
+                  top_k, max_new_tokens, extra_system) -> tuple[str, str]:
+    """Return (scaffold, raw_with_thinking) for one problem.
+
+    ``model`` is the HF model (backend='hf') or the vLLM engine (backend='vllm').
+    """
     prompt = _build_scaffold_prompt(tokenizer, problem, extra_system)
-    raw = generate_samples_standard(
-        model=model, tokenizer=tokenizer, prompt_text=prompt,
-        n_samples=1, max_new_tokens=max_new_tokens,
-        temperature=temperature, stop_strings=None,
-        top_p=top_p, top_k=top_k, hf_batch_size=1,
-    )[0]
-    scaffold = _strip_think_content(raw)
-    return scaffold, raw
+    if backend == "vllm":
+        from bench.generator_vllm import (
+            encode_prompt_for_vllm,
+            generate_samples_standard_vllm,
+        )
+        p = encode_prompt_for_vllm(prompt, getattr(model, "_safe_tokenizer", None))
+        raw = generate_samples_standard_vllm(
+            engine=model, tokenizer=tokenizer, prompt_text=p,
+            n_samples=1, max_new_tokens=max_new_tokens,
+            temperature=temperature, stop_strings=None, top_p=top_p, top_k=top_k,
+        )[0]
+    else:
+        raw = generate_samples_standard(
+            model=model, tokenizer=tokenizer, prompt_text=prompt,
+            n_samples=1, max_new_tokens=max_new_tokens,
+            temperature=temperature, stop_strings=None,
+            top_p=top_p, top_k=top_k, hf_batch_size=1,
+        )[0]
+    return _strip_think_content(raw), raw
 
 
 def main() -> None:
@@ -107,6 +123,14 @@ def main() -> None:
                          "so the fair-comparison default matches the Opus prompt).")
     ap.add_argument("--task-ids", type=int, nargs="+", default=None)
     ap.add_argument("--dtype", choices=["bfloat16", "float16"], default="bfloat16")
+    ap.add_argument("--backend", choices=["hf", "vllm"], default="hf",
+                    help="'hf' (default, works everywhere torch is installed) or "
+                         "'vllm' (CUDA-only, much faster; needs the vLLM env).")
+    ap.add_argument("--max-model-len", type=int, default=None,
+                    help="vLLM only: cap the context length (prompt+output). Lower it "
+                         "if the KV cache OOMs on a 24GB card.")
+    ap.add_argument("--gpu-memory-utilization", type=float, default=0.90,
+                    help="vLLM only: fraction of VRAM for the engine.")
     args = ap.parse_args()
 
     wanted = set(args.task_ids if args.task_ids is not None else TASK_IDS)
@@ -125,16 +149,28 @@ def main() -> None:
     if done:
         print(f"Resuming: {len(done)} Qwen scaffolds already in {args.out}")
     print(f"Generating {len(todo)} Qwen scaffolds (thinking ON, model={args.model}, "
-          f"t{args.temperature}/p{args.top_p}/k{args.top_k}, cap {args.max_new_tokens})")
+          f"backend={args.backend}, t{args.temperature}/p{args.top_p}/k{args.top_k}, "
+          f"cap {args.max_new_tokens})")
 
-    model, tokenizer = load_model_and_tokenizer(args.model, dtype=args.dtype)
+    if args.backend == "vllm":
+        from bench.generator_vllm import load_engine
+        # scaffold-gen is plain temperature sampling -> no pless logits processor.
+        model = load_engine(
+            args.model, dtype=args.dtype,
+            register_pless_logitsproc=False,
+            max_model_len=args.max_model_len,
+            gpu_memory_utilization=args.gpu_memory_utilization,
+        )
+        tokenizer = getattr(model, "_safe_tokenizer", None) or model.get_tokenizer()
+    else:
+        model, tokenizer = load_model_and_tokenizer(args.model, dtype=args.dtype)
 
     n_empty = 0
     with args.out.open("a") as fh:
         for problem in tqdm(todo, desc="qwen-scaffolds"):
             try:
                 scaffold, raw = _generate_one(
-                    model, tokenizer, problem,
+                    args.backend, model, tokenizer, problem,
                     temperature=args.temperature, top_p=args.top_p, top_k=args.top_k,
                     max_new_tokens=args.max_new_tokens, extra_system=args.extra_system,
                 )
