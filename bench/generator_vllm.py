@@ -168,6 +168,31 @@ def _pless_alpha_mask_logits(logits: torch.Tensor, alpha: float) -> torch.Tensor
     return logits
 
 
+def _pless_renyi_mask_logits(logits: torch.Tensor, k: float) -> torch.Tensor:
+    """In-place: zero out tokens below the Rényi-order-k threshold ``G_k``.
+
+    Mirrors ``bench/sampler_bridge.py:make_pless_renyi_sampler`` — the *rooted*
+    Rényi form ``G_k = (Σpᵢ^k)^{1/(k-1)} = exp(-H_k)`` (distinct from the raw power
+    sum τ_α; they coincide only at k=2). k==2 fast-path = ``probs.square()`` for
+    byte-equivalence with ``_pless_mask_logits``; k==1 uses the Shannon limit; k==0 → 1/v.
+    Any real k is accepted (matches the author's ``p_moment_decode``); k<0 loosens further.
+    """
+    probs = torch.softmax(logits.float(), dim=-1)
+    if k == 2.0:
+        threshold = probs.square().sum(dim=-1, keepdim=True)
+    elif k == 1.0:
+        logp = torch.where(probs > 0, probs.log(), probs.new_zeros(()))
+        threshold = (probs * logp).sum(dim=-1, keepdim=True).exp()
+    elif k == 0.0:
+        threshold = 1.0 / probs.size(-1)
+    else:
+        threshold = probs.pow(k).sum(dim=-1, keepdim=True).pow(1.0 / (k - 1.0))
+    mask = probs < threshold
+    _restore_argmax_on_all_pruned(mask, probs)
+    logits.masked_fill_(mask, float("-inf"))
+    return logits
+
+
 def _top_p_top_k_mask_logits(
     logits: torch.Tensor, top_p: float, top_k: int
 ) -> torch.Tensor:
@@ -285,10 +310,10 @@ def _build_pless_split_logits_processor_class() -> type:
             for key in ("t_think", "t_code", "sampler_think", "sampler_code"):
                 if key not in cfg:
                     raise ValueError(f"pless_split config missing {key!r}")
-            allowed = set(_SAMPLER_LOGIT_FN) | {"pless_alpha"}
-            for sampler_key, alpha_key in (
-                ("sampler_think", "alpha_think"),
-                ("sampler_code", "alpha_code"),
+            allowed = set(_SAMPLER_LOGIT_FN) | {"pless_alpha", "pless_renyi"}
+            for sampler_key, alpha_key, renyi_key in (
+                ("sampler_think", "alpha_think", "renyi_k_think"),
+                ("sampler_code", "alpha_code", "renyi_k_code"),
             ):
                 if cfg[sampler_key] not in allowed:
                     raise ValueError(
@@ -299,6 +324,11 @@ def _build_pless_split_logits_processor_class() -> type:
                     raise ValueError(
                         f"pless_split.{sampler_key}='pless_alpha' requires "
                         f"{alpha_key!r} to be set."
+                    )
+                if cfg[sampler_key] == "pless_renyi" and renyi_key not in cfg:
+                    raise ValueError(
+                        f"pless_split.{sampler_key}='pless_renyi' requires "
+                        f"{renyi_key!r} to be set."
                     )
 
         def is_argmax_invariant(self) -> bool:
@@ -381,7 +411,13 @@ def _build_pless_split_logits_processor_class() -> type:
                     alpha = float(cfg["alpha_think"])
                 else:
                     alpha = None
-                key = (name, temp, alpha)
+                if name == "pless_renyi":
+                    if float(cfg["renyi_k_think"]) != float(cfg["renyi_k_code"]):
+                        return None
+                    renyi_k = float(cfg["renyi_k_think"])
+                else:
+                    renyi_k = None
+                key = (name, temp, alpha, renyi_k)
                 if first is None:
                     first = key
                 elif key != first:
@@ -404,13 +440,15 @@ def _build_pless_split_logits_processor_class() -> type:
             if uniform is not None:
                 idxs = [i for i in self._cfg if i < logits.size(0)]
                 if len(idxs) >= 2:
-                    name, temp, alpha = uniform
+                    name, temp, alpha, renyi_k = uniform
                     idx_t = torch.as_tensor(idxs, device=logits.device, dtype=torch.long)
                     sub = logits[idx_t]
                     if temp != 1.0:
                         sub = sub / temp
                     if name == "pless_alpha":
                         sub = _pless_alpha_mask_logits(sub, alpha=alpha)
+                    elif name == "pless_renyi":
+                        sub = _pless_renyi_mask_logits(sub, k=renyi_k)
                     else:
                         sub = _SAMPLER_LOGIT_FN[name](sub)
                     logits[idx_t] = sub
@@ -460,16 +498,20 @@ def _build_pless_split_logits_processor_class() -> type:
                     temp = float(cfg["t_code"])
                     sampler_name = cfg["sampler_code"]
                     alpha_key = "alpha_code"
+                    renyi_key = "renyi_k_code"
                 else:
                     temp = float(cfg["t_think"])
                     sampler_name = cfg["sampler_think"]
                     alpha_key = "alpha_think"
+                    renyi_key = "renyi_k_think"
 
                 row = logits[idx]
                 if temp != 1.0:
                     row = row / temp
                 if sampler_name == "pless_alpha":
                     row = _pless_alpha_mask_logits(row, alpha=float(cfg[alpha_key]))
+                elif sampler_name == "pless_renyi":
+                    row = _pless_renyi_mask_logits(row, k=float(cfg[renyi_key]))
                 else:
                     row = _SAMPLER_LOGIT_FN[sampler_name](row)
                 logits[idx] = row
@@ -709,6 +751,7 @@ def generate_samples_vllm(
     temperature: float,
     stop_strings: list[str] | None = None,
     alpha: float | None = None,
+    renyi_k: float | None = None,
     loop_ngram_n: int | None = None,
     loop_ngram_k: int | None = None,
     loop_window: int = 400,
@@ -730,6 +773,8 @@ def generate_samples_vllm(
     processor_cls = _build_pless_split_logits_processor_class()
     if sampler_name == "pless_alpha" and alpha is None:
         raise ValueError("alpha is required when sampler_name='pless_alpha'")
+    if sampler_name == "pless_renyi" and renyi_k is None:
+        raise ValueError("renyi_k is required when sampler_name='pless_renyi'")
     # We reuse the split processor by setting t_think == t_code and
     # sampler_think == sampler_code; the </think> detection becomes a
     # no-op since both phases are identical.
@@ -742,6 +787,9 @@ def generate_samples_vllm(
     if sampler_name == "pless_alpha":
         cfg["alpha_think"] = float(alpha)
         cfg["alpha_code"] = float(alpha)
+    if sampler_name == "pless_renyi":
+        cfg["renyi_k_think"] = float(renyi_k)
+        cfg["renyi_k_code"] = float(renyi_k)
     if loop_ngram_n and loop_ngram_k:
         cfg["loop_n"] = int(loop_ngram_n)
         cfg["loop_k"] = int(loop_ngram_k)

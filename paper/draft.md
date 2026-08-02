@@ -7,12 +7,12 @@ under `results/`. Deferred items listed in `paper/TODO.md`.*
 ## Abstract
 
 We present the first systematic evaluation of p-less and p-less-norm
-[Tan et al., 2026], two hyperparameter-free truncation samplers, on
+[Tan et al., 2025], two hyperparameter-free truncation samplers, on
 code-generation benchmarks. Across 13 model checkpoints (Llama-2,
 CodeLlama, Codestral, Qwen2.5-Coder, Qwen3-Coder; 1.3B–30B) on MBPP-500
 and HumanEval-164, p-less-norm at temperature 0.6 is the top-ranked
 sampler on Llama-2-7B (MBPP) when merged with the 18 decoding methods
-surveyed by Wei et al. [2024], reaching 22.3% pass@1 ahead of FSD-d
+surveyed by Shi et al. [2024], reaching 22.3% pass@1 ahead of FSD-d
 (21.2%) and beam-8 (19.4%). On the canonical instruct model
 Qwen2.5-Coder-7B-Instruct (HumanEval), p-less@0.6 reaches 87.5% pass@1
 versus greedy's 84.1%, a directional +3.4pp at the 2.8pp standard-error
@@ -41,12 +41,12 @@ Standard truncation samplers introduce hyperparameters that interact in
 non-obvious ways with model peakedness. Top-p [Holtzman et al., 2020],
 top-k, η-sampling, ε-sampling, typical sampling and Mirostat each carry
 one or two free parameters whose right setting depends on the model, the
-task, and the desired correctness/diversity tradeoff. Wei et al. [2024]
+task, and the desired correctness/diversity tradeoff. Shi et al. [2024]
 observed wide sensitivity to these hyperparameters across decoding
 methods on Llama-2-7B over MBPP and HumanEval, but did not consider
 hyperparameter-free alternatives.
 
-Tan, Wu and Howard [2026] propose **p-less** and **p-less-norm**: two
+Tan, Wu and Howard [2025] propose **p-less** and **p-less-norm**: two
 truncation samplers whose admission threshold is computed directly from
 the distribution's collision-entropy, with no tunable knobs. The proposal
 is appealing — but the original paper evaluates only on math, reasoning,
@@ -62,7 +62,7 @@ contribute:
    greedy and beam search across 13 code-LM checkpoints (Meta Llama-2,
    CodeLlama, Mistral Codestral, Qwen2.5-Coder, Qwen3-Coder; 1.3B–30B)
    on MBPP-500 and HumanEval-164 (Table 2).
-2. A direct re-evaluation against the Wei et al. [2024] decoding survey
+2. A direct re-evaluation against the Shi et al. [2024] decoding survey
    on Llama-2-7B (MBPP), where p-less-norm@0.6 ranks 1/19 at 22.3%
    pass@1 — beating FSD-d (21.2%) and beam-8 (19.4%) (claim **C1**;
    `comparison_report.md`).
@@ -87,7 +87,7 @@ its use, not raw pass@k uplift.
 
 ## 2. Background and Related Work
 
-**P-less and p-less-norm.** Tan, Wu and Howard [2026] introduce two
+**P-less and p-less-norm.** Tan, Wu and Howard [2025] introduce two
 hyperparameter-free truncation samplers. Given a token probability
 distribution `p` over a vocabulary of size `v`, p-less defines its
 admission threshold as the collision-entropy of the distribution,
@@ -99,7 +99,7 @@ lines 25 and 56). After truncation the survivors are re-normalised and
 sampled. Neither method takes a top-k cutoff, top-p budget, or η/ε
 threshold — only an optional pre-truncation temperature.
 
-**Decoding-method surveys on code.** Wei et al. [2024] benchmark a wide
+**Decoding-method surveys on code.** Shi et al. [2024] benchmark a wide
 panel of decoding methods (greedy, beam search, contrastive search,
 contrastive decoding, top-p, top-k, η-sampling, typical sampling, FSD,
 FSD-d, DoLa, Mirostat, temperature) on Llama-2-7B / 7B-chat over MBPP
@@ -119,7 +119,7 @@ correctness (the program must satisfy hidden tests) and diversity (a
 sampler covering more correct programs is more useful for refinement and
 test-time search). The p-less papers argue that hyperparameter-free
 truncation balances both — but they do not evaluate on code at all. The
-Wei et al. survey does evaluate on code but predates p-less. We close
+Shi et al. survey does evaluate on code but predates p-less. We close
 this gap by running p-less and p-less-norm head-to-head with temperature,
 top-p, greedy, and beam baselines across 13 code-LM checkpoints on two
 benchmarks.
@@ -285,7 +285,7 @@ _Source: `results/analysis/consolidated_summary.csv`. Method aliases
 `paper/tables/make_tables.py`._
 
 First, on the **Llama-2-7B (base)** MBPP-500 cell, p-less-norm@0.6 is the
-top-ranked sampler when our results are merged with the 18 Wei et al.
+top-ranked sampler when our results are merged with the 18 Shi et al.
 [2024] decoding methods evaluated on the same model and benchmark
 (claim **C1**). Its 22.3% pass@1 sits ahead of FSD-d (21.2%), p-less@0.6
 (22.2%), and beam-8 (19.4%); plain temperature@0.7 ranks 15/19 at 13.2%
@@ -345,7 +345,7 @@ beam search (4 and 8), and the paper-specific baselines for that
 cohort; per-model trajectory lines are suppressed for readability.
 
 ![**Figure 1a.** Pareto pass@1 vs structural diversity on MBPP-500,
-six base/chat models compared against Zhu et al. (2024)
+six base/chat models compared against Shi et al. (2024)
 [arXiv:2402.06925]. Per-model paper baselines: Llama-2-7B base/chat
 and CodeLlama-7B-Instruct → temp=0.3, top-k=5, top-p=0.8; CodeLlama-7B
 base → temp=0.6, top-k=5, top-p=0.8; Qwen-7B → temp=0.1, top-k=5,
@@ -619,7 +619,7 @@ HumanEval-164); we do not test BigCodeBench, LiveCodeBench, or
 multi-turn agentic settings. (iii) The T₁/T₂ grid is run on a single
 strong instruct model (Qwen2.5-Coder-7B-Instruct) plus a single base
 model (Qwen2.5-Coder-3B); generalisation to other architectures is
-untested. (iv) All comparisons against the Wei et al. [2024] survey
+untested. (iv) All comparisons against the Shi et al. [2024] survey
 cross independent evaluation pipelines and are subject to extraction
 and execution-environment differences (claim **C1** sanity-check on
 temperature@0.7 shows a 4.0pp pipeline gap on Llama-2-7B — see
@@ -636,7 +636,7 @@ to temperature in the 0.7–1.0 range (`cross_benchmark_t1_analysis.md:281`).
 P-less and p-less-norm are **competitive but not dominant** decoding
 samplers for code generation. They reach the Pareto frontier of
 correctness × structural diversity on every base/chat model we tested,
-and they outperform or match the methods surveyed by Wei et al. [2024]
+and they outperform or match the methods surveyed by Shi et al. [2024]
 on Llama-2-7B (MBPP). The pre-truncation temperature T₁ remains the
 operative diversity knob; the post-truncation T₂ is dominated by T₁ on
 the strong instruct model we tested. P-less is most useful where its

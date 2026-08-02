@@ -1,6 +1,10 @@
 # Project: Pless Samplers — Code Generation Benchmarks
 
-Benchmarks the **pless** and **pless-norm** hyperparameter-free sampling methods on MBPP and HumanEval, comparing against vanilla temperature sampling across multiple model families. Based on ["A Thorough Examination of Decoding Methods in the Era of LLMs"](https://arxiv.org/abs/2402.06925).
+Benchmarks the **pless** and **pless-norm** hyperparameter-free sampling methods on MBPP and HumanEval, comparing against vanilla temperature sampling across multiple model families.
+
+**Method origin**: pless / pless-norm are from Tan, Wu, Howard, ["p-less Sampling: A Robust Hyperparameter-Free Approach for LLM Decoding"](https://arxiv.org/abs/2509.23234) (Sep 2025). Their Appendix B.5 proposes a Rényi-α generalization `G[P]_k = exp(−H_k(p))` but runs zero empirical experiments at k ≠ 2. **Our work** (this repo) studies a non-equivalent Rényi-α-indexed family `τ_α(p) = Σpᵢ^α` (raw power sum, no root). At α = 2 the two forms agree (both equal Σpᵢ²); for α > 2 they produce different filters — `τ_α` loosens with α (admits more tail tokens at high-entropy positions); `G_k` tightens with k. See `docs/theory/` for the No-Universal-Equivalence theorem and filter-divergence numerics.
+
+**Cross-paper baselines** (top-p / top-k / beam / FSD / Mirostat / Contrastive Search / Typical / η-sampling) are compared against Shi et al. (Chufan Shi et al., EMNLP 2024), ["A Thorough Examination of Decoding Methods in the Era of LLMs"](https://arxiv.org/abs/2402.06925) Table 26. **Shi et al. is a decoding-methods survey, NOT the p-less origin** — do not cite it as such. (First author verified via arXiv 2026-07-30; earlier "Yi et al." attribution was wrong.)
 
 ## Living TODO list — `docs/theory/todos.md`
 

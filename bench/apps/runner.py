@@ -56,6 +56,7 @@ from bench.sampler_bridge import (
     SAMPLERS,
     SPLIT_SAMPLERS,
     make_pless_alpha_sampler,
+    make_pless_renyi_sampler,
     make_pless_post_temp_sampler,
 )
 
@@ -111,6 +112,8 @@ def _method_key(args: argparse.Namespace) -> str:
         key = f"{key}_pt{args.post_temperature}"
     if args.method == "pless_alpha":
         key = f"{key}_a{args.alpha}"
+    if args.method == "pless_renyi":
+        key = f"{key}_k{args.renyi_k}"
     return key
 
 
@@ -129,7 +132,7 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="APPS difficulty bucket")
     p.add_argument(
         "--method", required=True,
-        choices=list(SAMPLERS.keys()) + ["temp", "split", "pless_alpha"],
+        choices=list(SAMPLERS.keys()) + ["temp", "split", "pless_alpha", "pless_renyi"],
         help="Sampling method",
     )
     p.add_argument("--n-samples", type=int, default=10)
@@ -189,6 +192,11 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="Rényi exponent for --method pless_alpha. "
                         "Threshold = Σpᵢ^α. α=2 reproduces standard pless; "
                         "α>2 keeps more tokens at high-entropy positions.")
+    p.add_argument("--renyi-k", type=float, default=None,
+                   help="Rényi order k for --method pless_renyi. Threshold = "
+                        "(Σpᵢ^k)^(1/(k-1)) = exp(-H_k), the rooted Rényi form "
+                        "(distinct from pless_alpha's raw Σpᵢ^α). k=2 ≡ pless; "
+                        "lowering k below 2 admits more tail tokens.")
     # Live loop-force (vLLM only): detect a think-phase n-gram loop and force </think>.
     p.add_argument("--force-think-on-loop", action="store_true",
                    help="vLLM only: live n-gram loop detection in the think phase; on "
@@ -272,6 +280,10 @@ def parse_args():
         p.error("--alpha is required when --method is pless_alpha")
     if args.alpha is not None and args.method != "pless_alpha":
         p.error("--alpha only applies to --method pless_alpha")
+    if args.method == "pless_renyi" and args.renyi_k is None:
+        p.error("--renyi-k is required when --method is pless_renyi")
+    if args.renyi_k is not None and args.method != "pless_renyi":
+        p.error("--renyi-k only applies to --method pless_renyi")
     if args.prompt_format != "auto" and args.paper_replica_model:
         p.error(f"--prompt-format {args.prompt_format} is incompatible with "
                 "--paper-replica-model (both override the default formatter; "
@@ -351,6 +363,8 @@ def main():
             sampler_fn_code = SPLIT_SAMPLERS[args.sampler_code]
         elif args.method == "pless_alpha":
             sampler_fn = make_pless_alpha_sampler(args.alpha)
+        elif args.method == "pless_renyi":
+            sampler_fn = make_pless_renyi_sampler(args.renyi_k)
         elif args.method != "temp":
             if args.post_temperature is not None:
                 sampler_fn = make_pless_post_temp_sampler(args.post_temperature)
@@ -498,6 +512,7 @@ def main():
                         n_samples=args.n_samples, max_new_tokens=args.max_new_tokens,
                         temperature=args.temperature, stop_strings=None,
                         alpha=args.alpha,
+                        renyi_k=args.renyi_k,
                         loop_ngram_n=args.loop_ngram_n if args.force_think_on_loop else None,
                         loop_ngram_k=args.loop_ngram_k if args.force_think_on_loop else None,
                         loop_window=args.loop_window,
@@ -584,6 +599,8 @@ def main():
             }
             if args.alpha is not None:
                 record["alpha"] = args.alpha
+            if args.renyi_k is not None:
+                record["renyi_k"] = args.renyi_k
             if args.repetition_penalty != 1.0:
                 record["repetition_penalty"] = args.repetition_penalty
             if args.paper_replica_model is not None:

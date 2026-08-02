@@ -191,3 +191,52 @@ def make_pless_alpha_sampler(alpha: float):
         next_token = torch.multinomial(probs, num_samples=1)
         return next_token
     return sampler
+
+
+def make_pless_renyi_sampler(k: float):
+    """Rényi-order-k threshold sampler — the origin paper's App. B.5 *rooted* form.
+
+    Threshold ``= G_k = (Σpᵢ^k)^{1/(k-1)} = exp(-H_k)``, i.e. the Rényi entropy of
+    order k in exponentiated form. This is distinct from ``make_pless_alpha_sampler``'s
+    raw power sum ``τ_α = Σpᵢ^α``: the two coincide *only* at order 2 (both = Σpᵢ²).
+    Unlike ``τ``, ``G_k`` is a probability-weighted power mean, so it always lies in
+    ``[min pᵢ, max pᵢ]``. Lowering k below 2 loosens the filter (admits more tail
+    tokens); k=2 reproduces plain p-less byte-for-byte. Same all-pruned argmax
+    fallback as the other guarded samplers.
+
+    See ``docs/research/paperA_renyi_nonequivalence.md`` for why τ_α ≠ G_k for order>2.
+
+    Any real order k is accepted (matching the author's ``p_moment_decode`` reference):
+    k=0 → 1/v (the uniform-entropy threshold); k=1 → the Shannon limit; k<0 loosens
+    further toward ``min pᵢ``. Caveat: for strongly negative k over a large vocabulary,
+    ``probs.pow(k)`` on near-zero tail tokens can overflow float32 (same as the author's
+    reference); the practically-useful range (k ≳ -3) is safe.
+    """
+
+    def sampler(probs: torch.Tensor) -> torch.Tensor:
+        if k == 2.0:
+            # byte-identical to plain p-less at order 2 (root exponent 1/(2-1)=1)
+            threshold = probs.square().sum(dim=-1, keepdim=True)
+        elif k == 1.0:
+            # Shannon limit: G_1 = exp(Σ pᵢ ln pᵢ). Guard log(0) via where().
+            logp = torch.where(probs > 0, probs.log(), probs.new_zeros(()))
+            threshold = (probs * logp).sum(dim=-1, keepdim=True).exp()
+        elif k == 0.0:
+            # G_0 = 1/v (uniform threshold); the general branch also yields this but
+            # 0^0 on zero-prob tokens is ambiguous, so special-case it (matches author).
+            threshold = 1.0 / probs.size(-1)
+        else:
+            threshold = probs.pow(k).sum(dim=-1, keepdim=True).pow(1.0 / (k - 1.0))
+
+        mask = probs < threshold  # True ⇒ prune
+        # Fallback: unmask the argmax if a row would be fully pruned (avoids ÷0 → NaN).
+        all_pruned = mask.all(dim=-1)
+        if all_pruned.any():
+            fallback_idx = probs[all_pruned].argmax(dim=-1, keepdim=True)
+            mask[all_pruned] = mask[all_pruned].scatter(-1, fallback_idx, False)
+
+        probs[mask] = 0.0
+        probs.div_(probs.sum(dim=-1, keepdim=True))
+        next_token = torch.multinomial(probs, num_samples=1)
+        return next_token
+    return sampler
