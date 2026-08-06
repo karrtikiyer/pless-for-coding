@@ -1,9 +1,10 @@
 # Rényi G_k sweep on APPS — interim results (Paper B)
 
-**Status: PARTIAL — 10 of 12 arms scored (as of 2026-08-05).** The remaining arms are
-still generating on the pod. This doc is a holding place; once the full sweep lands it
-folds into Paper B via `scripts/build_decoder_comparison_table.py` (merge into the
-`qwen` / `deepseek_fixed` SETs). Do not cite as final.
+**Status: COMPLETE — 12 of 12 arms scored (as of 2026-08-06).** Full k grid
+{1.6, 0.8, 0.4, 0.2, 0.1, 0.05} × {Qwen3-8B, DeepSeek} on 252 APPS-interview problems.
+Next: folds into Paper B via `scripts/build_decoder_comparison_table.py` (merge the G_k arms
+into the `qwen` / `deepseek_fixed` SETs alongside τ_α). Numbers here are the source of truth
+until that table is built.
 
 ## What this is
 
@@ -28,27 +29,34 @@ Arms grouped by model, k descending (tight → loose):
 | QW k0.4 | 0.696 | 0.833 | 0.4574 | 10,912 | 0.4% |
 | QW k0.2 | 0.701 | 0.833 | 0.4924 | 11,062 | 0.0% |
 | QW k0.1 | 0.719 | 0.845 | 0.4983 | 10,808 | 0.0% |
+| QW k0.05 | 0.717 | 0.833 | 0.4971 | 10,767 | 0.1% |
 | DS k1.6 | 0.400 | 0.643 | 0.4941 | 16,420 | 39.6% |
 | DS k0.8 | 0.435 | 0.687 | 0.5175 | 12,925 | 25.8% |
 | DS k0.4 | 0.469 | 0.730 | 0.5745 | 9,615 | 0.0% |
 | DS k0.2 | 0.463 | 0.730 | 0.5829 | 9,879 | 0.0% |
 | DS k0.1 | 0.463 | 0.714 | 0.5878 | 9,463 | 0.2% |
+| DS k0.05 | 0.459 | 0.710 | 0.5864 | 9,457 | 0.0% |
 
-**Pending (still generating):** QW k0.05; DS k0.05.
+**Pending:** none — all 12 arms scored.
 
 ### Reading
 
-As k decreases (looser G_k filter): **non-term% collapses to 0%** by k≤0.4 on both models
-(QW 14.0%→0.0%; DS 39.6%→0.0%), and **mean think tokens drop** (DS 16,420→~9,500 as runaway
-loops stop burning the 32768 budget). The loop-escape mechanism Paper B documents for τ_α
-reproduces on the rooted Rényi form.
+As k decreases (looser G_k filter): **non-term% collapses to ≈0%** — by k≤0.2 for Qwen
+(14.0%→0.4% at k0.4→0.0% at k0.2) and by k≤0.4 for DeepSeek (39.6%→0.0%) — and **mean think
+tokens drop** (DS 16,420→~9,500 as runaway loops stop burning the 32768 budget). (Non-term% is
+mildly non-monotone at the ≈0 floor, e.g. QW k0.05 0.1% vs k0.1 0.04% — sampling noise, not a
+trend.) The loop-escape mechanism Paper B documents for τ_α reproduces on the rooted Rényi form.
 
-**pass@1 optimum is model-dependent.** Qwen keeps improving through k0.1 (0.627→0.719, no
-reversal yet). DeepSeek peaks at **k≈0.4 (0.469)** then plateaus (0.463 at k0.2 and k0.1) with
-pass@10 slightly *down* at k0.1 (0.730→0.714) — an **over-loosening regime** past k≈0.4 where
-extra looseness stops converting to solved problems and mildly costs coverage. The more
-loop-prone model (DeepSeek, 39.6% non-term at k1.6) needs *less* aggressive loosening once its
-loops are gone.
+**pass@1 improves to a plateau, then slightly over-loosens — the plateau location is
+model-dependent.** Qwen improves through a broad plateau around **k≈0.1–0.2** (0.696/0.701/0.719/0.717
+at k0.4/0.2/0.1/0.05); DeepSeek plateaus **earlier, around k≈0.2–0.4** (0.469/0.463/0.463/0.459),
+with pass@10 also easing after k0.4 (0.730→0.710). **Caveat:** adjacent loose arms differ by only
+~1.5–6 problems out of 2520 — well inside the ±0.023 per-arm CIs, and arms are unpaired (no
+across-arm significance test) — so read these as a *statistically indistinguishable plateau then a
+slight dip*, not a pinpoint optimum. The qualitative split is robust: the more loop-prone model
+(DeepSeek, 39.6% non-term at k1.6) plateaus earlier — once its loops are gone (non-term ≈0 by k0.4)
+further loosening only injects noise. Practical guidance: **DeepSeek wants a milder loosening than
+Qwen**; anything in k≈0.1–0.4 is near-optimal for both.
 
 **Do not read cb_div as an accuracy/tradeoff signal.** cb_div is computed over each config's
 *correct* samples only (the ≥2-correct subset), so it measures structural variety *among the
@@ -79,11 +87,23 @@ matched configs, but it does not support claims about the pass@1 trajectory.
   high-non-term arms — the rambling cost). DeepSeek carries a ~+3% byte-BPE re-tokenization
   inflation, but the DS τ_α arms re-tokenize identically, so it stays apple-to-apple.
 
-## Apple-to-apple footing (verified, not from memory)
+## Apple-to-apple footing
 
-Same as the τ_α arms and the α=2 baseline: `--max-new-tokens 32768`, temperature 1.0,
-top_p 1.0, top_k 0, backend vLLM, n=10, `--enable-thinking`, `VLLM_USE_FLASHINFER_SAMPLER=0`,
-full 252 tasks. DeepSeek's #45488 tokenizer fix is auto-applied on the vLLM path.
+**Verified from the jsonl records** (both models, baseline vs every G_k arm): identical
+`temperature 1.0`, `top_p 1.0`, `top_k 0`, `backend vLLM`, `n=10`, `--enable-thinking`
+(all carry `samples_with_thinking`), full 252 tasks — only `method` differs (pless vs pless_renyi).
+**Shared token cap verified** by matched truncated-trace lengths (baseline vs arms cluster at the
+same ceiling; QW re-tokenizes to exactly 32768). The specific value **32768** and
+`VLLM_USE_FLASHINFER_SAMPLER=0` come from the run scripts, not the records (jsonl stores no
+`max_new_tokens`) — the data proves *same cap*, and the number is the configured one.
+
+**Residual assumption (not verifiable from the records):** DeepSeek's #45488 tokenizer fix is
+auto-applied on the vLLM path, so both the `_deepseek_fixed` baseline and the G_k arms should have
+it — but baseline and arms live in different result trees, so we cannot confirm from the jsonl that
+both were generated post-fix. If the G_k arms predated the fix, G_k-vs-α=2 would confound with
+fix-vs-no-fix (the same trap we avoid by not using `pless_recovery_full252/deepseek` as the baseline).
+The clean sample content + zero all-pruned failures in the arms make a pre-fix run unlikely, but it
+is an assumption, not a verification.
 
 **τ_α comparison baselines** (the correct dirs to merge against):
 - QW → `results/pless_recovery_full252/Qwen--Qwen3-8B/ATCODER_interview`

@@ -67,7 +67,15 @@ def load_config(d: str, base: str):
     for t in m["per_task"]:
         tid = t["task_id"]
         rec = rec_by_id.get(tid)
-        sw = (rec.get("samples_with_thinking") or rec["samples"]) if rec else []
+        # Truncation is read from samples_with_thinking; it MUST be present and index-aligned
+        # to pass_results, else every sample would falsely read as truncated (no </think> in
+        # extracted code) and inflate loop-escape attribution. Fail loud rather than fall back.
+        sw = rec.get("samples_with_thinking") if rec else None
+        if sw is None or len(sw) != len(t["pass_results"]):
+            raise SystemExit(
+                f"{base} task {tid}: samples_with_thinking missing or misaligned "
+                f"({0 if sw is None else len(sw)} vs {len(t['pass_results'])} pass_results) "
+                f"— truncation/loop-escape stats would be wrong.")
         trunc = ["</think>" not in s for s in sw]
         out[tid] = {
             "pass": t["pass_results"],
@@ -238,7 +246,17 @@ def main():
 
     # summary table across k
     L += ["## Summary across k\n",
-          "| k | pass@1 (Δ) | pass@10 (Δ) | win / lose / net | new-solve / lost-solve | McNemar p | Wilcoxon p | Δpass@1 95% CI | loop-escape share |",
+          "Column notes: **cov-McNemar p** tests only the *coverage-status* change (solve-at-least-once: "
+          "new-solve vs lost-solve counts) — it does NOT test the win/lose ledger beside it. The significance "
+          "of the net per-problem **pass@1** shift is the **Wilcoxon p** column. **loop-escape (esc%)** is the "
+          "coarse problem-level heuristic (whole-problem gain → loops if ≥50% of its α=2 failures were "
+          "truncations); the rigorous upper bound is Δtrunc in the C×B section. \n\n"
+          "Caveats: Wilcoxon and the bootstrap CI treat each problem's pass@1 as a noiseless point estimate "
+          "(they resample the 252 problems, not the 10 within-problem draws), so p-values / CIs are mildly "
+          "*anticonservative* — immaterial for the p≈1e-9…1e-13 arms, relevant near k=1.6. No multiple-comparisons "
+          "correction is applied across the 6 k arms (the surviving effects are orders of magnitude below any "
+          "correction threshold). Arms are unpaired, so differences *between* k arms are not significance-tested.\n",
+          "| k | pass@1 (Δ) | pass@10 (Δ) | win / lose / net | new-solve / lost-solve | cov-McNemar p | Wilcoxon p | Δpass@1 95% CI | loop-escape (esc%) |",
           "|---|---|---|---|---|---|---|---|---|"]
     detail = []
     for k, b, arm in arms:
@@ -252,8 +270,11 @@ def main():
 
     # B + D: strata with per-stratum pass@1 AND pass@10
     n_by = {s: detail[0][1]["strata"][s]["n"] for s in STRATA} if detail else {}
-    L.append("\n## B+D. Difficulty strata — Δpass@1 / Δpass@10 (share of gross gain)\n")
-    L.append("Buckets fixed by baseline pass@1; n constant across k. Cell = mean Δpass@1 / mean Δpass@10 (share%). "
+    L.append("\n## B+D. Difficulty strata — Δpass@1 / Δpass@10 (net Δ contribution)\n")
+    L.append("Buckets fixed by baseline pass@1; n constant across k. Cell = mean Δpass@1 / mean Δpass@10 (contrib%). "
+             "**contrib%** = that stratum's *net* Δpass@1 as a fraction of the *gross winner* gain "
+             "(Σ of positive per-problem Δ) — so a net-losing stratum shows a **negative** contrib%, and the "
+             "columns sum to <100% by the total loss fraction (not an error). "
              "Δpass@1 ≫ Δpass@10 within a bucket ⇒ reliability (fewer auto-fails), not new coverage.")
     L.append("| k | " + " | ".join(f"{s} n={n_by.get(s, '?')}" for s in STRATA) + " |")
     L.append("|---|" + "|".join("---" for _ in STRATA) + "|")
@@ -288,9 +309,12 @@ def main():
     L.append("\n## C×B. Is each stratum's gain due to loops? (baseline truncation + loop-escape share of gain)\n")
     L.append("Per baseline stratum, cell = **Δtrunc** (α=2 trunc% → k trunc%; how much looping actually fell) · "
              "**esc%** (share of that stratum's positive Δpass@1 from truncation-dominated-failure problems). "
-             "**Δtrunc is the hard bound: loop-escape can explain at most |Δtrunc| of the pass rate.** If truncation "
-             "barely fell in a stratum, its gain is NOT loops. esc% is a coarser problem-level heuristic (rounds a "
-             "whole problem's gain to loop-escape when ≥50% of its α=2 failures were truncations).")
+             "**Δtrunc bounds the loop contribution: loop-escape can lift pass@1 by at most |Δtrunc|** — under the "
+             "premise that a truncated sample always fails (true: an unclosed thinking phase yields no gradable "
+             "answer) and given truncation only *falls* with looser k here (Δtrunc ≤ 0 in every stratum, so the "
+             "aggregate rate change equals the max rescuable mass). If truncation barely fell in a stratum, its gain "
+             "is NOT loops. esc% is a coarser problem-level heuristic (rounds a whole problem's gain to loop-escape "
+             "when ≥50% of its α=2 failures were truncations) and tends to *over*-credit loops.")
     L.append("| k | " + " | ".join(f"{s}" for s in STRATA) + " |")
     L.append("|---|" + "|".join("---" for _ in STRATA) + "|")
     for k, R in detail:
@@ -303,7 +327,9 @@ def main():
         L.append(f"| {k} | " + " | ".join(cells) + " |")
 
     L += ["\n## How to read (A–E)\n",
-          "- **A (summary win/lose + McNemar/Wilcoxon/CI)**: are there real losers, and is the paired net shift significant.",
+          "- **A (summary)**: win/lose/net shows how many problems improved vs regressed; the **net pass@1 shift's "
+          "significance is Wilcoxon** (not cov-McNemar, which only tests the new-solve vs lost-solve coverage change). "
+          "Bootstrap CI is over problems (not draws) — see the summary caveats.",
           "- **B (strata + migration)**: if gain concentrates in *dead/hard/mid* → loop-escape/coverage; in *easy* → "
           "Matthew (H4). The migration matrix shows which buckets move up (mid→easy) vs stay (dead→dead).",
           "- **C (loop-escape share / ρ(Δp1, base-trunc))**: if Δpass@1 tracks how much a problem truncated at α=2, "

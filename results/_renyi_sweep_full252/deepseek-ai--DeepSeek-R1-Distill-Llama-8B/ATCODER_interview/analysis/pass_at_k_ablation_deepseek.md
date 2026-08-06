@@ -5,17 +5,22 @@ Problem-level paired design (same tasks; samples are independent draws across co
 
 ## Summary across k
 
-| k | pass@1 (Δ) | pass@10 (Δ) | win / lose / net | new-solve / lost-solve | McNemar p | Wilcoxon p | Δpass@1 95% CI | loop-escape share |
+Column notes: **cov-McNemar p** tests only the *coverage-status* change (solve-at-least-once: new-solve vs lost-solve counts) — it does NOT test the win/lose ledger beside it. The significance of the net per-problem **pass@1** shift is the **Wilcoxon p** column. **loop-escape (esc%)** is the coarse problem-level heuristic (whole-problem gain → loops if ≥50% of its α=2 failures were truncations); the rigorous upper bound is Δtrunc in the C×B section. 
+
+Caveats: Wilcoxon and the bootstrap CI treat each problem's pass@1 as a noiseless point estimate (they resample the 252 problems, not the 10 within-problem draws), so p-values / CIs are mildly *anticonservative* — immaterial for the p≈1e-9…1e-13 arms, relevant near k=1.6. No multiple-comparisons correction is applied across the 6 k arms (the surviving effects are orders of magnitude below any correction threshold). Arms are unpaired, so differences *between* k arms are not significance-tested.
+
+| k | pass@1 (Δ) | pass@10 (Δ) | win / lose / net | new-solve / lost-solve | cov-McNemar p | Wilcoxon p | Δpass@1 95% CI | loop-escape (esc%) |
 |---|---|---|---|---|---|---|---|---|
 | 1.6 | 0.400 (+0.008) | 0.643 (+0.016) | 66/50/+16 | 14/10 | 0.54 | 0.28 | [-0.009,+0.024] | 62% |
 | 0.8 | 0.435 (+0.042) | 0.687 (+0.060) | 83/44/+39 | 22/7 | 0.0081 | 1.3e-05 | [+0.023,+0.063] | 68% |
 | 0.4 | 0.469 (+0.077) | 0.730 (+0.103) | 108/36/+72 | 28/2 | 8.7e-07 | 7.5e-10 | [+0.054,+0.101] | 77% |
 | 0.2 | 0.463 (+0.071) | 0.730 (+0.103) | 100/36/+64 | 30/4 | 6.2e-06 | 2.7e-09 | [+0.049,+0.094] | 78% |
 | 0.1 | 0.463 (+0.070) | 0.714 (+0.087) | 99/32/+67 | 26/4 | 5.9e-05 | 1.3e-08 | [+0.047,+0.094] | 72% |
+| 0.05 | 0.459 (+0.066) | 0.710 (+0.083) | 96/35/+61 | 26/5 | 0.00019 | 1.4e-08 | [+0.045,+0.089] | 78% |
 
-## B+D. Difficulty strata — Δpass@1 / Δpass@10 (share of gross gain)
+## B+D. Difficulty strata — Δpass@1 / Δpass@10 (net Δ contribution)
 
-Buckets fixed by baseline pass@1; n constant across k. Cell = mean Δpass@1 / mean Δpass@10 (share%). Δpass@1 ≫ Δpass@10 within a bucket ⇒ reliability (fewer auto-fails), not new coverage.
+Buckets fixed by baseline pass@1; n constant across k. Cell = mean Δpass@1 / mean Δpass@10 (contrib%). **contrib%** = that stratum's *net* Δpass@1 as a fraction of the *gross winner* gain (Σ of positive per-problem Δ) — so a net-losing stratum shows a **negative** contrib%, and the columns sum to <100% by the total loss fraction (not an error). Δpass@1 ≫ Δpass@10 within a bucket ⇒ reliability (fewer auto-fails), not new coverage.
 | k | dead (0) n=94 | hard (0,0.3] n=44 | mid (0.3,0.7] n=43 | easy (0.7,1] n=71 |
 |---|---|---|---|---|
 | 1.6 | +0.026 / +0.149 (22%) | +0.045 / -0.227 (18%) | -0.021 / +0.000 (-8%) | -0.023 / +0.000 (-15%) |
@@ -23,6 +28,7 @@ Buckets fixed by baseline pass@1; n constant across k. Cell = mean Δpass@1 / me
 | 0.4 | +0.073 / +0.298 (27%) | +0.175 / -0.045 (30%) | +0.144 / +0.000 (24%) | -0.020 / +0.000 (-5%) |
 | 0.2 | +0.072 / +0.319 (29%) | +0.193 / -0.091 (36%) | +0.098 / +0.000 (18%) | -0.023 / +0.000 (-7%) |
 | 0.1 | +0.067 / +0.277 (26%) | +0.195 / -0.091 (36%) | +0.107 / +0.000 (19%) | -0.025 / +0.000 (-8%) |
+| 0.05 | +0.068 / +0.277 (28%) | +0.180 / -0.114 (35%) | +0.072 / +0.000 (14%) | -0.010 / +0.000 (-3%) |
 
 ## B. Migration matrix (baseline stratum → k stratum, problem counts)
 
@@ -73,6 +79,15 @@ Rows = where a problem sat at α=2; columns = where it sits at that k. Mass abov
 | **mid (0.3,0.7]** | 0 | 4 | 21 | 18 |
 | **easy (0.7,1]** | 0 | 0 | 11 | 60 |
 
+**k = 0.05**
+
+| baseline ↓ / k → | dead (0) | hard (0,0.3] | mid (0.3,0.7] | easy (0.7,1] |
+|---|---|---|---|---|
+| **dead (0)** | 68 | 23 | 1 | 2 |
+| **hard (0,0.3]** | 5 | 17 | 20 | 2 |
+| **mid (0.3,0.7]** | 0 | 5 | 19 | 19 |
+| **easy (0.7,1]** | 0 | 0 | 5 | 66 |
+
 ## C+E. Attribution & decomposition
 
 | k | Δpass@1 | loopy(n≥0.3 trunc) Δ | clean Δ | ρ(Δp1, base-trunc) | gain: loop-escape / reasoning | gain: newly-solvable / partial |
@@ -82,10 +97,11 @@ Rows = where a problem sat at α=2; columns = where it sits at that k. Mass abov
 | 0.4 | +0.077 | +0.117 (n=144) | +0.024 | +0.18 | 77% / 23% | 27% / 49% |
 | 0.2 | +0.071 | +0.117 (n=144) | +0.009 | +0.27 | 78% / 22% | 29% / 48% |
 | 0.1 | +0.070 | +0.108 (n=144) | +0.019 | +0.22 | 72% / 28% | 26% / 48% |
+| 0.05 | +0.066 | +0.097 (n=144) | +0.025 | +0.19 | 78% / 22% | 28% / 46% |
 
 ## C×B. Is each stratum's gain due to loops? (baseline truncation + loop-escape share of gain)
 
-Per baseline stratum, cell = **Δtrunc** (α=2 trunc% → k trunc%; how much looping actually fell) · **esc%** (share of that stratum's positive Δpass@1 from truncation-dominated-failure problems). **Δtrunc is the hard bound: loop-escape can explain at most |Δtrunc| of the pass rate.** If truncation barely fell in a stratum, its gain is NOT loops. esc% is a coarser problem-level heuristic (rounds a whole problem's gain to loop-escape when ≥50% of its α=2 failures were truncations).
+Per baseline stratum, cell = **Δtrunc** (α=2 trunc% → k trunc%; how much looping actually fell) · **esc%** (share of that stratum's positive Δpass@1 from truncation-dominated-failure problems). **Δtrunc bounds the loop contribution: loop-escape can lift pass@1 by at most |Δtrunc|** — under the premise that a truncated sample always fails (true: an unclosed thinking phase yields no gradable answer) and given truncation only *falls* with looser k here (Δtrunc ≤ 0 in every stratum, so the aggregate rate change equals the max rescuable mass). If truncation barely fell in a stratum, its gain is NOT loops. esc% is a coarser problem-level heuristic (rounds a whole problem's gain to loop-escape when ≥50% of its α=2 failures were truncations) and tends to *over*-credit loops.
 | k | dead (0) | hard (0,0.3] | mid (0.3,0.7] | easy (0.7,1] |
 |---|---|---|---|---|
 | 1.6 | 75→70% (Δ-5) · esc 79% | 50→45% (Δ-5) · esc 65% | 24→25% (Δ+1) · esc 52% | 3→5% (Δ+2) · esc 50% |
@@ -93,10 +109,11 @@ Per baseline stratum, cell = **Δtrunc** (α=2 trunc% → k trunc%; how much loo
 | 0.4 | 75→0% (Δ-75) · esc 80% | 50→0% (Δ-50) · esc 80% | 24→0% (Δ-24) · esc 76% | 3→0% (Δ-3) · esc 59% |
 | 0.2 | 75→0% (Δ-75) · esc 84% | 50→0% (Δ-50) · esc 76% | 24→0% (Δ-24) · esc 77% | 3→0% (Δ-3) · esc 67% |
 | 0.1 | 75→0% (Δ-75) · esc 78% | 50→0% (Δ-50) · esc 74% | 24→0% (Δ-24) · esc 69% | 3→0% (Δ-3) · esc 58% |
+| 0.05 | 75→0% (Δ-75) · esc 80% | 50→0% (Δ-50) · esc 82% | 24→0% (Δ-24) · esc 70% | 3→0% (Δ-3) · esc 71% |
 
 ## How to read (A–E)
 
-- **A (summary win/lose + McNemar/Wilcoxon/CI)**: are there real losers, and is the paired net shift significant.
+- **A (summary)**: win/lose/net shows how many problems improved vs regressed; the **net pass@1 shift's significance is Wilcoxon** (not cov-McNemar, which only tests the new-solve vs lost-solve coverage change). Bootstrap CI is over problems (not draws) — see the summary caveats.
 - **B (strata + migration)**: if gain concentrates in *dead/hard/mid* → loop-escape/coverage; in *easy* → Matthew (H4). The migration matrix shows which buckets move up (mid→easy) vs stay (dead→dead).
 - **C (loop-escape share / ρ(Δp1, base-trunc))**: if Δpass@1 tracks how much a problem truncated at α=2, and most gain is from truncation-dominated problems, the win is loops escaping the token cap, not new reasoning (H1).
 - **D (Δpass@1 ≫ Δpass@10, incl. per-stratum)**: reliability (fewer auto-fail draws), not coverage (new solutions) (H2).
