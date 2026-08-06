@@ -434,7 +434,9 @@ The dominant migration is mid$\to$easy (Qwen $k{=}0.1$: 31 of 47 mid problems).
 
 \paragraph{Loop-escape bound (the rigorous attribution).} Within each stratum we record how far
 truncation fell from $k{=}2$ ($\Delta$trunc). Because only a de-truncated sample can be rescued,
-loop-escape explains \emph{at most} $|\Delta$trunc$|$ of the pass-rate gain. On Qwen's mid stratum at
+loop-escape explains \emph{at most} $|\Delta$trunc$|$ of the pass-rate gain---a problem-level ceiling
+(samples are unpaired across configs, so this bounds the loop contribution rather than tracing
+individual samples). On Qwen's mid stratum at
 $k{=}0.1$, $\Delta$pass@1 $=+0.257$ while truncation fell only $0.20$, so
 $\ge(0.257{-}0.20)/0.257\approx22\%$ of that gain is genuine non-loop improvement. On DeepSeek,
 $68.8\%$ of default failing samples are truncated loops and truncation falls to $0$ in every stratum,
@@ -446,12 +448,6 @@ optimum; $95\%$ CI $[-0.004,+0.056]$, spanning 0): the gain is \emph{reliability
 land more often. On DeepSeek pass@10 rises $+0.10$ ($[+0.056,+0.143]$, excluding 0) and $28$ never-solved
 problems become solvable at $k{=}0.4$: the gain includes genuine \emph{coverage}, because those defaults
 failed by looping, not inability.
-
-\paragraph{Limitations.} Samples are unpaired across configs, so $\Delta$trunc is a problem-level
-ceiling on the loop contribution, not causal proof at the sample level. The CIs are two-level bootstraps
-(resampling both the problems and the 10 within-problem draws), so they already account for
-within-problem sampling noise. We apply no multiple-comparisons correction across the six $k$ values,
-and the study is two models on one benchmark.
 
 \section{Loop taxonomy: classification method and examples}\label{app:taxonomy}
 \paragraph{Method.} We classify every truncated trace automatically. From the thinking phase we locate
