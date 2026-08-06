@@ -56,13 +56,10 @@ check_vllm() {
 # Rényi arms: G_k at k below the collision order 2 (loosening direction). Pure temperature
 # (top-p 1.0, top-k 0 are the runner defaults) at T=1.0 before the G_k threshold.
 arm_args() {
+  # Any arm "renyi_k<K>" runs G_k at Rényi order <K> (any real K, e.g. 0.4, 0.3, 0.15, 0.075).
+  # Sampling stays pure (top-p 1.0 / top-k 0 are the runner defaults), matching the earlier arms.
   case "$1" in
-    renyi_k1.6)  echo "--method pless_renyi --renyi-k 1.6  --temperature 1.0" ;;
-    renyi_k0.8)  echo "--method pless_renyi --renyi-k 0.8  --temperature 1.0" ;;
-    renyi_k0.4)  echo "--method pless_renyi --renyi-k 0.4  --temperature 1.0" ;;
-    renyi_k0.2)  echo "--method pless_renyi --renyi-k 0.2  --temperature 1.0" ;;
-    renyi_k0.1)  echo "--method pless_renyi --renyi-k 0.1  --temperature 1.0" ;;
-    renyi_k0.05) echo "--method pless_renyi --renyi-k 0.05 --temperature 1.0" ;;
+    renyi_k*) echo "--method pless_renyi --renyi-k ${1#renyi_k} --temperature 1.0" ;;
     *) echo "unknown arm '$1'" >&2; return 1 ;;
   esac
 }
@@ -70,12 +67,7 @@ arm_args() {
 # arm -> JSONL basename the runner writes (reference only; the eval loop globs *.jsonl).
 arm_jsonl() {
   case "$1" in
-    renyi_k1.6)  echo "pless_renyi_think_t1.0_k1.6_t1.0.jsonl" ;;
-    renyi_k0.8)  echo "pless_renyi_think_t1.0_k0.8_t1.0.jsonl" ;;
-    renyi_k0.4)  echo "pless_renyi_think_t1.0_k0.4_t1.0.jsonl" ;;
-    renyi_k0.2)  echo "pless_renyi_think_t1.0_k0.2_t1.0.jsonl" ;;
-    renyi_k0.1)  echo "pless_renyi_think_t1.0_k0.1_t1.0.jsonl" ;;
-    renyi_k0.05) echo "pless_renyi_think_t1.0_k0.05_t1.0.jsonl" ;;
+    renyi_k*) echo "pless_renyi_think_t1.0_k${1#renyi_k}_t1.0.jsonl" ;;
   esac
 }
 
