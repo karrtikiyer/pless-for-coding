@@ -317,8 +317,8 @@ configs; full tables and limitations in Appendix~\ref{app:ablation}). Three find
 
 \textbf{The gain is broad, not a few outliers.} Far more problems improve than regress (Qwen $105$
 vs.\ $19$ at $k{=}0.1$; DeepSeek $108$ vs.\ $36$ at $k{=}0.4$), and the mean per-problem $\Delta$pass@1
-is well clear of zero: Qwen $+0.094$ ($95\%$ CI $[+0.071,+0.117]$), DeepSeek $+0.077$
-($[+0.054,+0.101]$); Wilcoxon $p<10^{-6}$.
+is well clear of zero: Qwen $+0.094$ ($95\%$ CI $[+0.067,+0.121]$), DeepSeek $+0.077$
+($[+0.049,+0.106]$)---both two-level bootstrap intervals exclude 0.
 
 \textbf{It lands on the borderline problems.} Grouping problems by their default difficulty, the gain
 concentrates on the mid- and hard-difficulty ones; already-solved problems stay solved and never-solved
@@ -331,10 +331,10 @@ loop-escape explains at most the drop in truncation. That ceiling still leaves \
 of Qwen's mid-difficulty gain as genuine, non-loop improvement; on DeepSeek, where $68.8\%$ of default
 failures are loops, it permits the gain to be almost entirely loop-escape.
 
-The two models differ in \emph{kind}. Qwen's gain is \textbf{reliability}: pass@10 barely moves, so
-loosening just makes borderline solutions land more often. DeepSeek's is \textbf{coverage}: pass@10
-rises $+0.10$ and $28$ problems become solvable that never were---their defaults had failed by looping,
-not by inability.
+The two models differ in \emph{kind}. Qwen's gain is \textbf{reliability}: pass@10 barely moves
+($95\%$ CI $[-0.004,+0.056]$, spanning 0), so loosening just makes borderline solutions land more
+often. DeepSeek's is \textbf{coverage}: pass@10 rises $+0.10$ ($[+0.056,+0.143]$, excluding 0) and $28$
+problems become solvable that never were---their defaults had failed by looping, not by inability.
 
 \section{Positioning}\label{sec:pos}
 \paragraph{$G_k$ vs.\ what a practitioner would actually run.} The right baseline is not a swept
@@ -345,7 +345,7 @@ calibration-free win. On DeepSeek, lowering $k$ repairs the catastrophic default
 and leads the recommended setting on pass@10, thinking tokens, and non-termination, but trails it on
 pass@1 ($0.469$ vs.\ $0.475$) and the swept temperature ($0.480$). So $G_k$ is a competitive,
 calibration-free repair---outright best on the lighter looper, and on the heavier looper a fix that
-closes most of the gap to a tuned temperature with no tuning. We make no state-of-the-art claim.
+closes most of the gap to a tuned temperature with no tuning.
 
 \begin{table}[t]\centering
 \caption{\textbf{pass@1} for the comparison that matters for a hyperparameter-free method: no-tuning
@@ -391,32 +391,36 @@ loop-detection work does not yet address.
 \paragraph{Design.} For each model we pair every $G_k$ arm against the $k{=}2$ default over the same
 252 problems and compare per-problem pass \emph{rates} (samples are independent draws across configs,
 so individual samples are not tracked). pass@1 is $c/n$ per problem; pass@10 with $n{=}10$ is the
-solved-at-least-once indicator. Significance uses the Wilcoxon signed-rank test on per-problem
-$\Delta$pass@1; $95\%$ CIs are a bootstrap over problems (Table~\ref{tab:ablation}).
+solved-at-least-once indicator. Significance is read from \emph{two-level bootstrap} $95\%$ CIs on
+$\Delta$pass@1 and $\Delta$pass@10---resampling the 252 problems and, within each, the 10 draws for
+baseline and arm independently---so the intervals reflect within-problem sampling noise; a CI excluding
+0 is a significant shift (Table~\ref{tab:ablation}).
 
 \begin{table}[ht]\centering\small
 \caption{Per-problem ablation vs.\ the $k{=}2$ default (252 tasks, $n{=}10$). win/lose/net counts
-problems whose pass@1 rose/fell; Wilcoxon $p$ is on per-problem $\Delta$pass@1.}
+problems whose pass@1 rose/fell; $95\%$ CIs are two-level bootstraps (problems $\times$ draws); a CI
+excluding 0 is significant. Note Qwen's $\Delta$pass@10 CIs all span 0 (reliability, not new coverage),
+while DeepSeek's exclude 0 (genuine coverage).}
 \label{tab:ablation}
 \begin{tabular}{lccccc}
 \toprule
-$k$ & pass@1 ($\Delta$) & pass@10 ($\Delta$) & win/lose/net & Wilcoxon $p$ & $\Delta$pass@1 95\% CI \\
+$k$ & pass@1 ($\Delta$) & pass@10 ($\Delta$) & win/lose/net & $\Delta$pass@1 95\% CI & $\Delta$pass@10 95\% CI \\
 \midrule
 \multicolumn{6}{l}{\textit{DeepSeek-R1-Distill-Llama-8B}}\\
-1.6  & 0.400 ($+$0.008) & 0.643 ($+$0.016) & 66/50/$+$16 & 0.28 & $[-0.009,+0.024]$ \\
-0.8  & 0.435 ($+$0.042) & 0.687 ($+$0.060) & 83/44/$+$39 & $<10^{-3}$ & $[+0.023,+0.063]$ \\
-0.4  & 0.469 ($+$0.077) & 0.730 ($+$0.103) & 108/36/$+$72 & $<10^{-3}$ & $[+0.054,+0.101]$ \\
-0.2  & 0.463 ($+$0.071) & 0.730 ($+$0.103) & 100/36/$+$64 & $<10^{-3}$ & $[+0.049,+0.094]$ \\
-0.1  & 0.463 ($+$0.070) & 0.714 ($+$0.087) & 99/32/$+$67 & $<10^{-3}$ & $[+0.047,+0.094]$ \\
-0.05 & 0.459 ($+$0.066) & 0.710 ($+$0.083) & 96/35/$+$61 & $<10^{-3}$ & $[+0.045,+0.089]$ \\
+1.6  & 0.400 ($+$0.008) & 0.643 ($+$0.016) & 66/50/$+$16 & $[-0.015,+0.031]$ & $[-0.024,+0.060]$ \\
+0.8  & 0.435 ($+$0.042) & 0.687 ($+$0.060) & 83/44/$+$39 & $[+0.017,+0.069]$ & $[+0.020,+0.107]$ \\
+0.4  & 0.469 ($+$0.077) & 0.730 ($+$0.103) & 108/36/$+$72 & $[+0.049,+0.106]$ & $[+0.056,+0.143]$ \\
+0.2  & 0.463 ($+$0.071) & 0.730 ($+$0.103) & 100/36/$+$64 & $[+0.043,+0.100]$ & $[+0.056,+0.143]$ \\
+0.1  & 0.463 ($+$0.070) & 0.714 ($+$0.087) & 99/32/$+$67 & $[+0.042,+0.099]$ & $[+0.048,+0.131]$ \\
+0.05 & 0.459 ($+$0.066) & 0.710 ($+$0.083) & 96/35/$+$61 & $[+0.039,+0.093]$ & $[+0.040,+0.131]$ \\
 \midrule
 \multicolumn{6}{l}{\textit{Qwen3-8B}}\\
-1.6  & 0.627 ($+$0.001) & 0.813 ($-$0.012) & 62/53/$+$9  & 0.67 & $[-0.015,+0.018]$ \\
-0.8  & 0.669 ($+$0.044) & 0.837 ($+$0.012) & 83/37/$+$46 & $<10^{-3}$ & $[+0.027,+0.062]$ \\
-0.4  & 0.696 ($+$0.070) & 0.833 ($+$0.008) & 89/30/$+$59 & $<10^{-3}$ & $[+0.050,+0.092]$ \\
-0.2  & 0.701 ($+$0.076) & 0.833 ($+$0.008) & 95/25/$+$70 & $<10^{-3}$ & $[+0.053,+0.100]$ \\
-0.1  & 0.719 ($+$0.094) & 0.845 ($+$0.020) & 105/19/$+$86 & $<10^{-3}$ & $[+0.071,+0.117]$ \\
-0.05 & 0.717 ($+$0.091) & 0.833 ($+$0.008) & 99/22/$+$77 & $<10^{-3}$ & $[+0.069,+0.115]$ \\
+1.6  & 0.627 ($+$0.001) & 0.813 ($-$0.012) & 62/53/$+$9  & $[-0.021,+0.023]$ & $[-0.036,+0.020]$ \\
+0.8  & 0.669 ($+$0.044) & 0.837 ($+$0.012) & 83/37/$+$46 & $[+0.021,+0.068]$ & $[-0.012,+0.044]$ \\
+0.4  & 0.696 ($+$0.070) & 0.833 ($+$0.008) & 89/30/$+$59 & $[+0.045,+0.096]$ & $[-0.012,+0.048]$ \\
+0.2  & 0.701 ($+$0.076) & 0.833 ($+$0.008) & 95/25/$+$70 & $[+0.049,+0.103]$ & $[-0.012,+0.044]$ \\
+0.1  & 0.719 ($+$0.094) & 0.845 ($+$0.020) & 105/19/$+$86 & $[+0.067,+0.121]$ & $[-0.004,+0.056]$ \\
+0.05 & 0.717 ($+$0.091) & 0.833 ($+$0.008) & 99/22/$+$77 & $[+0.065,+0.119]$ & $[-0.008,+0.044]$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -437,18 +441,17 @@ $68.8\%$ of default failing samples are truncated loops and truncation falls to 
 so the bound is consistent with the gain being predominantly loop-escape. (A coarser per-problem
 heuristic agrees directionally but over-credits loops; we report the bound.)
 
-\paragraph{Reliability vs.\ coverage.} On Qwen pass@10 is nearly flat across $k$ ($+0.02$ at the
-optimum): the gain is \emph{reliability}---borderline solutions land more often. On DeepSeek pass@10
-rises $+0.10$ and $28$ never-solved problems become solvable at $k{=}0.4$: the gain includes genuine
-\emph{coverage}, because those defaults failed by looping, not inability.
+\paragraph{Reliability vs.\ coverage.} On Qwen pass@10 is statistically flat across $k$ ($+0.02$ at the
+optimum; $95\%$ CI $[-0.004,+0.056]$, spanning 0): the gain is \emph{reliability}---borderline solutions
+land more often. On DeepSeek pass@10 rises $+0.10$ ($[+0.056,+0.143]$, excluding 0) and $28$ never-solved
+problems become solvable at $k{=}0.4$: the gain includes genuine \emph{coverage}, because those defaults
+failed by looping, not inability.
 
 \paragraph{Limitations.} Samples are unpaired across configs, so $\Delta$trunc is a problem-level
-ceiling on the loop contribution, not causal proof at the sample level. The Wilcoxon and bootstrap
-statistics treat each problem's pass@1 as a noiseless point estimate (they resample the 252 problems,
-not the 10 within-problem draws), so $p$-values and CIs are mildly anticonservative---immaterial for
-the strongly significant arms ($p<10^{-3}$ with CIs far from zero), relevant only at $k{=}1.6$ (already
-non-significant). We apply no multiple-comparisons correction across the six $k$ values, and the study
-is two models on one benchmark.
+ceiling on the loop contribution, not causal proof at the sample level. The CIs are two-level bootstraps
+(resampling both the problems and the 10 within-problem draws), so they already account for
+within-problem sampling noise. We apply no multiple-comparisons correction across the six $k$ values,
+and the study is two models on one benchmark.
 
 \section{Loop taxonomy: classification method and examples}\label{app:taxonomy}
 \paragraph{Method.} We classify every truncated trace automatically. From the thinking phase we locate

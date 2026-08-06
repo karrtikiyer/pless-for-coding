@@ -5,8 +5,8 @@ Pairs every scored G_k arm against the alpha=2 baseline (=G_2=pless) at the PROB
 (same task set; samples are independent draws across configs, so only per-problem pass RATES
 are comparable — never individual-sample fates). For each k it reports:
 
-  A. Winner/loser ledger + paired significance (McNemar on solved@1, Wilcoxon signed-rank on
-     per-problem pass@1, bootstrap CI on mean delta pass@1).
+  A. Winner/loser ledger + significance from two-level bootstrap 95% CIs on Δpass@1 and Δpass@10
+     (resample problems AND the 10 draws), plus cov-McNemar on the coverage-status change.
   B. Difficulty-stratified deltas (bins by baseline pass@1) — Matthew vs loop-escape.
   C. Loop-escape attribution: correlate delta pass@1 with baseline truncation; split the pass@1
      gain by each improved problem's baseline failure mode (truncation- vs wrong-answer-dominated).
@@ -127,14 +127,22 @@ def analyse(base, arm, boot=5000, seed=0):
     k_only = int((~bs & ks).sum())   # new solves
     R["solve_lost"], R["solve_gained"] = b_only, k_only
     R["mcnemar_p"] = float(ss.binomtest(min(b_only, k_only), b_only + k_only, 0.5).pvalue) if (b_only + k_only) else 1.0
-    # Wilcoxon signed-rank on per-problem pass@1
-    nz = d_p1[d_p1 != 0]
-    R["wilcoxon_p"] = float(ss.wilcoxon(nz).pvalue) if len(nz) else 1.0
-    # bootstrap CI over problems
+    # Two-level bootstrap CIs for Δpass@1 AND Δpass@10: resample problems, and within each
+    # resampled problem resample its n draws (base/arm independently, since samples are unpaired
+    # across configs). This propagates within-problem sampling noise, unlike a problem-only bootstrap.
     rng = np.random.default_rng(seed)
-    idx = rng.integers(0, len(ids), (boot, len(ids)))
-    means = d_p1[idx].mean(axis=1)
-    R["boot_lo"], R["boot_hi"] = float(np.percentile(means, 2.5)), float(np.percentile(means, 97.5))
+    Bp = np.array([base[i]["pass"] for i in ids], dtype=bool)   # (N, n)
+    Ap = np.array([arm[i]["pass"] for i in ids], dtype=bool)    # (N, n)
+    N = len(ids)
+    pidx = rng.integers(0, N, (boot, N), dtype=np.int32)
+    dib = rng.integers(0, n, (boot, N, n), dtype=np.int16)
+    dia = rng.integers(0, n, (boot, N, n), dtype=np.int16)
+    Bres = np.take_along_axis(Bp[pidx], dib, axis=2)           # (boot, N, n)
+    Ares = np.take_along_axis(Ap[pidx], dia, axis=2)
+    dp1_boot = (Ares.mean(2) - Bres.mean(2)).mean(1)                          # Δpass@1 per replicate
+    dp10_boot = (Ares.any(2).astype(np.float64) - Bres.any(2)).mean(1)        # Δpass@10 per replicate
+    R["boot_lo"], R["boot_hi"] = float(np.percentile(dp1_boot, 2.5)), float(np.percentile(dp1_boot, 97.5))
+    R["dp10_lo"], R["dp10_hi"] = float(np.percentile(dp10_boot, 2.5)), float(np.percentile(dp10_boot, 97.5))
 
     # B. strata (+ D per-stratum pass@10) + transition matrix
     d_p10 = k_p10 - b_p10
@@ -246,17 +254,14 @@ def main():
 
     # summary table across k
     L += ["## Summary across k\n",
-          "Column notes: **cov-McNemar p** tests only the *coverage-status* change (solve-at-least-once: "
-          "new-solve vs lost-solve counts) — it does NOT test the win/lose ledger beside it. The significance "
-          "of the net per-problem **pass@1** shift is the **Wilcoxon p** column. **loop-escape (esc%)** is the "
-          "coarse problem-level heuristic (whole-problem gain → loops if ≥50% of its α=2 failures were "
-          "truncations); the rigorous upper bound is Δtrunc in the C×B section. \n\n"
-          "Caveats: Wilcoxon and the bootstrap CI treat each problem's pass@1 as a noiseless point estimate "
-          "(they resample the 252 problems, not the 10 within-problem draws), so p-values / CIs are mildly "
-          "*anticonservative* — immaterial for the p≈1e-9…1e-13 arms, relevant near k=1.6. No multiple-comparisons "
-          "correction is applied across the 6 k arms (the surviving effects are orders of magnitude below any "
-          "correction threshold). Arms are unpaired, so differences *between* k arms are not significance-tested.\n",
-          "| k | pass@1 (Δ) | pass@10 (Δ) | win / lose / net | new-solve / lost-solve | cov-McNemar p | Wilcoxon p | Δpass@1 95% CI | loop-escape (esc%) |",
+          "Significance is read from the **two-level bootstrap 95% CIs** (resample the 252 problems AND the "
+          "10 within-problem draws, base/arm independently) — an interval excluding 0 is a significant shift, "
+          "and the two-level resampling accounts for within-problem sampling noise. **cov-McNemar p** separately "
+          "tests the *coverage-status* change (new-solve vs lost-solve counts), i.e. whether pass@10 membership "
+          "shifts. **loop-escape (esc%)** is the coarse problem-level heuristic; the rigorous upper bound is "
+          "Δtrunc in the C×B section. No multiple-comparisons correction across the 6 k arms; arms are unpaired, "
+          "so differences *between* k arms are not significance-tested.\n",
+          "| k | pass@1 (Δ) | pass@10 (Δ) | win / lose / net | new-solve / lost-solve | cov-McNemar p | Δpass@1 95% CI | Δpass@10 95% CI | loop-escape (esc%) |",
           "|---|---|---|---|---|---|---|---|---|"]
     detail = []
     for k, b, arm in arms:
@@ -264,7 +269,7 @@ def main():
         net = R["improved"] - R["deteriorated"]
         L.append(f"| {k} | {R['arm_p1']:.3f} ({R['mean_dp1']:+.3f}) | {R['arm_p10']:.3f} ({R['mean_dp10']:+.3f}) | "
                  f"{R['improved']}/{R['deteriorated']}/{net:+d} | {R['solve_gained']}/{R['solve_lost']} | "
-                 f"{R['mcnemar_p']:.2g} | {R['wilcoxon_p']:.2g} | [{R['boot_lo']:+.3f},{R['boot_hi']:+.3f}] | "
+                 f"{R['mcnemar_p']:.2g} | [{R['boot_lo']:+.3f},{R['boot_hi']:+.3f}] | [{R['dp10_lo']:+.3f},{R['dp10_hi']:+.3f}] | "
                  f"{R['gain_from_loop_escape']*100:.0f}% |")
         detail.append((k, R))
 
@@ -327,9 +332,9 @@ def main():
         L.append(f"| {k} | " + " | ".join(cells) + " |")
 
     L += ["\n## How to read (A–E)\n",
-          "- **A (summary)**: win/lose/net shows how many problems improved vs regressed; the **net pass@1 shift's "
-          "significance is Wilcoxon** (not cov-McNemar, which only tests the new-solve vs lost-solve coverage change). "
-          "Bootstrap CI is over problems (not draws) — see the summary caveats.",
+          "- **A (summary)**: win/lose/net shows how many problems improved vs regressed; significance of the "
+          "pass@1 and pass@10 shifts is read from the **two-level bootstrap CIs** (excluding 0), which resample "
+          "problems and the 10 draws; cov-McNemar separately tests the coverage-status (new vs lost solve) change.",
           "- **B (strata + migration)**: if gain concentrates in *dead/hard/mid* → loop-escape/coverage; in *easy* → "
           "Matthew (H4). The migration matrix shows which buckets move up (mid→easy) vs stay (dead→dead).",
           "- **C (loop-escape share / ρ(Δp1, base-trunc))**: if Δpass@1 tracks how much a problem truncated at α=2, "

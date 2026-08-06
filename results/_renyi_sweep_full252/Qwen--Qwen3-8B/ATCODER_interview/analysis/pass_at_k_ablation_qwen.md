@@ -5,18 +5,16 @@ Problem-level paired design (same tasks; samples are independent draws across co
 
 ## Summary across k
 
-Column notes: **cov-McNemar p** tests only the *coverage-status* change (solve-at-least-once: new-solve vs lost-solve counts) — it does NOT test the win/lose ledger beside it. The significance of the net per-problem **pass@1** shift is the **Wilcoxon p** column. **loop-escape (esc%)** is the coarse problem-level heuristic (whole-problem gain → loops if ≥50% of its α=2 failures were truncations); the rigorous upper bound is Δtrunc in the C×B section. 
+Significance is read from the **two-level bootstrap 95% CIs** (resample the 252 problems AND the 10 within-problem draws, base/arm independently) — an interval excluding 0 is a significant shift, and the two-level resampling accounts for within-problem sampling noise. **cov-McNemar p** separately tests the *coverage-status* change (new-solve vs lost-solve counts), i.e. whether pass@10 membership shifts. **loop-escape (esc%)** is the coarse problem-level heuristic; the rigorous upper bound is Δtrunc in the C×B section. No multiple-comparisons correction across the 6 k arms; arms are unpaired, so differences *between* k arms are not significance-tested.
 
-Caveats: Wilcoxon and the bootstrap CI treat each problem's pass@1 as a noiseless point estimate (they resample the 252 problems, not the 10 within-problem draws), so p-values / CIs are mildly *anticonservative* — immaterial for the p≈1e-9…1e-13 arms, relevant near k=1.6. No multiple-comparisons correction is applied across the 6 k arms (the surviving effects are orders of magnitude below any correction threshold). Arms are unpaired, so differences *between* k arms are not significance-tested.
-
-| k | pass@1 (Δ) | pass@10 (Δ) | win / lose / net | new-solve / lost-solve | cov-McNemar p | Wilcoxon p | Δpass@1 95% CI | loop-escape (esc%) |
+| k | pass@1 (Δ) | pass@10 (Δ) | win / lose / net | new-solve / lost-solve | cov-McNemar p | Δpass@1 95% CI | Δpass@10 95% CI | loop-escape (esc%) |
 |---|---|---|---|---|---|---|---|---|
-| 1.6 | 0.627 (+0.001) | 0.813 (-0.012) | 62/53/+9 | 4/7 | 0.55 | 0.67 | [-0.015,+0.018] | 43% |
-| 0.8 | 0.669 (+0.044) | 0.837 (+0.012) | 83/37/+46 | 7/4 | 0.55 | 2.6e-06 | [+0.027,+0.062] | 51% |
-| 0.4 | 0.696 (+0.070) | 0.833 (+0.008) | 89/30/+59 | 7/5 | 0.77 | 1.6e-09 | [+0.050,+0.092] | 53% |
-| 0.2 | 0.701 (+0.076) | 0.833 (+0.008) | 95/25/+70 | 7/5 | 0.77 | 2.1e-09 | [+0.053,+0.100] | 58% |
-| 0.1 | 0.719 (+0.094) | 0.845 (+0.020) | 105/19/+86 | 8/3 | 0.23 | 1.6e-13 | [+0.071,+0.117] | 49% |
-| 0.05 | 0.717 (+0.091) | 0.833 (+0.008) | 99/22/+77 | 6/4 | 0.75 | 2.7e-13 | [+0.069,+0.115] | 50% |
+| 1.6 | 0.627 (+0.001) | 0.813 (-0.012) | 62/53/+9 | 4/7 | 0.55 | [-0.021,+0.023] | [-0.036,+0.020] | 43% |
+| 0.8 | 0.669 (+0.044) | 0.837 (+0.012) | 83/37/+46 | 7/4 | 0.55 | [+0.021,+0.068] | [-0.012,+0.044] | 51% |
+| 0.4 | 0.696 (+0.070) | 0.833 (+0.008) | 89/30/+59 | 7/5 | 0.77 | [+0.045,+0.096] | [-0.012,+0.048] | 53% |
+| 0.2 | 0.701 (+0.076) | 0.833 (+0.008) | 95/25/+70 | 7/5 | 0.77 | [+0.049,+0.103] | [-0.012,+0.044] | 58% |
+| 0.1 | 0.719 (+0.094) | 0.845 (+0.020) | 105/19/+86 | 8/3 | 0.23 | [+0.067,+0.121] | [-0.004,+0.056] | 49% |
+| 0.05 | 0.717 (+0.091) | 0.833 (+0.008) | 99/22/+77 | 6/4 | 0.75 | [+0.065,+0.119] | [-0.008,+0.044] | 50% |
 
 ## B+D. Difficulty strata — Δpass@1 / Δpass@10 (net Δ contribution)
 
@@ -113,7 +111,7 @@ Per baseline stratum, cell = **Δtrunc** (α=2 trunc% → k trunc%; how much loo
 
 ## How to read (A–E)
 
-- **A (summary)**: win/lose/net shows how many problems improved vs regressed; the **net pass@1 shift's significance is Wilcoxon** (not cov-McNemar, which only tests the new-solve vs lost-solve coverage change). Bootstrap CI is over problems (not draws) — see the summary caveats.
+- **A (summary)**: win/lose/net shows how many problems improved vs regressed; significance of the pass@1 and pass@10 shifts is read from the **two-level bootstrap CIs** (excluding 0), which resample problems and the 10 draws; cov-McNemar separately tests the coverage-status (new vs lost solve) change.
 - **B (strata + migration)**: if gain concentrates in *dead/hard/mid* → loop-escape/coverage; in *easy* → Matthew (H4). The migration matrix shows which buckets move up (mid→easy) vs stay (dead→dead).
 - **C (loop-escape share / ρ(Δp1, base-trunc))**: if Δpass@1 tracks how much a problem truncated at α=2, and most gain is from truncation-dominated problems, the win is loops escaping the token cap, not new reasoning (H1).
 - **D (Δpass@1 ≫ Δpass@10, incl. per-stratum)**: reliability (fewer auto-fail draws), not coverage (new solutions) (H2).
