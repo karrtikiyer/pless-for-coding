@@ -2,7 +2,7 @@
 % Paper 2 — When Hyperparameter-Free Decoding Silently Breaks:
 % Looping of p-less Sampling in Reasoning-Model Code Generation
 %
-% Arc: failure -> mechanism -> taxonomy (support) -> G_k (Renyi-order) lever + ablation -> positioning.
+% Arc: failure -> mechanism -> G_k (Renyi-order) lever + ablation -> positioning.
 % Every number traces to: docs/decoder_comparison_cot_apps_{deepseek,qwen3}.md and
 % results/_renyi_sweep_full252/<model>/ATCODER_interview/analysis/pass_at_k_ablation_{qwen,deepseek}.md.
 % Generic article class (compiles anywhere incl. Overleaf); [ICLR-SWAP] marks the documentclass to
@@ -39,9 +39,7 @@ generating code. On APPS (a competitive-programming code benchmark), two 8B reas
 non-terminating loops---among the worst pass@1 of any decoder we test---at temperature $1.0$, where
 temperature sampling does not loop. We trace this to a decoder-side mechanism: on the peaked
 distributions of long reasoning, the collision threshold rises to meet the top token, collapsing the
-survivor set to a single token and re-deriving the same step. A taxonomy shows roughly half the loops
-are paraphrastic---semantically redundant but lexically distinct---and are missed by the verbatim and
-hidden-state detectors validated only on math/QA. The origin paper's appendix proposes generalizing the
+survivor set to a single token and re-deriving the same step. The origin paper's appendix proposes generalizing the
 threshold to any R\'enyi order $k$ ($G_k{=}\exp(-H_k)$) but evaluates only $k{=}2$; we give, to our
 knowledge, the \emph{first empirical evaluation} at $k\neq2$ and find that \emph{lowering} $k$ escapes
 the loops and recovers
@@ -68,9 +66,6 @@ no obvious pathology. Our contributions:
   \item \textbf{A decoder-side mechanism} (\S\ref{sec:mech}): on peaked distributions the collision
     threshold meets the top probability, collapsing the survivor set to the single most-probable
     token exactly where the model is most confident.
-  \item \textbf{A code loop taxonomy} (\S\ref{sec:tax}): $\sim$half of the loops are paraphrastic
-    (semantic drift), missed by verbatim-periodicity and hidden-state-precursor detectors; a published
-    precursor does not transfer to code.
   \item \textbf{The R\'enyi-order-$k$ lever, and why it works} (\S\ref{sec:alpha}): the origin paper's
     appendix proposes generalizing the threshold to any R\'enyi order $k$ ($G_k{=}\exp(-H_k)$) but
     evaluates only the default $k{=}2$; we give, to our knowledge, the \emph{first empirical evaluation}
@@ -100,9 +95,8 @@ reasoning models ``do not exhibit strictly verbatim repetitions'' and catch the 
 hidden-state probe. \citet{yang2025recover} show models identify but fail to recover from unhelpful
 thoughts, with inverse scaling; DEER~\citep{yang2025deer} and s1~\citep{muennighoff2025s1} control
 reasoning length reactively or by budget forcing. \textbf{All of this work is on math/QA and is
-detection- or length-focused}: none evaluates code, none reports the fraction of loops that are
-paraphrastic, and none studies a truncation sampler as a \emph{cause} or \emph{preventive} of
-looping---the gaps we fill.
+detection- or length-focused}: none evaluates code, and none studies a truncation sampler as a
+\emph{cause} or \emph{preventive} of looping---the gaps we fill.
 
 \paragraph{Truncation and degeneration.} \citet{holtzman2020curious} established that
 likelihood-maximizing decoding produces repetitive, degenerate text; min-$p$
@@ -246,34 +240,6 @@ non-terminating loop. Our contribution is the decoder-side half of this interact
 loop-propensity as given (its training-side origin we do not investigate) and show that a
 collision-probability threshold triggers it on 14--42\% of traces.
 
-\section{A taxonomy of the loops}\label{sec:tax}
-What do these loops look like, and can existing detectors catch them? Categorizing every
-non-terminating trace (Figure~\ref{fig:tax}), only $\sim$41--50\% are \emph{verbatim} statement loops
-(Qwen 40.7\%, DeepSeek 49.8\%)---the periodic, cleanly repeating kind prior work
-studies~\citep{duan2026circular,xie2025wordsalad}. A comparable share---\textbf{41.3\% (Qwen) and
-46.8\% (DeepSeek)}---are \emph{paraphrastic}: \emph{aperiodic} repetition in which the same idea
-recurs under drifting framing, so no clean fixed-period unit emerges (periodicity self-match median
-$0.23$--$0.26$; $73$--$74\%$ of these traces below $0.5$; classification method and side-by-side
-examples in Appendix~\ref{app:taxonomy}). The remainder are short/degenerate or have no detected loop.
-
-\begin{figure}[t]\centering
-\includegraphics[width=0.5\linewidth]{fig_taxonomy.png}
-\caption{Non-terminating traces by type. Roughly half are paraphrastic drift---lexically distinct,
-aperiodic---rather than verbatim repetition. Prior loop work, all on math/QA, does not report this
-breakdown.}
-\label{fig:tax}
-\end{figure}
-
-This breakdown matters for detection. Verbatim loops are periodic and are cleanly caught by existing
-loop detectors; paraphrastic loops lack that \emph{sustained periodicity}, so the methods built for
-verbatim repetition do not fire on them. The hidden-state precursor of \citet{duan2026circular} does
-not transfer either: reimplementing it on Qwen3 code traces catches only $\sim$17--20\% of terminal
-loops before onset, versus the $0.64$--$0.76$ it reports on synthetic verbatim loops, and its
-``semantic-precedes-textual'' precursor is absent before onset. Because paraphrastic loops lack the
-clean textual onset the precursor assumes, these rates are directional rather than a strict numerical
-comparison; the robust finding is qualitative---roughly half of reasoning-code loops offer no
-periodicity or precursor signal to exploit.
-
 \section{The \texorpdfstring{R\'enyi-order-$k$}{Renyi-order-k} lever}\label{sec:alpha}
 Lowering the R\'enyi order repairs the failure. Generalizing the threshold to
 $G_k=(\tsum_i p_i^k)^{1/(k-1)}$ ($k{=}2$ is default p-less) and \emph{lowering} $k$ flattens the
@@ -378,10 +344,9 @@ most-probable token, driving up to 42\% of code traces into loops---amplifying t
 latent, training-induced loop-propensity rather than creating it, by removing the sampling diversity
 that lets temperature escape. Lowering the R\'enyi order of the same threshold---the origin paper's own
 proposed generalization, which we are first to evaluate---repairs the failure and is competitive out of
-the box (the single best decoder on one of our two models). The deeper finding is that roughly half of
-these reasoning-code loops are paraphrastic drift,
-invisible to the verbatim and hidden-state detectors validated only on math---a gap current
-loop-detection work does not yet address.
+the box (the single best decoder on one of our two models). The lesson is that a hyperparameter-free
+default can fail silently on a setting its designers never tested, and that the fix can be the design's
+own, previously un-evaluated, generalization.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}
@@ -448,40 +413,5 @@ optimum; $95\%$ CI $[-0.004,+0.056]$, spanning 0): the gain is \emph{reliability
 land more often. On DeepSeek pass@10 rises $+0.10$ ($[+0.056,+0.143]$, excluding 0) and $28$ never-solved
 problems become solvable at $k{=}0.4$: the gain includes genuine \emph{coverage}, because those defaults
 failed by looping, not inability.
-
-\section{Loop taxonomy: classification method and examples}\label{app:taxonomy}
-\paragraph{Method.} We classify every truncated trace automatically. From the thinking phase we locate
-the loop onset with the deployed per-model $n$-gram detector (Qwen3-8B: $n{=}30$, $k{=}6$,
-window${=}1200$; DeepSeek-R1-Distill: $n{=}30$, $k{=}6$, window${=}3000$), then search the post-onset
-region ($\le1600$ tokens) for a fundamental period $P\le800$ at which the token stream self-matches
-$\ge85\%$. A trace is a \emph{verbatim} statement loop if a clean period exists (further split into
-``reflective'' if the repeating unit is prose carrying an impasse marker---\emph{wait}, \emph{perhaps},
-\emph{stuck}---and ``other'' otherwise), \emph{paraphrastic} if the onset fired but no clean period
-exists, and otherwise short-fragment, single-token, or no-onset. Fractions in
-\S\ref{sec:tax} are over all truncated traces in the full $252\times10$ run.
-
-\paragraph{Examples (Qwen3-8B, task 117).} Two samples of the \emph{same} problem truncate in the two
-modes. The verbatim sample repeats a block identically, period after period:
-\begin{quote}\small\itshape
-``$\ldots$At this point, I'm stuck. I think I need to look for a different approach. Maybe the problem
-can be solved by considering the segments as walls and using a BFS to find the connected regions. But
-how to represent the regions? Perhaps the problem can be modeled as a graph where each node is a
-segment, and the edges represent adjacency. But I'm not sure.'' \textrm{[recurs verbatim on a fixed
-period]}
-\end{quote}
-The paraphrastic sample instead recurs \emph{aperiodically}: a core clause repeats, but the framing
-around it permutes, so no single period matches and the $n$-gram/period detectors do not lock on:
-\begin{quote}\small\itshape
-``$\ldots$\textrm{[pass 1]} \underline{Given the time constraints}, I'll proceed with writing a code
-that checks if the cow can reach infinity $\ldots$ If not, compute the area. But I'm not sure how to
-implement this. $\ldots$ \textrm{[pass 2]} \underline{Finally}, I'll write a code that checks if the
-cow can reach infinity $\ldots$ If not, compute the area. But I'm not sure how to implement this.
-$\ldots$ \textrm{[pass 3]} \underline{At this point, I'm unable to proceed further.} I think I need to
-give up and write a code that $\ldots$''
-\end{quote}
-This illustrates why paraphrastic loops evade period-based and hidden-state-precursor detectors
-(\S\ref{sec:tax}): the repetition is real but aperiodic. It is \emph{not} a claim of ``no repetition''
---- an embedding-similarity detector built for non-verbatim repetition (untested here) is the relevant
-candidate.
 
 \end{document}
