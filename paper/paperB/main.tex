@@ -116,9 +116,26 @@ detect-and-chop rescue.
 
 \paragraph{Metrics.} pass@1/@10 with the unbiased estimator of \citet{chen2021humaneval};
 \emph{non-termination rate} (fraction of samples that never close the thinking phase within the token
-budget---our loop proxy); CodeBLEU-based diversity~\citep{ren2020codebleu}; and mean thinking tokens.
-Mean tokens count truncated samples at their cut length, so they are biased upward for
+budget---our loop proxy); self-CodeBLEU output diversity (\emph{cb\_div}; defined below); and mean
+thinking tokens. Mean tokens count truncated samples at their cut length, so they are biased upward for
 high-truncation configs---which is exactly the wasted-budget cost we want to expose.
+
+\paragraph{Diversity via self-CodeBLEU.} We measure output diversity \emph{within} each
+configuration's own samples, following the self-similarity principle of Self-BLEU~\citep{zhu2018texygen}:
+a generator is diverse to the extent its samples differ from \emph{one another}, with no external
+reference. For each problem we take the samples that pass the hidden tests, deduplicate structurally
+identical ones by AST fingerprint, compute CodeBLEU~\citep{ren2020codebleu} for every unordered pair,
+and report $\mathrm{cb\_div}=1-\overline{\mathrm{CodeBLEU}}$; the tabulated cb\_div is the mean over
+problems with $\ge 2$ correct solutions. Higher is more diverse---we invert the similarity so cb\_div
+reads in the same direction as pass@$k$ (Self-BLEU is conventionally lower-is-more-diverse). We use
+CodeBLEU rather than token BLEU because it augments $n$-gram overlap with keyword-weighted $n$-grams,
+abstract-syntax-tree matching, and data-flow matching (a weighted mean, default weights $0.25$ each),
+so two solutions that differ only in variable names or formatting but share structure and data flow are
+scored as similar rather than spuriously diverse---the appropriate notion for \emph{algorithmic}
+diversity. Scoring only correct samples means cb\_div reflects diversity among \emph{working} solutions;
+since each configuration is scored on its own correct subset, cross-configuration comparison carries a
+mild confound (configurations with fewer correct solutions per problem contribute fewer pairs), which
+we flag where it matters.
 
 \paragraph{The $\alpha$ family.} We study $\tau_\alpha(p)=\tsum_i p_i^\alpha$ with $\alpha\ge 2$;
 $\alpha{=}2$ is exactly p-less. This is a \emph{power-sum (frequency-moment)} threshold; its relation
