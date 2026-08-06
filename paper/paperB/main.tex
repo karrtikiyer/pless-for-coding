@@ -32,21 +32,21 @@ Diagnosing and Repairing p-less Sampling Loops\\ in Reasoning-Model Code Generat
 
 \begin{abstract}
 Hyperparameter-free decoders such as p-less sampling promise to remove temperature and top-$p$ tuning
-by deriving a truncation threshold---the collision probability $\tsum_i p_i^2$, i.e.\ R\'enyi order
-$k{=}2$---directly from the token distribution. We show this promise fails silently on reasoning models
-generating code. On APPS with two 8B reasoning models (DeepSeek-R1-Distill, Qwen3), default p-less
-sends 15--42\% of chain-of-thought traces into non-terminating loops---the worst pass@1 of any decoder
-we test---at temperature $1.0$, where temperature sampling does not loop. We trace this to a
-decoder-side mechanism: on the peaked distributions of long reasoning, the collision threshold rises to
-meet the top token, collapsing the survivor set to a single token and re-deriving the same step. A
-taxonomy shows roughly half the loops are paraphrastic---semantically redundant but lexically
-distinct---and are missed by the verbatim and hidden-state detectors validated only on math. The origin
-paper's appendix proposes generalizing the threshold to any R\'enyi order $k$ ($G_k{=}\exp(-H_k)$) but
-evaluates only $k{=}2$; we give the \emph{first empirical evaluation} and find that \emph{lowering} $k$
-below $2$ escapes the loops and recovers accuracy---the single best decoder on Qwen (beating even a
-hand-swept temperature), and a calibration-free repair of a catastrophic default on DeepSeek. A
-per-problem ablation attributes the recovery to loop-escape, concentrated on borderline problems and
-provably not a rich-get-richer effect.
+by deriving a truncation threshold---the collision probability $\tsum_i p_i^2$ (R\'enyi order
+$k{=}2$)---directly from the token distribution. We show this fails silently on reasoning models
+generating code. On APPS (a competitive-programming code benchmark), two 8B reasoning models
+(DeepSeek-R1-Distill, Qwen3) under default p-less send 14--42\% of chain-of-thought traces into
+non-terminating loops---among the worst pass@1 of any decoder we test---at temperature $1.0$, where
+temperature sampling does not loop. We trace this to a decoder-side mechanism: on the peaked
+distributions of long reasoning, the collision threshold rises to meet the top token, collapsing the
+survivor set to a single token and re-deriving the same step. A taxonomy shows roughly half the loops
+are paraphrastic---semantically redundant but lexically distinct---and are missed by the verbatim and
+hidden-state detectors validated only on math/QA. The origin paper's appendix proposes generalizing the
+threshold to any R\'enyi order $k$ ($G_k{=}\exp(-H_k)$) but evaluates only $k{=}2$; we give, to our
+knowledge, the \emph{first empirical evaluation} at $k\neq2$ and find that \emph{lowering} $k$ escapes
+the loops and recovers
+accuracy---the single best decoder on Qwen (beating even a hand-swept temperature), and a
+calibration-free repair of a catastrophic default on DeepSeek.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -59,9 +59,9 @@ code---a setting the origin paper does not study, and one where the long, low-en
 stresses any decoder.
 
 We find that p-less \emph{fails silently} there. On APPS with two 8B reasoning models, default p-less
-sends 15--42\% of chain-of-thought traces into non-terminating loops that run to the token cap,
-producing the worst pass@1 of any decoder we test---while emitting no error and, at first glance, no
-obvious pathology. Our contributions:
+sends 14--42\% of chain-of-thought traces into non-terminating loops that run to the token cap,
+producing among the worst pass@1 of any decoder we test---while emitting no error and, at first glance,
+no obvious pathology. Our contributions:
 \begin{enumerate}\itemsep2pt
   \item \textbf{The silent failure} (\S\ref{sec:failure}): default p-less loops on reasoning-model
     code CoT, at temperature $1.0$, where temperature sampling does not.
@@ -73,10 +73,10 @@ obvious pathology. Our contributions:
     precursor does not transfer to code.
   \item \textbf{The R\'enyi-order-$k$ lever, and why it works} (\S\ref{sec:alpha}): the origin paper's
     appendix proposes generalizing the threshold to any R\'enyi order $k$ ($G_k{=}\exp(-H_k)$) but
-    evaluates only the default $k{=}2$; we give the \emph{first empirical evaluation}. Lowering $k$
-    removes loops, recovers accuracy, and cuts wasted thinking tokens. A per-problem ablation attributes
-    the recovery to loop-escape---concentrated on \emph{borderline} problems (not a rich-get-richer
-    effect) and provably $\ge$22\% non-loop on Qwen by a truncation bound.
+    evaluates only the default $k{=}2$; we give, to our knowledge, the \emph{first empirical evaluation}
+    at $k\neq2$. Lowering $k$ removes loops, recovers accuracy, and cuts wasted thinking tokens. A
+    per-problem ablation attributes the recovery to loop-escape---concentrated on \emph{borderline}
+    problems (not a rich-get-richer effect) and at least $\sim$22\% non-loop on Qwen under a truncation bound.
   \item \textbf{Positioning} (\S\ref{sec:pos}): the optimal $k$ is model-dependent (Qwen $k{\approx}0.1$,
     DeepSeek $k{\approx}0.4$); $G_k$ is the single best decoder on Qwen---beating even a hand-swept
     temperature---and a calibration-free repair that competes with, but does not beat, tuned temperature
@@ -109,13 +109,14 @@ likelihood-maximizing decoding produces repetitive, degenerate text; min-$p$
 \citep{nguyen2024minp}, top-$n\sigma$~\citep{tang2024topnsigma}, and $\eta$-sampling
 \citep{hewitt2022truncation} are knobbed truncation samplers. Our mechanism (\S\ref{sec:mech}) can be
 seen as a truncation-sampler instance of that effect: because $\tsum_i p_i^2 \le \max_i p_i$, on
-peaked steps the p-less threshold admits only the most-probable token, so a purely distribution-derived
-cutoff reproduces the repetition that maximization-based decoding is known to cause.
+peaked steps the p-less threshold can admit only the most-probable token, so a purely
+distribution-derived cutoff reproduces the repetition that maximization-based decoding is known to cause.
 
 \section{Setup}\label{sec:setup}
 \paragraph{Models, data, decoders.} We use DeepSeek-R1-Distill-Llama-8B~\citep{deepseekai2025r1} and
 Qwen3-8B~\citep{yang2025qwen3} on 252 APPS ``interview'' problems~\citep{hendrycks2021apps}\footnote{APPS
-interview split; problems executed against hidden tests.}, thinking enabled, 10 samples/problem. We
+interview split; problems executed against hidden tests.}, thinking enabled, 10 samples/problem,
+generation capped at $32{,}768$ tokens. We
 compare default p-less ($k{=}2$), p-less-norm, a R\'enyi-order sweep $G_k$ ($k$ from $1.6$ down to
 $0.05$), temperature / top-$p$ / top-$k$ configurations including each model's officially recommended
 setting, and an adaptive detect-and-chop rescue.
@@ -161,8 +162,8 @@ temperature) and among the worst on Qwen ($0.625$), driven by \textbf{non-termin
 \begin{figure}[t]\centering
 \includegraphics[width=0.62\linewidth]{fig_failure_t1.png}
 \caption{Non-termination (loop) rate by decoder (per-bar temperature labeled). Default p-less and
-p-less-norm loop on 15--42\% of traces; \emph{every} temperature-family config stays near 0\%,
-including temperature with no top-$p$/top-$k$. The failure is thus specific to the
+p-less-norm loop on 14--42\% of traces; every temperature-family config loops far less ($\le$6.5\%),
+and temperature with no top-$p$/top-$k$ stays near 0\%. The failure is thus specific to the
 p-less threshold---not a low-temperature effect (p-less at $T{=}1.0$ still loops) and not the secondary
 top-$p$/top-$k$ truncation (removing it does not induce looping).}
 \label{fig:failuret1}
@@ -171,9 +172,9 @@ top-$p$/top-$k$ truncation (removing it does not induce looping).}
 The failure is easy to misattribute. Reasoning models are known to loop at low
 temperature~\citep{pipis2025loop}, so one might dismiss this as the same effect, or attribute the
 temperature configs' stability to their top-$p$/top-$k$ truncation. Figure~\ref{fig:failuret1} rules
-out both: p-less loops on 15--42\% of traces \emph{at temperature $1.0$}, while every
-temperature-family config stays near 0\%---including temperature with no top-$p$/top-$k$
-(1.8\% DeepSeek, 0.4\% Qwen). At a matched temperature the contrast is direct: on Qwen
+out both: p-less loops on 14--42\% of traces \emph{at temperature $1.0$}, while every
+temperature-family config loops far less ($\le$6.5\%; temperature with no top-$p$/top-$k$ at
+1.8\% DeepSeek, 0.4\% Qwen). At a matched temperature the contrast is direct: on Qwen
 at $T{=}0.6$, p-less loops on 19.0\% of traces versus 0.4\% for plain temperature. The pathology is
 therefore \emph{structural to the p-less threshold}---neither a low-temperature effect nor a
 consequence of secondary truncation---and it is silent: no crash, no warning, just a slow decline into
@@ -185,9 +186,10 @@ cross-verified against stored values. \textbf{Bold} marks the best value per col
 \emph{zero-tuning} configurations---defaults, the $G_k$ sweep ($k{=}2$ is default p-less), and each
 model's officially recommended setting (``rec''). $^\dagger$ marks the strongest temperature found by
 \emph{sweeping} $T$, a tuned reference (not eligible for bold). Lowering $k$ from the default removes
-looping and recovers accuracy on both models: on Qwen, $G_k{=}0.1$ is the best decoder on every axis
-(and beats the tuned sweep); on DeepSeek, $G_k$ leads on pass@10 / tokens / non-termination but trails
-the recommended temperature on pass@1 by $0.006$.}
+looping and recovers accuracy on both models: on Qwen, $G_k{=}0.1$ has the best pass@1 and pass@10 of
+any decoder tested (beating the swept temperature); on DeepSeek, $G_k$ leads on pass@10 / tokens /
+non-termination but trails the recommended temperature on pass@1 by $0.006$. cb\_div is correct-only
+and not ranked across configs (see \S\ref{sec:setup}).}
 \label{tab:main}
 \begin{tabular}{lccccc}
 \toprule
@@ -200,7 +202,7 @@ $G_k{=}1.6$              & 0.400 & 0.643 & 0.494 & 16{,}420 & 39.6 \\
 $G_k{=}0.8$              & 0.435 & 0.687 & 0.518 & 12{,}925 & 25.8 \\
 $G_k{=}0.4$              & 0.469 & \textbf{0.730} & 0.575 & \textbf{9{,}615} & \textbf{0.0} \\
 $G_k{=}0.2$              & 0.463 & \textbf{0.730} & 0.583 & 9{,}879 & \textbf{0.0} \\
-$G_k{=}0.1$              & 0.463 & 0.714 & \textbf{0.588} & 9{,}994 & 0.2 \\
+$G_k{=}0.1$              & 0.463 & 0.714 & 0.588 & 9{,}994 & 0.2 \\
 $G_k{=}0.05$            & 0.459 & 0.710 & 0.586 & 9{,}988 & \textbf{0.0} \\
 temp $T{=}0.6,p0.95$ (rec)    & \textbf{0.475} & 0.714 & 0.534 & 9{,}866 & 6.2 \\
 temp $T{=}1.0,p0.95$ $^\dagger$ & 0.480 & 0.726 & 0.556 & 9{,}683 & 0.0 \\
@@ -212,7 +214,7 @@ $G_k{=}1.6$              & 0.627 & 0.813 & 0.464 & 12{,}971 & 14.0 \\
 $G_k{=}0.8$              & 0.669 & 0.837 & 0.461 & 11{,}788 & 8.0 \\
 $G_k{=}0.4$              & 0.696 & 0.833 & 0.457 & 10{,}912 & 0.4 \\
 $G_k{=}0.2$              & 0.701 & 0.833 & 0.493 & 11{,}062 & \textbf{0.0} \\
-$G_k{=}0.1$              & \textbf{0.719} & \textbf{0.845} & \textbf{0.498} & 10{,}808 & \textbf{0.0} \\
+$G_k{=}0.1$              & \textbf{0.719} & \textbf{0.845} & 0.498 & 10{,}808 & \textbf{0.0} \\
 $G_k{=}0.05$            & 0.717 & 0.833 & 0.497 & \textbf{10{,}767} & 0.1 \\
 temp $T{=}0.6,p0.95,k20$ (rec) & 0.680 & 0.829 & 0.468 & 11{,}127 & 1.0 \\
 temp $T{=}1.0,p0.95$ $^\dagger$ & 0.705 & 0.821 & 0.497 & 11{,}062 & 0.2 \\
@@ -224,11 +226,13 @@ temp $T{=}1.0,p0.95$ $^\dagger$ & 0.705 & 0.821 & 0.497 & 11{,}062 & 0.2 \\
 Why does a truncation rule cause looping? Because the p-less threshold $\tsum_i p_i^2$ is bounded above
 by the top probability, $\tsum_i p_i^2 \le \max_i p_i$, with equality approached as the distribution
 concentrates. On the peaked next-token distributions typical of a confident reasoning step, the
-threshold rises to meet the mode, so \emph{only the single most-probable token survives}---on such
-steps p-less is forced to emit the argmax. Repeatedly emitting the
-argmax re-derives the same continuation, and the model re-enters the same reasoning move---a loop. This
-inverts the usual reading of truncation as a cure for repetition~\citep{holtzman2020curious}: pinned to
-the collision probability, the threshold \emph{amplifies} repetition where the model is confident.
+threshold rises toward the mode and the survivor set can collapse to the single most-probable
+token---on such steps p-less emits the argmax. Repeatedly emitting the argmax re-derives the same
+continuation, and the model re-enters the same reasoning move---a loop. We do not measure the per-step
+survivor count directly, but the controlled comparison of Figure~\ref{fig:failuret1}---p-less loops at
+a matched temperature where plain sampling does not---is consistent with this collapse driving the
+loop. This inverts the usual reading of truncation as a cure for repetition~\citep{holtzman2020curious}:
+pinned to the collision probability, the threshold \emph{amplifies} repetition where the model is confident.
 
 \paragraph{The loop is a joint effect, not a p-less artifact alone.} Self-reinforcing loops are a
 documented \emph{model-side} phenomenon in reasoning models: \citet{pipis2025loop} attribute them to
@@ -240,7 +244,7 @@ on the peaked steps these models produce, it admits only the top token and remov
 diversity that lets temperature escape, converting a latent, training-induced tendency into an actual
 non-terminating loop. Our contribution is the decoder-side half of this interaction---we take the
 loop-propensity as given (its training-side origin we do not investigate) and show that a
-collision-probability threshold triggers it on 15--42\% of traces.
+collision-probability threshold triggers it on 14--42\% of traces.
 
 \section{A taxonomy of the loops}\label{sec:tax}
 What do these loops look like, and can existing detectors catch them? Categorizing every
@@ -354,11 +358,9 @@ The study covers two 8B reasoning models and one benchmark (APPS); whether the m
 $G_k$ lever transfer to other model families and code benchmarks is open. $G_k$ is the single best
 decoder on Qwen but trails a hand-swept temperature on DeepSeek, so this is a diagnosis-and-repair
 result, not a uniform decoding win.
-We characterize the failure as a per-step collapse of the survivor set to the single most-probable
-token and do not benchmark greedy decoding itself, so we do not claim p-less reproduces greedy's
-sequence-level behavior. We also do
-not investigate the model-side origin of the looping propensity---prior work attributes reasoning-model
-loops to learning dynamics and inductive biases rather than to the decoder~\citep{pipis2025loop}.
+We characterize the failure as a per-step collapse of the survivor set toward the most-probable token
+and do not benchmark greedy decoding itself, so we do not claim p-less reproduces greedy's
+sequence-level behavior; the model-side origin of the looping propensity we take as given (\S\ref{sec:mech}).
 
 \section{Conclusion}\label{sec:conc}
 Hyperparameter-free is not assumption-free. On the peaked distributions of reasoning-model
