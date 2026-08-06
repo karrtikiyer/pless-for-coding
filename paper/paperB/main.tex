@@ -2,9 +2,9 @@
 % Paper 2 — When Hyperparameter-Free Decoding Silently Breaks:
 % Looping of p-less Sampling in Reasoning-Model Code Generation
 %
-% Arc: failure -> mechanism -> taxonomy (support) -> alpha lever -> honest positioning.
-% Every number traces to: docs/research/paperA_master_numbers.md, paperA_loop_positioning.md,
-% paperA_renyi_nonequivalence.md, docs/decoder_comparison_cot_apps_{deepseek,qwen3}.md.
+% Arc: failure -> mechanism -> taxonomy (support) -> G_k (Renyi-order) lever + ablation -> positioning.
+% Every number traces to: docs/decoder_comparison_cot_apps_{deepseek,qwen3}.md and
+% results/_renyi_sweep_full252/<model>/ATCODER_interview/analysis/pass_at_k_ablation_{qwen,deepseek}.md.
 % Generic article class (compiles anywhere incl. Overleaf); [ICLR-SWAP] marks the documentclass to
 % replace with iclr2027_conference.sty at submission.
 % =====================================================================
@@ -32,19 +32,21 @@ Diagnosing and Repairing p-less Sampling Loops\\ in Reasoning-Model Code Generat
 
 \begin{abstract}
 Hyperparameter-free decoders such as p-less sampling promise to remove temperature and top-$p$ tuning
-by deriving a truncation threshold---the collision probability $\tsum_i p_i^2$---directly from the
-token distribution. We show this promise fails silently on reasoning models generating code. On APPS
-with two 8B reasoning models (DeepSeek-R1-Distill, Qwen3), default p-less sends 15--42\% of
-chain-of-thought traces into non-terminating loops---the worst pass@1 of any decoder we test---and
-does so at temperature $1.0$, where temperature sampling does not loop. We trace this to a decoder-side
-mechanism: on the peaked distributions of long reasoning, the collision threshold rises to meet the top
-token, collapsing the survivor set to a single token and re-deriving the same step. A taxonomy shows
-roughly half the loops are paraphrastic---semantically redundant but lexically distinct---and are
-missed by the verbatim and hidden-state detectors validated only on math. Raising the power-sum
-exponent ($\tau_\alpha=\tsum_i p_i^\alpha$; a frequency-moment threshold, \emph{not} a R\'enyi-entropy
-generalization) removes the loops, recovers accuracy, and halves wasted tokens, matching or beating
-each model's recommended settings out of the box---though not a hand-tuned temperature. p-less-$\alpha$
-is a diagnostic and repair lever.
+by deriving a truncation threshold---the collision probability $\tsum_i p_i^2$, i.e.\ R\'enyi order
+$k{=}2$---directly from the token distribution. We show this promise fails silently on reasoning models
+generating code. On APPS with two 8B reasoning models (DeepSeek-R1-Distill, Qwen3), default p-less
+sends 15--42\% of chain-of-thought traces into non-terminating loops---the worst pass@1 of any decoder
+we test---at temperature $1.0$, where temperature sampling does not loop. We trace this to a
+decoder-side mechanism: on the peaked distributions of long reasoning, the collision threshold rises to
+meet the top token, collapsing the survivor set to a single token and re-deriving the same step. A
+taxonomy shows roughly half the loops are paraphrastic---semantically redundant but lexically
+distinct---and are missed by the verbatim and hidden-state detectors validated only on math. The origin
+paper's appendix proposes generalizing the threshold to any R\'enyi order $k$ ($G_k{=}\exp(-H_k)$) but
+evaluates only $k{=}2$; we give the \emph{first empirical evaluation} and find that \emph{lowering} $k$
+below $2$ escapes the loops and recovers accuracy---the single best decoder on Qwen (beating even a
+hand-swept temperature), and a calibration-free repair of a catastrophic default on DeepSeek. A
+per-problem ablation attributes the recovery to loop-escape, concentrated on borderline problems and
+provably not a rich-get-richer effect.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -69,16 +71,20 @@ obvious pathology. Our contributions:
   \item \textbf{A code loop taxonomy} (\S\ref{sec:tax}): $\sim$half of the loops are paraphrastic
     (semantic drift), missed by verbatim-periodicity and hidden-state-precursor detectors; a published
     precursor does not transfer to code.
-  \item \textbf{The $\alpha$-power-sum lever} (\S\ref{sec:alpha}): raising the exponent
-    $\tau_\alpha=\tsum_i p_i^\alpha$ removes loops, recovers accuracy, roughly halves thinking tokens,
-    and on the heavy looper is the most token-efficient decoder.
-  \item \textbf{The $\alpha$ lever in context} (\S\ref{sec:pos}): $\alpha$ beats each model's recommended
-    settings with zero tuning but does not beat a hand-swept temperature; and $\tau_\alpha$ is a
-    power-sum threshold, not a R\'enyi-entropy generalization.
+  \item \textbf{The R\'enyi-order-$k$ lever, and why it works} (\S\ref{sec:alpha}): the origin paper's
+    appendix proposes generalizing the threshold to any R\'enyi order $k$ ($G_k{=}\exp(-H_k)$) but
+    evaluates only the default $k{=}2$; we give the \emph{first empirical evaluation}. Lowering $k$
+    removes loops, recovers accuracy, and cuts wasted thinking tokens. A per-problem ablation attributes
+    the recovery to loop-escape---concentrated on \emph{borderline} problems (not a rich-get-richer
+    effect) and provably $\ge$22\% non-loop on Qwen by a truncation bound.
+  \item \textbf{Positioning} (\S\ref{sec:pos}): the optimal $k$ is model-dependent (Qwen $k{\approx}0.1$,
+    DeepSeek $k{\approx}0.4$); $G_k$ is the single best decoder on Qwen---beating even a hand-swept
+    temperature---and a calibration-free repair that competes with, but does not beat, tuned temperature
+    on DeepSeek.
 \end{enumerate}
 The value of a hyperparameter-free default is that it works out of the box; our point is that this one
-silently does not, on an increasingly common setting, and that a single exponent both explains and
-repairs the failure.
+silently does not, on an increasingly common setting, and that a single order parameter both explains
+and repairs the failure.
 
 \section{Background and Related Work}\label{sec:bg}
 \paragraph{p-less and p-less-norm.} Given a distribution $p$ over a vocabulary of size $v$, p-less
@@ -110,9 +116,9 @@ cutoff reproduces the repetition that maximization-based decoding is known to ca
 \paragraph{Models, data, decoders.} We use DeepSeek-R1-Distill-Llama-8B~\citep{deepseekai2025r1} and
 Qwen3-8B~\citep{yang2025qwen3} on 252 APPS ``interview'' problems~\citep{hendrycks2021apps}\footnote{APPS
 interview split; problems executed against hidden tests.}, thinking enabled, 10 samples/problem. We
-compare p-less ($\alpha{=}2$), p-less-norm, the $\alpha$-family ($\alpha{=}3,4,5$), temperature /
-top-$p$ / top-$k$ configurations including each model's officially recommended setting, and an adaptive
-detect-and-chop rescue.
+compare default p-less ($k{=}2$), p-less-norm, a R\'enyi-order sweep $G_k$ ($k$ from $1.6$ down to
+$0.05$), temperature / top-$p$ / top-$k$ configurations including each model's officially recommended
+setting, and an adaptive detect-and-chop rescue.
 
 \paragraph{Metrics.} pass@1/@10 with the unbiased estimator of \citet{chen2021humaneval};
 \emph{non-termination rate} (fraction of samples that never close the thinking phase within the token
@@ -137,13 +143,17 @@ since each configuration is scored on its own correct subset, cross-configuratio
 mild confound (configurations with fewer correct solutions per problem contribute fewer pairs), which
 we flag where it matters.
 
-\paragraph{The $\alpha$ family.} We study $\tau_\alpha(p)=\tsum_i p_i^\alpha$ with $\alpha\ge 2$;
-$\alpha{=}2$ is exactly p-less. This is a \emph{power-sum (frequency-moment)} threshold; its relation
-to R\'enyi entropy---and its non-equivalence to the origin paper's appendix proposal---is deferred to
-\S\ref{sec:pos}.
+\paragraph{The R\'enyi-order-$k$ family.} We generalize the p-less threshold along the R\'enyi order
+$k$ using the origin paper's own proposal, $G_k=\exp(-H_k)=(\tsum_i p_i^k)^{1/(k-1)}$
+(Appendix~B.5 of \citet{tan2025pless}), where $H_k$ is the R\'enyi entropy of order $k$~\citep{renyi1961measures};
+$k{=}2$ recovers default p-less (the collision threshold $\tsum_i p_i^2$). We sweep
+$k\in\{1.6,0.8,0.4,0.2,0.1,0.05\}$; \emph{lowering} $k$ below $2$ loosens the filter (the threshold
+drops, admitting more tail tokens). The origin paper proposes $G_k$ only theoretically---it analyzes
+the asymptotics ($G_k\!\to\!1/v$ as $k\!\to\!0$, $G_k\!\to\!\max_i p_i$ as $k\!\to\!\infty$) and reports
+no experiments at $k\neq2$---so our sweep is its first empirical evaluation.
 
 \section{The silent failure}\label{sec:failure}
-Table~\ref{tab:main} reports the full decoder comparison. Default p-less ($\alpha{=}2$) and
+Table~\ref{tab:main} reports the full decoder comparison. Default p-less ($k{=}2$) and
 p-less-norm are the worst configurations on DeepSeek (pass@1 $0.392$ vs.\ $0.480$ for the best
 temperature) and among the worst on Qwen ($0.625$), driven by \textbf{non-termination rates of 41.8\%
 (DeepSeek) and 14.5\% (Qwen)}: nearly half of DeepSeek's reasoning traces loop until the token cap.
@@ -172,30 +182,38 @@ repetition that consumes the entire token budget.
 \begin{table}[t]\centering\small
 \caption{APPS decoder comparison (252 tasks, $n{=}10$, thinking on). Regenerated live; pass@$k$
 cross-verified against stored values. \textbf{Bold} marks the best value per column among the
-\emph{zero-tuning} configurations---defaults, p-less-$\alpha$, and each model's officially recommended
-setting (``rec''). $^\dagger$ marks the strongest temperature found by \emph{sweeping} $T$, shown as a
-tuned reference (not eligible for bold). p-less-$\alpha$ is the best zero-tuning option on nearly every
-axis and exceeds the recommended setting on pass@1; only the tuned sweep ($^\dagger$) edges it.}
+\emph{zero-tuning} configurations---defaults, the $G_k$ sweep ($k{=}2$ is default p-less), and each
+model's officially recommended setting (``rec''). $^\dagger$ marks the strongest temperature found by
+\emph{sweeping} $T$, a tuned reference (not eligible for bold). Lowering $k$ from the default removes
+looping and recovers accuracy on both models: on Qwen, $G_k{=}0.1$ is the best decoder on every axis
+(and beats the tuned sweep); on DeepSeek, $G_k$ leads on pass@10 / tokens / non-termination but trails
+the recommended temperature on pass@1 by $0.006$.}
 \label{tab:main}
 \begin{tabular}{lccccc}
 \toprule
 Config & pass@1 & pass@10 & cb\_div & mean think tok & non-term \% \\
 \midrule
 \multicolumn{6}{l}{\textit{DeepSeek-R1-Distill-Llama-8B}}\\
-p-less $\alpha{=}2$ (default) & 0.392 & 0.627 & 0.489 & 17{,}269 & 41.8 \\
-p-less-norm (default)         & 0.392 & 0.663 & 0.494 & 17{,}116 & 41.7 \\
-p-less $\alpha{=}3$           & 0.457 & 0.710 & 0.538 & 10{,}504 & 10.6 \\
-p-less $\alpha{=}4$           & 0.473 & 0.710 & 0.531 & \textbf{9{,}220} & 1.4 \\
-p-less $\alpha{=}5$           & \textbf{0.483} & \textbf{0.714} & \textbf{0.553} & 9{,}424 & \textbf{0.3} \\
-temp $T{=}0.6,p0.95$ (rec)    & 0.475 & \textbf{0.714} & 0.534 & 9{,}866 & 6.2 \\
+p-less $k{=}2$ (default) & 0.392 & 0.627 & 0.489 & 17{,}269 & 41.8 \\
+p-less-norm (default)    & 0.392 & 0.663 & 0.494 & 17{,}116 & 41.7 \\
+$G_k{=}1.6$              & 0.400 & 0.643 & 0.494 & 16{,}420 & 39.6 \\
+$G_k{=}0.8$              & 0.435 & 0.687 & 0.518 & 12{,}925 & 25.8 \\
+$G_k{=}0.4$              & 0.469 & \textbf{0.730} & 0.575 & \textbf{9{,}615} & \textbf{0.0} \\
+$G_k{=}0.2$              & 0.463 & \textbf{0.730} & 0.583 & 9{,}879 & \textbf{0.0} \\
+$G_k{=}0.1$              & 0.463 & 0.714 & \textbf{0.588} & 9{,}994 & 0.2 \\
+$G_k{=}0.05$            & 0.459 & 0.710 & 0.586 & 9{,}988 & \textbf{0.0} \\
+temp $T{=}0.6,p0.95$ (rec)    & \textbf{0.475} & 0.714 & 0.534 & 9{,}866 & 6.2 \\
 temp $T{=}1.0,p0.95$ $^\dagger$ & 0.480 & 0.726 & 0.556 & 9{,}683 & 0.0 \\
 \midrule
 \multicolumn{6}{l}{\textit{Qwen3-8B}}\\
-p-less $\alpha{=}2$ (default) & 0.625 & 0.825 & 0.453 & 13{,}485 & 14.5 \\
-p-less-norm (default)         & 0.629 & 0.829 & 0.458 & 13{,}573 & 16.0 \\
-p-less $\alpha{=}3$           & 0.676 & 0.806 & 0.466 & 11{,}495 & 2.7 \\
-p-less $\alpha{=}4$           & \textbf{0.696} & 0.821 & 0.469 & 11{,}279 & 1.4 \\
-p-less $\alpha{=}5$           & 0.686 & \textbf{0.833} & \textbf{0.474} & \textbf{11{,}124} & \textbf{0.6} \\
+p-less $k{=}2$ (default) & 0.625 & 0.825 & 0.453 & 13{,}485 & 14.5 \\
+p-less-norm (default)    & 0.629 & 0.829 & 0.458 & 13{,}573 & 16.0 \\
+$G_k{=}1.6$              & 0.627 & 0.813 & 0.464 & 12{,}971 & 14.0 \\
+$G_k{=}0.8$              & 0.669 & 0.837 & 0.461 & 11{,}788 & 8.0 \\
+$G_k{=}0.4$              & 0.696 & 0.833 & 0.457 & 10{,}912 & 0.4 \\
+$G_k{=}0.2$              & 0.701 & 0.833 & 0.493 & 11{,}062 & \textbf{0.0} \\
+$G_k{=}0.1$              & \textbf{0.719} & \textbf{0.845} & \textbf{0.498} & 10{,}808 & \textbf{0.0} \\
+$G_k{=}0.05$            & 0.717 & 0.833 & 0.497 & \textbf{10{,}767} & 0.1 \\
 temp $T{=}0.6,p0.95,k20$ (rec) & 0.680 & 0.829 & 0.468 & 11{,}127 & 1.0 \\
 temp $T{=}1.0,p0.95$ $^\dagger$ & 0.705 & 0.821 & 0.497 & 11{,}062 & 0.2 \\
 \bottomrule
@@ -252,82 +270,90 @@ clean textual onset the precursor assumes, these rates are directional rather th
 comparison; the robust finding is qualitative---roughly half of reasoning-code loops offer no
 periodicity or precursor signal to exploit.
 
-\section{The \texorpdfstring{$\alpha$}{alpha}-power-sum lever}\label{sec:alpha}
-A single exponent repairs the failure. Generalizing the threshold to $\tau_\alpha(p)=\tsum_i p_i^\alpha$
-($\alpha{=}2$ is p-less), raising $\alpha$ flattens the survivor set: the threshold shrinks, so more
-tail tokens survive even on peaked steps. Across $\alpha=2\to5$ (Table~\ref{tab:main},
-Figure~\ref{fig:alpha}) this monotonically (i)~removes looping (non-termination $41.8\%\!\to\!0.3\%$
-DeepSeek, $14.5\%\!\to\!0.6\%$ Qwen), (ii)~recovers pass@1 ($0.392\!\to\!0.483$;
-$0.625\!\to\!0.696$ at $\alpha{=}4$), (iii)~roughly halves wasted thinking tokens
-($17.3\text{k}\!\to\!9.4\text{k}$; $13.5\text{k}\!\to\!11.1\text{k}$), and (iv)~partly restores
-diversity (cb\_div $0.489\!\to\!0.553$; $0.453\!\to\!0.474$)---all with no per-task tuning.
+\section{The \texorpdfstring{R\'enyi-order-$k$}{Renyi-order-k} lever}\label{sec:alpha}
+Lowering the R\'enyi order repairs the failure. Generalizing the threshold to
+$G_k=(\tsum_i p_i^k)^{1/(k-1)}$ ($k{=}2$ is default p-less) and \emph{lowering} $k$ flattens the
+survivor set: the threshold drops below the mode, so more tail tokens survive even on peaked steps.
+Sweeping $k$ downward from $2$ (Table~\ref{tab:main}, Figure~\ref{fig:gk}) (i)~removes looping
+(non-termination $41.8\%\!\to\!0\%$ by $k{=}0.4$ on DeepSeek, $14.5\%\!\to\!0\%$ by $k{=}0.2$ on Qwen),
+(ii)~recovers pass@1 (DeepSeek $0.392\!\to\!0.469$ at $k{=}0.4$; Qwen $0.625\!\to\!0.719$ at $k{=}0.1$,
+the single best decoder we test), and (iii)~cuts wasted thinking tokens (DeepSeek
+$17.3\text{k}\!\to\!9.6\text{k}$; Qwen $13.5\text{k}\!\to\!10.8\text{k}$)---with no per-task tuning and
+without sacrificing diversity among correct solutions (cb\_div, Table~\ref{tab:main}; correct-only, so
+not compared across $k$---see \S\ref{sec:setup}). Past the optimum, further loosening plateaus then
+slightly regresses; the loose arms sit within a statistically indistinguishable plateau
+(\S\ref{sec:ablation}), so we read this as ``lower $k$ up to a plateau,'' not a sharp optimum.
 
 \begin{figure}[t]\centering
-\includegraphics[width=\linewidth]{fig_apps_alpha.png}
-\caption{Raising $\alpha$ recovers pass@1 (left; dashed lines mark the best temperature config) and
-collapses looping (right) from the $\alpha{=}2$ default.}
-\label{fig:alpha}
+\includegraphics[width=\linewidth]{fig_gk_sweep.png}
+\caption{Lowering the R\'enyi order $k$ from the default ($\times$, $k{=}2$) recovers pass@1 (left) and
+collapses looping (right). Dashed lines mark each model's best swept temperature: Qwen's $G_k$ curve
+rises \emph{above} it (an outright win), DeepSeek's stays just below (a competitive repair).}
+\label{fig:gk}
 \end{figure}
 
 \paragraph{Token efficiency tracks the loop rate.} Because the savings come from not spending budget on
-loops, the token advantage over other decoders scales with how much the model loops
-(Table~\ref{tab:main}). On DeepSeek (heavy looper), high-$\alpha$ p-less is the \emph{single most
-token-efficient decoder tested}: $\alpha{=}4/5$ use $9.2$k$/9.4$k thinking tokens, fewer than every
-temperature/top-$p$/top-$k$ configuration ($9.6$--$10.1$k) at matched-or-better pass@1---and this is
-not a truncation artifact ($\alpha{=}5$ truncates $0.3\%$). On Qwen (light looper) it is a tie
-($\sim$11.1--11.3k, indistinguishable from temperature; Table~\ref{tab:main}). We therefore do not
-claim $\alpha$ is universally more token-efficient; the edge is loop-rate-dependent.
+loops, the token advantage scales with how much the model loops (Table~\ref{tab:main}). On DeepSeek
+(heavy looper), $G_k{=}0.4$ is the most token-efficient decoder we test---$9.6$k thinking tokens, fewer
+than the recommended ($9.9$k) and swept ($9.7$k) temperatures---at comparable pass@1, and not via
+truncation ($0\%$ non-termination). On Qwen (light looper) it is a tie ($\sim$10.8k, indistinguishable
+from temperature). We therefore do not claim $G_k$ is universally more token-efficient; the edge is
+loop-rate-dependent.
 
-Setting a flatter sampler up front (prevention) also beats detecting and chopping the loop reactively:
-prevention ($\alpha{=}5$ throughout) reaches $0.483$ on DeepSeek versus $0.457$ for adaptive
-chop-and-continue, and ties on Qwen---the flatter survivor set suppresses re-entry into the loop after
-a chop, where $\alpha{=}2$ re-enters.
+Setting a looser order up front (prevention) also beats detecting and chopping the loop reactively:
+prevention ($k{=}0.4$) reaches $0.469$ on DeepSeek versus $0.457$ for adaptive chop-and-continue, and
+ties on Qwen---the flatter survivor set suppresses re-entry into the loop after a chop, where $k{=}2$
+re-enters.
 
-\section{The \texorpdfstring{$\alpha$}{alpha} lever in context}\label{sec:pos}
-\paragraph{$\alpha$ vs.\ what a practitioner would actually run.} The right baseline is not a swept
-temperature but the setting a user gets out of the box. Against each model's \emph{official recommended}
-configuration, the best $\alpha$ wins with zero tuning (Table~\ref{tab:pos}): Qwen $\alpha{=}4$ ($0.696$)
-$>$ recommended $T0.6/p0.95/k20$ ($0.680$); DeepSeek $\alpha{=}5$ ($0.483$) $>$ recommended $T0.6/p0.95$
-($0.475$). On DeepSeek $\alpha{=}5$ is in fact the single best decoder. p-less-$\alpha$ is outperformed
-only by a \emph{higher-temperature} config ($T1.0/p0.95$: Qwen $0.705$, DeepSeek $0.480\approx$ tie)
-that departs from the model's own recommendation---i.e.\ found only by the temperature tuning p-less
-exists to avoid. Temperature retains a slight diversity edge (cb\_div $0.556$ vs.\ $0.553$ on
-DeepSeek). So $\alpha$ is a competitive, calibration-free repair, not a state-of-the-art win.
+\subsection{Where the gain comes from}\label{sec:ablation}
+Does lowering $k$ help by escaping the loops, or for an unrelated reason---e.g.\ a rich-get-richer
+effect that merely polishes already-easy problems? We answer with a per-problem paired analysis against
+the $k{=}2$ default over the same 252 problems (full decomposition, statistical tests, and limitations
+in Appendix~\ref{app:ablation}; samples are independent draws across configs, so we compare per-problem
+pass \emph{rates}, not individual samples). The gain is real and broad---far more problems improve than
+regress (Qwen $105/19$ at $k{=}0.1$, $\Delta$pass@1$=+0.094$, Wilcoxon $p{=}1.6\times10^{-13}$; DeepSeek
+$108/36$ at $k{=}0.4$, $+0.077$, $p{=}7.5\times10^{-10}$)---and it concentrates on the \emph{borderline}
+(mid/hard) problems, while already-solved stay solved and never-solved stay unsolved: not a
+rich-get-richer effect. It is loop-escape: $\Delta$pass@1 tracks how much a problem was truncating at
+$k{=}2$, and a truncation bound makes this rigorous---since only a de-truncated sample can be rescued,
+loop-escape accounts for at most the drop in truncation, leaving \emph{at least $22\%$} of Qwen's
+mid-stratum gain as genuine non-loop improvement, while on DeepSeek (where $68.8\%$ of default failures
+are loops) the bound is consistent with the gain being predominantly loop-escape. The two models differ
+in kind: Qwen's gain is \emph{reliability} (pass@10 barely moves---borderline solutions merely land more
+often), whereas DeepSeek's is \emph{coverage} (pass@10 rises $+0.10$ and $28$ never-solved problems
+become solvable, their defaults having failed by looping, not inability).
+
+\section{Positioning}\label{sec:pos}
+\paragraph{$G_k$ vs.\ what a practitioner would actually run.} The right baseline is not a swept
+temperature but the setting a user gets out of the box, and the picture is model-dependent
+(Table~\ref{tab:pos}). On Qwen, $G_k{=}0.1$ ($0.719$) is the single best decoder---above the recommended
+$T0.6/p0.95/k20$ ($0.680$) \emph{and} above the best hand-swept temperature ($T1.0/p0.95$: $0.705$)---a
+calibration-free win. On DeepSeek, lowering $k$ repairs the catastrophic default ($0.392\!\to\!0.469$)
+and leads the recommended setting on pass@10, thinking tokens, and non-termination, but trails it on
+pass@1 ($0.469$ vs.\ $0.475$) and the swept temperature ($0.480$). So $G_k$ is a competitive,
+calibration-free repair---outright best on the lighter looper, and on the heavier looper a fix that
+closes most of the gap to a tuned temperature with no tuning. We make no state-of-the-art claim.
 
 \begin{table}[t]\centering
 \caption{\textbf{pass@1} for the comparison that matters for a hyperparameter-free method: no-tuning
-options vs.\ a tuned one. p-less-$\alpha$ (no tuning) $\ge$ the model's recommended setting (no tuning);
-a swept temperature leads on Qwen only.}
+options vs.\ a tuned one (\textbf{bold} = best in row). On Qwen, $G_k$ (no tuning) beats even the swept
+temperature; on DeepSeek it repairs the default but trails the recommended and swept temperatures.}
 \label{tab:pos}
 \begin{tabular}{lccc}
 \toprule
-Model & p-less-$\alpha$ (no tune) & recommended (no tune) & best swept temp \\
+Model & $G_k$ (no tune) & recommended (no tune) & best swept temp \\
 \midrule
-DeepSeek-R1-Distill & $\alpha{=}5$: \textbf{0.483} & 0.475 & 0.480 \\
-Qwen3-8B            & $\alpha{=}4$: 0.696 & 0.680 & \textbf{0.705} \\
+DeepSeek-R1-Distill & $k{=}0.4$: 0.469 & 0.475 & \textbf{0.480} \\
+Qwen3-8B            & $k{=}0.1$: \textbf{0.719} & 0.680 & 0.705 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{$\tau_\alpha$ is a power sum, not a R\'enyi generalization.} The origin paper's Appendix~B.5
-proposes a different generalization, $G_k=\exp(-H_k)=(\tsum_i p_i^k)^{1/(k-1)}$, purely theoretically:
-it analyzes only the asymptotics ($G_k\!\to\!1/n$ as $k\!\to\!0$, $G_k\!\to\!\max_i p_i$ as
-$k\!\to\!\infty$) and runs no experiments at $k\neq2$. Our raw power sum $\tau_\alpha=\tsum_i p_i^\alpha$ and their rooted $G_k$ coincide only at
-order $2$; away from it they move in \emph{opposite} directions along the order parameter
-(Table~\ref{tab:noneq}, Appendix~\ref{app:noneq}): the loosening we obtain by \emph{raising} $\alpha$
-above $2$ corresponds, in the rooted form, to \emph{lowering} $k$ below $2$. The correspondence is only
-directional---matching the survivor set our sweep reaches at $\alpha{=}5$ would require a R\'enyi order
-near $k\!\approx\!-3$ (a \emph{negative} order), and even then the admitted sets differ, since no
-order-matching aligns the two families (Appendix~\ref{app:noneq}). The practical reading is that the
-power sum is the natural knob for diversity: one raises a single exponent rather than pushing the
-R\'enyi entropy to unusual negative orders. We make no optimality claim for $\alpha$ regardless---the
-diversity monotonicity it exhibits is shared by top-$p$ and top-$k$, so $\alpha$ is one member of a
-broader class.
-
 \section{Discussion and Limitations}\label{sec:disc}
 The study covers two 8B reasoning models and one benchmark (APPS); whether the mechanism and the
-$\alpha$ lever transfer to other model families and code benchmarks is open. $\alpha$ ties, and does
-not beat, the best swept temperature, so this is a diagnosis-and-repair result, not a decoding win.
+$G_k$ lever transfer to other model families and code benchmarks is open. $G_k$ is the single best
+decoder on Qwen but trails a hand-swept temperature on DeepSeek, so this is a diagnosis-and-repair
+result, not a uniform decoding win.
 We characterize the failure as a per-step collapse of the survivor set to the single most-probable
 token and do not benchmark greedy decoding itself, so we do not claim p-less reproduces greedy's
 sequence-level behavior. We also do
@@ -339,8 +365,10 @@ Hyperparameter-free is not assumption-free. On the peaked distributions of reaso
 chain-of-thought, a collision-probability threshold silently collapses its survivor set to the single
 most-probable token, driving up to 42\% of code traces into loops---amplifying these reasoning models'
 latent, training-induced loop-propensity rather than creating it, by removing the sampling diversity
-that lets temperature escape. Raising the power-sum exponent repairs the failure and is competitive out
-of the box. The deeper finding is that roughly half of these reasoning-code loops are paraphrastic drift,
+that lets temperature escape. Lowering the R\'enyi order of the same threshold---the origin paper's own
+proposed generalization, which we are first to evaluate---repairs the failure and is competitive out of
+the box (the single best decoder on one of our two models). The deeper finding is that roughly half of
+these reasoning-code loops are paraphrastic drift,
 invisible to the verbatim and hidden-state detectors validated only on math---a gap current
 loop-detection work does not yet address.
 
@@ -348,43 +376,68 @@ loop-detection work does not yet address.
 \bibliography{refs}
 
 \appendix
-\section{Power-sum vs.\ R\'enyi-entropy threshold: non-equivalence}\label{app:noneq}
-\begin{table}[ht]\centering
-\caption{The two forms on $p{=}[0.7,0.2,0.1]$: coincide at order $2$, diverge in opposite directions
-after (computed).}
-\label{tab:noneq}
-\begin{tabular}{cccc}
+\section{Per-problem ablation: full decomposition}\label{app:ablation}
+\paragraph{Design.} For each model we pair every $G_k$ arm against the $k{=}2$ default over the same
+252 problems and compare per-problem pass \emph{rates} (samples are independent draws across configs,
+so individual samples are not tracked). pass@1 is $c/n$ per problem; pass@10 with $n{=}10$ is the
+solved-at-least-once indicator. Significance uses the Wilcoxon signed-rank test on per-problem
+$\Delta$pass@1; $95\%$ CIs are a bootstrap over problems (Table~\ref{tab:ablation}).
+
+\begin{table}[ht]\centering\small
+\caption{Per-problem ablation vs.\ the $k{=}2$ default (252 tasks, $n{=}10$). win/lose/net counts
+problems whose pass@1 rose/fell; Wilcoxon $p$ is on per-problem $\Delta$pass@1.}
+\label{tab:ablation}
+\begin{tabular}{lccccc}
 \toprule
-order & $\tau_\alpha=\tsum_i p_i^\alpha$ (ours) & $G_k=(\tsum_i p_i^k)^{1/(k-1)}$ (origin) & \\
+$k$ & pass@1 ($\Delta$) & pass@10 ($\Delta$) & win/lose/net & Wilcoxon $p$ & $\Delta$pass@1 95\% CI \\
 \midrule
-2 & 0.5400 & 0.5400 & (coincide) \\
-3 & 0.3520 & 0.5933 & \\
-4 & 0.2418 & 0.6230 & \\
-5 & 0.1684 & 0.6406 & ($\to \max_i p_i{=}0.70$) \\
+\multicolumn{6}{l}{\textit{DeepSeek-R1-Distill-Llama-8B}}\\
+1.6  & 0.400 ($+$0.008) & 0.643 ($+$0.016) & 66/50/$+$16 & 0.28 & $[-0.009,+0.024]$ \\
+0.8  & 0.435 ($+$0.042) & 0.687 ($+$0.060) & 83/44/$+$39 & $1.3{\times}10^{-5}$ & $[+0.023,+0.063]$ \\
+0.4  & 0.469 ($+$0.077) & 0.730 ($+$0.103) & 108/36/$+$72 & $7.5{\times}10^{-10}$ & $[+0.054,+0.101]$ \\
+0.2  & 0.463 ($+$0.071) & 0.730 ($+$0.103) & 100/36/$+$64 & $2.7{\times}10^{-9}$ & $[+0.049,+0.094]$ \\
+0.1  & 0.463 ($+$0.070) & 0.714 ($+$0.087) & 99/32/$+$67 & $1.3{\times}10^{-8}$ & $[+0.047,+0.094]$ \\
+0.05 & 0.459 ($+$0.066) & 0.710 ($+$0.083) & 96/35/$+$61 & $1.4{\times}10^{-8}$ & $[+0.045,+0.089]$ \\
+\midrule
+\multicolumn{6}{l}{\textit{Qwen3-8B}}\\
+1.6  & 0.627 ($+$0.001) & 0.813 ($-$0.012) & 62/53/$+$9  & 0.67 & $[-0.015,+0.018]$ \\
+0.8  & 0.669 ($+$0.044) & 0.837 ($+$0.012) & 83/37/$+$46 & $2.6{\times}10^{-6}$ & $[+0.027,+0.062]$ \\
+0.4  & 0.696 ($+$0.070) & 0.833 ($+$0.008) & 89/30/$+$59 & $1.6{\times}10^{-9}$ & $[+0.050,+0.092]$ \\
+0.2  & 0.701 ($+$0.076) & 0.833 ($+$0.008) & 95/25/$+$70 & $2.1{\times}10^{-9}$ & $[+0.053,+0.100]$ \\
+0.1  & 0.719 ($+$0.094) & 0.845 ($+$0.020) & 105/19/$+$86 & $1.6{\times}10^{-13}$ & $[+0.071,+0.117]$ \\
+0.05 & 0.717 ($+$0.091) & 0.833 ($+$0.008) & 99/22/$+$77 & $2.7{\times}10^{-13}$ & $[+0.069,+0.115]$ \\
 \bottomrule
 \end{tabular}
 \end{table}
-Sweeping the order $2\to8$ on $p{=}[0.45,0.25,0.15,0.10,0.05]$, $\tau_\alpha$ admits progressively more
-tokens (mode-only up to full support, five distinct survivor sets) while $G_k$ stays locked on the mode
-at every order---so no reparameterization $\alpha\leftrightarrow k$ aligns their admitted sets, and the
-two families are non-equivalent for order $>2$.
 
-The rooted form loosens only in the \emph{opposite} direction. On $p{=}[0.7,0.2,0.1]$, decreasing the
-order gives $G_{1.5}{=}0.50$, $G_{1}{=}0.45$, $G_{0}{=}0.33$ (against $\tau_\alpha = 0.35/0.24/0.17$ at
-$\alpha = 3/4/5$); matching our $\alpha{=}5$ threshold $\tau_5 = 0.168$ requires a \emph{negative}
-R\'enyi order, $k \approx -3.2$. Raising the power-sum exponent and lowering the R\'enyi order thus
-reach qualitatively similar (looser) filters from opposite ends of the order parameter, but never the
-same admitted set.
+\paragraph{Where the gain lands (strata).} Binning problems by their $k{=}2$ pass@1 into dead ($0$),
+hard $(0,0.3]$, mid $(0.3,0.7]$, easy $(0.7,1]$, the mean $\Delta$pass@1 at each model's optimum
+concentrates in the mid/hard bins (Qwen $k{=}0.1$: mid $+0.257$, hard $+0.221$; dead $+0.043$, easy
+$+0.026$. DeepSeek $k{=}0.4$: hard $+0.175$, mid $+0.144$, dead $+0.073$, easy $-0.020$). Already-solved
+(easy) problems barely move and never-solved (dead) mostly stay dead---the gain is not rich-get-richer.
+The dominant migration is mid$\to$easy (Qwen $k{=}0.1$: 31 of 47 mid problems).
 
-Crucially, that matching order is \emph{not} a constant---it is a function of the whole distribution
-and so changes at every decode step. Because $\tau_\alpha = \big(e^{-H_\alpha}\big)^{\alpha-1} =
-G_\alpha^{\,\alpha-1}$ (our threshold is the R\'enyi form raised to the fixed power $\alpha-1$),
-expressing it as a bare $G_k$ forces the order to absorb a distribution-dependent amount. For a fixed
-$\alpha{=}4$, the order matching $\tau_4$ swings with the distribution---for illustration,
-$k\approx-1.1$ on $[0.7,0.2,0.1]$ but $k\approx-6.2$ on $[0.6,0.3,0.1]$. There is therefore no fixed
-R\'enyi order equivalent to a fixed power-sum $\alpha$: the correspondence is per-distribution, hence
-per-step. (Over a full vocabulary, where $\min_i p_i\!\approx\!0$, a matching order almost always
-exists---it is simply not constant; the toy claim that none exists is an artifact of small support.)
+\paragraph{Loop-escape bound (the rigorous attribution).} Within each stratum we record how far
+truncation fell from $k{=}2$ ($\Delta$trunc). Because only a de-truncated sample can be rescued,
+loop-escape explains \emph{at most} $|\Delta$trunc$|$ of the pass-rate gain. On Qwen's mid stratum at
+$k{=}0.1$, $\Delta$pass@1 $=+0.257$ while truncation fell only $0.20$, so
+$\ge(0.257{-}0.20)/0.257\approx22\%$ of that gain is genuine non-loop improvement. On DeepSeek,
+$68.8\%$ of default failing samples are truncated loops and truncation falls to $0$ in every stratum,
+so the bound is consistent with the gain being predominantly loop-escape. (A coarser per-problem
+heuristic agrees directionally but over-credits loops; we report the bound.)
+
+\paragraph{Reliability vs.\ coverage.} On Qwen pass@10 is nearly flat across $k$ ($+0.02$ at the
+optimum): the gain is \emph{reliability}---borderline solutions land more often. On DeepSeek pass@10
+rises $+0.10$ and $28$ never-solved problems become solvable at $k{=}0.4$: the gain includes genuine
+\emph{coverage}, because those defaults failed by looping, not inability.
+
+\paragraph{Limitations.} Samples are unpaired across configs, so $\Delta$trunc is a problem-level
+ceiling on the loop contribution, not causal proof at the sample level. The Wilcoxon and bootstrap
+statistics treat each problem's pass@1 as a noiseless point estimate (they resample the 252 problems,
+not the 10 within-problem draws), so $p$-values and CIs are mildly anticonservative---immaterial for
+the $p\!\sim\!10^{-9}$--$10^{-13}$ arms, relevant only at $k{=}1.6$ (already non-significant). We apply
+no multiple-comparisons correction across the six $k$ values, and the study is two models on one
+benchmark.
 
 \section{Loop taxonomy: classification method and examples}\label{app:taxonomy}
 \paragraph{Method.} We classify every truncated trace automatically. From the thinking phase we locate

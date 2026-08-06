@@ -45,6 +45,16 @@ whereas G_k stays locked on the argmax at every order. The two families do not e
 admitted sets agree for all `p`. **Non-equivalent for order > 2.**
 
 ## How to state it in the paper (framing guardrails)
+
+> **SUPERSEDED for Paper B (2026-08-06).** After running the origin paper's own rooted `G_k` form on
+> APPS (12-arm sweep, both reasoning models), Paper B (`paper/paperB`) was **repositioned to lead with
+> G_k and drop τ_α entirely** (user decision). Paper B now claims the **first empirical evaluation** of
+> the origin's `G_k` (App B.5 is theoretical-only — no k≠2 experiments; re-verified independently, one
+> automated read fabricated a table, so confirm against the PDF before submission). The guardrails
+> below reflect the earlier τ_α-primary framing and are retained for history / for any τ_α-based writeup;
+> they do **not** govern Paper B. The non-equivalence result itself (below) is still correct and is why
+> the two families are distinct — it is simply no longer featured in Paper B.
+
 - Present as: *"At α = 2 our τ_α coincides with the collision-entropy p-less filter and with the
   origin paper's Rényi form; for α > 2 the two diverge — ours loosens, theirs tightens — so our
   α-sweep explores a filter family the origin paper's proposal does not reach."*
