@@ -309,23 +309,32 @@ prevention ($k{=}0.4$) reaches $0.469$ on DeepSeek versus $0.457$ for adaptive c
 ties on Qwen---the flatter survivor set suppresses re-entry into the loop after a chop, where $k{=}2$
 re-enters.
 
-\subsection{Where the gain comes from}\label{sec:ablation}
-Does lowering $k$ help by escaping the loops, or for an unrelated reason---e.g.\ a rich-get-richer
-effect that merely polishes already-easy problems? We answer with a per-problem paired analysis against
-the $k{=}2$ default over the same 252 problems (full decomposition, statistical tests, and limitations
-in Appendix~\ref{app:ablation}; samples are independent draws across configs, so we compare per-problem
-pass \emph{rates}, not individual samples). The gain is real and broad---far more problems improve than
-regress (Qwen $105/19$ at $k{=}0.1$, $\Delta$pass@1$=+0.094$, Wilcoxon $p{=}1.6\times10^{-13}$; DeepSeek
-$108/36$ at $k{=}0.4$, $+0.077$, $p{=}7.5\times10^{-10}$)---and it concentrates on the \emph{borderline}
-(mid/hard) problems, while already-solved stay solved and never-solved stay unsolved: not a
-rich-get-richer effect. It is loop-escape: $\Delta$pass@1 tracks how much a problem was truncating at
-$k{=}2$, and a truncation bound makes this rigorous---since only a de-truncated sample can be rescued,
-loop-escape accounts for at most the drop in truncation, leaving \emph{at least $22\%$} of Qwen's
-mid-stratum gain as genuine non-loop improvement, while on DeepSeek (where $68.8\%$ of default failures
-are loops) the bound is consistent with the gain being predominantly loop-escape. The two models differ
-in kind: Qwen's gain is \emph{reliability} (pass@10 barely moves---borderline solutions merely land more
-often), whereas DeepSeek's is \emph{coverage} (pass@10 rises $+0.10$ and $28$ never-solved problems
-become solvable, their defaults having failed by looping, not inability).
+\subsection{Attributing the gain}\label{sec:ablation}
+Does lowering $k$ help by escaping the loops, or for an unrelated reason---say a rich-get-richer effect
+that just polishes easy problems? We test this per problem, paired against the $k{=}2$ default on the
+same 252 problems (we compare per-problem pass \emph{rates}, since samples are independent across
+configs; full tables and limitations in Appendix~\ref{app:ablation}). Three findings.
+
+\textbf{The gain is broad, not a few outliers.} Far more problems improve than regress (Qwen $105$
+vs.\ $19$ at $k{=}0.1$; DeepSeek $108$ vs.\ $36$ at $k{=}0.4$), and the mean per-problem $\Delta$pass@1
+is well clear of zero: Qwen $+0.094$ ($95\%$ CI $[+0.071,+0.117]$), DeepSeek $+0.077$
+($[+0.054,+0.101]$); Wilcoxon $p<10^{-6}$.
+
+\textbf{It lands on the borderline problems.} Grouping problems by their default difficulty, the gain
+concentrates on the mid- and hard-difficulty ones; already-solved problems stay solved and never-solved
+ones stay unsolved. Loosening does not simply reward what was already easy---so this is not a
+rich-get-richer effect.
+
+\textbf{It is loop-escape.} A problem's gain tracks how much it was truncating at $k{=}2$, and we can
+\emph{bound} the effect rather than merely correlate: only a de-truncated sample can be rescued, so
+loop-escape explains at most the drop in truncation. That ceiling still leaves \emph{at least $22\%$}
+of Qwen's mid-difficulty gain as genuine, non-loop improvement; on DeepSeek, where $68.8\%$ of default
+failures are loops, it permits the gain to be almost entirely loop-escape.
+
+The two models differ in \emph{kind}. Qwen's gain is \textbf{reliability}: pass@10 barely moves, so
+loosening just makes borderline solutions land more often. DeepSeek's is \textbf{coverage}: pass@10
+rises $+0.10$ and $28$ problems become solvable that never were---their defaults had failed by looping,
+not by inability.
 
 \section{Positioning}\label{sec:pos}
 \paragraph{$G_k$ vs.\ what a practitioner would actually run.} The right baseline is not a swept
@@ -395,19 +404,19 @@ $k$ & pass@1 ($\Delta$) & pass@10 ($\Delta$) & win/lose/net & Wilcoxon $p$ & $\D
 \midrule
 \multicolumn{6}{l}{\textit{DeepSeek-R1-Distill-Llama-8B}}\\
 1.6  & 0.400 ($+$0.008) & 0.643 ($+$0.016) & 66/50/$+$16 & 0.28 & $[-0.009,+0.024]$ \\
-0.8  & 0.435 ($+$0.042) & 0.687 ($+$0.060) & 83/44/$+$39 & $1.3{\times}10^{-5}$ & $[+0.023,+0.063]$ \\
-0.4  & 0.469 ($+$0.077) & 0.730 ($+$0.103) & 108/36/$+$72 & $7.5{\times}10^{-10}$ & $[+0.054,+0.101]$ \\
-0.2  & 0.463 ($+$0.071) & 0.730 ($+$0.103) & 100/36/$+$64 & $2.7{\times}10^{-9}$ & $[+0.049,+0.094]$ \\
-0.1  & 0.463 ($+$0.070) & 0.714 ($+$0.087) & 99/32/$+$67 & $1.3{\times}10^{-8}$ & $[+0.047,+0.094]$ \\
-0.05 & 0.459 ($+$0.066) & 0.710 ($+$0.083) & 96/35/$+$61 & $1.4{\times}10^{-8}$ & $[+0.045,+0.089]$ \\
+0.8  & 0.435 ($+$0.042) & 0.687 ($+$0.060) & 83/44/$+$39 & $<10^{-3}$ & $[+0.023,+0.063]$ \\
+0.4  & 0.469 ($+$0.077) & 0.730 ($+$0.103) & 108/36/$+$72 & $<10^{-3}$ & $[+0.054,+0.101]$ \\
+0.2  & 0.463 ($+$0.071) & 0.730 ($+$0.103) & 100/36/$+$64 & $<10^{-3}$ & $[+0.049,+0.094]$ \\
+0.1  & 0.463 ($+$0.070) & 0.714 ($+$0.087) & 99/32/$+$67 & $<10^{-3}$ & $[+0.047,+0.094]$ \\
+0.05 & 0.459 ($+$0.066) & 0.710 ($+$0.083) & 96/35/$+$61 & $<10^{-3}$ & $[+0.045,+0.089]$ \\
 \midrule
 \multicolumn{6}{l}{\textit{Qwen3-8B}}\\
 1.6  & 0.627 ($+$0.001) & 0.813 ($-$0.012) & 62/53/$+$9  & 0.67 & $[-0.015,+0.018]$ \\
-0.8  & 0.669 ($+$0.044) & 0.837 ($+$0.012) & 83/37/$+$46 & $2.6{\times}10^{-6}$ & $[+0.027,+0.062]$ \\
-0.4  & 0.696 ($+$0.070) & 0.833 ($+$0.008) & 89/30/$+$59 & $1.6{\times}10^{-9}$ & $[+0.050,+0.092]$ \\
-0.2  & 0.701 ($+$0.076) & 0.833 ($+$0.008) & 95/25/$+$70 & $2.1{\times}10^{-9}$ & $[+0.053,+0.100]$ \\
-0.1  & 0.719 ($+$0.094) & 0.845 ($+$0.020) & 105/19/$+$86 & $1.6{\times}10^{-13}$ & $[+0.071,+0.117]$ \\
-0.05 & 0.717 ($+$0.091) & 0.833 ($+$0.008) & 99/22/$+$77 & $2.7{\times}10^{-13}$ & $[+0.069,+0.115]$ \\
+0.8  & 0.669 ($+$0.044) & 0.837 ($+$0.012) & 83/37/$+$46 & $<10^{-3}$ & $[+0.027,+0.062]$ \\
+0.4  & 0.696 ($+$0.070) & 0.833 ($+$0.008) & 89/30/$+$59 & $<10^{-3}$ & $[+0.050,+0.092]$ \\
+0.2  & 0.701 ($+$0.076) & 0.833 ($+$0.008) & 95/25/$+$70 & $<10^{-3}$ & $[+0.053,+0.100]$ \\
+0.1  & 0.719 ($+$0.094) & 0.845 ($+$0.020) & 105/19/$+$86 & $<10^{-3}$ & $[+0.071,+0.117]$ \\
+0.05 & 0.717 ($+$0.091) & 0.833 ($+$0.008) & 99/22/$+$77 & $<10^{-3}$ & $[+0.069,+0.115]$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -437,9 +446,9 @@ rises $+0.10$ and $28$ never-solved problems become solvable at $k{=}0.4$: the g
 ceiling on the loop contribution, not causal proof at the sample level. The Wilcoxon and bootstrap
 statistics treat each problem's pass@1 as a noiseless point estimate (they resample the 252 problems,
 not the 10 within-problem draws), so $p$-values and CIs are mildly anticonservative---immaterial for
-the $p\!\sim\!10^{-9}$--$10^{-13}$ arms, relevant only at $k{=}1.6$ (already non-significant). We apply
-no multiple-comparisons correction across the six $k$ values, and the study is two models on one
-benchmark.
+the strongly significant arms ($p<10^{-3}$ with CIs far from zero), relevant only at $k{=}1.6$ (already
+non-significant). We apply no multiple-comparisons correction across the six $k$ values, and the study
+is two models on one benchmark.
 
 \section{Loop taxonomy: classification method and examples}\label{app:taxonomy}
 \paragraph{Method.} We classify every truncated trace automatically. From the thinking phase we locate
