@@ -34,8 +34,8 @@ Arms grouped by model, k descending (tight → loose):
 | DS k0.8 | 0.435 | 0.687 | 0.5175 | 12,925 | 25.8% |
 | DS k0.4 | 0.469 | 0.730 | 0.5745 | 9,615 | 0.0% |
 | DS k0.2 | 0.463 | 0.730 | 0.5829 | 9,879 | 0.0% |
-| DS k0.1 | 0.463 | 0.714 | 0.5878 | 9,463 | 0.2% |
-| DS k0.05 | 0.459 | 0.710 | 0.5864 | 9,457 | 0.0% |
+| DS k0.1 | 0.463 | 0.714 | 0.5878 | 9,994 | 0.2% |
+| DS k0.05 | 0.459 | 0.710 | 0.5864 | 9,988 | 0.0% |
 
 **Pending:** none — all 12 arms scored.
 
@@ -43,7 +43,7 @@ Arms grouped by model, k descending (tight → loose):
 
 As k decreases (looser G_k filter): **non-term% collapses to ≈0%** — by k≤0.2 for Qwen
 (14.0%→0.4% at k0.4→0.0% at k0.2) and by k≤0.4 for DeepSeek (39.6%→0.0%) — and **mean think
-tokens drop** (DS 16,420→~9,500 as runaway loops stop burning the 32768 budget). (Non-term% is
+tokens drop** (DS 16,420→~9,600 as runaway loops stop burning the 32768 budget). (Non-term% is
 mildly non-monotone at the ≈0 floor, e.g. QW k0.05 0.1% vs k0.1 0.04% — sampling noise, not a
 trend.) The loop-escape mechanism Paper B documents for τ_α reproduces on the rooted Rényi form.
 
@@ -84,8 +84,11 @@ matched configs, but it does not support claims about the pass@1 trajectory.
   jsonl directly — the table's own method.
 - **mean think tok**: the table's `mean_tok_from_jsonl` (≈300-sample estimate; think phase =
   text before `</think>`; truncated samples counted at their cut length ≈ cap → biased UP for
-  high-non-term arms — the rambling cost). DeepSeek carries a ~+3% byte-BPE re-tokenization
-  inflation, but the DS τ_α arms re-tokenize identically, so it stays apple-to-apple.
+  high-non-term arms — the rambling cost). For DeepSeek the count uses the **safe
+  (whitespace-correct) tokenizer** via the same round-trip selection as
+  `scripts/build_decoder_comparison_table.py`, so these values match that table exactly (the
+  plain `AutoTokenizer` mangles DeepSeek whitespace and undercounts). The DS τ_α arms re-tokenize
+  identically, so it stays apple-to-apple.
 
 ## Apple-to-apple footing
 

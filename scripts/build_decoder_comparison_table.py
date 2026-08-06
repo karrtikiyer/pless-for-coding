@@ -19,7 +19,7 @@ import json
 import math
 import os
 
-from bench.eval.metrics import add_self_codebleu, compute_self_codebleu_diversity
+from bench.eval.metrics import add_self_codebleu_cached, compute_self_codebleu_diversity
 
 
 def _load_records(path):
@@ -39,6 +39,15 @@ _Q_FULL = "results/pless_recovery_full252/Qwen--Qwen3-8B/ATCODER_interview"
 _Q_CANON = "results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252"
 _Q_DEC06 = "results/decoders_t0.6/Qwen--Qwen3-8B/ATCODER_interview"
 _DS_FIX = "results/_deepseek_fixed_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview"
+# Rényi G_k sweep (our new arms) — same footing as the τ_α arms (vLLM, T1.0, 32768, n=10, think).
+_Q_RENYI = "results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview"
+_DS_RENYI = "results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview"
+
+
+def _renyi_cfgs(d):
+    """The 6 G_k arms as (display, dir, basename) tuples for a model's renyi dir."""
+    return [(f"G_k={k}", d, f"pless_renyi_think_t1.0_k{k}_t1.0")
+            for k in ("1.6", "0.8", "0.4", "0.2", "0.1", "0.05")]
 
 SETS = {
     # (display, dir, jsonl_basename)
@@ -63,7 +72,7 @@ SETS = {
             ("adaptive (1-chop)", _Q_CANON, "pless_adaptive_recon"),
             ("pless_norm @T0.6", _Q_DEC06, "pless_norm_think_t0.6_t0.6"),
             ("pless @T0.6",      _Q_DEC06, "pless_think_t0.6_t0.6"),
-        ],
+        ] + _renyi_cfgs(_Q_RENYI),
     },
     # Corrected (post-#45488-fix) DeepSeek runs, all in one tree.
     "deepseek_fixed": {
@@ -84,7 +93,7 @@ SETS = {
             ("temp t1.0 (p0.95)",      _DS_FIX, "temp_p0.95_think_t1.0_t1.0"),
             ("temp t0.6 (unfilt)",     _DS_FIX, "temp_think_t0.6_t0.6"),
             ("temp t0.6 (p0.95) [rec]", _DS_FIX, "temp_p0.95_think_t0.6_t0.6"),
-        ],
+        ] + _renyi_cfgs(_DS_RENYI),
     },
 }
 
@@ -163,7 +172,7 @@ def main():
         if math.isnan(mean_tok):
             mean_tok = mean_tok_from_jsonl(records)
 
-        add_self_codebleu(pt, records)          # project fn (no execution)
+        add_self_codebleu_cached(pt, records, mpath, full_metrics=m)  # compute-once, cached in metrics JSON
         cb = compute_self_codebleu_diversity(pt).get("codebleu_diversity", 0.0)
         rows.append((name, ntasks, n_samp, p1, p10, cb, mean_tok, trunc))
 

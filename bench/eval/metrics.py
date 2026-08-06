@@ -1,4 +1,6 @@
 import ctypes
+import json
+import os
 from datetime import datetime, timezone
 from statistics import mean as _mean
 
@@ -234,6 +236,39 @@ def compute_self_codebleu_diversity(task_results: list[dict]) -> dict[str, float
         agg_key = key.replace("self_", "") + "_diversity"
         metrics[agg_key] = round(_mean(values), 4) if values else 0.0
     return metrics
+
+
+def add_self_codebleu_cached(task_results, records, metrics_path, full_metrics=None):
+    """``add_self_codebleu`` with a write-through cache in the metrics JSON.
+
+    self-CodeBLEU is expensive (all-pairs CodeBLEU over correct samples) and is
+    NOT stored by ``bench.eval`` when run with ``--skip-diversity`` — so every
+    consumer (comparison table, ablations) recomputes it. This computes it once
+    and persists the per-task ``self_codebleu`` fields back into ``metrics_path``,
+    so subsequent runs read instead of recompute.
+
+    Cache key: presence of the ``self_codebleu`` key on the first task_result
+    (``add_self_codebleu`` always writes it — possibly ``None`` for <2-correct
+    tasks — so key-present ⇔ already computed). On a cache hit this is a no-op and
+    ``records`` is not even touched.
+
+    ``full_metrics``: the loaded metrics dict whose ``per_task`` IS ``task_results``
+    (pass it to avoid a re-read); if None, the file is reloaded and its ``per_task``
+    replaced with ``task_results`` before writing. Returns True if it (re)computed
+    and wrote the cache, False on a cache hit.
+    """
+    if task_results and "self_codebleu" in task_results[0]:
+        return False  # cache hit — already persisted
+    add_self_codebleu(task_results, records)
+    m = full_metrics
+    if m is None:
+        m = json.load(open(metrics_path))
+        m["per_task"] = task_results
+    tmp = f"{metrics_path}.tmp"
+    with open(tmp, "w") as f:
+        json.dump(m, f)
+    os.replace(tmp, metrics_path)  # atomic
+    return True
 
 
 def build_metrics_output(
