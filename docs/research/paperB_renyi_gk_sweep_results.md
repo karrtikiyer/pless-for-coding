@@ -1,6 +1,6 @@
 # Rényi G_k sweep on APPS — interim results (Paper B)
 
-**Status: COMPLETE — 12 of 12 arms scored (as of 2026-08-06).** Full k grid
+**Status: COMPLETE — 12 core arms + 3 DeepSeek fill-in (k=0.3/0.15/0.075), 15 total (as of 2026-08-07).** Full k grid
 {1.6, 0.8, 0.4, 0.2, 0.1, 0.05} × {Qwen3-8B, DeepSeek} on 252 APPS-interview problems.
 Next: folds into Paper B via `scripts/build_decoder_comparison_table.py` (merge the G_k arms
 into the `qwen` / `deepseek_fixed` SETs alongside τ_α). Numbers here are the source of truth
@@ -33,8 +33,11 @@ Arms grouped by model, k descending (tight → loose):
 | DS k1.6 | 0.400 | 0.643 | 0.4941 | 16,420 | 39.6% |
 | DS k0.8 | 0.435 | 0.687 | 0.5175 | 12,925 | 25.8% |
 | DS k0.4 | 0.469 | 0.730 | 0.5745 | 9,615 | 0.0% |
+| DS k0.3 | 0.461 | 0.714 | 0.5742 | 9,905 | 0.0% |
 | DS k0.2 | 0.463 | 0.730 | 0.5829 | 9,879 | 0.0% |
+| DS k0.15 | 0.457 | 0.698 | 0.5782 | 9,906 | 0.0% |
 | DS k0.1 | 0.463 | 0.714 | 0.5878 | 9,994 | 0.2% |
+| DS k0.075 | 0.455 | 0.702 | 0.5863 | 9,997 | 0.1% |
 | DS k0.05 | 0.459 | 0.710 | 0.5864 | 9,988 | 0.0% |
 
 **Pending:** none — all 12 arms scored.
@@ -49,8 +52,10 @@ trend.) The loop-escape mechanism Paper B documents for τ_α reproduces on the 
 
 **pass@1 improves to a plateau, then slightly over-loosens — the plateau location is
 model-dependent.** Qwen improves through a broad plateau around **k≈0.1–0.2** (0.696/0.701/0.719/0.717
-at k0.4/0.2/0.1/0.05); DeepSeek plateaus **earlier, around k≈0.2–0.4** (0.469/0.463/0.463/0.459),
-with pass@10 also easing after k0.4 (0.730→0.710). **Caveat:** adjacent loose arms differ by only
+at k0.4/0.2/0.1/0.05); DeepSeek peaks at **k≈0.4** (0.469) then holds a plateau just below it. The
+9-point DeepSeek grid (fill-in k=0.3/0.15/0.075 added 2026-08-07) confirms this: every arm below k0.4
+sits at 0.455–0.463 (k0.3 0.461, k0.2 0.463, k0.15 0.457, k0.1 0.463, k0.075 0.455, k0.05 0.459) — no
+hidden better point, and k0.4 also leads pass@10 (0.730) and mean tokens (9,615). **Caveat:** adjacent loose arms differ by only
 ~1.5–6 problems out of 2520 — well inside the ±0.023 per-arm CIs, and arms are unpaired (no
 across-arm significance test) — so read these as a *statistically indistinguishable plateau then a
 slight dip*, not a pinpoint optimum. The qualitative split is robust: the more loop-prone model
