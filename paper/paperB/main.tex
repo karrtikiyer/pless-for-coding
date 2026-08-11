@@ -184,7 +184,7 @@ looping and recovers accuracy on both models: on Qwen, $G_k{=}0.1$ has the best 
 the zero-tuning configs (the tuned pure-temperature reference $^\dagger$ edges it on pass@10; App~\ref{app:topp});
 on DeepSeek, $G_k$ leads on pass@10 / tokens / non-termination but trails the recommended temperature on
 pass@1 by $0.006$. cb\_div is correct-only
-and not ranked across configs (see \S\ref{sec:setup}).}
+and not ranked across configs (see \S\ref{sec:setup}). Full pass@$k$ and cover@$t$ in App~\ref{app:passk}.}
 \label{tab:main}
 \begin{tabular}{lccccc}
 \toprule
@@ -415,6 +415,91 @@ optimum; $95\%$ CI $[-0.004,+0.056]$, spanning 0): the gain is \emph{reliability
 land more often. On DeepSeek pass@10 rises $+0.10$ ($[+0.056,+0.143]$, excluding 0) and $28$ never-solved
 problems become solvable at $k{=}0.4$: the gain includes genuine \emph{coverage}, because those defaults
 failed by looping, not inability.
+
+\section{Full pass@\texorpdfstring{$k$}{k} and cover@\texorpdfstring{$t$}{t}}\label{app:passk}
+For completeness we report the full pass@$k$ curve and cover@$t$ for the Table~\ref{tab:main} config
+set, both models---recomputed from the same runs (pass@1 and pass@10 match Table~\ref{tab:main}
+exactly). pass@$k$ (Table~\ref{tab:passk}) rises monotonically in $k$; the decoder ordering is broadly
+stable, though on Qwen $G_k{=}0.1$ leads at pass@1 while the unfiltered temperature leads from pass@5
+up---the reliability-vs-coverage distinction of \S\ref{sec:ablation}. cover@$t$ (Table~\ref{tab:cover})
+is the fraction of problems solved on at least a fraction $t$ of the $n{=}10$ samples (a
+\emph{reliability} measure), and its distinct variant requires $\ge tn$ AST-\emph{distinct} correct
+solutions (a solution-\emph{diversity} measure; $\le$ cover@$t$ by construction). Both rise sharply as
+$k$ falls---e.g.\ Qwen cover@$0.7$ goes $58.3\%\!\to\!71.4\%$ (default $\to$ $G_k{=}0.1$) and its
+distinct form $44.0\%\!\to\!64.3\%$---so lowering the order makes problems solved both more
+\emph{consistently} and with more \emph{distinct} correct programs.
+
+\begin{table}[ht]\centering\small
+\caption{Full pass@$k$ (APPS-interview, $n{=}10$, thinking on), recomputed from the same runs as
+Table~\ref{tab:main} (unbiased estimator; pass@1/@10 match Table~\ref{tab:main}). $^\dagger$ = strongest
+swept temperature.}
+\label{tab:passk}
+\begin{tabular}{lccccc}
+\toprule
+Config & pass@1 & pass@3 & pass@5 & pass@8 & pass@10 \\
+\midrule
+\multicolumn{6}{l}{\textit{DeepSeek-R1-Distill-Llama-8B}}\\
+p-less $k{=}2$ (default) & 0.392 & 0.527 & 0.574 & 0.611 & 0.627 \\
+p-less-norm (default) & 0.392 & 0.533 & 0.590 & 0.640 & 0.663 \\
+$G_k{=}1.6$ & 0.400 & 0.542 & 0.592 & 0.629 & 0.643 \\
+$G_k{=}0.8$ & 0.435 & 0.588 & 0.638 & 0.673 & 0.687 \\
+$G_k{=}0.4$ & 0.469 & 0.617 & 0.668 & 0.711 & 0.730 \\
+$G_k{=}0.2$ & 0.463 & 0.619 & 0.669 & 0.711 & 0.730 \\
+$G_k{=}0.1$ & 0.463 & 0.614 & 0.663 & 0.699 & 0.714 \\
+$G_k{=}0.05$ & 0.459 & 0.608 & 0.657 & 0.695 & 0.710 \\
+temp $T{=}0.6,p0.95$ (rec) & 0.475 & 0.612 & 0.657 & 0.696 & 0.714 \\
+temp $T{=}1.0$ (unfilt) $^\dagger$ & 0.451 & 0.595 & 0.637 & 0.667 & 0.679 \\
+\midrule
+\multicolumn{6}{l}{\textit{Qwen3-8B}}\\
+p-less $k{=}2$ (default) & 0.625 & 0.757 & 0.792 & 0.815 & 0.825 \\
+p-less-norm (default) & 0.629 & 0.755 & 0.791 & 0.817 & 0.829 \\
+$G_k{=}1.6$ & 0.627 & 0.751 & 0.786 & 0.807 & 0.813 \\
+$G_k{=}0.8$ & 0.669 & 0.779 & 0.808 & 0.829 & 0.837 \\
+$G_k{=}0.4$ & 0.696 & 0.788 & 0.811 & 0.828 & 0.833 \\
+$G_k{=}0.2$ & 0.701 & 0.788 & 0.811 & 0.827 & 0.833 \\
+$G_k{=}0.1$ & 0.719 & 0.796 & 0.818 & 0.837 & 0.845 \\
+$G_k{=}0.05$ & 0.717 & 0.798 & 0.815 & 0.828 & 0.833 \\
+temp $T{=}0.6,p0.95,k20$ (rec) & 0.680 & 0.777 & 0.804 & 0.822 & 0.829 \\
+temp $T{=}1.0$ (unfilt) $^\dagger$ & 0.712 & 0.801 & 0.824 & 0.841 & 0.849 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]\centering\small
+\caption{cover@$t$ (\% of problems solved on $\ge t$ of the $n{=}10$ samples) and its distinct variant
+cover@$t$-d (\% with $\ge tn$ AST-\emph{distinct} correct solutions). Same runs / config set as
+Table~\ref{tab:main}; cover@$t$-d $\le$ cover@$t$ always. cover@$0.1$ equals pass@10 and is omitted.}
+\label{tab:cover}
+\begin{tabular}{lcccccc}
+\toprule
+Config & cov@.3 & cov@.5 & cov@.7 & cov@.3-d & cov@.5-d & cov@.7-d \\
+\midrule
+\multicolumn{7}{l}{\textit{DeepSeek-R1-Distill-Llama-8B}}\\
+p-less $k{=}2$ (default) & 50.0 & 42.9 & 32.9 & 48.8 & 38.5 & 27.0 \\
+p-less-norm (default) & 48.8 & 40.9 & 34.9 & 47.2 & 38.5 & 25.8 \\
+$G_k{=}1.6$ & 51.6 & 41.3 & 33.7 & 48.8 & 37.3 & 27.0 \\
+$G_k{=}0.8$ & 56.0 & 48.4 & 36.9 & 54.4 & 44.8 & 30.2 \\
+$G_k{=}0.4$ & 59.5 & 50.4 & 43.3 & 58.7 & 49.2 & 38.5 \\
+$G_k{=}0.2$ & 58.3 & 52.0 & 40.9 & 57.5 & 50.8 & 37.7 \\
+$G_k{=}0.1$ & 58.7 & 50.4 & 41.3 & 57.9 & 48.8 & 37.7 \\
+$G_k{=}0.05$ & 57.1 & 50.4 & 40.5 & 56.3 & 49.2 & 36.5 \\
+temp $T{=}0.6,p0.95$ (rec) & 57.5 & 52.8 & 42.9 & 56.7 & 49.2 & 36.1 \\
+temp $T{=}1.0$ (unfilt) $^\dagger$ & 57.5 & 50.0 & 40.9 & 56.3 & 48.4 & 38.1 \\
+\midrule
+\multicolumn{7}{l}{\textit{Qwen3-8B}}\\
+p-less $k{=}2$ (default) & 75.4 & 67.1 & 58.3 & 73.4 & 60.3 & 44.0 \\
+p-less-norm (default) & 73.8 & 67.1 & 59.5 & 71.8 & 61.9 & 46.8 \\
+$G_k{=}1.6$ & 75.8 & 65.9 & 58.3 & 73.4 & 59.9 & 44.8 \\
+$G_k{=}0.8$ & 76.6 & 71.8 & 64.7 & 74.2 & 65.9 & 54.0 \\
+$G_k{=}0.4$ & 77.4 & 73.8 & 66.7 & 74.6 & 67.9 & 55.6 \\
+$G_k{=}0.2$ & 77.8 & 73.8 & 68.7 & 75.8 & 69.4 & 61.5 \\
+$G_k{=}0.1$ & 77.8 & 75.0 & 71.4 & 77.0 & 71.4 & 64.3 \\
+$G_k{=}0.05$ & 79.4 & 76.6 & 69.8 & 77.4 & 71.8 & 61.9 \\
+temp $T{=}0.6,p0.95,k20$ (rec) & 77.0 & 71.4 & 64.3 & 75.8 & 66.7 & 53.6 \\
+temp $T{=}1.0$ (unfilt) $^\dagger$ & 79.4 & 74.2 & 67.9 & 78.6 & 69.8 & 58.7 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Top-p (nucleus) sampling: a comparison}\label{app:topp}
 As a baseline for the R\'enyi-order lever, we sweep temperature-$1.0$ nucleus sampling at
