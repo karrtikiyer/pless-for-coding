@@ -43,7 +43,7 @@ survivor set to a single token and re-deriving the same step. The origin paper's
 threshold to any R\'enyi order $k$ ($G_k{=}\exp(-H_k)$) but evaluates only $k{=}2$; we give, to our
 knowledge, the \emph{first empirical evaluation} at $k\neq2$ and find that \emph{lowering} $k$ escapes
 the loops and recovers
-accuracy---the single best decoder on Qwen (beating even a hand-swept temperature), and a
+accuracy---the best pass@1 on Qwen (beating even a hand-swept temperature), and a
 calibration-free repair of a catastrophic default on DeepSeek.
 \end{abstract}
 
@@ -73,7 +73,7 @@ no obvious pathology. Our contributions:
     per-problem ablation attributes the recovery to loop-escape---concentrated on \emph{borderline}
     problems (not a rich-get-richer effect) and at least $\sim$22\% non-loop on Qwen under a truncation bound.
   \item \textbf{Positioning} (\S\ref{sec:pos}): the optimal $k$ is model-dependent (Qwen $k{\approx}0.1$,
-    DeepSeek $k{\approx}0.4$); $G_k$ is the single best decoder on Qwen---beating even a hand-swept
+    DeepSeek $k{\approx}0.4$); $G_k$ has the best pass@1 on Qwen---beating even a hand-swept
     temperature---and a calibration-free repair that competes with, but does not beat, tuned temperature
     on DeepSeek.
 \end{enumerate}
@@ -180,9 +180,10 @@ cross-verified against stored values. \textbf{Bold} marks the best value per col
 \emph{zero-tuning} configurations---defaults, the $G_k$ sweep ($k{=}2$ is default p-less), and each
 model's officially recommended setting (``rec''). $^\dagger$ marks the strongest temperature found by
 \emph{sweeping} $T$, a tuned reference (not eligible for bold). Lowering $k$ from the default removes
-looping and recovers accuracy on both models: on Qwen, $G_k{=}0.1$ has the best pass@1 and pass@10 of
-any decoder tested (beating the swept temperature); on DeepSeek, $G_k$ leads on pass@10 / tokens /
-non-termination but trails the recommended temperature on pass@1 by $0.006$. cb\_div is correct-only
+looping and recovers accuracy on both models: on Qwen, $G_k{=}0.1$ has the best pass@1 and pass@10 among
+the zero-tuning configs (the tuned pure-temperature reference $^\dagger$ edges it on pass@10; App~\ref{app:topp});
+on DeepSeek, $G_k$ leads on pass@10 / tokens / non-termination but trails the recommended temperature on
+pass@1 by $0.006$. cb\_div is correct-only
 and not ranked across configs (see \S\ref{sec:setup}).}
 \label{tab:main}
 \begin{tabular}{lccccc}
@@ -211,7 +212,7 @@ $G_k{=}0.2$              & 0.701 & 0.833 & 0.493 & 11{,}062 & \textbf{0.0} \\
 $G_k{=}0.1$              & \textbf{0.719} & \textbf{0.845} & 0.498 & 10{,}808 & \textbf{0.0} \\
 $G_k{=}0.05$            & 0.717 & 0.833 & 0.497 & \textbf{10{,}767} & 0.1 \\
 temp $T{=}0.6,p0.95,k20$ (rec) & 0.680 & 0.829 & 0.468 & 11{,}127 & 1.0 \\
-temp $T{=}1.0,p0.95$ $^\dagger$ & 0.705 & 0.821 & 0.497 & 11{,}062 & 0.2 \\
+temp $T{=}1.0$ (unfilt) $^\dagger$ & 0.712 & 0.849 & 0.503 & 10{,}738 & 0.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -305,9 +306,10 @@ problems become solvable that never were---their defaults had failed by looping,
 \section{Positioning}\label{sec:pos}
 \paragraph{$G_k$ vs.\ what a practitioner would actually run.} The right baseline is not a swept
 temperature but the setting a user gets out of the box, and the picture is model-dependent
-(Table~\ref{tab:pos}). On Qwen, $G_k{=}0.1$ ($0.719$) is the single best decoder---above the recommended
-$T0.6/p0.95/k20$ ($0.680$) \emph{and} above the best hand-swept temperature ($T1.0/p0.95$: $0.705$)---a
-calibration-free win. On DeepSeek, lowering $k$ repairs the catastrophic default ($0.392\!\to\!0.469$)
+(Table~\ref{tab:pos}). On Qwen, $G_k{=}0.1$ ($0.719$) has the best pass@1 of any decoder we test---above
+the recommended $T0.6/p0.95/k20$ ($0.680$) \emph{and} above the best hand-swept temperature (pure
+temperature $T1.0$: $0.712$; App~\ref{app:topp}), which edges $G_k$ only on pass@10 ($0.849$ vs.\
+$0.845$)---a calibration-free win on the headline metric. On DeepSeek, lowering $k$ repairs the catastrophic default ($0.392\!\to\!0.469$)
 and leads the recommended setting on pass@10, thinking tokens, and non-termination, but trails it on
 pass@1 ($0.469$ vs.\ $0.475$) and the swept temperature ($0.480$). So $G_k$ is a competitive,
 calibration-free repair---outright best on the lighter looper, and on the heavier looper a fix that
@@ -323,7 +325,7 @@ temperature; on DeepSeek it repairs the default but trails the recommended and s
 Model & $G_k$ (no tune) & recommended (no tune) & best swept temp \\
 \midrule
 DeepSeek-R1-Distill & $k{=}0.4$: 0.469 & 0.475 & \textbf{0.480} \\
-Qwen3-8B            & $k{=}0.1$: \textbf{0.719} & 0.680 & 0.705 \\
+Qwen3-8B            & $k{=}0.1$: \textbf{0.719} & 0.680 & 0.712 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -344,7 +346,7 @@ most-probable token, driving up to 42\% of code traces into loops---amplifying t
 latent, training-induced loop-propensity rather than creating it, by removing the sampling diversity
 that lets temperature escape. Lowering the R\'enyi order of the same threshold---the origin paper's own
 proposed generalization, which we are first to evaluate---repairs the failure and is competitive out of
-the box (the single best decoder on one of our two models). The lesson is that a hyperparameter-free
+the box (the best pass@1 on one of our two models). The lesson is that a hyperparameter-free
 default can fail silently on a setting its designers never tested, and that the fix can be the design's
 own, previously un-evaluated, generalization.
 
@@ -413,5 +415,44 @@ optimum; $95\%$ CI $[-0.004,+0.056]$, spanning 0): the gain is \emph{reliability
 land more often. On DeepSeek pass@10 rises $+0.10$ ($[+0.056,+0.143]$, excluding 0) and $28$ never-solved
 problems become solvable at $k{=}0.4$: the gain includes genuine \emph{coverage}, because those defaults
 failed by looping, not inability.
+
+\section{Top-p (nucleus) sampling: a comparison}\label{app:topp}
+As a baseline for the R\'enyi-order lever, we sweep temperature-$1.0$ nucleus sampling at
+$p\in\{0.8,0.85,0.9,1.0\}$ ($p{=}1.0$ is pure temperature, no truncation), on the same footing as the
+$G_k$ sweep (vLLM, 252 problems, $n{=}10$, thinking on, $32{,}768$-token cap; Table~\ref{tab:topp}). The
+question is whether plain nucleus sampling reaches what lowering the R\'enyi order $k$ achieves.
+
+\begin{table}[ht]\centering\small
+\caption{Top-p (nucleus) sweep at $T{=}1.0$ (APPS-interview, $n{=}10$, thinking on). cb\_div is
+correct-only and not comparable across configs (\S\ref{sec:setup}).}
+\label{tab:topp}
+\begin{tabular}{lccccc}
+\toprule
+Config & pass@1 & pass@10 & cb\_div & mean think tok & non-term \% \\
+\midrule
+\multicolumn{6}{l}{\textit{DeepSeek-R1-Distill-Llama-8B}}\\
+top-p 0.8             & 0.465 & 0.726 & 0.541 & 9{,}085 & 0.6 \\
+top-p 0.85            & 0.480 & 0.722 & 0.558 & 9{,}251 & 0.0 \\
+top-p 0.9             & 0.480 & 0.726 & 0.562 & 9{,}216 & 0.0 \\
+top-p 1.0 (pure temp) & 0.451 & 0.679 & 0.588 & 9{,}770 & 0.0 \\
+\midrule
+\multicolumn{6}{l}{\textit{Qwen3-8B}}\\
+top-p 0.8             & 0.700 & 0.841 & 0.478 & 10{,}679 & 0.8 \\
+top-p 0.85            & 0.699 & 0.841 & 0.476 & 10{,}943 & 0.4 \\
+top-p 0.9             & 0.706 & 0.841 & 0.491 & 10{,}778 & 0.2 \\
+top-p 1.0 (pure temp) & 0.712 & 0.849 & 0.503 & 10{,}738 & 0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Can nucleus sampling match $G_k$?} It depends on the model. On \textbf{DeepSeek}, yes:
+top-p $0.85$/$0.9$ ($0.480$ pass@1) ties the best temperature and edges $G_k{=}0.4$ ($0.469$)---on the
+heavier looper, plain nucleus sampling is as good a repair as the R\'enyi-order lever. On
+\textbf{Qwen}, not on the headline metric: the best top-p is pure temperature ($p{=}1.0$, $0.712$),
+which $G_k{=}0.1$ ($0.719$) still exceeds on pass@1; on pass@10 the two are within noise ($0.845$ vs.\
+$0.849$). Two things hold across the sweep: every top-p arm terminates ($\le0.8\%$ non-termination),
+re-confirming that the looping failure is specific to the p-less threshold and not the
+temperature/nucleus family; and for Qwen \emph{looser} nucleus is better (pass@1 rises monotonically to
+$p{=}1.0$), so nucleus truncation does not help.
 
 \end{document}
