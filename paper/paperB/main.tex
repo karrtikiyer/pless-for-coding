@@ -395,10 +395,20 @@ $k$ & pass@1 ($\Delta$) & pass@10 ($\Delta$) & win/lose/net & $\Delta$pass@1 95\
 
 \paragraph{Where the gain lands (strata).} Binning problems by their $k{=}2$ pass@1 into dead ($0$),
 hard $(0,0.3]$, mid $(0.3,0.7]$, easy $(0.7,1]$, the mean $\Delta$pass@1 at each model's optimum
-concentrates in the mid/hard bins (Qwen $k{=}0.1$: mid $+0.257$, hard $+0.221$; dead $+0.043$, easy
-$+0.026$. DeepSeek $k{=}0.4$: hard $+0.175$, mid $+0.144$, dead $+0.073$, easy $-0.020$). Already-solved
+concentrates in the mid/hard bins (Fig.~\ref{fig:ablation}; Qwen $k{=}0.1$: mid $+0.257$, hard $+0.221$;
+dead $+0.043$, easy $+0.026$. DeepSeek $k{=}0.4$: hard $+0.175$, mid $+0.144$, dead $+0.073$, easy
+$-0.020$). Already-solved
 (easy) problems barely move and never-solved (dead) mostly stay dead---the gain is not rich-get-richer.
 The dominant migration is mid$\to$easy (Qwen $k{=}0.1$: 31 of 47 mid problems).
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.82\linewidth]{figures/fig_ablation_strata_bars.png}
+\caption{Where the gain lands: mean $\Delta$pass@1 vs.\ the $k{=}2$ default, by baseline-difficulty
+stratum, at each model's optimum ($k{=}0.1$ Qwen, $k{=}0.4$ DeepSeek). Whiskers are two-level bootstrap
+$95\%$ CIs (problems $\times$ draws); $n$ per stratum annotated. The gain concentrates in the mid/hard
+bins for both models; easy problems barely move and dead problems mostly stay dead.}
+\label{fig:ablation}
+\end{figure}
 
 \paragraph{Loop-escape bound (the rigorous attribution).} Within each stratum we record how far
 truncation fell from $k{=}2$ ($\Delta$trunc). Because only a de-truncated sample can be rescued,
