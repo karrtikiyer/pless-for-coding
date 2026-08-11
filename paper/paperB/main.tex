@@ -14,6 +14,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{graphicx}
+\usepackage{float}   % [H] to pin appendix tables under their own section (no float pile-up)
 \usepackage{multirow}
 \usepackage[numbers]{natbib}
 \usepackage[hidelinks]{hyperref}
@@ -363,7 +364,7 @@ $\Delta$pass@1 and $\Delta$pass@10---resampling the 252 problems and, within eac
 baseline and arm independently---so the intervals reflect within-problem sampling noise; a CI excluding
 0 is a significant shift (Table~\ref{tab:ablation}).
 
-\begin{table}[ht]\centering\small
+\begin{table}[H]\centering\small
 \caption{Per-problem ablation vs.\ the $k{=}2$ default (252 tasks, $n{=}10$). win/lose/net counts
 problems whose pass@1 rose/fell; $95\%$ CIs are two-level bootstraps (problems $\times$ draws); a CI
 excluding 0 is significant. Note Qwen's $\Delta$pass@10 CIs all span 0 (reliability, not new coverage),
@@ -429,7 +430,7 @@ $k$ falls---e.g.\ Qwen cover@$0.7$ goes $58.3\%\!\to\!71.4\%$ (default $\to$ $G_
 distinct form $44.0\%\!\to\!64.3\%$---so lowering the order makes problems solved both more
 \emph{consistently} and with more \emph{distinct} correct programs.
 
-\begin{table}[ht]\centering\small
+\begin{table}[H]\centering\small
 \caption{Full pass@$k$ (APPS-interview, $n{=}10$, thinking on), recomputed from the same runs as
 Table~\ref{tab:main} (unbiased estimator; pass@1/@10 match Table~\ref{tab:main}). $^\dagger$ = strongest
 swept temperature.}
@@ -465,7 +466,7 @@ temp $T{=}1.0$ (unfilt) $^\dagger$ & 0.712 & 0.801 & 0.824 & 0.841 & 0.849 \\
 \end{tabular}
 \end{table}
 
-\begin{table}[ht]\centering\small
+\begin{table}[H]\centering\small
 \caption{cover@$t$ (\% of problems solved on $\ge t$ of the $n{=}10$ samples) and its distinct variant
 cover@$t$-d (\% with $\ge tn$ AST-\emph{distinct} correct solutions). Same runs / config set as
 Table~\ref{tab:main}; cover@$t$-d $\le$ cover@$t$ always. cover@$0.1$ equals pass@10 and is omitted.}
@@ -507,7 +508,7 @@ $p\in\{0.8,0.85,0.9,1.0\}$ ($p{=}1.0$ is pure temperature, no truncation), on th
 $G_k$ sweep (vLLM, 252 problems, $n{=}10$, thinking on, $32{,}768$-token cap; Table~\ref{tab:topp}). The
 question is whether plain nucleus sampling reaches what lowering the R\'enyi order $k$ achieves.
 
-\begin{table}[ht]\centering\small
+\begin{table}[H]\centering\small
 \caption{Top-p (nucleus) sweep at $T{=}1.0$ (APPS-interview, $n{=}10$, thinking on). cb\_div is
 correct-only and not comparable across configs (\S\ref{sec:setup}).}
 \label{tab:topp}
