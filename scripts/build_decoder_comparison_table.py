@@ -49,6 +49,18 @@ def _renyi_cfgs(d):
     return [(f"G_k={k}", d, f"pless_renyi_think_t1.0_k{k}_t1.0")
             for k in ("1.6", "0.8", "0.4", "0.2", "0.1", "0.05")]
 
+# top-p (nucleus) sweep at T=1.0 — same footing as G_k; the "can nucleus match G_k?" baseline.
+_Q_TOPP = "results/_top_p_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview"
+_DS_TOPP = "results/_top_p_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview"
+
+
+def _topp_cfgs(d):
+    """The 4 top-p arms; p=1.0 is pure temperature (basename has no _p suffix)."""
+    return [("top-p 0.8", d, "temp_p0.8_think_t1.0_t1.0"),
+            ("top-p 0.85", d, "temp_p0.85_think_t1.0_t1.0"),
+            ("top-p 0.9", d, "temp_p0.9_think_t1.0_t1.0"),
+            ("top-p 1.0 (pure temp)", d, "temp_think_t1.0_t1.0")]
+
 SETS = {
     # (display, dir, jsonl_basename)
     "qwen": {
@@ -72,7 +84,7 @@ SETS = {
             ("adaptive (1-chop)", _Q_CANON, "pless_adaptive_recon"),
             ("pless_norm @T0.6", _Q_DEC06, "pless_norm_think_t0.6_t0.6"),
             ("pless @T0.6",      _Q_DEC06, "pless_think_t0.6_t0.6"),
-        ] + _renyi_cfgs(_Q_RENYI),
+        ] + _renyi_cfgs(_Q_RENYI) + _topp_cfgs(_Q_TOPP),
     },
     # Corrected (post-#45488-fix) DeepSeek runs, all in one tree.
     "deepseek_fixed": {
@@ -93,7 +105,7 @@ SETS = {
             ("temp t1.0 (p0.95)",      _DS_FIX, "temp_p0.95_think_t1.0_t1.0"),
             ("temp t0.6 (unfilt)",     _DS_FIX, "temp_think_t0.6_t0.6"),
             ("temp t0.6 (p0.95) [rec]", _DS_FIX, "temp_p0.95_think_t0.6_t0.6"),
-        ] + _renyi_cfgs(_DS_RENYI),
+        ] + _renyi_cfgs(_DS_RENYI) + _topp_cfgs(_DS_TOPP),
     },
 }
 
