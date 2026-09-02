@@ -9,8 +9,9 @@
 # AtCoder-specific. Source-generalization check (both APPS buckets are 2021-era; NOT a
 # contamination fix — that is the separate LiveCodeBench plan).
 #
-# Arms (22): pless(k=2) | pless_norm | G_k x12 {1.6,0.8,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1,0.075,0.05}
-#            | rec (T0.6/p0.95/k20) | top-p x6 {0.7,0.75,0.8,0.85,0.9,0.95} @T1.0 | pure-temp T1.0.
+# Arms (default 16): pless(k=2) | pless_norm | G_k x6 {1.6,0.8,0.4,0.2,0.1,0.05} (Paper B Table 1;
+#   densify with the in-between k's later only if a hump appears) | rec (T0.6/p0.95/k20)
+#   | top-p x6 {0.7,0.75,0.8,0.85,0.9,0.95} @T1.0 | pure-temp T1.0.
 #
 # RUN ON A CUDA POD. Requires .venv-vllm (pyproject-vllm.toml).
 #
@@ -64,8 +65,11 @@ arm_args() {
   esac
 }
 
+# Default = Paper B Table-1 6-point G_k grid (staged: run these first, then densify with the
+# in-between k's only if the coarse curve shows a hump). Add later via, e.g.:
+#   ARMS="renyi_k0.45 renyi_k0.35 renyi_k0.3 renyi_k0.25 renyi_k0.15 renyi_k0.075" ./run_cf748_apps_qwen3.sh
 ARMS_DEFAULT="pless pless_norm \
-renyi_k1.6 renyi_k0.8 renyi_k0.45 renyi_k0.4 renyi_k0.35 renyi_k0.3 renyi_k0.25 renyi_k0.2 renyi_k0.15 renyi_k0.1 renyi_k0.075 renyi_k0.05 \
+renyi_k1.6 renyi_k0.8 renyi_k0.4 renyi_k0.2 renyi_k0.1 renyi_k0.05 \
 rec topp0.7 topp0.75 topp0.8 topp0.85 topp0.9 topp0.95 temp"
 read -ra ARMS_ARR <<< "${ARMS:-$ARMS_DEFAULT}"
 
