@@ -171,6 +171,10 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="Cap problems within the (source, difficulty) bucket (for smoke tests).")
     p.add_argument("--task-ids", type=int, nargs="+", default=None,
                    help="Only run these specific APPS problem_ids.")
+    p.add_argument("--task-ids-file", type=Path, default=None,
+                   help="File of APPS problem_ids (whitespace/newline-separated) to run; "
+                        "unioned with --task-ids. For large reproducible subsets "
+                        "(e.g. the committed CodeForces-interview 748-id list).")
     p.add_argument("--scaffold-file", type=Path, default=None,
                    help="JSONL of {task_id, scaffold} (see bench.apps.gen_scaffolds). "
                         "When set, each problem's instruct prompt is augmented with "
@@ -373,8 +377,13 @@ def main():
 
     # Load APPS, filtered to the requested bucket.
     problems = list(load_apps(source=args.source, difficulty=args.difficulty))
+    wanted: set[int] | None = None
     if args.task_ids is not None:
         wanted = set(args.task_ids)
+    if args.task_ids_file is not None:
+        file_ids = {int(tok) for tok in args.task_ids_file.read_text().split()}
+        wanted = file_ids if wanted is None else (wanted | file_ids)
+    if wanted is not None:
         problems = [p for p in problems if p.problem_id in wanted]
     if args.max_problems is not None:
         problems = problems[:args.max_problems]

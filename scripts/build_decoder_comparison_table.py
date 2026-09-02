@@ -73,6 +73,10 @@ def _topp_cfgs(d):
         cfgs.append(("top-p 1.0 (pure temp)", d, "temp_think_t1.0_t1.0"))
     return cfgs
 
+# CodeForces-interview 748-subset cross-source replication — all arms in ONE tree per model.
+_Q_CF = "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview"
+_DS_CF = "results/_cf_interview_748/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/CODEFORCES_interview"
+
 SETS = {
     # (display, dir, jsonl_basename)
     "qwen": {
@@ -118,6 +122,32 @@ SETS = {
             ("temp t0.6 (unfilt)",     _DS_FIX, "temp_think_t0.6_t0.6"),
             ("temp t0.6 (p0.95) [rec]", _DS_FIX, "temp_p0.95_think_t0.6_t0.6"),
         ] + _renyi_cfgs(_DS_RENYI) + _topp_cfgs(_DS_TOPP),
+    },
+    # CodeForces-interview 748-subset (Paper B cross-source replication). All arms live in one
+    # tree; G_k (12) and top-p (7) are auto-discovered; τ_α / adaptive excluded (as in Paper B).
+    "qwen_cf": {
+        "model": "Qwen/Qwen3-8B",
+        "out": "docs/decoder_comparison_cot_apps_qwen3_cf.md",
+        "use_csv": False,
+        "title": "Qwen3-8B (CODEFORCES-interview, 748)",
+        "bucket": "CODEFORCES-interview (748)",
+        "configs": [
+            ("pless @k2 (base)",          _Q_CF, "pless_think_t1.0_t1.0"),
+            ("pless_norm",                _Q_CF, "pless_norm_think_t1.0_t1.0"),
+            ("temp T0.6 p0.95 k20 (rec)", _Q_CF, "temp_p0.95_k20_think_t0.6_t0.6"),
+        ] + _renyi_cfgs(_Q_CF) + _topp_cfgs(_Q_CF),
+    },
+    "deepseek_cf": {
+        "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+        "out": "docs/decoder_comparison_cot_apps_deepseek_cf.md",
+        "use_csv": False,
+        "title": "DeepSeek-R1-Distill-Llama-8B (CODEFORCES-interview, 748)",
+        "bucket": "CODEFORCES-interview (748)",
+        "configs": [
+            ("pless @k2 (base)",       _DS_CF, "pless_think_t1.0_t1.0"),
+            ("pless_norm",             _DS_CF, "pless_norm_think_t1.0_t1.0"),
+            ("temp T0.6 p0.95 (rec)",  _DS_CF, "temp_p0.95_think_t0.6_t0.6"),
+        ] + _renyi_cfgs(_DS_CF) + _topp_cfgs(_DS_CF),
     },
 }
 
@@ -201,7 +231,8 @@ def main():
         rows.append((name, ntasks, n_samp, p1, p10, cb, mean_tok, trunc))
 
     rows.sort(key=lambda r: -r[3])
-    lines = [f"# Decoder comparison — ATCODER-interview, {cfg['title']} (thinking on, n=10)\n",
+    full_n = max((r[1] for r in rows), default=0)   # complete-run task count for this set
+    lines = [f"# Decoder comparison — {cfg.get('bucket', 'ATCODER-interview')}, {cfg['title']} (thinking on, n=10)\n",
              "All values pulled live by `scripts/build_decoder_comparison_table.py`. pass@k recomputed "
              "from raw pass_results (unbiased, Chen 2021) & checked vs stored; trunc% from `</think>` "
              "presence; mean think tok from the cot CSV when present else re-tokenized from the jsonl; "
@@ -209,7 +240,7 @@ def main():
              "| Config | n | pass@1 | pass@10 | cb_div | mean think tok | trunc% |",
              "|---|---|---|---|---|---|---|"]
     for name, nt, ns, p1, p10, cb, mt, tr in rows:
-        ntnote = f"{nt}" if nt == 252 else f"**{nt}**"
+        ntnote = f"{nt}" if nt == full_n else f"**{nt}**"   # bold flags an incomplete arm
         lines.append(f"| {name} | {ntnote} | {p1:.3f} | {p10:.3f} | {cb:.4f} | {mt:,.0f} | {tr*100:.1f} |")
     if pending:
         lines.append("\n**Pending (not scored yet):** " + ", ".join(pending) + ".")
