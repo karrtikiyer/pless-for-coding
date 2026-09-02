@@ -14,6 +14,7 @@ Run: SET=deepseek_fixed PYTHONPATH=. uv run python scripts/build_decoder_compari
      SET=qwen           PYTHONPATH=. uv run python scripts/build_decoder_comparison_table.py   (default)
 """
 import csv
+import glob
 import gzip
 import json
 import math
@@ -45,9 +46,14 @@ _DS_RENYI = "results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama
 
 
 def _renyi_cfgs(d):
-    """The 6 G_k arms as (display, dir, basename) tuples for a model's renyi dir."""
-    return [(f"G_k={k}", d, f"pless_renyi_think_t1.0_k{k}_t1.0")
-            for k in ("1.6", "0.8", "0.4", "0.2", "0.1", "0.05")]
+    """Every scored G_k arm in a model's renyi dir, auto-discovered from disk (so fill-in k
+    values fold in as they arrive), sorted by k descending (tight -> loose)."""
+    ks = []
+    for m in glob.glob(f"{d}/metrics/pless_renyi_think_t1.0_k*_t1.0_metrics.json"):
+        b = os.path.basename(m)
+        ks.append(b[len("pless_renyi_think_t1.0_k"):-len("_t1.0_metrics.json")])
+    ks.sort(key=float, reverse=True)
+    return [(f"G_k={k}", d, f"pless_renyi_think_t1.0_k{k}_t1.0") for k in ks]
 
 # top-p (nucleus) sweep at T=1.0 — same footing as G_k; the "can nucleus match G_k?" baseline.
 _Q_TOPP = "results/_top_p_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview"
@@ -55,11 +61,17 @@ _DS_TOPP = "results/_top_p_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-
 
 
 def _topp_cfgs(d):
-    """The 4 top-p arms; p=1.0 is pure temperature (basename has no _p suffix)."""
-    return [("top-p 0.8", d, "temp_p0.8_think_t1.0_t1.0"),
-            ("top-p 0.85", d, "temp_p0.85_think_t1.0_t1.0"),
-            ("top-p 0.9", d, "temp_p0.9_think_t1.0_t1.0"),
-            ("top-p 1.0 (pure temp)", d, "temp_think_t1.0_t1.0")]
+    """Every scored top-p arm in a model's top-p dir, auto-discovered, sorted by p descending;
+    p=1.0 is pure temperature (basename has no _p suffix)."""
+    ps = []
+    for m in glob.glob(f"{d}/metrics/temp_p*_think_t1.0_t1.0_metrics.json"):
+        b = os.path.basename(m)
+        ps.append(b[len("temp_p"):-len("_think_t1.0_t1.0_metrics.json")])
+    ps.sort(key=float, reverse=True)
+    cfgs = [(f"top-p {p}", d, f"temp_p{p}_think_t1.0_t1.0") for p in ps]
+    if os.path.exists(f"{d}/metrics/temp_think_t1.0_t1.0_metrics.json"):
+        cfgs.append(("top-p 1.0 (pure temp)", d, "temp_think_t1.0_t1.0"))
+    return cfgs
 
 SETS = {
     # (display, dir, jsonl_basename)
