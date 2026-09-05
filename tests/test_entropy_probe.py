@@ -242,3 +242,134 @@ def test_run_one_problem_n_eq_1_uses_greedy():
     assert call.kwargs["do_sample"] is False, (
         "n_samples=1 must use greedy for deterministic / back-compat behavior"
     )
+
+
+# ─── pless_alpha CLI plumbing (new in Option C) ─────────────────────────────
+
+def test_parse_args_requires_alpha_when_sampler_is_pless_alpha():
+    """--sampler=pless_alpha demands --alpha; argparse should reject."""
+    from bench.entropy_probe.runner import parse_args
+    with pytest.raises(SystemExit):
+        parse_args([
+            "--model", "fake/model",
+            "--dataset", "gsm8k",
+            "--sampler", "pless_alpha",
+        ])
+    ns = parse_args([
+        "--model", "fake/model",
+        "--dataset", "gsm8k",
+        "--sampler", "pless_alpha",
+        "--alpha", "2.0",
+    ])
+    assert ns.sampler == "pless_alpha"
+    assert ns.alpha == 2.0
+
+
+def test_parse_args_rejects_alpha_when_sampler_is_not_pless_alpha():
+    """Passing --alpha with --sampler=multinomial is a misconfig."""
+    from bench.entropy_probe.runner import parse_args
+    with pytest.raises(SystemExit):
+        parse_args([
+            "--model", "fake/model",
+            "--dataset", "gsm8k",
+            "--sampler", "multinomial",
+            "--alpha", "2.0",
+        ])
+
+
+def test_parse_args_default_sampler_is_multinomial():
+    """Backwards-compat: omitting --sampler preserves the original probe behavior."""
+    from bench.entropy_probe.runner import parse_args
+    ns = parse_args([
+        "--model", "fake/model",
+        "--dataset", "gsm8k",
+    ])
+    assert ns.sampler == "multinomial"
+    assert ns.alpha is None
+
+
+def test_sampler_tag_encodes_method_and_alpha():
+    """Output subdir tag must include sampler + α for pless_alpha so the
+    Option-C reruns don't clobber the existing multinomial-T=1.0 cells."""
+    from bench.entropy_probe.runner import _sampler_tag, parse_args
+    # multinomial @ T=1.0 with n>1 → "multinomial_t1.0"
+    ns = parse_args([
+        "--model", "m", "--dataset", "gsm8k",
+        "--sampler", "multinomial", "--n-samples", "3",
+    ])
+    assert _sampler_tag(ns) == "multinomial_t1.0"
+    # multinomial @ T=1.0 with n=1 → "greedy_t1.0"
+    ns = parse_args([
+        "--model", "m", "--dataset", "gsm8k",
+        "--sampler", "multinomial", "--n-samples", "1",
+    ])
+    assert _sampler_tag(ns) == "greedy_t1.0"
+    # pless_alpha @ α=2.0, T=1.0 → "pless_alpha_a2.0_t1.0"
+    ns = parse_args([
+        "--model", "m", "--dataset", "gsm8k",
+        "--sampler", "pless_alpha", "--alpha", "2.0",
+    ])
+    assert _sampler_tag(ns) == "pless_alpha_a2.0_t1.0"
+    # pless_alpha @ α=5.0 → "pless_alpha_a5.0_t1.0"
+    ns = parse_args([
+        "--model", "m", "--dataset", "gsm8k",
+        "--sampler", "pless_alpha", "--alpha", "5.0",
+    ])
+    assert _sampler_tag(ns) == "pless_alpha_a5.0_t1.0"
+
+
+def test_run_one_problem_pless_alpha_routes_through_generate_samples():
+    """When sampler=pless_alpha, run_one_problem must call
+    bench.generator.generate_samples (the production code path), NOT
+    model.generate(). And the returned full_ids must reach
+    teacher_forced_entropy. This is the methodology-fix invariant for
+    Option C."""
+    from unittest.mock import MagicMock, patch
+    import torch
+    from bench.entropy_probe.runner import run_one_problem
+    from bench.entropy_probe.datasets import EntropyProbeProblem
+
+    fake_tok = MagicMock()
+    fake_tok.apply_chat_template.return_value = "PROMPT"
+    fake_tok.pad_token_id = 0
+    fake_tok.eos_token_id = 0
+
+    fake_model = MagicMock()
+    fake_model.device = "cpu"
+
+    fake_problem = EntropyProbeProblem(task_id="x", problem="q", reference=None)
+
+    # Fake generate_samples returning (texts, ids_list, prompt_len)
+    fake_full_ids = [
+        torch.zeros(10, dtype=torch.long),
+        torch.zeros(11, dtype=torch.long),
+    ]
+    fake_gs_return = (["text1", "text2"], fake_full_ids, 4)
+
+    with patch("bench.generator.generate_samples",
+               return_value=fake_gs_return) as mock_gs, \
+         patch("bench.entropy_probe.runner.teacher_forced_entropy",
+               return_value=[0.5, 0.5, 0.5]) as mock_tfe:
+        recs = run_one_problem(
+            fake_model, fake_tok, fake_problem,
+            dataset="gsm8k", max_new_tokens=8,
+            n_samples=2, sampler="pless_alpha", alpha=2.0,
+            temperature=1.0,
+        )
+
+    # Two records returned, with sample_idx 0 and 1.
+    assert len(recs) == 2
+    assert [r["sample_idx"] for r in recs] == [0, 1]
+    # generate_samples called exactly once (batched N=2), with
+    # return_token_ids=True so we got full_ids back.
+    assert mock_gs.call_count == 1
+    assert mock_gs.call_args.kwargs["return_token_ids"] is True
+    assert mock_gs.call_args.kwargs["n_samples"] == 2
+    # teacher_forced_entropy called twice (once per returned sample),
+    # each with a (1, seq_len) tensor (unsqueeze(0) of the 1-D id list).
+    assert mock_tfe.call_count == 2
+    for call in mock_tfe.call_args_list:
+        ids_arg = call.args[1]
+        assert ids_arg.ndim == 2 and ids_arg.shape[0] == 1
+    # And NO calls to model.generate() — the multinomial path is bypassed.
+    assert fake_model.generate.call_count == 0

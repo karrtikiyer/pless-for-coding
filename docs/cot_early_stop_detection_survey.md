@@ -135,3 +135,64 @@ Prototype offline on existing DeepSeek truncated traces (A28): replay each trace
 entropy-degeneration score per step, and check whether it would have fired *before* the cap on the
 37% that truncated **without** firing on the hard-but-productive traces. Turns gap #1 (code-domain
 transfer) into an experiment on data we already have — no new generation.
+
+---
+
+## Round 2 (2026-06-12) — code-specific gap, loop detectors, post-detection actions
+
+Second deep-research pass (wf_75df4c86-745; 105 agents, 3-vote adversarial verify),
+scoped to the three gaps the Round-1 survey flagged. Keystone papers re-fetched
+independently (Word Salad Chopper 2511.00536, recovery 2506.10979) — both confirmed.
+
+### Gap 1 — code-specific evidence: essentially NONE (central negative result)
+Every quantitative detector result is math/QA (GSM8K/AIME/MATH500/GPQA/MMLU-Pro), NOT
+code. Verified 6-claim unanimous (3-0). The one partial exception: **2506.10979** is
+reported to include MBPP (body-only; NOT confirmed in the abstract on independent fetch
+— treat as unverified). Code has a different per-token entropy profile (long low-entropy
+syntactic runs + sparse high-entropy decision points), so any entropy/confidence
+threshold tuned on math **needs recalibration on our APPS traces**. This is THE gap.
+
+### Gap 2 — loop/repetition detectors (candidate IDs verified)
+- **Word Salad Chopper (2511.00536)** — CONFIRMED (independently fetched). Single-layer
+  linear classifier on hidden states of `<\n\n>` tokens trailing each reasoning chunk
+  detects "word salad" self-repetition on-the-fly. Body reports ~92.7% acc / ~98.6 AUROC
+  (Qwen-7B, GSM8K, t=0) per the workflow; abstract confirms mechanism + "useless
+  self-repetitions … exhaust the decoding budget." Matches our exact failure mode. BUT
+  operates on HIDDEN STATES, not our free Σpᵢ².
+- **n-gram repetition counter (2512.12895)** — streamable: a response loops if any n-gram
+  repeats ≥k times (n=30,k=20 reasoning; k=10 instruct). Reasoning models loop at low
+  temp/greedy; **raising temperature largely removes looping** — INDEPENDENTLY CORROBORATES
+  our own recovery-sweep result (T1.5/T2.0 cut pless truncation 17%→~0). Zero added cost.
+- **CUSUM precursor (in the loop-detector set)** — fires ~40 sentences (~1500 tokens)
+  BEFORE verbatim repetition because semantic oscillation precedes textual repetition;
+  hidden-state based.
+- **SpecRA (OpenReview xVO4BqmzVD)** — frequency-domain, robust to near-verbatim; abstract-
+  only verification, near-verbatim-robustness sub-claim was a split 2-1. Weakest-evidenced.
+- 2508.17627 (RCPD) "repetitive oscillations/semantic convergence matches our loop" — REFUTED 1-2.
+
+### Gap 3 — post-detection actions: DETECTION IS EASY, RECOVERY IS HARD (the key finding)
+- **2506.10979 (EMNLP 2025, CONFIRMED independently)**: models reliably *identify* unhelpful/
+  rambling thoughts but *fail to recover* — they naively continue the bad line; **INVERSE
+  SCALING**: larger models recover WORSE from short irrelevant thoughts even when instructed
+  to reevaluate. ⇒ "just nudge it to reconsider" is empirically weak.
+- **Only action with positive evidence on the verbatim-loop mode**: Word Salad Chopper's
+  **chop + regeneration-prompt** — truncate the looping span, inject a fixed steering phrase
+  ("I can find a clearer solution if I focus on the core problem."), 25-43% token cut with
+  negligible accuracy change (math/QA).
+- **s1 budget-forcing (2501.19393)**: force-terminate OR extend with "Wait". The sub-claim
+  that "Wait improves correctness via self-correction" was REFUTED 1-2.
+- **Adaptive Injection Decoding (2503.10167)** as a transition-injection analogue — REFUTED 0-3
+  (AID prevents premature STOPPING, the opposite of our never-converges loop).
+
+### Recommendation (for our pless code traces)
+Two-tier DETECTOR + chop ACTION:
+1. **Tier 1**: streamable n-gram repetition counter (n=30,k=20), zero added cost.
+2. **Tier 2**: EMA-variance threshold on our existing per-token Σpᵢ² (EAT-style) — the
+   entropy/confidence family is what our free signal supports (NOT the hidden-state probes).
+3. **Action**: chop the looping span + inject a fixed regeneration phrase (only post-detection
+   action with direct loop-mode evidence). Higher-temperature-escape is a cheap alternative
+   our own data already supports.
+**All code efficacy UNVERIFIED — calibrate thresholds + A/B pass@1 on the APPS traces** (the
+open questions: does Σpᵢ² EMA-variance separate looping on code; does n-gram fire early enough
+vs needing the hidden-state CUSUM lead; does chop+regen preserve pass@k or does inverse-scaling
+recovery failure dominate; is temperature-escape better than chop for code precision).

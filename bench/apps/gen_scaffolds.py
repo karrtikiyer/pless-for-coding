@@ -1,16 +1,19 @@
 """Generate external algorithm scaffolds with Claude Opus for the transfer study.
 
 For each of the 26 never-solved APPS ATCODER-interview tasks, ask Claude Opus for
-a STRUCTURED ALGORITHM (a flowchart in words) — numbered steps, named data
-structures, complexity — with NO code. Qwen3-8B then implements from the scaffold
-with its own thinking OFF (see bench/apps/prompts.format_prompt_apps_scaffold and
-the ``--scaffold-file`` runner flag).
+a HIGH-LEVEL scaffold — the key insight + general approach + complexity, with NO
+recurrence, NO exact state/indices, NO step-by-step, NO code. The implementer
+(Qwen3-8B / Haiku) must derive the algorithm from the idea and code it with its
+own thinking OFF (see bench/apps/prompts.format_prompt_apps_scaffold and the
+``--scaffold-file`` runner flag).
 
-The scaffold's altitude is the whole experiment: if Opus leaks code, a Qwen pass
-proves transcription, not reasoning transfer. Guardrails: a forbidding system
-prompt, a post-generation code-token heuristic with one re-request, and a
-pre-exit validation gate that refuses to declare success if any scaffold trips
-the heuristic.
+The scaffold's altitude is the whole experiment. An earlier full-step-by-step
+version made a downstream pass a TRANSCRIPTION of Opus's solution (verified by
+spot-check) rather than a test of reasoning transfer; this high-altitude version
+hands over only the idea. Guardrails: a forbidding system prompt, a
+post-generation code-token heuristic with one re-request, and a pre-exit
+validation gate that refuses to declare success if any scaffold trips the
+heuristic or comes back empty.
 
 Reuses the Anthropic client pattern from bench/eval/algosim_claude_judge.py
 (client init, ANTHROPIC_API_KEY guard, retry, ThreadPoolExecutor, JSONL
@@ -54,22 +57,35 @@ TASK_IDS = [
 
 DEFAULT_MODEL = "claude-opus-4-8"
 
+# HIGH-ALTITUDE scaffold prompt (reasoning-transfer test). An earlier version
+# asked for a full step-by-step algorithm with named data structures; a
+# spot-check showed that for hard DP/geometry problems that IS the full solution
+# in prose, so a downstream "pass" was transcription, not reasoning transfer.
+# This version hands over only the KEY INSIGHT + APPROACH and leaves the
+# recurrence / state / steps / I/O for the implementer to derive.
 SYSTEM_PROMPT = (
-    "You are an expert competitive programmer and algorithm designer. Given a "
-    "programming problem, produce a STRUCTURED ALGORITHM — a flowchart in words "
-    "— that a competent programmer could implement without further insight.\n\n"
+    "You are an expert competitive programmer. Given a programming problem, "
+    "explain — at a HIGH LEVEL — the key insight and the solution approach that "
+    "a strong programmer would then implement on their own. Convey the IDEA, "
+    "not the implementation.\n\n"
     "Output ONLY these sections:\n"
-    "1. Restatement: one or two sentences on exactly what to compute.\n"
-    "2. Data structures: the named structures to use, described in words "
-    "(e.g. \"a prefix-sum array `pre` of length n+1\").\n"
-    "3. Algorithm: numbered, imperative steps. Include how to READ the input "
-    "from standard input and how to FORMAT the output to standard output.\n"
-    "4. Edge cases: the tricky inputs to handle.\n"
-    "5. Complexity: time and space.\n\n"
-    "STRICTLY FORBIDDEN: Python or any programming-language syntax, code blocks, "
-    "triple-backtick fences, function/variable definitions written as code, "
-    "library calls, or line-by-line source. Describe every operation in prose, "
-    "not code. If you are about to write code, describe it in words instead."
+    "1. Key insight: the crucial observation(s) that make the problem tractable "
+    "(1-3 sentences).\n"
+    "2. Approach: the general technique and what it operates on, in prose — "
+    "e.g. \"dynamic programming over prefixes of the array\", \"binary search on "
+    "the answer with a greedy feasibility check\", \"coordinate-compress the "
+    "plane, then flood-fill the free region\". Name the technique and the "
+    "high-level plan; do NOT work out the details.\n"
+    "3. Complexity: the target time and space.\n\n"
+    "STRICTLY FORBIDDEN — leave these for the implementer to work out:\n"
+    "- any code, pseudocode, or triple-backtick code fences;\n"
+    "- explicit recurrences or transition formulas (e.g. a dp update rule);\n"
+    "- exact DP state definitions, array/index notation, or numbered "
+    "step-by-step algorithms;\n"
+    "- exact input-parsing or output-formatting steps.\n"
+    "Keep each section to a few sentences of conceptual prose. If you catch "
+    "yourself writing a recurrence, an index expression, or a step list, STOP "
+    "and state the idea in words instead."
 )
 
 # Heuristic for detecting code leakage in a scaffold (see module docstring).
