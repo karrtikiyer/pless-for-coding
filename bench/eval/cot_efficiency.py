@@ -256,7 +256,7 @@ def discover_config_files(results_dir: Path, extra_dirs=(), dataset="mbpp"):
     # Include compressed variants — load_results + _stem already handle .gz/.xz,
     # and gzipping JSONLs is the repo's size-saving convention. Without these the
     # report silently finds nothing once results are compressed.
-    patterns = ("*.jsonl", "*.jsonl.gz", "*.jsonl.xz") if dataset == "apps" \
+    patterns = ("*.jsonl", "*.jsonl.gz", "*.jsonl.xz") if dataset in ("apps", "livecodebench") \
         else (*_THINK_GLOBS, "pless_alpha_think_*.jsonl")
     for d in search_dirs:
         if not d.exists():
@@ -299,7 +299,7 @@ def config_meta(record: dict, jsonl_path: Path, dataset="mbpp",
     method = record.get("method", "?")
     stem = _stem(jsonl_path)
 
-    if dataset == "apps":
+    if dataset in ("apps", "livecodebench"):
         # APPS unified runs: method ∈ {temp, pless, pless_norm, pless_alpha};
         # temp-family distinguished by top_p/top_k stored in the record. Budget
         # is the run's --max-new-tokens (not in the record) → supplied by caller.
@@ -423,7 +423,7 @@ def analyze_config(jsonl_path: Path, metrics_path: Path, tokenizer,
     # APPS: use the executor's per-sample `extraction_success` as the
     # authoritative has-code signal (matches what was actually evaluated).
     has_code_by_task = None
-    if dataset == "apps":
+    if dataset in ("apps", "livecodebench"):
         has_code_by_task = {
             pt["task_id"]: pt["extraction_success"]
             for pt in metrics["per_task"] if "extraction_success" in pt
@@ -806,7 +806,8 @@ def load_tokenizer(model_id: str):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--results-dir", type=Path, required=True)
-    ap.add_argument("--dataset", default="mbpp", choices=["mbpp", "humaneval", "apps"])
+    ap.add_argument("--dataset", default="mbpp",
+                    choices=["mbpp", "humaneval", "apps", "livecodebench"])
     ap.add_argument("--max-tokens", type=int, default=None,
                     help="Generation budget of the run (REQUIRED for --dataset apps; "
                          "used for near_cap + as the frontier budget). MBPP/HE infer it.")
@@ -827,13 +828,13 @@ def main() -> None:
                     help="Run alignment + pass@1 assertions and exit.")
     args = ap.parse_args()
 
-    if args.dataset == "apps" and args.max_tokens is None:
-        ap.error("--max-tokens is required for --dataset apps "
-                 "(the run's --max-new-tokens, e.g. 16384)")
+    if args.dataset in ("apps", "livecodebench") and args.max_tokens is None:
+        ap.error(f"--max-tokens is required for --dataset {args.dataset} "
+                 "(the run's --max-new-tokens, e.g. 32768)")
 
-    # For APPS every config shares the run budget; make it the frontier budget so
+    # For APPS/LCB every config shares the run budget; make it the frontier budget so
     # the report/plots include all configs (PARETO_BUDGET is the MBPP 8192 default).
-    if args.dataset == "apps":
+    if args.dataset in ("apps", "livecodebench"):
         global PARETO_BUDGET
         PARETO_BUDGET = args.max_tokens
 

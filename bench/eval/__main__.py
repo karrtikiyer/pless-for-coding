@@ -17,7 +17,7 @@ def parse_args():
         help="Path to JSONL results file",
     )
     parser.add_argument(
-        "--dataset", required=True, choices=["mbpp", "humaneval", "apps"],
+        "--dataset", required=True, choices=["mbpp", "humaneval", "apps", "livecodebench"],
         help="Dataset type (determines test program builder)",
     )
     parser.add_argument(
@@ -142,6 +142,48 @@ def main():
                 # Fall back to original sample if extraction yielded empty
                 # (lets the diversity helpers still attempt to fingerprint
                 # something rather than skip the sample silently).
+                rec["samples"] = [
+                    code if code else rec["samples"][i]
+                    for i, code in enumerate(extracted)
+                ]
+    elif args.dataset == "livecodebench":
+        from bench.eval.lcb_executor import evaluate_all_lcb
+        from bench.livecodebench.dataset import load_lcb_test_map
+
+        # The runner writes source=platform; all records in a file share one platform.
+        first = records[0]
+        platform = first.get("source")
+        if not platform:
+            raise SystemExit(
+                "LiveCodeBench JSONL records must carry 'source' (=platform). "
+                "Was this generated with bench.livecodebench.runner?"
+            )
+        # Only decode the problems present in this file (avoids the whole platform +
+        # its ~189MB test tail). Fixed test caps keep eval tractable AND constant
+        # across arms (comparisons stay valid); capping is logged, not silent.
+        LCB_MAX_PRIVATE, LCB_MAX_TEST_BYTES = 100, 10_000_000
+        task_ids = {str(r["task_id"]) for r in records}
+        print(f"Loading LiveCodeBench tests: platform={platform}, {len(task_ids)} problems "
+              f"(caps: <= {LCB_MAX_PRIVATE} private tests/problem, skip tests "
+              f"> {LCB_MAX_TEST_BYTES // 10**6}MB)")
+        problems_by_id = load_lcb_test_map(
+            platforms=(platform,), task_ids=task_ids,
+            max_private=LCB_MAX_PRIVATE, max_test_bytes=LCB_MAX_TEST_BYTES,
+        )
+        print(f"Loaded {len(problems_by_id)} LCB problems with tests")
+
+        lcb_results, extraction_diag, execution_diag = evaluate_all_lcb(
+            records, problems_by_id,
+            per_test_timeout=args.timeout, workers=args.workers,
+        )
+        task_results = [asdict(r) for r in lcb_results]
+
+        # For diversity metrics: replace raw samples with extracted code (str task_id).
+        results_by_id = {r.task_id: r for r in lcb_results}
+        for rec in records:
+            tid = str(rec["task_id"])
+            if tid in results_by_id:
+                extracted = results_by_id[tid].extracted_codes
                 rec["samples"] = [
                     code if code else rec["samples"][i]
                     for i, code in enumerate(extracted)
