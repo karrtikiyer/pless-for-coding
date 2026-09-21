@@ -66,11 +66,22 @@ def _run_variant(
     OUT_ROOT.mkdir(parents=True, exist_ok=True)
     mode = "think" if enable_thinking else "nothink"
     out_path = OUT_ROOT / f"{variant}_{mode}_t{temperature}.jsonl"
+    # Resume: skip task ids already recorded in the JSONL (append-safe).
+    done_ids: set[int] = set()
     if out_path.exists():
-        out_path.unlink()
+        for line in out_path.open():
+            try:
+                done_ids.add(int(json.loads(line)["task_id"]))
+            except Exception:
+                pass
+        if done_ids:
+            print(f"[{variant}] resume: {len(done_ids)} tasks already recorded, "
+                  f"skipping {sorted(done_ids)}")
     print(f"[{variant}] writing → {out_path}")
 
     for idx, problem in enumerate(problems, 1):
+        if problem.problem_id in done_ids:
+            continue
         now = time.time()
         if now > per_variant_deadline or now > global_deadline:
             print(f"[{variant}] budget exhausted after {idx-1}/{len(problems)} tasks")
