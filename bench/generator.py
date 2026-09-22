@@ -426,6 +426,13 @@ def _log_entropy_batch(
     sigma_p5 = probs.pow(5).sum(dim=-1)
     top32_probs, top32_indices = probs.topk(32, dim=-1)
     max_p, _ = probs.max(dim=-1)
+    # Probability & rank of the token the sampler actually picked, in the raw
+    # (pre-truncation) distribution. Enables post-hoc reconstruction of what
+    # any admission test would have kept vs what was ultimately chosen — e.g.
+    # "did the sampler pick argmax at this step?" (rank==0), "was the sampled
+    # token in the survivor set of variant X?" (compare against top32_indices).
+    sampled_probs = probs.gather(-1, next_tokens.view(-1, 1)).squeeze(-1)
+    sampled_ranks = (probs > sampled_probs.unsqueeze(-1)).sum(dim=-1)
     for i in range(n_samples):
         if finished[i].item():
             continue
@@ -439,6 +446,8 @@ def _log_entropy_batch(
             "sigma_p3": float(sigma_p3[i].item()),
             "sigma_p5": float(sigma_p5[i].item()),
             "max_p":    float(max_p[i].item()),
+            "sampled_prob": float(sampled_probs[i].item()),
+            "sampled_rank": int(sampled_ranks[i].item()),
             "top32_probs":   top32_probs[i].cpu().tolist(),
             "top32_indices": top32_indices[i].cpu().tolist(),
         })
