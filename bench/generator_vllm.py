@@ -755,6 +755,7 @@ def generate_samples_vllm(
     loop_ngram_n: int | None = None,
     loop_ngram_k: int | None = None,
     loop_window: int = 400,
+    seed: int | None = None,
 ) -> list[str]:
     """vLLM-backed single-sampler generation (no think/code split).
 
@@ -800,7 +801,7 @@ def generate_samples_vllm(
     cfg["think_end_id"] = resolve_think_end_id(engine.get_tokenizer())
     # NOTE: vLLM 0.21+ removed SamplingParams.logits_processors; the
     # processor class is pre-registered at engine load (see load_engine).
-    sp = SamplingParams(
+    sp_kwargs = dict(
         n=n_samples,
         max_tokens=max_new_tokens,
         temperature=1.0,
@@ -809,6 +810,9 @@ def generate_samples_vllm(
         stop=stop_strings or None,
         extra_args={processor_cls.EXTRA_ARG_KEY: cfg},
     )
+    if seed is not None:
+        sp_kwargs["seed"] = int(seed)
+    sp = SamplingParams(**sp_kwargs)
 
     if isinstance(prompt_text, list):
         from vllm import TokensPrompt

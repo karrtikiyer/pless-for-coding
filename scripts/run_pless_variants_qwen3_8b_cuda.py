@@ -62,10 +62,15 @@ def _run_variant(
     *, variant: str, engine, tokenizer, problems, n_samples: int,
     max_new_tokens: int, temperature: float, per_variant_deadline: float,
     global_deadline: float, enable_thinking: bool, model_id: str,
+    seed: int | None = None, batch_suffix: str = "",
 ) -> Path:
     OUT_ROOT.mkdir(parents=True, exist_ok=True)
     mode = "think" if enable_thinking else "nothink"
-    out_path = OUT_ROOT / f"{variant}_{mode}_t{temperature}.jsonl"
+    # batch_suffix lets us run multiple independent batches (with different
+    # --seed) to separate files, then merge them post-run into a single
+    # N=large-per-task jsonl. Empty suffix = original filename (backward-compat).
+    suffix = f".{batch_suffix}" if batch_suffix else ""
+    out_path = OUT_ROOT / f"{variant}_{mode}_t{temperature}{suffix}.jsonl"
     # Resume: skip task ids already recorded in the JSONL (append-safe).
     done_ids: set[int] = set()
     if out_path.exists():
@@ -98,7 +103,7 @@ def _run_variant(
                 engine=engine, tokenizer=tokenizer, prompt_text=prompt_text,
                 sampler_name=variant, n_samples=n_samples,
                 max_new_tokens=max_new_tokens, temperature=temperature,
-                stop_strings=None,
+                stop_strings=None, seed=seed,
             )
         except Exception as exc:
             print(f"[{variant}] task {problem.problem_id} crashed: {exc!r}")
@@ -149,6 +154,20 @@ def main() -> None:
     ap.add_argument("--only-task-ids", type=int, nargs="+", default=None)
     ap.add_argument("--budget-minutes", type=float, default=360.0)
     ap.add_argument("--per-variant-minutes", type=float, default=120.0)
+    ap.add_argument("--seed", type=int, default=None,
+                    help="RNG seed for vLLM sampling. Without --seed, vLLM's "
+                         "default seed=0 makes repeat runs of the same prompt "
+                         "produce byte-identical samples. Set a different value "
+                         "for each independent batch (e.g. seed=0 for batch 0, "
+                         "seed=1 for batch 1) so their samples can be merged "
+                         "into a larger effective N.")
+    ap.add_argument("--batch-suffix", default="",
+                    help="Suffix inserted into the output filename before .jsonl "
+                         "(e.g. --batch-suffix batch0 → pless_effk_think_t1.0.batch0"
+                         ".jsonl). Empty (default) writes the original filename "
+                         "for backward compat. Combine with --seed to run several "
+                         "independent batches to separate files, then merge with "
+                         "scripts/merge_pless_batches.py.")
     args = ap.parse_args()
 
     global_start = time.time()
@@ -189,6 +208,7 @@ def main() -> None:
             per_variant_deadline=per_variant_deadline,
             global_deadline=global_deadline,
             enable_thinking=not args.no_thinking, model_id=args.model,
+            seed=args.seed, batch_suffix=args.batch_suffix,
         )
         written.append(p)
 
