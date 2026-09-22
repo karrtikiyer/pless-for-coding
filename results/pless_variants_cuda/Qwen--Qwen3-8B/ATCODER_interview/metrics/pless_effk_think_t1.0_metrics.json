@@ -1,0 +1,1155 @@
+{
+  "model": "Qwen/Qwen3-8B",
+  "method": "pless_effk",
+  "temperature": 1.0,
+  "top_p": 1.0,
+  "top_k": 0,
+  "dataset": "apps",
+  "num_tasks": 16,
+  "num_samples_per_task": 5,
+  "pass_at_k": {
+    "1": 0.06249999999999999,
+    "3": 0.1375,
+    "5": 0.1875,
+    "10": 0.06249999999999999
+  },
+  "cover_at_t": {
+    "0.1": 18.75,
+    "0.3": 6.25,
+    "0.5": 6.25,
+    "0.7": 0.0
+  },
+  "cover_at_t_distinct": {
+    "0.1": 18.75,
+    "0.3": 6.25,
+    "0.5": 6.25,
+    "0.7": 0.0
+  },
+  "structural_diversity": 0.5921,
+  "codebleu_diversity": 0.5583,
+  "syntax_match_diversity": 0.3134,
+  "dataflow_match_diversity": 0.3998,
+  "ngram_match_diversity": 0.8021,
+  "weighted_ngram_match_diversity": 0.718,
+  "per_task": [
+    {
+      "task_id": 270,
+      "num_correct": 1,
+      "pass_results": [
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "Passed",
+        "Timeout",
+        "Timeout",
+        "Timeout",
+        "Timeout"
+      ],
+      "n_tests_total": [
+        65,
+        65,
+        65,
+        65,
+        65
+      ],
+      "n_tests_passed": [
+        65,
+        3,
+        3,
+        3,
+        3
+      ],
+      "first_failing_idx": [
+        null,
+        3,
+        3,
+        3,
+        3
+      ],
+      "extracted_codes": [
+        "import sys\n\ndef main():\n    input = sys.stdin.read().split()\n    ptr = 0\n    N = int(input[ptr])\n    ptr += 1\n    M = int(input[ptr])\n    ptr += 1\n\n    edges = [[] for _ in range(N + 1)]\n    for _ in range(M):\n        s = int(input[ptr])\n        ptr += 1\n        t = int(input[ptr])\n        ptr += 1\n        edges[s].append(t)\n\n    # Compute original expected values\n    original_E = [0.0] * (N + 1)\n    for v in range(N, 0, -1):\n        if v == N:\n            original_E[v] = 0.0\n        else:\n            sum_edges = 0.0\n            count_edges = len(edges[v])\n            for t in edges[v]:\n                sum_edges += original_E[t]\n            original_E[v] = 1.0 + sum_edges / count_edges\n\n    # Collect candidate edges to block\n    candidates = []\n    for s in range(1, N):\n        if len(edges[s]) >= 2:\n            max_val = -1.0\n            best_t = -1\n            for t in edges[s]:\n                if original_E[t] > max_val:\n                    max_val = original_E[t]\n                    best_t = t\n            candidates.append((s, best_t))\n\n    min_expected = original_E[1]\n\n    for s, t in candidates:\n        modified_E = [0.0] * (N + 1)\n        for v in range(N, 0, -1):\n            if v == N:\n                modified_E[v] = 0.0\n            else:\n                sum_edges = 0.0\n                count_edges = 0\n                for t_edge in edges[v]:\n                    if v == s and t_edge == t:\n                        continue\n                    sum_edges += modified_E[t_edge]\n                    count_edges += 1\n                modified_E[v] = 1.0 + sum_edges / count_edges\n        current = modified_E[1]\n        if current < min_expected:\n            min_expected = current\n\n    print(f\"{min_expected:.10f}\")\n\nif __name__ == '__main__':\n    main()\n",
+        "import sys\n\ndef main():\n    import sys\n    input = sys.stdin.read().split()\n    idx = 0\n    N = int(input[idx])\n    idx += 1\n    M = int(input[idx])\n    idx += 1\n\n    edges_list = []\n    outgoing_edges = [[] for _ in range(N+1)]\n    for _ in range(M):\n        s = int(input[idx])\n        idx += 1\n        t = int(input[idx])\n        idx += 1\n        edges_list.append((s, t))\n        outgoing_edges[s].append(t)\n\n    # Compute original expected values\n    original_E = [0.0] * (N + 1)\n    for u in range(N, 0, -1):\n        if u == N:\n            original_E[u] = 0.0\n        else:\n            edges = outgoing_edges[u]\n            k = len(edges)\n            sum_e = 0.0\n            for v in edges:\n                sum_e += original_E[v]\n            original_E[u] = 1.0 + sum_e / k\n\n    min_expected = original_E[1]\n\n    for s, t in edges_list:\n        if len(outgoing_edges[s]) >= 2:\n            e_new = [0.0] * (N + 1)\n            for u in range(N, 0, -1):\n                if u == N:\n                    e_new[u] = 0.0\n                else:\n                    if u == s:\n                        sum_original = 0.0\n                        for v in outgoing_edges[u]:\n                            sum_original += e_new[v]\n                        sum_e = sum_original - e_new[t]\n                        new_k = len(outgoing_edges[u]) - 1\n                        e_new[u] = 1.0 + sum_e / new_k\n                    else:\n                        sum_e = 0.0\n                        for v in outgoing_edges[u]:\n                            sum_e += e_new[v]\n                        k = len(outgoing_edges[u])\n                        e_new[u] = 1.0 + sum_e / k\n            if e_new[1] < min_expected:\n                min_expected = e_new[1]\n\n    print(\"{0:.10f}\".format(min_expected))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import sys\nfrom collections import deque\n\ndef main():\n    input = sys.stdin.read().split()\n    idx = 0\n    N = int(input[idx]); idx += 1\n    M = int(input[idx]); idx += 1\n\n    adj = [[] for _ in range(N + 1)]\n    edges = []\n    rev_adj = [[] for _ in range(N + 1)]\n\n    for _ in range(M):\n        s = int(input[idx]); idx += 1\n        t = int(input[idx]); idx += 1\n        edges.append((s, t))\n        adj[s].append(t)\n        rev_adj[t].append(s)\n\n    out_degree = [0] * (N + 1)\n    for i in range(1, N + 1):\n        out_degree[i] = len(adj[i])\n\n    # Compute reach for each node\n    reach = [[] for _ in range(N + 1)]\n    for s in range(1, N + 1):\n        visited = set()\n        queue = deque()\n        queue.append(s)\n        visited.add(s)\n        while queue:\n            u = queue.popleft()\n            for v in rev_adj[u]:\n                if v not in visited:\n                    visited.add(v)\n                    queue.append(v)\n        reach[s] = list(visited)\n\n    # Compute original E\n    E = [0.0] * (N + 1)\n    for i in range(N - 1, 0, -1):\n        total = 0.0\n        for t in adj[i]:\n            total += E[t]\n        E[i] = 1.0 + total / out_degree[i]\n\n    min_E = E[1]\n\n    for (s, t) in edges:\n        if out_degree[s] < 2:\n            continue\n        # Create new_E as a copy of E\n        new_E = E[:]\n        # Compute new_sum_s\n        sum_s = 0.0\n        for t_j in adj[s]:\n            sum_s += E[t_j]\n        new_sum_s = sum_s - E[t]\n        new_out_degree_s = out_degree[s] - 1\n        new_E[s] = 1.0 + new_sum_s / new_out_degree_s\n\n        # Process nodes in reach[s], sorted in reverse topological order (N downto 1)\n        sorted_reach = sorted(reach[s], reverse=True)\n        for u in sorted_reach:\n            if u == s:\n                continue\n            total_u = 0.0\n            for v in adj[u]:\n                total_u += new_E[v]\n            new_E[u] = 1.0 + total_u / out_degree[u]\n\n        if new_E[1] < min_E:\n            min_E = new_E[1]\n\n    print(\"{0:.10f}\".format(min_E))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import sys\nfrom collections import deque\n\ndef main():\n    input = sys.stdin.read().split()\n    idx = 0\n    N = int(input[idx])\n    idx += 1\n    M = int(input[idx])\n    idx += 1\n    \n    adj = [[] for _ in range(N+1)]\n    edges = []\n    for _ in range(M):\n        s = int(input[idx])\n        idx += 1\n        t = int(input[idx])\n        idx += 1\n        adj[s].append(t)\n        edges.append( (s, t) )\n    \n    # Build reverse_adj\n    reverse_adj = [[] for _ in range(N+1)]\n    for u in range(1, N+1):\n        for v in adj[u]:\n            reverse_adj[v].append(u)\n    \n    # Precompute can_reach for each s\n    can_reach = [ [False]*(N+1) for _ in range(N+1) ]\n    for s in range(1, N+1):\n        visited = [False]*(N+1)\n        q = deque()\n        q.append(s)\n        visited[s] = True\n        while q:\n            u = q.popleft()\n            for v in reverse_adj[u]:\n                if not visited[v]:\n                    visited[v] = True\n                    q.append(v)\n        for u in range(1, N+1):\n            can_reach[s][u] = visited[u]\n    \n    # Compute original E\n    original_E = [0.0]*(N+1)\n    for u in range(N, 0, -1):\n        if u == N:\n            original_E[u] = 0.0\n        else:\n            k = len(adj[u])\n            sum_e = 0.0\n            for v in adj[u]:\n                sum_e += original_E[v]\n            original_E[u] = 1.0 + sum_e / k\n    \n    min_E = original_E[1]\n    \n    # For each possible edge (s, t) that can be blocked\n    for s, t in edges:\n        if len(adj[s]) > 1:\n            # Compute new_E_s for blocking (s, t)\n            original_sum_s = 0.0\n            for v in adj[s]:\n                original_sum_s += original_E[v]\n            new_sum_s = original_sum_s - original_E[t]\n            k_s = len(adj[s])\n            new_k = k_s - 1\n            new_E_s = 1.0 + new_sum_s / new_k\n            \n            # Now compute the new E for nodes in ancestors_of_s\n            # Get can_reach_s for s\n            ancestors = can_reach[s]\n            \n            # Create temp_E as a copy of original_E\n            temp_E = [0.0]*(N+1)\n            for u in range(N+1):\n                temp_E[u] = original_E[u]\n            \n            for u in range(N, 0, -1):\n                if not ancestors[u]:\n                    continue\n                if u == s:\n                    temp_E[u] = new_E_s\n                else:\n                    sum_e = 0.0\n                    count = 0\n                    for v in adj[u]:\n                        if ancestors[v]:\n                            sum_e += temp_E[v]\n                        else:\n                            sum_e += original_E[v]\n                        count += 1\n                    temp_E[u] = 1.0 + sum_e / count\n            current_E = temp_E[1]\n            if current_E < min_E:\n                min_E = current_E\n    \n    print(\"{0:.10f}\".format(min_E))\n    \nif __name__ == '__main__':\n    main()\n",
+        "import sys\nfrom collections import deque\n\ndef main():\n    input = sys.stdin.read().split()\n    ptr = 0\n    N = int(input[ptr])\n    ptr += 1\n    M = int(input[ptr])\n    ptr += 1\n\n    original_edges = [[] for _ in range(N + 1)]\n    edges = []\n    for _ in range(M):\n        s = int(input[ptr])\n        ptr += 1\n        t = int(input[ptr])\n        ptr += 1\n        original_edges[s].append(t)\n        edges.append((s, t))\n    \n    # Build reversed graph\n    reversed_graph = [[] for _ in range(N + 1)]\n    for s in range(1, N + 1):\n        for t in original_edges[s]:\n            reversed_graph[t].append(s)\n    \n    # Precompute predecessors for each node\n    predecessors = [set() for _ in range(N + 1)]\n    for v in range(1, N + 1):\n        visited = set()\n        queue = deque()\n        queue.append(v)\n        visited.add(v)\n        while queue:\n            node = queue.popleft()\n            for u in reversed_graph[node]:\n                if u not in visited:\n                    visited.add(u)\n                    queue.append(u)\n        predecessors[v] = visited\n    \n    # Compute original E\n    E = [0.0] * (N + 1)\n    for v in range(N, 0, -1):\n        if v == N:\n            E[v] = 0.0\n        else:\n            k = len(original_edges[v])\n            sum_e = 0.0\n            for t in original_edges[v]:\n                sum_e += E[t]\n            E[v] = 1.0 + sum_e / k\n    \n    min_expected = E[1]\n    \n    for (s, t) in edges:\n        if len(original_edges[s]) < 2:\n            continue\n        # Create a copy of E\n        e_copy = [x for x in E]\n        # Compute new outgoing edges for s\n        new_out_edges = [x for x in original_edges[s] if x != t]\n        new_k = len(new_out_edges)\n        sum_e = 0.0\n        for t2 in new_out_edges:\n            sum_e += e_copy[t2]\n        new_E_s = 1.0 + sum_e / new_k\n        e_copy[s] = new_E_s\n        # Process predecessors of s in reverse topological order\n        pred_list = predecessors[s]\n        sorted_pred = sorted(pred_list, reverse=True)\n        for u in sorted_pred:\n            if u == s:\n                continue\n            k_u = len(original_edges[u])\n            sum_e_u = 0.0\n            for t2 in original_edges[u]:\n                sum_e_u += e_copy[t2]\n            e_copy[u] = 1.0 + sum_e_u / k_u\n        # Update minimum expected value\n        if e_copy[1] < min_expected:\n            min_expected = e_copy[1]\n    \n    print(\"{0:.10f}\".format(min_expected))\n\nif __name__ == \"__main__\":\n    main()\n"
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 280,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "Failed",
+        "Failed",
+        "Failed",
+        "Failed",
+        "Failed"
+      ],
+      "n_tests_total": [
+        64,
+        64,
+        64,
+        64,
+        64
+      ],
+      "n_tests_passed": [
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      "first_failing_idx": [
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      "extracted_codes": [
+        "import sys\nimport itertools\n\ndef main():\n    import sys\n    input = sys.stdin.read().split()\n    idx = 0\n    N = int(input[idx]); idx +=1\n    M = int(input[idx]); idx +=1\n    w = list(map(int, input[idx:idx+N]))\n    idx += N\n    bridges = []\n    for _ in range(M):\n        l = int(input[idx]); idx +=1\n        v = int(input[idx]); idx +=1\n        bridges.append((l, v))\n\n    min_total = float('inf')\n\n    # Generate all permutations of camels\n    for perm in itertools.permutations(w):\n        # Check if this permutation is valid\n        valid = True\n        for l, v in bridges:\n            # For this bridge part, compute the maximum sum of any consecutive subset\n            max_sum = 0\n            current_sum = 0\n            for weight in perm:\n                current_sum += weight\n                if current_sum > max_sum:\n                    max_sum = current_sum\n                if current_sum > v:\n                    valid = False\n                    break\n                # Reset current_sum if needed (but not necessary for this approach)\n            if not valid:\n                break\n            # Also check for non-consecutive subsets? No, this approach may not be correct\n            # But for now, proceed with this\n        if valid:\n            # Calculate minimal total distance\n            # We can set all distances to zero, but need to check if it's possible\n            # Wait, but this approach is incorrect. Let's try to find the minimal distance\n            # For each bridge part, we need to ensure that the sum of any consecutive subset is <= v\n            # If this is true, then the minimal total distance is 0\n            # But this is not correct for the sample. So this approach is incorrect.\n            # However, given time constraints, proceed with this for now\n            # The sample suggests that the minimal distance is determined by the bridge part with the largest l\n            # But this is not correct. So this approach is wrong.\n            # For now, assume that the minimal total distance is the sum of the distances between camels\n            # which can be zero if the permutation is valid.\n            min_total = 0\n            break  # Just for the sample, but this is incorrect\n\n    if min_total == float('inf'):\n        print(-1)\n    else:\n        print(min_total)\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import sys\nfrom itertools import permutations\n\ndef main():\n    import sys\n    input = sys.stdin.read\n    data = input().split()\n    \n    idx = 0\n    N = int(data[idx])\n    idx += 1\n    M = int(data[idx])\n    idx += 1\n    \n    w = list(map(int, data[idx:idx+N]))\n    idx += N\n    \n    bridges = []\n    for _ in range(M):\n        l = int(data[idx])\n        v = int(data[idx+1])\n        bridges.append((l, v))\n        idx += 2\n    \n    min_total = float('inf')\n    \n    for perm in permutations(w):\n        valid = True\n        for l, v in bridges:\n            max_consec = 0\n            current = 0\n            for weight in perm:\n                current += weight\n                if current > max_consec:\n                    max_consec = current\n                if current > v:\n                    valid = False\n                    break\n                current = weight\n            if not valid:\n                break\n            # Check for single camel\n            for weight in perm:\n                if weight > v:\n                    valid = False\n                    break\n        if not valid:\n            continue\n        # If valid, calculate the minimal total distance\n        # For this, we can set all distances to 0, so total distance is 0\n        # But the sample shows it's not the case\n        # So this approach is incorrect\n        # But for the purpose of this exercise, proceed\n        min_total = min(min_total, 0)\n    \n    if min_total == float('inf'):\n        print(-1)\n    else:\n        print(min_total)\n    \nif __name__ == '__main__':\n    main()\n",
+        "import sys\nimport bisect\nfrom itertools import permutations\n\ndef main():\n    input = sys.stdin.read().split()\n    ptr = 0\n    N = int(input[ptr])\n    ptr += 1\n    M = int(input[ptr])\n    ptr += 1\n    w = list(map(int, input[ptr:ptr + N]))\n    ptr += N\n    bridges = []\n    for _ in range(M):\n        l = int(input[ptr])\n        v = int(input[ptr + 1])\n        bridges.append((v, l))\n        ptr += 2\n\n    sorted_v = sorted(bridges, key=lambda x: x[0])\n    sorted_v_list = [x[0] for x in sorted_v]\n    prefix_max = []\n    if sorted_v:\n        prefix_max.append(sorted_v[0][1])\n    for i in range(1, len(sorted_v)):\n        prefix_max.append(max(prefix_max[i-1], sorted_v[i][1]))\n\n    min_total = float('inf')\n    for perm in permutations(w):\n        max_subset = 0\n        for i in range(N):\n            current_sum = 0\n            for j in range(i, N):\n                current_sum += perm[j]\n                if current_sum > max_subset:\n                    max_subset = current_sum\n        if not sorted_v_list:\n            required_D = 0\n        else:\n            idx = bisect.bisect_left(sorted_v_list, max_subset)\n            if idx == 0:\n                required_D = 0\n            else:\n                required_D = prefix_max[idx - 1]\n        if required_D < min_total:\n            min_total = required_D\n\n    print(min_total if min_total != float('inf') else -1)\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import sys\nfrom itertools import permutations\n\ndef main():\n    import sys\n    input = sys.stdin.read\n    data = input().split()\n    \n    N = int(data[0])\n    M = int(data[1])\n    w = list(map(int, data[2:2+N]))\n    bridges = []\n    idx = 2 + N\n    for _ in range(M):\n        l = int(data[idx])\n        v = int(data[idx+1])\n        bridges.append((l, v))\n        idx += 2\n    \n    min_total = float('inf')\n    \n    for perm in permutations(range(N)):\n        valid = True\n        for l, v in bridges:\n            max_single = max(w[perm[i]] for i in range(N))\n            if max_single > v:\n                valid = False\n                break\n        if valid:\n            min_total = min(min_total, 0)\n    \n    if min_total == float('inf'):\n        print(-1)\n    else:\n        print(min_total)\n\nmain()\n",
+        "import sys\nimport itertools\n\ndef main():\n    input = sys.stdin.read().split()\n    ptr = 0\n    N, M = int(input[ptr]), int(input[ptr+1])\n    ptr += 2\n    w = list(map(int, input[ptr:ptr+N]))\n    ptr += N\n    bridge = []\n    for _ in range(M):\n        l = int(input[ptr])\n        v = int(input[ptr+1])\n        bridge.append((l, v))\n        ptr += 2\n\n    min_total = None\n\n    # Generate all permutations of the camels (0-based indices)\n    for perm in itertools.permutations(range(N)):\n        required = []\n        # Iterate over all consecutive subsets\n        for a in range(N):\n            for b in range(a+1, N+1):\n                # Calculate the sum of weights for the subset from a to b-1\n                subset_sum = sum(w[perm[i]] for i in range(a, b))\n                max_l = 0\n                for (l_i, v_i) in bridge:\n                    if subset_sum > v_i:\n                        if l_i > max_l:\n                            max_l = l_i\n                # If any bridge part exceeded, record the max l_i for this subset\n                if max_l > 0:\n                    required.append(max_l)\n        if not required:\n            current_total = 0\n        else:\n            current_total = max(required)\n        # Update the minimum total distance\n        if min_total is None or current_total < min_total:\n            min_total = current_total\n\n    # Check if any permutation was valid\n    if min_total is not None:\n        print(min_total)\n    else:\n        print(-1)\n\nif __name__ == \"__main__\":\n    main()\n"
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 369,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "ParsingError",
+        "ParsingError",
+        "Timeout",
+        "Timeout",
+        "RuntimeError"
+      ],
+      "n_tests_total": [
+        60,
+        60,
+        60,
+        60,
+        60
+      ],
+      "n_tests_passed": [
+        0,
+        0,
+        8,
+        8,
+        0
+      ],
+      "first_failing_idx": [
+        null,
+        null,
+        8,
+        8,
+        0
+      ],
+      "extracted_codes": [
+        "",
+        "",
+        "import sys\nfrom collections import deque\n\ndef main():\n    input = sys.stdin.read().split()\n    N = int(input[0])\n    M = int(input[1])\n    S = input[2]\n    \n    distance = [-1] * (N + 1)\n    parent = [0] * (N + 1)\n    q = deque()\n    q.append(0)\n    distance[0] = 0\n    \n    while q:\n        s = q.popleft()\n        max_x = min(M, N - s)\n        for x in range(1, max_x + 1):\n            t = s + x\n            if S[t] == '1':\n                continue\n            if distance[t] == -1:\n                distance[t] = distance[s] + 1\n                parent[t] = x\n                q.append(t)\n    \n    if distance[N] == -1:\n        print(-1)\n        return\n    \n    path = []\n    current = N\n    while current != 0:\n        x = parent[current]\n        path.append(x)\n        current -= x\n    \n    path.reverse()\n    print(' '.join(map(str, path)))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import sys\nfrom collections import deque\n\ndef main():\n    input = sys.stdin.read().split()\n    N = int(input[0])\n    M = int(input[1])\n    S = input[2]\n\n    steps = [-1] * (N + 1)\n    parent = [None] * (N + 1)\n    steps[0] = 0\n    q = deque([0])\n\n    while q:\n        s = q.popleft()\n        max_x = min(M, N - s)\n        for x in range(1, max_x + 1):\n            t = s + x\n            if S[t] == '1':\n                continue\n            if steps[t] == -1:\n                steps[t] = steps[s] + 1\n                parent[t] = (s, x)\n                q.append(t)\n\n    if steps[N] == -1:\n        print(-1)\n        return\n\n    sequence = []\n    current = N\n    while current != 0:\n        prev_s, x = parent[current]\n        sequence.append(x)\n        current = prev_s\n\n    sequence.reverse()\n    print(' '.join(map(str, sequence)))\n\nmain()\n",
+        "\nS = input().strip()\n\nd = [-1] * (N +1)\n\nfrom collections import deque\n\nq = deque()\n\nd[0] = 0\n\nq.append(0)\n\nparent = [0]*(N+1)\n\nwhile q:\n\n    s = q.popleft()\n\n    for x in range(1, M+1):\n\n        s_new = s + x\n\n        if s_new > N:\n\n            continue\n\n        if S[s_new] == '1':\n\n            continue\n\n        if d[s_new] == -1:\n\n            d[s_new] = d[s] + 1\n\n            parent[s_new] = x\n\n            q.append(s_new)\n\nif d[N] == -1:\n\n    print(-1)\n\nelse:\n\n    res = []\n\n    current = N\n\n    while current !=0:\n\n        res.append(parent[current])\n\n        current -= parent[current]\n\n    res.reverse()\n\n    print(' '.join(map(str, res)))\n"
+      ],
+      "extraction_strategies": [
+        "none",
+        "none",
+        "python_fence_asis",
+        "python_fence_asis",
+        "raw_window"
+      ],
+      "extraction_success": [
+        false,
+        false,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 559,
+      "num_correct": 3,
+      "pass_results": [
+        false,
+        false,
+        true,
+        true,
+        true
+      ],
+      "statuses": [
+        "Failed",
+        "RuntimeError",
+        "Passed",
+        "Passed",
+        "Passed"
+      ],
+      "n_tests_total": [
+        43,
+        43,
+        43,
+        43,
+        43
+      ],
+      "n_tests_passed": [
+        2,
+        0,
+        43,
+        43,
+        43
+      ],
+      "first_failing_idx": [
+        2,
+        0,
+        null,
+        null,
+        null
+      ],
+      "extracted_codes": [
+        "p = int(input())\na = list(map(int, input().split()))\n\nD = pow(-1, p, p)\ninv_D = pow(D, p-2, p)\n\nresult = [0] * p\n\nfor i in range(p):\n    if i == 0:\n        q = [0] * p\n        q[0] = (-1) % p\n        q[p-1] = 1 % p\n    else:\n        i_inv = pow(i, p-2, p)\n        q = [0] * p\n        current_power = 1\n        for k in range(1, p):\n            q[k] = current_power\n            current_power = (current_power * i_inv) % p\n    # Multiply q by inv_D mod p\n    for k in range(p):\n        q[k] = (q[k] * inv_D) % p\n    ai = a[i]\n    for k in range(p):\n        result[k] = (result[k] + ai * q[k]) % p\n\nprint(' '.join(map(str, result)))\n",
+        "\ncurrent_poly = [1]\n\nfor j in range(p):\n\n   if j != i:\n\n      current_poly = multiply_poly(current_poly, j, p)\n",
+        "p = int(input())\na = list(map(int, input().split()))\nb = [0] * p\n\nfor k in range(p):\n    current_a = a[k]\n    if k == 0:\n        Q = [0] * p\n        Q[0] = (-1) % p\n        Q[p-1] = 1\n    else:\n        inv_k = pow(k, p-2, p)\n        current_power = inv_k\n        Q = [0] * p\n        for m in range(1, p):\n            Q[m] = current_power\n            current_power = (current_power * inv_k) % p\n    for m in range(p):\n        val = (-Q[m]) % p\n        term = (current_a * val) % p\n        b[m] = (b[m] + term) % p\n\nprint(' '.join(map(str, b)))\n",
+        "p = int(input())\na = list(map(int, input().split()))\nb = [0] * p\n\nfor i in range(p):\n    if i == 0:\n        term = a[i]\n        b[0] = (b[0] + term) % p\n        b[p-1] = (b[p-1] - term) % p\n    else:\n        inv_i = pow(i, p-2, p)\n        current_power = inv_i\n        for k in range(1, p):\n            coeff = (-current_power) % p\n            term = (a[i] * coeff) % p\n            b[k] = (b[k] + term) % p\n            current_power = (current_power * inv_i) % p\n\nprint(' '.join(map(str, b)))\n",
+        "p = int(input())\na = list(map(int, input().split()))\n\n# Initialize divided differences table\ndd = [[0] * p for _ in range(p)]\nfor i in range(p):\n    dd[0][i] = a[i]\n\nfor k in range(1, p):\n    for i in range(p - k):\n        numerator = (dd[k-1][i+1] - dd[k-1][i]) % p\n        denominator = k\n        inv_denominator = pow(denominator, p-2, p)\n        dd[k][i] = (numerator * inv_denominator) % p\n\nc = [dd[k][0] for k in range(p)]\n\n# Build the polynomial coefficients\noverall_coeffs = [c[0] % p]\nproduct_poly = [1]\n\nfor k in range(1, p):\n    a_val = k - 1\n    new_product_poly = [0] * (len(product_poly) + 1)\n    for i in range(len(product_poly)):\n        term = product_poly[i] * (-a_val)\n        new_product_poly[i] = (new_product_poly[i] + term) % p\n        new_product_poly[i+1] = (new_product_poly[i+1] + product_poly[i]) % p\n    product_poly = new_product_poly\n    term = [(x * c[k]) % p for x in product_poly]\n    # Extend overall_coeffs if necessary\n    while len(overall_coeffs) < len(term):\n        overall_coeffs.append(0)\n    for i in range(len(term)):\n        overall_coeffs[i] = (overall_coeffs[i] + term[i]) % p\n\nprint(' '.join(map(str, overall_coeffs)))\n"
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "raw_window",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 3,
+      "mean_pairwise_distance": 0.5921,
+      "num_ast_clusters": 3,
+      "self_codebleu": 0.5583,
+      "self_syntax_match": 0.3134,
+      "self_dataflow_match": 0.3998,
+      "self_ngram_match": 0.8021,
+      "self_weighted_ngram_match": 0.718
+    },
+    {
+      "task_id": 579,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "ParsingError",
+        "Failed",
+        "RuntimeError",
+        "Failed",
+        "RuntimeError"
+      ],
+      "n_tests_total": [
+        42,
+        42,
+        42,
+        42,
+        42
+      ],
+      "n_tests_passed": [
+        0,
+        1,
+        0,
+        1,
+        0
+      ],
+      "first_failing_idx": [
+        null,
+        1,
+        0,
+        1,
+        0
+      ],
+      "extracted_codes": [
+        "",
+        "import sys\n\ndef main():\n    import sys\n    input = sys.stdin.read().split()\n    idx = 0\n    N = int(input[idx])\n    idx += 1\n    K = int(input[idx])\n    idx += 1\n    P = list(map(int, input[idx:idx+N]))\n    idx += N\n    C = list(map(int, input[idx:idx+N]))\n    \n    visited = [False] * (N + 1)\n    cycles = []\n    \n    for i in range(1, N + 1):\n        if not visited[i]:\n            current = i\n            cycle = []\n            while not visited[current]:\n                visited[current] = True\n                cycle.append(current)\n                current = P[current - 1]\n            cycles.append(cycle)\n    \n    max_score = -float('inf')\n    \n    for cycle in cycles:\n        L = len(cycle)\n        steps_c = []\n        for a in cycle:\n            next_node = P[a - 1]\n            steps_c.append(C[next_node - 1])\n        \n        prefix_sums = [0] * (L + 1)\n        for i in range(1, L + 1):\n            prefix_sums[i] = prefix_sums[i - 1] + steps_c[i - 1]\n        \n        sum_cycle = prefix_sums[L]\n        \n        if K < L:\n            current_max = max(prefix_sums[1:K+1])\n        else:\n            if sum_cycle > 0:\n                current_max = -float('inf')\n                for m in range(1, L + 1):\n                    t = (K - m) // L\n                    total = prefix_sums[m] + t * sum_cycle\n                    if total > current_max:\n                        current_max = total\n            else:\n                current_max = max(prefix_sums[1:L+1])\n        \n        if current_max > max_score:\n            max_score = current_max\n    \n    print(max_score)\n\nif __name__ == \"__main__\":\n    main()\n",
+        "\ntotal_cycle = full_loops * S_total + max_remain\n",
+        "def main():\n    import sys\n    input = sys.stdin.read().split()\n    idx = 0\n    N = int(input[idx])\n    idx += 1\n    K = int(input[idx])\n    idx += 1\n    P = list(map(int, input[idx:idx+N]))\n    idx += N\n    C = list(map(int, input[idx:idx+N]))\n    visited = [False] * (N + 1)\n    max_score = -float('inf')\n    \n    for i in range(1, N + 1):\n        if not visited[i]:\n            current = i\n            cycle = []\n            while not visited[current]:\n                visited[current] = True\n                cycle.append(current)\n                current = P[current - 1]\n            L = len(cycle)\n            prefix_sums = [0]\n            for j in range(L):\n                current_square = cycle[j]\n                next_square = P[current_square - 1]\n                prefix_sums.append(prefix_sums[-1] + C[next_square - 1])\n            sum_cycle = prefix_sums[-1]\n            max_prefix = max(prefix_sums[1:]) if prefix_sums[1:] else 0\n            \n            if K >= L:\n                if sum_cycle > 0:\n                    full_cycles = K // L\n                    remaining = K % L\n                    if remaining == 0:\n                        max_remaining = 0\n                    else:\n                        max_remaining = max(prefix_sums[1:remaining + 1])\n                    current_max = full_cycles * sum_cycle + max_remaining\n                else:\n                    current_max = max_prefix\n            else:\n                current_max = max(prefix_sums[1:K + 1])\n            if current_max > max_score:\n                max_score = current_max\n    print(max_score)\n\nif __name__ == \"__main__\":\n    main()\n",
+        "\nP = list(map(int, input().split())) \n\nC = list(map(int, input().split())) \n\nvisited = [False] * (N+1) # 1-based \n\ncycles = [] \n\nfor i in range(1, N+1):\n\n    if not visited[i]:\n\n        current = i \n\n        cycle = []\n\n        while not visited[current]:\n\n            visited[current] = True \n\n            cycle.append(current)\n\n            current = P[current -1] # P is 1-based? \n\n        cycles.append(cycle) \n\nmax_score = -inf \n\nfor cycle in cycles:\n\n    L = len(cycle) \n\n    # compute cumulative for each starting position \n\n    # precompute for each i in 0..L-1, the cumulative array for m steps \n\n    # for each i, cumulative[m-1] is the sum for m steps \n\n    #"
+      ],
+      "extraction_strategies": [
+        "none",
+        "python_fence_asis",
+        "raw_trim",
+        "python_fence_asis",
+        "raw_prefix_strip"
+      ],
+      "extraction_success": [
+        false,
+        true,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 615,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "Failed",
+        "Failed",
+        "Failed",
+        "Failed",
+        "Failed"
+      ],
+      "n_tests_total": [
+        40,
+        40,
+        40,
+        40,
+        40
+      ],
+      "n_tests_passed": [
+        1,
+        8,
+        8,
+        8,
+        7
+      ],
+      "first_failing_idx": [
+        1,
+        8,
+        8,
+        8,
+        7
+      ],
+      "extracted_codes": [
+        "import bisect\n\ndef main():\n    import sys\n    input = sys.stdin.read().split()\n    N = int(input[0])\n    A = list(map(int, input[1:N+1]))\n    prefix_sum = [0] * (N + 1)\n    for i in range(N):\n        prefix_sum[i+1] = prefix_sum[i] + A[i]\n    T = prefix_sum[-1]\n    \n    def find_candidates(prefix_sum, target, start, end):\n        candidates = []\n        idx = bisect.bisect_left(prefix_sum, target)\n        for i in range(max(0, idx - 1), min(len(prefix_sum), idx + 2)):\n            if start <= i <= end:\n                candidates.append(i)\n        return candidates\n    \n    t1 = T / 4\n    t2 = 2 * T / 4\n    t3 = 3 * T / 4\n    \n    candidates1 = find_candidates(prefix_sum, t1, 1, N-3)\n    candidates2 = find_candidates(prefix_sum, t2, 2, N-2)\n    candidates3 = find_candidates(prefix_sum, t3, 3, N-1)\n    \n    min_diff = float('inf')\n    \n    for i in candidates1:\n        for j in candidates2:\n            if j <= i:\n                continue\n            for k in candidates3:\n                if k <= j:\n                    continue\n                P = prefix_sum[i]\n                Q = prefix_sum[j] - prefix_sum[i]\n                R = prefix_sum[k] - prefix_sum[j]\n                S = T - prefix_sum[k]\n                current_max = max(P, Q, R, S)\n                current_min = min(P, Q, R, S)\n                diff = current_max - current_min\n                if diff < min_diff:\n                    min_diff = diff\n    \n    print(int(min_diff))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import bisect\nimport sys\n\ndef main():\n    input = sys.stdin.read().split()\n    N = int(input[0])\n    A = list(map(int, input[1:N+1]))\n    \n    prefix = [0] * (N + 1)\n    for i in range(1, N + 1):\n        prefix[i] = prefix[i-1] + A[i-1]\n    total = prefix[N]\n    \n    def get_candidates(target, min_pos, max_pos):\n        pos = bisect.bisect_left(prefix, target)\n        candidates = set()\n        for i in range(max(1, pos - 2), min(len(prefix) - 1, pos + 3) + 1):\n            if min_pos <= i <= max_pos:\n                candidates.add(i)\n        return sorted(candidates)\n    \n    T1 = total / 4\n    T2 = total * 2 / 4\n    T3 = total * 3 / 4\n    \n    split1 = get_candidates(T1, 1, N - 3)\n    split2 = get_candidates(T2, 2, N - 2)\n    split3 = get_candidates(T3, 3, N - 1)\n    \n    min_diff = float('inf')\n    \n    for i in split1:\n        for j in split2:\n            if j <= i:\n                continue\n            for k in split3:\n                if k <= j:\n                    continue\n                P = prefix[i]\n                Q = prefix[j] - prefix[i]\n                R = prefix[k] - prefix[j]\n                S = total - prefix[k]\n                current = [P, Q, R, S]\n                current_max = max(current)\n                current_min = min(current)\n                diff = current_max - current_min\n                if diff < min_diff:\n                    min_diff = diff\n    print(min_diff)\n\nmain()\n",
+        "import bisect\n\ndef main():\n    import sys\n    input = sys.stdin.read().split()\n    N = int(input[0])\n    A = list(map(int, input[1:N+1]))\n    prefix = [0] * (N + 1)\n    for i in range(1, N+1):\n        prefix[i] = prefix[i-1] + A[i-1]\n    total = prefix[N]\n    candidates_i = []\n    target_i = total / 4.0\n    pos_i = bisect.bisect_left(prefix, target_i)\n    for i in range(max(0, pos_i - 2), min(len(prefix), pos_i + 3)):\n        if 1 <= i <= N - 3:\n            candidates_i.append(i)\n    candidates_j = []\n    target_j = total / 2.0\n    pos_j = bisect.bisect_left(prefix, target_j)\n    for j in range(max(0, pos_j - 2), min(len(prefix), pos_j + 3)):\n        if 1 <= j <= N - 2:\n            candidates_j.append(j)\n    candidates_k = []\n    target_k = 3 * total / 4.0\n    pos_k = bisect.bisect_left(prefix, target_k)\n    for k in range(max(0, pos_k - 2), min(len(prefix), pos_k + 3)):\n        if 1 <= k <= N - 1:\n            candidates_k.append(k)\n    min_diff = float('inf')\n    for i in candidates_i:\n        for j in candidates_j:\n            if j <= i:\n                continue\n            for k in candidates_k:\n                if k <= j:\n                    continue\n                P = prefix[i]\n                Q = prefix[j] - prefix[i]\n                R = prefix[k] - prefix[j]\n                S = total - prefix[k]\n                current_max = max(P, Q, R, S)\n                current_min = min(P, Q, R, S)\n                diff = current_max - current_min\n                if diff < min_diff:\n                    min_diff = diff\n    print(min_diff)\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import bisect\n\ndef main():\n    import sys\n    input = sys.stdin.read\n    data = input().split()\n    n = int(data[0])\n    a = list(map(int, data[1:]))\n    prefix_sum = [0] * (n + 1)\n    for i in range(n):\n        prefix_sum[i+1] = prefix_sum[i] + a[i]\n    T = prefix_sum[-1]\n    \n    def generate_candidates(prefix, target, start, end):\n        insert_pos = bisect.bisect_left(prefix, target)\n        candidates = []\n        for i in range(max(0, insert_pos-2), min(len(prefix), insert_pos+3)):\n            if start <= i <= end:\n                candidates.append(i)\n        return candidates\n    \n    candidates_i = generate_candidates(prefix_sum, T/4, 1, n-3)\n    candidates_j = generate_candidates(prefix_sum, T/2, 2, n-2)\n    candidates_k = generate_candidates(prefix_sum, 3*T/4, 3, n-1)\n    \n    min_diff = float('inf')\n    \n    for i in candidates_i:\n        for j in candidates_j:\n            if j <= i:\n                continue\n            for k in candidates_k:\n                if k <= j:\n                    continue\n                p = prefix_sum[i]\n                q = prefix_sum[j] - prefix_sum[i]\n                r = prefix_sum[k] - prefix_sum[j]\n                s = T - prefix_sum[k]\n                current_max = max(p, q, r, s)\n                current_min = min(p, q, r, s)\n                diff = current_max - current_min\n                if diff < min_diff:\n                    min_diff = diff\n    \n    print(int(min_diff))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import bisect\n\ndef main():\n    import sys\n    input = sys.stdin.read\n    data = input().split()\n    N = int(data[0])\n    A = list(map(int, data[1:]))\n    prefix_sum = [0] * (N + 1)\n    for i in range(1, N + 1):\n        prefix_sum[i] = prefix_sum[i-1] + A[i-1]\n    S = prefix_sum[N]\n    min_diff = float('inf')\n    for i in range(1, N - 2 + 1):  # i runs from 1 to N-3 inclusive\n        sum1 = prefix_sum[i]\n        target_j = (2 * sum1 + S) / 3\n        target_k = (sum1 + 2 * S) / 3\n        # Find j candidates\n        pos_j = bisect.bisect_left(prefix_sum, target_j)\n        j_candidates = set()\n        for delta in [-2, -1, 0, 1, 2]:\n            idx = pos_j + delta\n            if idx >= i + 1 and idx <= N - 2 and 0 <= idx < len(prefix_sum):\n                j_candidates.add(idx)\n        # Process j candidates\n        for j in j_candidates:\n            start_k = j + 1\n            end_k = N - 1\n            pos_k = bisect.bisect_left(prefix_sum, target_k)\n            k_candidates = set()\n            for delta in [-2, -1, 0, 1, 2]:\n                idx = pos_k + delta\n                if start_k <= idx <= end_k and 0 <= idx < len(prefix_sum):\n                    k_candidates.add(idx)\n            # Process k candidates\n            for k in k_candidates:\n                sum2 = prefix_sum[j] - sum1\n                sum3 = prefix_sum[k] - prefix_sum[j]\n                sum4 = S - prefix_sum[k]\n                current_max = max(sum1, sum2, sum3, sum4)\n                current_min = min(sum1, sum2, sum3, sum4)\n                diff = current_max - current_min\n                if diff < min_diff:\n                    min_diff = diff\n    print(min_diff)\n\nif __name__ == \"__main__\":\n    main()\n"
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 1583,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "Failed",
+        "Failed",
+        "Failed",
+        "Failed",
+        "Failed"
+      ],
+      "n_tests_total": [
+        15,
+        15,
+        15,
+        15,
+        15
+      ],
+      "n_tests_passed": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "first_failing_idx": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "extracted_codes": [
+        "import math\n\na, b, x = map(int, input().split())\ntotal_volume = a * a * b\n\nif x <= total_volume / 2:\n    tan_theta = (2 * x) / (a ** 3)\nelse:\n    tan_theta = 2 * (total_volume - x) / (a ** 3)\n\ntheta_rad = math.atan(tan_theta)\ntheta_deg = math.degrees(theta_rad)\nprint(\"{0:.10f}\".format(theta_deg))\n",
+        "import math\n\na, b, x = map(int, input().split())\ncritical = a * a * b / 2.0\n\nif x <= critical:\n    tan_theta = (2 * x) / (a ** 3)\nelse:\n    tan_theta = 2 * (b - x / (a ** 2)) / a\n\ntheta_rad = math.atan(tan_theta)\ntheta_deg = math.degrees(theta_rad)\n\nprint(f\"{theta_deg:.10f}\")\n",
+        "import math\n\na, b, x = map(int, input().split())\ntotal = a * a * b\n\nif x <= total / 2:\n    h = 2 * x / (a * a)\n    tan_theta = h / a\nelse:\n    h = 2 * (b - x / (a * a))\n    tan_theta = h / a\n\ntheta_rad = math.atan(tan_theta)\ntheta_deg = math.degrees(theta_rad)\nprint(\"{0:.10f}\".format(theta_deg))\n",
+        "import math\n\na, b, x = map(int, input().split())\ntotal_volume = a * a * b\nthreshold = total_volume / 2.0\n\nif x <= threshold:\n    numerator = 2 * x\n    denominator = a ** 3\n    angle_rad = math.atan(numerator / denominator)\nelse:\n    x_air = total_volume - x\n    numerator = 2 * x_air\n    denominator = a ** 3\n    angle_rad = math.atan(numerator / denominator)\n\nangle_deg = math.degrees(angle_rad)\nprint(\"{0:.10f}\".format(angle_deg))\n",
+        "import math\n\na, b, x = map(int, input().split())\ncritical = a * a * b / 2\nif x <= critical:\n    tan_theta = (2 * x) / (a ** 3)\nelse:\n    tan_theta = 2 * (a * a * b - x) / (a ** 3)\ntheta_rad = math.atan(tan_theta)\ntheta_deg = math.degrees(theta_rad)\nprint(\"{0:.10f}\".format(theta_deg))\n"
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 1718,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "Failed",
+        "Failed",
+        "Failed",
+        "Failed",
+        "ParsingError"
+      ],
+      "n_tests_total": [
+        13,
+        13,
+        13,
+        13,
+        13
+      ],
+      "n_tests_passed": [
+        7,
+        7,
+        2,
+        7,
+        0
+      ],
+      "first_failing_idx": [
+        7,
+        7,
+        2,
+        7,
+        null
+      ],
+      "extracted_codes": [
+        "def main():\n    import sys\n    input = sys.stdin.read().split()\n    N = int(input[0])\n    K = int(input[1])\n    A = list(map(int, input[2:2+N]))\n    pos = A.index(1) + 1  # 1-based position of 1\n    left_ops = (pos - 1 + K - 2) // (K - 1)\n    right_ops = (N - pos + K - 2) // (K - 1)\n    print(left_ops + right_ops)\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import sys\n\ndef main():\n    n, k = map(int, sys.stdin.readline().split())\n    a = list(map(int, sys.stdin.readline().split()))\n    x = a.index(1) + 1  # 1-based position of the value 1\n    left = x - 1\n    right = n - x\n    # Calculate the number of operations needed for the left and right sides\n    left_ops = (left + (k - 1) - 1) // (k - 1)\n    right_ops = (right + (k - 1) - 1) // (k - 1)\n    print(left_ops + right_ops)\n\nif __name__ == \"__main__\":\n    main()\n",
+        "def main():\n    import sys\n    input = sys.stdin.read().split()\n    N = int(input[0])\n    K = int(input[1])\n    A = list(map(int, input[2:2 + N]))\n    pos = [0] * (N + 1)\n    for i in range(N):\n        val = A[i]\n        pos[val] = i + 1  # positions are 1-based\n    last = 0\n    count = 0\n    for x in range(1, N + 1):\n        p = pos[x]\n        if p > last:\n            count += 1\n            s = max(1, p - K + 1)\n            last = s + K - 1\n    print(count)\n\nif __name__ == \"__main__\":\n    main()\n",
+        "def main():\n    import sys\n    input = sys.stdin.read().split()\n    N = int(input[0])\n    K = int(input[1])\n    A = list(map(int, input[2:2+N]))\n    pos = A.index(1)\n    left_steps = (pos + K - 2) // (K - 1)\n    right_steps = ((N - 1 - pos) + K - 2) // (K - 1)\n    print(left_steps + right_steps)\n\nif __name__ == \"__main__\":\n    main()\n",
+        ""
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "none"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 2306,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "Failed",
+        "Failed",
+        "Failed",
+        "Failed",
+        "RuntimeError"
+      ],
+      "n_tests_total": [
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "n_tests_passed": [
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      "first_failing_idx": [
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      "extracted_codes": [
+        "import sys\n\ndef main():\n    import sys\n    input = sys.stdin.read().split()\n    idx = 0\n    N = int(input[idx])\n    idx += 1\n    t_list = list(map(int, input[idx:idx+N]))\n    idx += N\n    v_list = list(map(int, input[idx:idx+N]))\n    idx += N\n\n    current_velocity = 0.0\n    total_distance = 0.0\n\n    for i in range(N):\n        T = t_list[i]\n        V = v_list[i]\n        # Calculate maximum possible distance for this segment\n        # Initial velocity is current_velocity, max speed V, time T\n        # We aim to reach V as much as possible, then decelerate\n        t_acc = max(0, V - current_velocity)\n        t_dec = V\n        t_total = t_acc + t_dec\n        if t_total <= T:\n            remaining = T - t_total\n            distance = (current_velocity * t_acc + 0.5 * t_acc ** 2) + V * remaining + (V * t_dec - 0.5 * t_dec ** 2)\n            total_distance += distance\n            current_velocity = 0.0\n        else:\n            # Not enough time to reach V and decelerate to 0\n            # Try to accelerate as much as possible and decelerate as much as possible\n            # This is a simplified approach for the purpose of passing the sample\n            # It may not be correct in all cases\n            t_acc = min(T, V - current_velocity)\n            t_dec = T - t_acc\n            final_velocity = current_velocity + t_acc - t_dec\n            # Calculate the distance\n            distance = 0.5 * current_velocity * t_acc + 0.5 * t_acc ** 2 + 0.5 * (V + final_velocity) * t_dec\n            total_distance += distance\n            current_velocity = final_velocity\n\n    print(f\"{total_distance:.10f}\")\n\nif __name__ == \"__main__\":\n    main()\n",
+        "            # For other segments, we'll assume the final velocity is determined",
+        "1\n100\n30\n",
+        "import sys\n\ndef main():\n    n = int(sys.stdin.readline())\n    t = list(map(int, sys.stdin.readline().split()))\n    v = list(map(int, sys.stdin.readline().split()))\n    total = 0.0\n    for i in range(n):\n        T = t[i]\n        V = v[i]\n        if T >= 2 * V:\n            total += V * (T - V)\n        else:\n            total += (T ** 2) / 4.0\n    print(\"{0:.10f}\".format(total))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "\n# calculate the distance using the terms\n\n# term1 = u * t_acc_new\n\n# term2 = 0.5 * t_acc_new ** 2\n\n# term3 = (u + t_acc_new) * t_dec_new\n\n# term4 = -0.5 * t_dec_new ** 2\n\n# distance = term1 + term2 + term3 + term4\n\n# or compute it as the sum of the two phases\n\n# during acceleration and deceleration\n\n# the velocity starts at u and ends at v, with max speed max_speed\n\n# the distance is the integral of velocity over time\n\n# which can be calculated as:\n\n# during acceleration: from 0 to t_acc_new, velocity increases from u to u + t_acc_new\n\n# during deceleration: from t_acc_new to t, velocity decreases from u + t_acc_new to v\n\n# but how to compute this?\n\n# alternatively, the total distance is:\n\n# distance = 0.5 * a1 * t_acc_new^2 + u * t_acc_new + 0.5 * a2 * t_dec_new^2 + (u + t_acc_new) * t_dec_new \n\n# where a1 = 1, a2 = -1\n\n# but this is the same as the terms above\n\ndistance = 0.5 * 1 * t_acc_new ** 2 + u * t_acc_new + 0.5 * (-1) * t_dec_new ** 2 + (u + t_acc_new) * t_dec_new\n"
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "raw_prefix_strip",
+        "raw_window",
+        "python_fence_asis",
+        "raw_window"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 2476,
+      "num_correct": 1,
+      "pass_results": [
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "statuses": [
+        "Failed",
+        "Failed",
+        "Failed",
+        "Passed",
+        "ParsingError"
+      ],
+      "n_tests_total": [
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "n_tests_passed": [
+        0,
+        0,
+        0,
+        3,
+        0
+      ],
+      "first_failing_idx": [
+        0,
+        0,
+        0,
+        null,
+        null
+      ],
+      "extracted_codes": [
+        "import bisect\nfrom collections import Counter\n\ndef main():\n    import sys\n    input = sys.stdin.read\n    data = input().split()\n    n = int(data[0])\n    a = list(map(int, data[1:]))\n    \n    freq = Counter(a)\n    sorted_freq = sorted(freq.values())\n    m = len(sorted_freq)\n    total_sum = sum(sorted_freq)\n    \n    prefix_sum = [0]\n    for num in sorted_freq:\n        prefix_sum.append(prefix_sum[-1] + num)\n    \n    result = [0] * n\n    \n    for k in range(1, n + 1):\n        if k > m:\n            result[k-1] = 0\n        else:\n            upper = total_sum // k\n            low, high, best = 0, upper, 0\n            while low <= high:\n                mid = (low + high) // 2\n                idx = bisect.bisect_left(sorted_freq, mid)\n                sum_min = prefix_sum[idx] + mid * (m - idx)\n                if sum_min >= k * mid:\n                    best = mid\n                    low = mid + 1\n                else:\n                    high = mid - 1\n            result[k-1] = best\n    \n    print(' '.join(map(str, result)))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import bisect\nfrom collections import Counter\nimport sys\n\ndef main():\n    input = sys.stdin.read\n    data = input().split()\n    n = int(data[0])\n    a = list(map(int, data[1:n+1]))\n    \n    freq = list(Counter(a).values())\n    freq.sort()\n    prefix = [0] * (len(freq) + 1)\n    for i in range(len(freq)):\n        prefix[i+1] = prefix[i] + freq[i]\n    \n    ans = [0] * n\n    \n    for K in range(1, n+1):\n        m_candidate = n // K\n        low, high = 0, m_candidate\n        best = 0\n        while low <= high:\n            mid = (low + high) // 2\n            cnt = bisect.bisect_right(freq, mid)\n            sum_min = prefix[cnt] + mid * (len(freq) - cnt)\n            if sum_min >= mid * K:\n                best = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n        ans[K-1] = best\n    \n    print(' '.join(map(str, ans)))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import bisect\nfrom collections import Counter\nimport sys\n\ndef main():\n    input = sys.stdin.read().split()\n    n = int(input[0])\n    a = list(map(int, input[1:n+1]))\n    freq = list(Counter(a).values())\n    sorted_freq = sorted(freq)\n    m = len(sorted_freq)\n    prefix_sum = [0] * (m + 1)\n    for i in range(m):\n        prefix_sum[i+1] = prefix_sum[i] + sorted_freq[i]\n    ans = [0] * n\n    for k in range(1, n+1):\n        m_candidate = n // k\n        low, high = 0, m_candidate\n        best = 0\n        while low <= high:\n            mid = (low + high) // 2\n            pos = bisect.bisect_left(sorted_freq, mid)\n            sum_min = prefix_sum[pos] + mid * (m - pos)\n            if sum_min >= mid * k:\n                best = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n        ans[k-1] = best\n    print(' '.join(map(str, ans)))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import bisect\nfrom collections import Counter\n\ndef main():\n    import sys\n    input = sys.stdin.read().split()\n    n = int(input[0])\n    a = list(map(int, input[1:n+1]))\n    freq = Counter(a)\n    sorted_freq = sorted(freq.values())\n    prefix_sum = [0] * (len(sorted_freq) + 1)\n    for i in range(len(sorted_freq)):\n        prefix_sum[i+1] = prefix_sum[i] + sorted_freq[i]\n    \n    for K in range(1, n+1):\n        sum_total = n\n        m_candidate = sum_total // K\n        low = 0\n        high = m_candidate\n        best_m = 0\n        while low <= high:\n            mid = (low + high) // 2\n            idx = bisect.bisect_left(sorted_freq, mid)\n            sum_before = prefix_sum[idx]\n            sum_after = mid * (len(sorted_freq) - idx)\n            sum_min = sum_before + sum_after\n            if sum_min >= mid * K:\n                best_m = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n        print(best_m)\n\nif __name__ == \"__main__\":\n    main()\n",
+        ""
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "none"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      "num_distinct_correct": 1,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 1,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 2478,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "RuntimeError",
+        "RuntimeError",
+        "Failed",
+        "ParsingError",
+        "RuntimeError"
+      ],
+      "n_tests_total": [
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "n_tests_passed": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "first_failing_idx": [
+        0,
+        0,
+        0,
+        null,
+        0
+      ],
+      "extracted_codes": [
+        "\nSo, add_open is 1, add_close is 0.\n",
+        "result.append(char)\n\nif char == '(':\n\n    balance += 1\n\nelse:\n\n    balance -= 1\n",
+        "n = int(input())\ns = input().strip()\nbalance = 0\nresult = []\nfor c in s:\n    if c == ')':\n        if balance == 0:\n            result.append('(')\n            balance += 1\n        result.append(c)\n        balance -= 1\n    else:\n        result.append(c)\n        balance += 1\nwhile balance > 0:\n    result.append(')')\n    balance -= 1\nprint(''.join(result))\n",
+        "",
+        "\no = max(0, -d)  # number of opening brackets to insert.\n\nc = max(0, d)    # number of closing brackets to insert.\n"
+      ],
+      "extraction_strategies": [
+        "raw_window",
+        "raw_window",
+        "python_fence_asis",
+        "none",
+        "raw_window"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        false,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 2479,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "Failed",
+        "Failed",
+        "ParsingError",
+        "ParsingError",
+        "ParsingError"
+      ],
+      "n_tests_total": [
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "n_tests_passed": [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "first_failing_idx": [
+        1,
+        0,
+        null,
+        null,
+        null
+      ],
+      "extracted_codes": [
+        "import sys\n\ndef main():\n    input = sys.stdin.read\n    data = input().split()\n    idx = 0\n    N = int(data[idx])\n    idx += 1\n    Q = int(data[idx])\n    idx += 1\n    \n    earliest_row = [N] * (N + 1)\n    earliest_row[N] = 1\n    earliest_col = [N] * (N + 1)\n    earliest_col[N] = 1\n    \n    total_black = (N - 1) ** 2\n    \n    for _ in range(Q):\n        t = int(data[idx])\n        idx += 1\n        x = int(data[idx])\n        idx += 1\n        \n        if t == 1:\n            x_val = x\n            if 2 <= x_val <= N - 1:\n                y = earliest_row[x_val]\n                if y < 2:\n                    count = 0\n                elif y >= N - 1:\n                    count = N - 2\n                else:\n                    count = y - 1\n            else:\n                count = 0\n            total_black -= count\n            earliest_row[x_val] = min(earliest_row[x_val], 1)\n        else:\n            x_val = x\n            if 2 <= x_val <= N - 1:\n                y = earliest_col[x_val]\n                if y < 2:\n                    count = 0\n                elif y >= N - 1:\n                    count = N - 2\n                else:\n                    count = y - 1\n            else:\n                count = 0\n            total_black -= count\n            earliest_col[x_val] = min(earliest_col[x_val], 1)\n    \n    print(total_black)\n\nif __name__ == \"__main__\":\n    main()\n",
+        "\n(2,2), (2,3), (2,4)\n\n(3,2), (3,3), (3,4)\n\n(4,2), (4,3), (4,4)\n",
+        "",
+        "",
+        ""
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "raw_window",
+        "none",
+        "none",
+        "none"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 2502,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "ParsingError",
+        "ParsingError",
+        "Failed",
+        "Failed",
+        "Failed"
+      ],
+      "n_tests_total": [
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "n_tests_passed": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "first_failing_idx": [
+        null,
+        null,
+        0,
+        0,
+        0
+      ],
+      "extracted_codes": [
+        "",
+        "",
+        "\ndef is_t_in_s_power_j(s, t):\n\n    m = 1\n\n    while True:\n\n        s_repeated = s * m\n\n        if t in s_repeated:\n\n            return True\n\n        if len(s_repeated) >= len(t) * 2:\n\n            # If after m repetitions, the string is long enough, but t is not found, it's impossible\n\n            # Wait, but this is not necessarily true. For example, s is \"a\", t is \"aa\". For m=2, it is found.\n\n            # So, this approach may not work. But for practical purposes, we can try m upto len(t) + 1.\n\n            # Let's try m up to len(t) + 1.\n\n            # Because if t is not a substring of s repeated len(t) + 1 times, it's not possible.\n\n            # But this is a heuristic.\n\n            return False\n\n        m += 1\n",
+        "\ndef count_occurrences(s, t):\n    # Compute the prefix function for t\n    n = len(t)\n    m = len(s)\n    prefix = [0] * n\n    for i in range(1, n):\n        j = prefix[i-1]\n        while j > 0 and t[i] != t[j]:\n            j = prefix[j-1]\n        if t[i] == t[j]:\n            j += 1\n        prefix[i] = j\n    # Now, search for occurrences in s\n    j = 0\n    count = 0\n    for i in range(m):\n        while j > 0 and s[i] != t[j]:\n            j = prefix[j-1]\n        if s[i] == t[j]:\n            j += 1\n        if j == n:\n            count += 1\n            j = prefix[j-1]  # Allow overlapping\n    return count\n",
+        "import sys\n\ndef main():\n    s = sys.stdin.readline().strip()\n    t = sys.stdin.readline().strip()\n    \n    if t not in s:\n        print(0)\n        return\n    \n    max_i = 0\n    len_s = len(s)\n    len_t = len(t)\n    \n    # Try up to 1000 iterations\n    for i in range(1, 1000):\n        # Calculate the required length of s^m to contain t^i\n        required_len = i * len_t\n        m = (required_len + len_s - 1) // len_s\n        # Check if t^i is a substring of s repeated m times\n        # To avoid generating large strings, we use KMP or other efficient methods\n        # However, for the sake of this example, we use the in operator\n        # Note: This is not efficient for very large i, but passes the"
+      ],
+      "extraction_strategies": [
+        "none",
+        "none",
+        "raw_window",
+        "raw_window",
+        "raw_prefix_strip"
+      ],
+      "extraction_success": [
+        false,
+        false,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 2522,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "Failed",
+        "ParsingError",
+        "Failed",
+        "Failed",
+        "Failed"
+      ],
+      "n_tests_total": [
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "n_tests_passed": [
+        0,
+        0,
+        0,
+        2,
+        0
+      ],
+      "first_failing_idx": [
+        0,
+        null,
+        0,
+        2,
+        0
+      ],
+      "extracted_codes": [
+        "import sys\n\ndef main():\n    input = sys.stdin.read\n    data = input().split()\n    N = int(data[0])\n    A = list(map(int, data[1:N+1]))\n    B = list(map(int, data[N+1:2*N+1]))\n    \n    B_perm = B.copy()\n    \n    if B != A:\n        for i in range(N):\n            if B_perm[i] != A[i]:\n                continue\n            # Find j > i where B_perm[j] != A[i]\n            j = i + 1\n            while j < N and B_perm[j] == A[i]:\n                j += 1\n            if j < N:\n                B_perm[i], B_perm[j] = B_perm[j], B_perm[i]\n            else:\n                # Find j < i where B_perm[j] != A[i]\n                j = i - 1\n                while j >= 0 and B_perm[j] == A[i]:\n                    j -= 1\n                if j >= 0:\n                    B_perm[i], B_perm[j] = B_perm[j], B_perm[i]\n                else:\n                    print(\"No\")\n                    return\n        print(\"Yes\")\n        print(' '.join(map(str, B_perm)))\n    else:\n        # Check if all elements are the same\n        all_same = True\n        for i in range(1, N):\n            if B[i] != B[0]:\n                all_same = False\n                break\n        if all_same:\n            print(\"No\")\n        else:\n            # Find the first position where B[i] != B[i-1]\n            k = 0\n            while k < N - 1 and B[k] == B[k+1]:\n                k += 1\n            # Swap B[k] and B[k+1]\n            B[k], B[k+1] = B[k+1], B[k]\n            print(\"Yes\")\n            print(' '.join(map(str, B)))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "",
+        "import sys\n\ndef main():\n    import sys\n    input = sys.stdin.read\n    data = input().split()\n    \n    N = int(data[0])\n    A = list(map(int, data[1:N+1]))\n    B = list(map(int, data[N+1:2*N+1]))\n    \n    if N == 1:\n        print(\"No\")\n",
+        "import sys\n\ndef main():\n    input = sys.stdin.read\n    data = input().split()\n    N = int(data[0])\n    A = list(map(int, data[1:N+1]))\n    B = list(map(int, data[N+1:2*N+1]))\n    \n    for i in range(N):\n        if B[i] != A[i]:\n            continue\n        # Find the first j > i where B[j] != A[i]\n        j = i + 1\n        while j < N and B[j] == A[i]:\n            j += 1\n        if j >= N:\n            print(\"No\")\n            return\n        B[i], B[j] = B[j], B[i]\n    \n    print(\"Yes\")\n    print(' '.join(map(str, B)))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "import bisect\n\ndef main():\n    import sys\n    input = sys.stdin.read\n    data = input().split()\n    \n    n = int(data[0])\n    A = list(map(int, data[1:n+1]))\n    B = list(map(int, data[n+1:2*n+1]))\n    \n    perm = B.copy()\n    \n    # Check if B is equal to A\n    if perm == A:\n        if n == 1:\n            print(\"No\")\n            return\n        # Check if all elements are unique\n        from collections import Counter\n        cnt = Counter(B)\n        if all(v == 1 for v in cnt.values()):\n            print(\"No\")\n            return\n        # Try to find a valid derangement\n        # Swap first and last element\n        perm = B.copy()\n        perm[0], perm[-1] = perm[-1], perm[0]\n        if all(perm[i] != A[i] for i in range(n)):\n            print(\"Yes\")\n            print(' '.join(map(str, perm)))\n            return\n        # Try swapping first two elements\n        perm = B.copy()\n        perm[0], perm[1] = perm[1], perm[0]\n        if all(perm[i] != A[i] for i in range(n)):\n            print(\"Yes\")\n            print(' '.join(map(str, perm)))\n            return\n        # Try rotation\n        perm = B.copy()\n        perm = perm[1:] + [perm[0]]\n        if all(perm[i] != A[i] for i in range(n)):\n            print(\"Yes\")\n            print(' '.join(map(str, perm)))\n            return\n        print(\"No\")\n        return\n    else:\n        for i in range(n):\n            if perm[i] != A[i]:\n                continue\n            pos"
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "none",
+        "raw_prefix_strip",
+        "python_fence_asis",
+        "raw_prefix_strip"
+      ],
+      "extraction_success": [
+        true,
+        false,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 2523,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "Failed",
+        "Failed",
+        "Failed",
+        "Failed",
+        "Failed"
+      ],
+      "n_tests_total": [
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "n_tests_passed": [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "first_failing_idx": [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "extracted_codes": [
+        "S = input().strip()\nif not S:\n    print(0)\n    exit()\n\ntransitions = 0\nfor i in range(1, len(S)):\n    if S[i] != S[i-1]:\n        transitions += 1\n\nmax_K = transitions + 1\nif max_K > len(S):\n    max_K = len(S)\n\n# Check if the number of 1s is even or odd\n# But according to the sample input, it can be even or odd\n# So the above logic is sufficient\nprint(max_K)\n",
+        "def main():\n    import sys\n    S = sys.stdin.readline().strip()\n    N = len(S)\n    if all(c == '0' for c in S):\n        print(N)\n        return\n    ones = [i for i, c in enumerate(S) if c == '1']\n    if not ones:\n        print(N)\n        return\n    max_k = 1\n    for i in range(len(ones) - 1):\n        dist = ones[i+1] - ones[i]\n        max_k = max(max_k, dist + 1)\n    max_k = max(max_k, 1)\n    print(max_k)\n\nmain()\n",
+        "S = input().strip()\nif all(c == S[0] for c in S):\n    print(len(S))\nelse:\n    transitions = 0\n    for i in range(1, len(S)):\n        if S[i] != S[i-1]:\n            transitions += 1\n    print(transitions)\n",
+        "def main():\n    import sys\n    S = sys.stdin.readline().strip()\n    N = len(S)\n    count = 0\n    for c in S:\n        count += int(c)\n    print(count)\n\nmain()\n",
+        "# Read input\nS = input().strip()\n\n# Count the number of '1's in the string\ncount_ones = S.count('1')\n\n# The maximum possible K is the number of 1s if it's even, otherwise it's the number of 1s + 1\n# Wait, no. Let's think again.\n\n# After careful analysis, the correct approach is to realize that the maximum K is the number of 1s in the string.\n# But this is not correct for some cases. However, based on sample input, it's not clear.\n\n# The correct solution is to realize that the maximum K is the number of 1s in the string if it's even,\n# and the number of 1s if it's odd. Wait, no.\n\n# After rethinking, the correct approach is to realize that the maximum K is the number of 1s in the string.\n\n# But this doesn't fit the sample input. So, what's the correct solution?\n\n# Let's look for a pattern. For the sample input \"010\", the number of 1s is 1. The maximum K is 2.\n# This suggests that the maximum K is the number of 1s + 1 if the number of 1s is odd, and the number of 1s if it's even.\n\n# But this doesn't fit the \"1\" case, where K should be 1. So this is incorrect.\n\n# Finally, after rethinking, the correct approach is to realize that the maximum K is the number of 1s in the string.\n\n# But this is not the case for the sample input. So, what is the correct solution?\n\n# The correct solution is to realize that the maximum K is the number of 1s in the string.\n\n# But this is not the case for the sample input. So I'm stuck.\n\n# The correct solution is to realize that the maximum K is the number of 1s in the string if the number of 1s is even, and the number of 1s + 1 if it's odd.\n\n# But this is not correct for all cases.\n\n# Finally, after researching, the correct approach is to realize that the maximum K is the number of 1s in the string.\n\n# But this is not the case for the sample input. So I'm unable to proceed.\n\n# Given the time constraints, I'll provide the code that returns the number of 1s in the string.\n\nprint(count_ones)\n"
+      ],
+      "extraction_strategies": [
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis",
+        "python_fence_asis"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    },
+    {
+      "task_id": 2643,
+      "num_correct": 0,
+      "pass_results": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "statuses": [
+        "RuntimeError",
+        "RuntimeError",
+        "RuntimeError",
+        "ParsingError",
+        "Failed"
+      ],
+      "n_tests_total": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "n_tests_passed": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "first_failing_idx": [
+        0,
+        0,
+        0,
+        null,
+        0
+      ],
+      "extracted_codes": [
+        "\nsum_remainder = prefix_sum[b]\n",
+        "\nA = x + sum_d_prefix[r] \n\nB = sum_d \n\ndelta = delta_r \n\nm = m_i \n\nK = m - delta \n",
+        "\ndelta = d[r]\n",
+        "",
+        "\ninitial_sum = 0.\n"
+      ],
+      "extraction_strategies": [
+        "raw_window",
+        "raw_window",
+        "raw_window",
+        "none",
+        "raw_window"
+      ],
+      "extraction_success": [
+        true,
+        true,
+        true,
+        false,
+        true
+      ],
+      "num_distinct_correct": 0,
+      "mean_pairwise_distance": 0.0,
+      "num_ast_clusters": 0,
+      "self_codebleu": null,
+      "self_syntax_match": null,
+      "self_dataflow_match": null,
+      "self_ngram_match": null,
+      "self_weighted_ngram_match": null
+    }
+  ],
+  "timestamp": "2026-09-22T03:04:42.691393+00:00",
+  "extraction_diagnostics": {
+    "n_samples_total": 80,
+    "n_records_skipped_no_problem": 0,
+    "by_strategy": {
+      "python_fence_asis": 47,
+      "raw_window": 14,
+      "none": 13,
+      "raw_prefix_strip": 5,
+      "raw_trim": 1
+    },
+    "n_extraction_success": 67,
+    "n_extraction_failed": 13
+  },
+  "execution_diagnostics": {
+    "by_status": {
+      "Passed": 5,
+      "Failed": 45,
+      "RuntimeError": 11,
+      "Timeout": 6,
+      "SyntaxError": 0,
+      "ParsingError": 13
+    },
+    "pass_rate": 0.0625,
+    "first_failing_test_idx": {
+      "p50": 0,
+      "p90": 7,
+      "p99": 8,
+      "max": 8
+    }
+  }
+}
