@@ -45,8 +45,9 @@ from bench.generator_vllm import (
 
 VARIANT_NAMES = [
     "pless_effk", "pless_min2", "pless_topmass", "pless_top1half", "pless_gini",
-    # Comparison baseline: top-nσ at author-recommended n=1.0 (Tang et al. 2024).
-    "top_nsigma",
+    # Comparison baselines: top-nσ 3-point sweep (Tang et al. ACL 2025).
+    # n=1.0 is paper default; 0.5/1.5 bracket the flat-performance band.
+    "top_nsigma", "top_nsigma_0_5", "top_nsigma_1_5",
 ]
 
 REPO = Path(__file__).resolve().parent.parent

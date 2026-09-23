@@ -44,16 +44,42 @@ def _top_nsigma_mask_logits(logits: torch.Tensor, n: float = 1.0) -> torch.Tenso
 
 
 def top_nsigma_1_mask_logits(logits: torch.Tensor) -> torch.Tensor:
-    """top-nσ with author-recommended default n=1.0."""
+    """top-nσ at n=1.0 — the paper's default (§4.2, §5.1)."""
     return _top_nsigma_mask_logits(logits, n=1.0)
 
 
-def register() -> None:
-    """Splice top-nσ (n=1.0) into ``bench.generator_vllm._SAMPLER_LOGIT_FN``.
+def top_nsigma_0_5_mask_logits(logits: torch.Tensor) -> torch.Tensor:
+    """top-nσ at n=0.5 — lower end of the paper's flat-performance band (§5.4)."""
+    return _top_nsigma_mask_logits(logits, n=0.5)
 
-    Registered under the name ``top_nsigma`` so the runner can dispatch it
-    via ``--method top_nsigma`` or via the split logit-processor's per-phase
-    sampler name.
+
+def top_nsigma_1_5_mask_logits(logits: torch.Tensor) -> torch.Tensor:
+    """top-nσ at n=1.5 — upper end of the flat band before degradation (§5.4)."""
+    return _top_nsigma_mask_logits(logits, n=1.5)
+
+
+def register() -> None:
+    """Splice top-nσ variants into ``bench.generator_vllm._SAMPLER_LOGIT_FN``.
+
+    Registers three points from the paper's sensitivity sweep (§5.4):
+      - ``top_nsigma``     → n=1.0 (paper default)
+      - ``top_nsigma_0_5`` → n=0.5 (lower flat-band endpoint)
+      - ``top_nsigma_1_5`` → n=1.5 (upper flat-band endpoint)
+
+    The paper (Tang et al. 2025, arXiv:2411.07641, ACL 2025) documents
+    that n ∈ [0.3, ~1.0] gives essentially flat performance on GSM8K
+    across T ∈ [0.5, 3.0]; n ≥ 2.0 degrades significantly. This 3-point
+    sweep brackets the recommended range without entering the failure
+    region.
+
+    Important: the paper's Algorithm 1 filters *before* temperature
+    scaling. Since our vLLM runner uses ``temperature=1.0`` at the
+    SamplingParams level (temperature is handled per-phase inside the
+    PlessSplitLogitsProcessor at T=1.0 for the head-to-head), the
+    ordering equivalence holds and n=1.0 here means what the paper's
+    n=1.0 means. If you run at T ≠ 1.0, the interpretation shifts.
     """
     from bench import generator_vllm as gv
-    gv._SAMPLER_LOGIT_FN["top_nsigma"] = top_nsigma_1_mask_logits
+    gv._SAMPLER_LOGIT_FN["top_nsigma"]     = top_nsigma_1_mask_logits
+    gv._SAMPLER_LOGIT_FN["top_nsigma_0_5"] = top_nsigma_0_5_mask_logits
+    gv._SAMPLER_LOGIT_FN["top_nsigma_1_5"] = top_nsigma_1_5_mask_logits
