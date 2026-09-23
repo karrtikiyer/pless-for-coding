@@ -31,6 +31,8 @@ from pathlib import Path
 # generate_samples_vllm's consumers below.
 from bench.pless_variants_vllm import register as _register_variants
 _register_variants()
+from bench.topnsigma_vllm import register as _register_topnsigma
+_register_topnsigma()
 
 from bench.apps.dataset import load_apps
 from bench.apps.prompts import format_prompt_apps_instruct
@@ -43,6 +45,8 @@ from bench.generator_vllm import (
 
 VARIANT_NAMES = [
     "pless_effk", "pless_min2", "pless_topmass", "pless_top1half", "pless_gini",
+    # Comparison baseline: top-nσ at author-recommended n=1.0 (Tang et al. 2024).
+    "top_nsigma",
 ]
 
 REPO = Path(__file__).resolve().parent.parent
