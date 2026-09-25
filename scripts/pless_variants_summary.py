@@ -39,11 +39,22 @@ def main() -> None:
         return
 
     per_variant = {}
+    variant_source = {}
     for mf in metric_files:
         d = json.loads(mf.read_text())
         variant = mf.stem.replace("_metrics", "")
+        if variant in per_variant:
+            raise SystemExit(
+                f"Metric-file stem collision: '{variant}' appears in both "
+                f"{variant_source[variant]} and {mf.parent}. Combining "
+                "per_variant[variant] = {...} would silently overwrite the "
+                "first backend's data with the second's. Rename one of the "
+                "output files (or extend METRICS_DIRS handling to merge "
+                "explicitly) before re-running this summary."
+            )
         per_variant[variant] = {row["task_id"]: row["num_correct"]
                                 for row in d.get("per_task", [])}
+        variant_source[variant] = mf.parent
 
     variants = list(per_variant.keys())
     print(f"{'task_id':>8} | " + " | ".join(f"{v:>28}" for v in variants))

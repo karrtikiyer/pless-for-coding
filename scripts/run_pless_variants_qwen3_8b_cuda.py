@@ -192,6 +192,18 @@ def main() -> None:
                          "scripts/merge_pless_batches.py.")
     args = ap.parse_args()
 
+    # temp_standard is Qwen3's documented thinking-mode recipe (T=0.6,
+    # top_p=0.95, top_k=20) — but this script applies one global --temperature
+    # to every selected variant. Silently running it at the wrong temperature
+    # would mislabel the "Qwen recipe" baseline. Fail loud instead.
+    if "temp_standard" in args.variants and args.temperature != 0.6:
+        raise SystemExit(
+            "temp_standard is the Qwen3-recommended recipe (T=0.6, p=0.95, "
+            "k=20); refusing to run it at --temperature "
+            f"{args.temperature}. Run temp_standard in its own invocation "
+            "with --temperature 0.6, separate from other variants."
+        )
+
     global_start = time.time()
     global_deadline = global_start + args.budget_minutes * 60.0
 
