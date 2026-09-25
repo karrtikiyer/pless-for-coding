@@ -74,6 +74,14 @@ CONFIGS: list[tuple[str, str, float, float | None]] = [
     ("pless_topmass",    "pless_topmass",    1.0, None),
     ("pless_gini",       "pless_gini",       1.0, None),
     ("pless_top1half",   "pless_top1half",   1.0, None),
+    # T1-only sweep: canonical pless with the pre-truncation temperature raised
+    # above 1.0 to flatten the (often very peaked, RL-sharpened) distribution
+    # before the collision-entropy threshold is applied. No T2 (post-pless
+    # re-temperature, see sampler_bridge.make_pless_post_temp_sampler) here —
+    # user asked for T1-only. Same "pless" sampler_name as pless_default;
+    # temperature is what varies.
+    ("pless_default_t1_5", "pless",          1.5, None),
+    ("pless_default_t2_0", "pless",          2.0, None),
 ]
 CONFIG_NAMES = [c[0] for c in CONFIGS]
 

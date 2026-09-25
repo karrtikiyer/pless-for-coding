@@ -27,6 +27,7 @@ OUT_ROOT_TEMPLATE = "results/pless_variants_cuda/{model_slug}/LCB_v6_stratified6
 ALL_CONFIGS = [
     "top_nsigma", "top_nsigma_1_5", "gk_0_1", "gk_0_35", "qwen_recipe",
     "pless_default", "pless_effk", "pless_topmass", "pless_gini", "pless_top1half",
+    "pless_default_t1_5", "pless_default_t2_0",
 ]
 PLATFORMS = ["atcoder", "leetcode"]
 
