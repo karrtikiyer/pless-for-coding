@@ -14,9 +14,10 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-METRICS_DIR = (
-    REPO / "results/pless_variants_mps/Qwen--Qwen3-8B/ATCODER_interview/metrics"
-)
+METRICS_DIRS = [
+    REPO / "results/pless_variants_mps/Qwen--Qwen3-8B/ATCODER_interview/metrics",
+    REPO / "results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics",
+]
 CSV_PATH = (
     REPO / "results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/"
     "ATCODER_interview_all_252/analysis/pless_a2_failures_solved_by_others.csv"
@@ -29,9 +30,12 @@ def main() -> None:
     csv_set = set(csv_ids)
     csv_ids_sorted = sorted(csv_ids)
 
-    metric_files = sorted(METRICS_DIR.glob("*_metrics.json"))
+    metric_files = []
+    for d in METRICS_DIRS:
+        if d.exists():
+            metric_files.extend(sorted(d.glob("*_metrics.json")))
     if not metric_files:
-        print(f"No metric JSONs found under {METRICS_DIR}")
+        print(f"No metric JSONs found under {METRICS_DIRS}")
         return
 
     per_variant = {}

@@ -48,6 +48,9 @@ VARIANT_NAMES = [
     # Comparison baselines: top-nσ 3-point sweep (Tang et al. ACL 2025).
     # n=1.0 is paper default; 0.5/1.5 bracket the flat-performance band.
     "top_nsigma", "top_nsigma_0_5", "top_nsigma_1_5",
+    # Qwen3-recommended thinking-mode baseline (top_p=0.95, top_k=20).
+    # Use with --temperature 0.6 per Qwen's docs.
+    "temp_standard",
 ]
 
 REPO = Path(__file__).resolve().parent.parent
@@ -55,7 +58,20 @@ CSV_PATH = (
     REPO / "results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/"
     "ATCODER_interview_all_252/analysis/pless_a2_failures_solved_by_others.csv"
 )
-OUT_ROOT = REPO / "results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview"
+DEFAULT_OUT_ROOT = REPO / "results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview"
+
+
+def _out_root_for_model(model_id: str) -> Path:
+    """Derive output directory from model id so different models don't collide.
+
+    Qwen/Qwen3-8B (the historical default) keeps the original path for
+    backward compat with existing results. Any other model gets its own
+    directory under `results/pless_variants_cuda/<Model--Slug>/ATCODER_interview`.
+    """
+    if model_id == "Qwen/Qwen3-8B":
+        return DEFAULT_OUT_ROOT
+    slug = model_id.replace("/", "--")
+    return REPO / f"results/pless_variants_cuda/{slug}/ATCODER_interview"
 
 
 def _load_task_ids() -> list[int]:
@@ -69,13 +85,14 @@ def _run_variant(
     global_deadline: float, enable_thinking: bool, model_id: str,
     seed: int | None = None, batch_suffix: str = "",
 ) -> Path:
+    OUT_ROOT = _out_root_for_model(model_id)
     OUT_ROOT.mkdir(parents=True, exist_ok=True)
     mode = "think" if enable_thinking else "nothink"
     # batch_suffix lets us run multiple independent batches (with different
     # --seed) to separate files, then merge them post-run into a single
     # N=large-per-task jsonl. Empty suffix = original filename (backward-compat).
     suffix = f".{batch_suffix}" if batch_suffix else ""
-    out_path = OUT_ROOT / f"{variant}_{mode}_t{temperature}{suffix}.jsonl"
+    out_path = OUT_ROOT / f"{variant}_{mode}_t{temperature}{suffix}.jsonl"  # OUT_ROOT is model-derived per-call
     # Resume: skip task ids already recorded in the JSONL (append-safe).
     done_ids: set[int] = set()
     if out_path.exists():
