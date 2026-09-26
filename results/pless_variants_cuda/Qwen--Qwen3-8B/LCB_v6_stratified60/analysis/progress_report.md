@@ -144,6 +144,32 @@ from the APPS-16 entropy probe earlier in this project.
 └───────────────┴─────────────────────────────────────────┘
 ```
 
+### pless_gini
+
+```
+┌───────────────┬─────────────────────────────────────────┐
+│    Metric     │                  Value                   │
+├───────────────┼─────────────────────────────────────────┤
+│ pass@1        │ 0.703                                     │
+├───────────────┼─────────────────────────────────────────┤
+│ pass@3        │ 0.760                                     │
+├───────────────┼─────────────────────────────────────────┤
+│ pass@5        │ 0.780                                     │
+├───────────────┼─────────────────────────────────────────┤
+│ pass@10       │ 0.800                                     │
+├───────────────┼─────────────────────────────────────────┤
+│ Termination   │ 90.3% (271/300 samples closed </think>)  │
+├───────────────┼─────────────────────────────────────────┤
+│ Mean tokens   │ 11,672                                    │
+├───────────────┼─────────────────────────────────────────┤
+│ Easy solved   │ 10/10                                     │
+├───────────────┼─────────────────────────────────────────┤
+│ Medium solved │ 9/10                                      │
+├───────────────┼─────────────────────────────────────────┤
+│ Hard solved   │ 5/10                                      │
+└───────────────┴─────────────────────────────────────────┘
+```
+
 ## Diversity (structural = AST tree-edit-distance, higher=more diverse;
 ## self-CodeBLEU, lower=more diverse) — 4 configs with full diversity computed
 
@@ -189,7 +215,8 @@ in the data.
 | 2 | pless_topmass | 0.800 | 91.3% |
 | 2 | pless_effk | 0.800 | 91.7% |
 | 2 | gk_0_35 | 0.800 | 92.0% |
-| 5 | pless_default | 0.767 | 74.0% |
+| 2 | pless_gini | 0.800 | 90.3% |
+| 6 | pless_default | 0.767 | 74.0% |
 
 ## LeetCode (30 tasks)
 
@@ -204,7 +231,7 @@ insufficient, but n=2 tasks is a small basis for confidence.
 
 ## Configs still pending (both platforms)
 
-pless_top1half, top_nsigma (GPU1 wave, in progress: pless_gini);
-qwen_recipe, top_nsigma_1_5 (GPU0 wave);
+top_nsigma (GPU1 wave, in progress: pless_top1half);
+top_nsigma_1_5 (GPU0 wave, in progress: qwen_recipe);
 pless_default_t1_5, pless_default_t2_0 (queued, not yet launched — waiting for a
 free GPU slot).
