@@ -118,6 +118,69 @@ from the APPS-16 entropy probe earlier in this project.
 └───────────────┴─────────────────────────────────────────┘
 ```
 
+### gk_0_35 (G_k Rényi, k=0.35)
+
+```
+┌───────────────┬─────────────────────────────────────────┐
+│    Metric     │                  Value                   │
+├───────────────┼─────────────────────────────────────────┤
+│ pass@1        │ 0.700                                     │
+├───────────────┼─────────────────────────────────────────┤
+│ pass@3        │ 0.774                                     │
+├───────────────┼─────────────────────────────────────────┤
+│ pass@5        │ 0.794                                     │
+├───────────────┼─────────────────────────────────────────┤
+│ pass@10       │ 0.800                                     │
+├───────────────┼─────────────────────────────────────────┤
+│ Termination   │ 92.0% (276/300 samples closed </think>)  │
+├───────────────┼─────────────────────────────────────────┤
+│ Mean tokens   │ 11,679                                    │
+├───────────────┼─────────────────────────────────────────┤
+│ Easy solved   │ 10/10                                     │
+├───────────────┼─────────────────────────────────────────┤
+│ Medium solved │ 9/10                                      │
+├───────────────┼─────────────────────────────────────────┤
+│ Hard solved   │ 5/10                                      │
+└───────────────┴─────────────────────────────────────────┘
+```
+
+## Diversity (structural = AST tree-edit-distance, higher=more diverse;
+## self-CodeBLEU, lower=more diverse) — 4 configs with full diversity computed
+
+**Easy (n=10 tasks/config, all with >=2 correct):**
+
+| Config | struct_div | self_codebleu |
+|---|---|---|
+| pless_topmass | 0.2335 | 0.4980 |
+| pless_default | 0.2312 | 0.4279 |
+| gk_0_1 | **0.2666** | 0.4448 |
+| pless_effk | 0.2612 | **0.4211** |
+
+**Medium (n=9-10 tasks/config):**
+
+| Config | struct_div | self_codebleu |
+|---|---|---|
+| pless_topmass | 0.3073 | 0.4307 |
+| pless_default | 0.2230 | **0.3443** |
+| gk_0_1 | **0.3356** | 0.4636 |
+| pless_effk | 0.3082 | 0.4242 |
+
+**Hard (n=3-5 tasks/config, NOT matched across configs — treat as suggestive
+only, each average is over a different task subset):**
+
+| Config | struct_div | self_codebleu | n tasks |
+|---|---|---|---|
+| pless_topmass | 0.4787 | 0.5240 | 4 |
+| pless_default | 0.4321 | 0.4301 | 3 |
+| gk_0_1 | 0.3867 | 0.4709 | 5 |
+| pless_effk | 0.3914 | 0.4738 | 5 |
+
+**Note:** structural diversity and self-CodeBLEU disagree on which config is
+"most diverse" on medium (gk_0_1 highest structural but lowest CodeBLEU
+diversity; pless_default the reverse) — they measure genuinely different
+things (algorithm/AST shape vs surface-token similarity), not a contradiction
+in the data.
+
 ## AtCoder leaderboard so far (pass@10)
 
 | Rank | Config | pass@10 | Termination |
@@ -125,7 +188,8 @@ from the APPS-16 entropy probe earlier in this project.
 | 1 | gk_0_1 | 0.833 | 91.3% |
 | 2 | pless_topmass | 0.800 | 91.3% |
 | 2 | pless_effk | 0.800 | 91.7% |
-| 4 | pless_default | 0.767 | 74.0% |
+| 2 | gk_0_35 | 0.800 | 92.0% |
+| 5 | pless_default | 0.767 | 74.0% |
 
 ## LeetCode (30 tasks)
 
@@ -140,7 +204,7 @@ insufficient, but n=2 tasks is a small basis for confidence.
 
 ## Configs still pending (both platforms)
 
-pless_gini, pless_top1half, top_nsigma (GPU1 wave, in progress: pless_gini);
-gk_0_35, qwen_recipe, top_nsigma_1_5 (GPU0 wave, in progress: gk_0_35);
+pless_top1half, top_nsigma (GPU1 wave, in progress: pless_gini);
+qwen_recipe, top_nsigma_1_5 (GPU0 wave);
 pless_default_t1_5, pless_default_t2_0 (queued, not yet launched — waiting for a
 free GPU slot).
