@@ -1,0 +1,1592 @@
+{
+  "pless_topmass": {
+    "atcoder": {
+      "pass_at_k": {
+        "1": 0.6933333333333334,
+        "3": 0.7544444444444446,
+        "5": 0.7751322751322751,
+        "10": 0.8
+      },
+      "cover_at_t": {
+        "0.1": 80.0,
+        "0.3": 73.33333333333333,
+        "0.5": 70.0,
+        "0.7": 66.66666666666666
+      },
+      "cover_at_t_distinct": {
+        "0.1": 80.0,
+        "0.3": 66.66666666666666,
+        "0.5": 46.666666666666664,
+        "0.7": 36.666666666666664
+      },
+      "termination_pct": 91.33333333333333,
+      "closed": 274,
+      "total_samples": 300,
+      "mean_tokens": 11642.096666666668,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 9,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.23349999999999999,
+          "self_codebleu": 0.49795,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.34145555555555557,
+          "self_codebleu": 0.43072222222222223,
+          "n": 9
+        },
+        "hard": {
+          "struct_div": 0.4787,
+          "self_codebleu": 0.52395,
+          "n": 4
+        }
+      },
+      "structural_diversity_overall": 0.3184,
+      "codebleu_diversity_overall": 0.4762
+    },
+    "leetcode": {
+      "pass_at_k": {
+        "1": 0.7633333333333333,
+        "3": 0.8111111111111112,
+        "5": 0.825132275132275,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 80.0,
+        "0.5": 76.66666666666667,
+        "0.7": 73.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 73.33333333333333,
+        "0.5": 50.0,
+        "0.7": 43.333333333333336
+      },
+      "termination_pct": 96.0,
+      "closed": 288,
+      "total_samples": 300,
+      "mean_tokens": 9475.896666666667,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.20581999999999998,
+          "self_codebleu": 0.36526000000000003,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.32749,
+          "self_codebleu": 0.42374999999999996,
+          "n": 10
+        },
+        "hard": {
+          "struct_div": 0.45456,
+          "self_codebleu": 0.54692,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.3042,
+      "codebleu_diversity_overall": 0.425
+    },
+    "combined": {
+      "pass_at_k": {
+        "1": 0.7283333333333334,
+        "3": 0.7827777777777778,
+        "5": 0.8001322751322751,
+        "10": 0.8166666666666667
+      },
+      "cover_at_t": {
+        "0.1": 81.66666666666667,
+        "0.3": 76.66666666666667,
+        "0.5": 73.33333333333333,
+        "0.7": 70.0
+      },
+      "cover_at_t_distinct": {
+        "0.1": 81.66666666666667,
+        "0.3": 70.0,
+        "0.5": 48.333333333333336,
+        "0.7": 40.0
+      },
+      "termination_pct": 93.66666666666667,
+      "closed": 562,
+      "total_samples": 600,
+      "mean_tokens": 10558.996666666668,
+      "solved_by_difficulty": {
+        "easy": 20,
+        "medium": 19,
+        "hard": 10
+      },
+      "total_by_difficulty": {
+        "easy": 20,
+        "medium": 20,
+        "hard": 20
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.21966000000000002,
+          "self_codebleu": 0.43160499999999996,
+          "n": 20
+        },
+        "medium": {
+          "struct_div": 0.33410526315789474,
+          "self_codebleu": 0.4270526315789474,
+          "n": 19
+        },
+        "hard": {
+          "struct_div": 0.46528888888888886,
+          "self_codebleu": 0.5367111111111111,
+          "n": 9
+        }
+      }
+    }
+  },
+  "pless_default": {
+    "atcoder": {
+      "pass_at_k": {
+        "1": 0.6366666666666667,
+        "3": 0.7274999999999999,
+        "5": 0.747089947089947,
+        "10": 0.7666666666666667
+      },
+      "cover_at_t": {
+        "0.1": 76.66666666666667,
+        "0.3": 73.33333333333333,
+        "0.5": 70.0,
+        "0.7": 56.666666666666664
+      },
+      "cover_at_t_distinct": {
+        "0.1": 76.66666666666667,
+        "0.3": 63.33333333333333,
+        "0.5": 50.0,
+        "0.7": 26.666666666666668
+      },
+      "termination_pct": 74.0,
+      "closed": 222,
+      "total_samples": 300,
+      "mean_tokens": 12814.01,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 9,
+        "hard": 4
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.23115999999999998,
+          "self_codebleu": 0.42787,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.24774444444444443,
+          "self_codebleu": 0.3443333333333334,
+          "n": 9
+        },
+        "hard": {
+          "struct_div": 0.4321333333333333,
+          "self_codebleu": 0.4301333333333333,
+          "n": 3
+        }
+      },
+      "structural_diversity_overall": 0.2653,
+      "codebleu_diversity_overall": 0.394
+    },
+    "leetcode": {
+      "pass_at_k": {
+        "1": 0.7300000000000001,
+        "3": 0.8227777777777778,
+        "5": 0.8474867724867726,
+        "10": 0.8666666666666667
+      },
+      "cover_at_t": {
+        "0.1": 86.66666666666667,
+        "0.3": 83.33333333333334,
+        "0.5": 73.33333333333333,
+        "0.7": 66.66666666666666
+      },
+      "cover_at_t_distinct": {
+        "0.1": 86.66666666666667,
+        "0.3": 73.33333333333333,
+        "0.5": 40.0,
+        "0.7": 33.33333333333333
+      },
+      "termination_pct": 86.66666666666667,
+      "closed": 260,
+      "total_samples": 300,
+      "mean_tokens": 10098.633333333333,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 6
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.16402999999999998,
+          "self_codebleu": 0.35146,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.27104,
+          "self_codebleu": 0.35829,
+          "n": 10
+        },
+        "hard": {
+          "struct_div": 0.37868,
+          "self_codebleu": 0.48529999999999995,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.2498,
+      "codebleu_diversity_overall": 0.381
+    },
+    "combined": {
+      "pass_at_k": {
+        "1": 0.6833333333333333,
+        "3": 0.7751388888888889,
+        "5": 0.7972883597883598,
+        "10": 0.8166666666666667
+      },
+      "cover_at_t": {
+        "0.1": 81.66666666666667,
+        "0.3": 78.33333333333333,
+        "0.5": 71.66666666666667,
+        "0.7": 61.66666666666667
+      },
+      "cover_at_t_distinct": {
+        "0.1": 81.66666666666667,
+        "0.3": 68.33333333333333,
+        "0.5": 45.0,
+        "0.7": 30.0
+      },
+      "termination_pct": 80.33333333333333,
+      "closed": 482,
+      "total_samples": 600,
+      "mean_tokens": 11456.321666666667,
+      "solved_by_difficulty": {
+        "easy": 20,
+        "medium": 19,
+        "hard": 10
+      },
+      "total_by_difficulty": {
+        "easy": 20,
+        "medium": 20,
+        "hard": 20
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.19759500000000002,
+          "self_codebleu": 0.38966500000000004,
+          "n": 20
+        },
+        "medium": {
+          "struct_div": 0.26000526315789474,
+          "self_codebleu": 0.35167894736842104,
+          "n": 19
+        },
+        "hard": {
+          "struct_div": 0.398725,
+          "self_codebleu": 0.4646125,
+          "n": 8
+        }
+      }
+    }
+  },
+  "gk_0_1": {
+    "atcoder": {
+      "pass_at_k": {
+        "1": 0.7066666666666668,
+        "3": 0.7974999999999999,
+        "5": 0.8156084656084656,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 80.0,
+        "0.5": 76.66666666666667,
+        "0.7": 66.66666666666666
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 70.0,
+        "0.5": 63.33333333333333,
+        "0.7": 43.333333333333336
+      },
+      "termination_pct": 91.33333333333333,
+      "closed": 274,
+      "total_samples": 300,
+      "mean_tokens": 11419.49,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 9,
+        "hard": 6
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.26656,
+          "self_codebleu": 0.44480000000000003,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.37283333333333335,
+          "self_codebleu": 0.46360000000000007,
+          "n": 9
+        },
+        "hard": {
+          "struct_div": 0.38674,
+          "self_codebleu": 0.47094,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.3314,
+      "codebleu_diversity_overall": 0.4573
+    },
+    "leetcode": {
+      "pass_at_k": {
+        "1": 0.8033333333333333,
+        "3": 0.8686111111111111,
+        "5": 0.8925925925925926,
+        "10": 0.9333333333333333
+      },
+      "cover_at_t": {
+        "0.1": 93.33333333333333,
+        "0.3": 83.33333333333334,
+        "0.5": 83.33333333333334,
+        "0.7": 76.66666666666667
+      },
+      "cover_at_t_distinct": {
+        "0.1": 93.33333333333333,
+        "0.3": 83.33333333333334,
+        "0.5": 63.33333333333333,
+        "0.7": 40.0
+      },
+      "termination_pct": 97.66666666666667,
+      "closed": 293,
+      "total_samples": 300,
+      "mean_tokens": 9392.453333333333,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 8
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.23224,
+          "self_codebleu": 0.3972,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.31767,
+          "self_codebleu": 0.42379,
+          "n": 10
+        },
+        "hard": {
+          "struct_div": 0.40815,
+          "self_codebleu": 0.4721333333333333,
+          "n": 6
+        }
+      },
+      "structural_diversity_overall": 0.3057,
+      "codebleu_diversity_overall": 0.4247
+    },
+    "combined": {
+      "pass_at_k": {
+        "1": 0.755,
+        "3": 0.8330555555555555,
+        "5": 0.8541005291005291,
+        "10": 0.8833333333333333
+      },
+      "cover_at_t": {
+        "0.1": 88.33333333333333,
+        "0.3": 81.66666666666667,
+        "0.5": 80.0,
+        "0.7": 71.66666666666667
+      },
+      "cover_at_t_distinct": {
+        "0.1": 88.33333333333333,
+        "0.3": 76.66666666666667,
+        "0.5": 63.33333333333333,
+        "0.7": 41.66666666666667
+      },
+      "termination_pct": 94.5,
+      "closed": 567,
+      "total_samples": 600,
+      "mean_tokens": 10405.971666666668,
+      "solved_by_difficulty": {
+        "easy": 20,
+        "medium": 19,
+        "hard": 14
+      },
+      "total_by_difficulty": {
+        "easy": 20,
+        "medium": 20,
+        "hard": 20
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.2494,
+          "self_codebleu": 0.421,
+          "n": 20
+        },
+        "medium": {
+          "struct_div": 0.34380000000000005,
+          "self_codebleu": 0.4426473684210526,
+          "n": 19
+        },
+        "hard": {
+          "struct_div": 0.39841818181818184,
+          "self_codebleu": 0.4715909090909091,
+          "n": 11
+        }
+      }
+    }
+  },
+  "pless_effk": {
+    "atcoder": {
+      "pass_at_k": {
+        "1": 0.7066666666666667,
+        "3": 0.775,
+        "5": 0.7916666666666666,
+        "10": 0.8
+      },
+      "cover_at_t": {
+        "0.1": 80.0,
+        "0.3": 76.66666666666667,
+        "0.5": 73.33333333333333,
+        "0.7": 66.66666666666666
+      },
+      "cover_at_t_distinct": {
+        "0.1": 80.0,
+        "0.3": 70.0,
+        "0.5": 56.666666666666664,
+        "0.7": 43.333333333333336
+      },
+      "termination_pct": 91.66666666666666,
+      "closed": 275,
+      "total_samples": 300,
+      "mean_tokens": 11842.4,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 9,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.26125,
+          "self_codebleu": 0.42111,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.34247777777777777,
+          "self_codebleu": 0.42415555555555556,
+          "n": 9
+        },
+        "hard": {
+          "struct_div": 0.39144,
+          "self_codebleu": 0.47379999999999994,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.3188,
+      "codebleu_diversity_overall": 0.4332
+    },
+    "leetcode": {
+      "pass_at_k": {
+        "1": 0.7733333333333333,
+        "3": 0.8275,
+        "5": 0.8330687830687832,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 83.33333333333334,
+        "0.5": 83.33333333333334,
+        "0.7": 76.66666666666667
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 80.0,
+        "0.5": 63.33333333333333,
+        "0.7": 40.0
+      },
+      "termination_pct": 98.0,
+      "closed": 294,
+      "total_samples": 300,
+      "mean_tokens": 9267.426666666666,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.20995,
+          "self_codebleu": 0.38532,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.33251,
+          "self_codebleu": 0.44218999999999997,
+          "n": 10
+        },
+        "hard": {
+          "struct_div": 0.41498,
+          "self_codebleu": 0.5111600000000001,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.3,
+      "codebleu_diversity_overall": 0.4332
+    },
+    "combined": {
+      "pass_at_k": {
+        "1": 0.7400000000000001,
+        "3": 0.80125,
+        "5": 0.8123677248677249,
+        "10": 0.8166666666666667
+      },
+      "cover_at_t": {
+        "0.1": 81.66666666666667,
+        "0.3": 80.0,
+        "0.5": 78.33333333333333,
+        "0.7": 71.66666666666667
+      },
+      "cover_at_t_distinct": {
+        "0.1": 81.66666666666667,
+        "0.3": 75.0,
+        "0.5": 60.0,
+        "0.7": 41.66666666666667
+      },
+      "termination_pct": 94.83333333333334,
+      "closed": 569,
+      "total_samples": 600,
+      "mean_tokens": 10554.913333333334,
+      "solved_by_difficulty": {
+        "easy": 20,
+        "medium": 19,
+        "hard": 10
+      },
+      "total_by_difficulty": {
+        "easy": 20,
+        "medium": 20,
+        "hard": 20
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.23559999999999998,
+          "self_codebleu": 0.403215,
+          "n": 20
+        },
+        "medium": {
+          "struct_div": 0.33723157894736844,
+          "self_codebleu": 0.4336473684210526,
+          "n": 19
+        },
+        "hard": {
+          "struct_div": 0.40320999999999996,
+          "self_codebleu": 0.49248000000000003,
+          "n": 10
+        }
+      }
+    }
+  },
+  "gk_0_35": {
+    "atcoder": {
+      "pass_at_k": {
+        "1": 0.7,
+        "3": 0.773611111111111,
+        "5": 0.7936507936507937,
+        "10": 0.8
+      },
+      "cover_at_t": {
+        "0.1": 80.0,
+        "0.3": 80.0,
+        "0.5": 70.0,
+        "0.7": 66.66666666666666
+      },
+      "cover_at_t_distinct": {
+        "0.1": 80.0,
+        "0.3": 66.66666666666666,
+        "0.5": 56.666666666666664,
+        "0.7": 43.333333333333336
+      },
+      "termination_pct": 92.0,
+      "closed": 276,
+      "total_samples": 300,
+      "mean_tokens": 11679.406666666668,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 9,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.22793999999999998,
+          "self_codebleu": 0.44123,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.3237777777777778,
+          "self_codebleu": 0.4031444444444444,
+          "n": 9
+        },
+        "hard": {
+          "struct_div": 0.36307999999999996,
+          "self_codebleu": 0.43881999999999993,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.292,
+      "codebleu_diversity_overall": 0.4264
+    },
+    "leetcode": {
+      "pass_at_k": {
+        "1": 0.7799999999999999,
+        "3": 0.8458333333333333,
+        "5": 0.8728835978835979,
+        "10": 0.9
+      },
+      "cover_at_t": {
+        "0.1": 90.0,
+        "0.3": 83.33333333333334,
+        "0.5": 80.0,
+        "0.7": 73.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 90.0,
+        "0.3": 73.33333333333333,
+        "0.5": 43.333333333333336,
+        "0.7": 40.0
+      },
+      "termination_pct": 96.66666666666667,
+      "closed": 290,
+      "total_samples": 300,
+      "mean_tokens": 9075.666666666666,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 7
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.21526,
+          "self_codebleu": 0.40869999999999995,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.28487999999999997,
+          "self_codebleu": 0.39017,
+          "n": 10
+        },
+        "hard": {
+          "struct_div": 0.38525000000000004,
+          "self_codebleu": 0.4799833333333334,
+          "n": 6
+        }
+      },
+      "structural_diversity_overall": 0.2813,
+      "codebleu_diversity_overall": 0.418
+    },
+    "combined": {
+      "pass_at_k": {
+        "1": 0.74,
+        "3": 0.8097222222222221,
+        "5": 0.8332671957671958,
+        "10": 0.85
+      },
+      "cover_at_t": {
+        "0.1": 85.0,
+        "0.3": 81.66666666666667,
+        "0.5": 75.0,
+        "0.7": 70.0
+      },
+      "cover_at_t_distinct": {
+        "0.1": 85.0,
+        "0.3": 70.0,
+        "0.5": 50.0,
+        "0.7": 41.66666666666667
+      },
+      "termination_pct": 94.33333333333334,
+      "closed": 566,
+      "total_samples": 600,
+      "mean_tokens": 10377.536666666665,
+      "solved_by_difficulty": {
+        "easy": 20,
+        "medium": 19,
+        "hard": 12
+      },
+      "total_by_difficulty": {
+        "easy": 20,
+        "medium": 20,
+        "hard": 20
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.22160000000000002,
+          "self_codebleu": 0.424965,
+          "n": 20
+        },
+        "medium": {
+          "struct_div": 0.3033052631578947,
+          "self_codebleu": 0.39631578947368423,
+          "n": 19
+        },
+        "hard": {
+          "struct_div": 0.37517272727272727,
+          "self_codebleu": 0.4612727272727273,
+          "n": 11
+        }
+      }
+    }
+  },
+  "pless_gini": {
+    "atcoder": {
+      "pass_at_k": {
+        "1": 0.7033333333333335,
+        "3": 0.7602777777777778,
+        "5": 0.7797619047619048,
+        "10": 0.8
+      },
+      "cover_at_t": {
+        "0.1": 80.0,
+        "0.3": 76.66666666666667,
+        "0.5": 70.0,
+        "0.7": 66.66666666666666
+      },
+      "cover_at_t_distinct": {
+        "0.1": 80.0,
+        "0.3": 70.0,
+        "0.5": 56.666666666666664,
+        "0.7": 40.0
+      },
+      "termination_pct": 90.33333333333333,
+      "closed": 271,
+      "total_samples": 300,
+      "mean_tokens": 11672.06,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 9,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.31248,
+          "self_codebleu": 0.47978,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.32761111111111113,
+          "self_codebleu": 0.4099,
+          "n": 9
+        },
+        "hard": {
+          "struct_div": 0.41185,
+          "self_codebleu": 0.5120750000000001,
+          "n": 4
+        }
+      },
+      "structural_diversity_overall": 0.3357,
+      "codebleu_diversity_overall": 0.4581
+    },
+    "leetcode": {
+      "pass_at_k": {
+        "1": 0.7733333333333333,
+        "3": 0.8213888888888888,
+        "5": 0.8305555555555555,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 83.33333333333334,
+        "0.5": 80.0,
+        "0.7": 73.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 70.0,
+        "0.5": 60.0,
+        "0.7": 46.666666666666664
+      },
+      "termination_pct": 98.66666666666667,
+      "closed": 296,
+      "total_samples": 300,
+      "mean_tokens": 9111.003333333332,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.21805,
+          "self_codebleu": 0.39541,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.32169,
+          "self_codebleu": 0.42683,
+          "n": 10
+        },
+        "hard": {
+          "struct_div": 0.36146,
+          "self_codebleu": 0.47026,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.2882,
+      "codebleu_diversity_overall": 0.4229
+    },
+    "combined": {
+      "pass_at_k": {
+        "1": 0.7383333333333333,
+        "3": 0.7908333333333334,
+        "5": 0.8051587301587302,
+        "10": 0.8166666666666667
+      },
+      "cover_at_t": {
+        "0.1": 81.66666666666667,
+        "0.3": 80.0,
+        "0.5": 75.0,
+        "0.7": 70.0
+      },
+      "cover_at_t_distinct": {
+        "0.1": 81.66666666666667,
+        "0.3": 70.0,
+        "0.5": 58.333333333333336,
+        "0.7": 43.333333333333336
+      },
+      "termination_pct": 94.5,
+      "closed": 567,
+      "total_samples": 600,
+      "mean_tokens": 10391.531666666668,
+      "solved_by_difficulty": {
+        "easy": 20,
+        "medium": 19,
+        "hard": 10
+      },
+      "total_by_difficulty": {
+        "easy": 20,
+        "medium": 20,
+        "hard": 20
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.265265,
+          "self_codebleu": 0.43759499999999996,
+          "n": 20
+        },
+        "medium": {
+          "struct_div": 0.3244947368421053,
+          "self_codebleu": 0.41881052631578947,
+          "n": 19
+        },
+        "hard": {
+          "struct_div": 0.38385555555555556,
+          "self_codebleu": 0.48884444444444447,
+          "n": 9
+        }
+      }
+    }
+  },
+  "qwen_recipe": {
+    "atcoder": {
+      "pass_at_k": {
+        "1": 0.6733333333333333,
+        "3": 0.7547222222222223,
+        "5": 0.7890211640211641,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 73.33333333333333,
+        "0.5": 66.66666666666666,
+        "0.7": 63.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 60.0,
+        "0.5": 46.666666666666664,
+        "0.7": 40.0
+      },
+      "termination_pct": 82.66666666666667,
+      "closed": 248,
+      "total_samples": 300,
+      "mean_tokens": 12118.496666666668,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 9,
+        "hard": 6
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.21450999999999998,
+          "self_codebleu": 0.40663,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.3383333333333333,
+          "self_codebleu": 0.4192888888888889,
+          "n": 9
+        },
+        "hard": {
+          "struct_div": 0.36682499999999996,
+          "self_codebleu": 0.4369,
+          "n": 4
+        }
+      },
+      "structural_diversity_overall": 0.2895,
+      "codebleu_diversity_overall": 0.4168
+    },
+    "leetcode": {
+      "pass_at_k": {
+        "1": 0.74,
+        "3": 0.8163888888888889,
+        "5": 0.8297619047619047,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 83.33333333333334,
+        "0.5": 76.66666666666667,
+        "0.7": 73.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 70.0,
+        "0.5": 46.666666666666664,
+        "0.7": 30.0
+      },
+      "termination_pct": 90.66666666666666,
+      "closed": 272,
+      "total_samples": 300,
+      "mean_tokens": 9579.266666666666,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.18189,
+          "self_codebleu": 0.31287,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.28833,
+          "self_codebleu": 0.38761,
+          "n": 10
+        },
+        "hard": {
+          "struct_div": 0.42577999999999994,
+          "self_codebleu": 0.49642,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.2732,
+      "codebleu_diversity_overall": 0.3795
+    },
+    "combined": {
+      "pass_at_k": {
+        "1": 0.7066666666666667,
+        "3": 0.7855555555555557,
+        "5": 0.8093915343915344,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 78.33333333333333,
+        "0.5": 71.66666666666667,
+        "0.7": 68.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 65.0,
+        "0.5": 46.666666666666664,
+        "0.7": 35.0
+      },
+      "termination_pct": 86.66666666666667,
+      "closed": 520,
+      "total_samples": 600,
+      "mean_tokens": 10848.881666666666,
+      "solved_by_difficulty": {
+        "easy": 20,
+        "medium": 19,
+        "hard": 11
+      },
+      "total_by_difficulty": {
+        "easy": 20,
+        "medium": 20,
+        "hard": 20
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.1982,
+          "self_codebleu": 0.35975,
+          "n": 20
+        },
+        "medium": {
+          "struct_div": 0.3120157894736842,
+          "self_codebleu": 0.4026157894736842,
+          "n": 19
+        },
+        "hard": {
+          "struct_div": 0.3995777777777778,
+          "self_codebleu": 0.4699666666666667,
+          "n": 9
+        }
+      }
+    }
+  },
+  "pless_top1half": {
+    "atcoder": {
+      "pass_at_k": {
+        "1": 0.6933333333333334,
+        "3": 0.7963888888888891,
+        "5": 0.8256613756613758,
+        "10": 0.8666666666666667
+      },
+      "cover_at_t": {
+        "0.1": 86.66666666666667,
+        "0.3": 76.66666666666667,
+        "0.5": 76.66666666666667,
+        "0.7": 63.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 86.66666666666667,
+        "0.3": 70.0,
+        "0.5": 53.333333333333336,
+        "0.7": 36.666666666666664
+      },
+      "termination_pct": 89.66666666666666,
+      "closed": 269,
+      "total_samples": 300,
+      "mean_tokens": 11680.230000000001,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 9,
+        "hard": 7
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.27643,
+          "self_codebleu": 0.4835,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.3362777777777778,
+          "self_codebleu": 0.40992222222222224,
+          "n": 9
+        },
+        "hard": {
+          "struct_div": 0.27288,
+          "self_codebleu": 0.36694,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.2981,
+      "codebleu_diversity_overall": 0.4316
+    },
+    "leetcode": {
+      "pass_at_k": {
+        "1": 0.75,
+        "3": 0.8063888888888889,
+        "5": 0.8243386243386244,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 80.0,
+        "0.5": 73.33333333333333,
+        "0.7": 73.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 76.66666666666667,
+        "0.5": 53.333333333333336,
+        "0.7": 40.0
+      },
+      "termination_pct": 98.0,
+      "closed": 294,
+      "total_samples": 300,
+      "mean_tokens": 9245.81,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.22477999999999998,
+          "self_codebleu": 0.37545,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.34513,
+          "self_codebleu": 0.44073,
+          "n": 10
+        },
+        "hard": {
+          "struct_div": 0.41337999999999997,
+          "self_codebleu": 0.51454,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.3106,
+      "codebleu_diversity_overall": 0.4294
+    },
+    "combined": {
+      "pass_at_k": {
+        "1": 0.7216666666666668,
+        "3": 0.8013888888888888,
+        "5": 0.825,
+        "10": 0.85
+      },
+      "cover_at_t": {
+        "0.1": 85.0,
+        "0.3": 78.33333333333333,
+        "0.5": 75.0,
+        "0.7": 68.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 85.0,
+        "0.3": 73.33333333333333,
+        "0.5": 53.333333333333336,
+        "0.7": 38.333333333333336
+      },
+      "termination_pct": 93.83333333333333,
+      "closed": 563,
+      "total_samples": 600,
+      "mean_tokens": 10463.019999999999,
+      "solved_by_difficulty": {
+        "easy": 20,
+        "medium": 19,
+        "hard": 12
+      },
+      "total_by_difficulty": {
+        "easy": 20,
+        "medium": 20,
+        "hard": 20
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.250605,
+          "self_codebleu": 0.42947499999999994,
+          "n": 20
+        },
+        "medium": {
+          "struct_div": 0.34093684210526315,
+          "self_codebleu": 0.4261368421052632,
+          "n": 19
+        },
+        "hard": {
+          "struct_div": 0.34313,
+          "self_codebleu": 0.44074,
+          "n": 10
+        }
+      }
+    }
+  },
+  "top_nsigma": {
+    "atcoder": {
+      "pass_at_k": {
+        "1": 0.7,
+        "3": 0.7822222222222222,
+        "5": 0.8101851851851852,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 80.0,
+        "0.5": 70.0,
+        "0.7": 66.66666666666666
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 66.66666666666666,
+        "0.5": 56.666666666666664,
+        "0.7": 33.33333333333333
+      },
+      "termination_pct": 92.33333333333333,
+      "closed": 277,
+      "total_samples": 300,
+      "mean_tokens": 11532.243333333334,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 9,
+        "hard": 6
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.27325,
+          "self_codebleu": 0.45748,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.3539666666666667,
+          "self_codebleu": 0.4389111111111111,
+          "n": 9
+        },
+        "hard": {
+          "struct_div": 0.33082,
+          "self_codebleu": 0.43798000000000004,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.3155,
+      "codebleu_diversity_overall": 0.4465
+    },
+    "leetcode": {
+      "pass_at_k": {
+        "1": 0.7566666666666667,
+        "3": 0.8111111111111112,
+        "5": 0.825132275132275,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 80.0,
+        "0.5": 76.66666666666667,
+        "0.7": 73.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 73.33333333333333,
+        "0.5": 56.666666666666664,
+        "0.7": 40.0
+      },
+      "termination_pct": 97.33333333333334,
+      "closed": 292,
+      "total_samples": 300,
+      "mean_tokens": 9287.176666666666,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.21438000000000001,
+          "self_codebleu": 0.38914,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.34618,
+          "self_codebleu": 0.4444,
+          "n": 10
+        },
+        "hard": {
+          "struct_div": 0.43128,
+          "self_codebleu": 0.5181,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.3105,
+      "codebleu_diversity_overall": 0.437
+    },
+    "combined": {
+      "pass_at_k": {
+        "1": 0.7283333333333334,
+        "3": 0.7966666666666666,
+        "5": 0.8176587301587301,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 80.0,
+        "0.5": 73.33333333333333,
+        "0.7": 70.0
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 70.0,
+        "0.5": 56.666666666666664,
+        "0.7": 36.666666666666664
+      },
+      "termination_pct": 94.83333333333334,
+      "closed": 569,
+      "total_samples": 600,
+      "mean_tokens": 10409.71,
+      "solved_by_difficulty": {
+        "easy": 20,
+        "medium": 19,
+        "hard": 11
+      },
+      "total_by_difficulty": {
+        "easy": 20,
+        "medium": 20,
+        "hard": 20
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.24381499999999998,
+          "self_codebleu": 0.42331,
+          "n": 20
+        },
+        "medium": {
+          "struct_div": 0.34986842105263155,
+          "self_codebleu": 0.44179999999999997,
+          "n": 19
+        },
+        "hard": {
+          "struct_div": 0.38105,
+          "self_codebleu": 0.47804,
+          "n": 10
+        }
+      }
+    }
+  },
+  "top_nsigma_1_5": {
+    "atcoder": {
+      "pass_at_k": {
+        "1": 0.6766666666666666,
+        "3": 0.7691666666666667,
+        "5": 0.8029100529100529,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 76.66666666666667,
+        "0.5": 66.66666666666666,
+        "0.7": 66.66666666666666
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 66.66666666666666,
+        "0.5": 46.666666666666664,
+        "0.7": 40.0
+      },
+      "termination_pct": 91.0,
+      "closed": 273,
+      "total_samples": 300,
+      "mean_tokens": 11697.806666666667,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 9,
+        "hard": 6
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.24928,
+          "self_codebleu": 0.4577,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.3696,
+          "self_codebleu": 0.44552222222222226,
+          "n": 9
+        },
+        "hard": {
+          "struct_div": 0.3054,
+          "self_codebleu": 0.42954,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.3061,
+      "codebleu_diversity_overall": 0.4473
+    },
+    "leetcode": {
+      "pass_at_k": {
+        "1": 0.8,
+        "3": 0.8319444444444445,
+        "5": 0.8333333333333334,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 83.33333333333334,
+        "0.5": 83.33333333333334,
+        "0.7": 80.0
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 80.0,
+        "0.5": 63.33333333333333,
+        "0.7": 46.666666666666664
+      },
+      "termination_pct": 98.33333333333333,
+      "closed": 295,
+      "total_samples": 300,
+      "mean_tokens": 9158.49,
+      "solved_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 5
+      },
+      "total_by_difficulty": {
+        "easy": 10,
+        "medium": 10,
+        "hard": 10
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.22618999999999997,
+          "self_codebleu": 0.38412999999999997,
+          "n": 10
+        },
+        "medium": {
+          "struct_div": 0.3173,
+          "self_codebleu": 0.42361000000000004,
+          "n": 10
+        },
+        "hard": {
+          "struct_div": 0.41194,
+          "self_codebleu": 0.5200199999999999,
+          "n": 5
+        }
+      },
+      "structural_diversity_overall": 0.2998,
+      "codebleu_diversity_overall": 0.4271
+    },
+    "combined": {
+      "pass_at_k": {
+        "1": 0.7383333333333333,
+        "3": 0.8005555555555556,
+        "5": 0.818121693121693,
+        "10": 0.8333333333333334
+      },
+      "cover_at_t": {
+        "0.1": 83.33333333333334,
+        "0.3": 80.0,
+        "0.5": 75.0,
+        "0.7": 73.33333333333333
+      },
+      "cover_at_t_distinct": {
+        "0.1": 83.33333333333334,
+        "0.3": 73.33333333333333,
+        "0.5": 55.00000000000001,
+        "0.7": 43.333333333333336
+      },
+      "termination_pct": 94.66666666666667,
+      "closed": 568,
+      "total_samples": 600,
+      "mean_tokens": 10428.148333333334,
+      "solved_by_difficulty": {
+        "easy": 20,
+        "medium": 19,
+        "hard": 11
+      },
+      "total_by_difficulty": {
+        "easy": 20,
+        "medium": 20,
+        "hard": 20
+      },
+      "diversity_by_difficulty": {
+        "easy": {
+          "struct_div": 0.23773499999999997,
+          "self_codebleu": 0.42091500000000004,
+          "n": 20
+        },
+        "medium": {
+          "struct_div": 0.3420736842105263,
+          "self_codebleu": 0.4339894736842106,
+          "n": 19
+        },
+        "hard": {
+          "struct_div": 0.35867,
+          "self_codebleu": 0.47478,
+          "n": 10
+        }
+      }
+    }
+  }
+}

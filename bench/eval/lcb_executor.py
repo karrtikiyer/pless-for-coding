@@ -34,10 +34,13 @@ from bench.livecodebench.dataset import LcbProblem
 def _make_lcb_fn_harness(code: str, fn_name: str) -> str:
     """Wrap LeetCode-style code (defines class Solution) with a call harness.
 
-    Reads (inputs, outputs) JSON from argv: inputs[i] is the arg-list for one call,
-    outputs[i] the expected return. Exits 0 iff every call matches (float-tolerant
-    for numeric returns); 1 on mismatch, 2 on runtime error — encoding the failing
-    index in stderr for diagnostics (same protocol as apps_executor's harness)."""
+    Reads {"inputs": ..., "outputs": ...} JSON from stdin: inputs[i] is the
+    arg-list for one call, outputs[i] the expected return (passing this via
+    argv instead overflows the OS argument-length limit once a problem has
+    enough private tests — see the E2BIG this replaced). Exits 0 iff every
+    call matches (float-tolerant for numeric returns); 1 on mismatch, 2 on
+    runtime error — encoding the failing index in stderr for diagnostics
+    (same protocol as apps_executor's harness)."""
     return (
         "from typing import *\n"
         "import json as _json\n"
@@ -51,8 +54,9 @@ def _make_lcb_fn_harness(code: str, fn_name: str) -> str:
         + "            return abs(float(_g)-float(_w)) < 1e-6\n"
         + "    except Exception: pass\n"
         + "    return False\n"
-        + "_inputs = _json.loads(_sys.argv[1])\n"
-        + "_outputs = _json.loads(_sys.argv[2])\n"
+        + "_payload = _json.loads(_sys.stdin.read())\n"
+        + "_inputs = _payload['inputs']\n"
+        + "_outputs = _payload['outputs']\n"
         + "_sol = Solution()\n"
         + f"_fn = getattr(_sol, {fn_name!r})\n"
         + "for _i, (_args, _want) in enumerate(zip(_inputs, _outputs)):\n"
@@ -69,9 +73,11 @@ def _run_lcb_fn_tests(code: str, fn_name: str, inputs: list, outputs: list,
                       timeout: float) -> AppsSampleResult:
     """Functional (LeetCode) execution: Solution().fn(*args) vs expected return."""
     program = _make_lcb_fn_harness(code, fn_name)
+    payload = json.dumps({"inputs": inputs, "outputs": outputs})
     try:
         proc = subprocess.run(
-            ["python3", "-c", program, json.dumps(inputs), json.dumps(outputs)],
+            ["python3", "-c", program],
+            input=payload,
             capture_output=True, text=True, timeout=timeout,
         )
     except subprocess.TimeoutExpired:

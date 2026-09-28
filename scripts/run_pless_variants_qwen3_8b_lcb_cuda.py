@@ -82,6 +82,8 @@ CONFIGS: list[tuple[str, str, float, float | None]] = [
     # temperature is what varies.
     ("pless_default_t1_5", "pless",          1.5, None),
     ("pless_default_t2_0", "pless",          2.0, None),
+    ("pless_default_t2_5", "pless",          2.5, None),
+    ("pless_default_t3_0", "pless",          3.0, None),
 ]
 CONFIG_NAMES = [c[0] for c in CONFIGS]
 
@@ -175,6 +177,10 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--model", default="Qwen/Qwen3-8B")
     ap.add_argument("--dtype", default="bfloat16")
+    ap.add_argument("--quantization", default=None,
+                    help="vLLM quantization flag: 'awq', 'gptq', 'fp8' etc. "
+                         "Required if model+KV won't fit unquantized (e.g. "
+                         "16 GB card + Qwen3-8B needs fp8).")
     ap.add_argument("--gpu-memory-utilization", type=float, default=0.92)
     ap.add_argument("--max-model-len", type=int, default=27000)
     ap.add_argument("--n-samples", type=int, default=10)
@@ -195,13 +201,14 @@ def main() -> None:
     model_slug = args.model.replace("/", "--")
     out_root = REPO / OUT_ROOT_TEMPLATE.format(model_slug=model_slug)
 
-    print(f"Loading engine: {args.model} (dtype={args.dtype})")
+    load_kwargs = {"dtype": args.dtype,
+                   "gpu_memory_utilization": args.gpu_memory_utilization,
+                   "max_model_len": args.max_model_len}
+    if args.quantization:
+        load_kwargs["quantization"] = args.quantization
+    print(f"Loading engine: {args.model} (kwargs={load_kwargs})")
     t0 = time.time()
-    engine = load_engine(
-        args.model, dtype=args.dtype,
-        gpu_memory_utilization=args.gpu_memory_utilization,
-        max_model_len=args.max_model_len,
-    )
+    engine = load_engine(args.model, **load_kwargs)
     print(f"Engine ready in {time.time()-t0:.0f}s")
     tokenizer = getattr(engine, "_safe_tokenizer", None) or engine.get_tokenizer()
 
