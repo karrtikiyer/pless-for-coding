@@ -1,0 +1,852 @@
+{
+  "top_nsigma": {
+    "pass_at_k": {
+      "1": 0.6100000000000001,
+      "5": 0.7608465608465609,
+      "10": 0.8
+    },
+    "solved": 24,
+    "n_total": 30,
+    "termination_pct": 0.0,
+    "mean_tokens": 15048.383333333333,
+    "timeout_pct": 1.0,
+    "task_meta": {
+      "abc304_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 16622.3,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc304_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 6997.7,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc304_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 18383.1,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc305_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 19374.1,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc312_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 14489.1,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc312_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 11843.6,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc315_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 1163.4,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc318_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5904.2,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc322_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 2448.0,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc333_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5766.7,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc333_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 15299.4,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc335_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 23854.3,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc336_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5357.0,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc338_e": {
+        "closed_frac": 0.0,
+        "mean_tokens": 23940.5,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc341_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 2486.4,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc342_e": {
+        "closed_frac": 0.0,
+        "mean_tokens": 22043.3,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc366_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5459.0,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc370_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25000.9,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc372_g": {
+        "closed_frac": 0.0,
+        "mean_tokens": 24846.3,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc377_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 12744.7,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc377_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 13572.6,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc380_g": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25001.6,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc382_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25004.4,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc390_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 6688.7,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc391_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25001.4,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc391_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 20109.6,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc394_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 21297.8,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc395_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 785.2,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc396_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25003.4,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc397_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 24962.8,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      }
+    }
+  },
+  "top_nsigma_1_5": {
+    "pass_at_k": {
+      "1": 0.95,
+      "5": 1.0,
+      "10": 1.0
+    },
+    "solved": 2,
+    "n_total": 2,
+    "termination_pct": 0.0,
+    "mean_tokens": 11722.15,
+    "timeout_pct": 0.0,
+    "task_meta": {
+      "abc304_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 16515.3,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc304_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 6929.0,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      }
+    }
+  },
+  "gk_0_1": null,
+  "gk_0_35": null,
+  "pless_default": null,
+  "pless_effk": null,
+  "pless_min2": null,
+  "pless_topmass": {
+    "pass_at_k": {
+      "1": 0.6066666666666668,
+      "5": 0.7103174603174603,
+      "10": 0.7333333333333333
+    },
+    "solved": 22,
+    "n_total": 30,
+    "termination_pct": 0.0,
+    "mean_tokens": 15249.953333333333,
+    "timeout_pct": 1.0,
+    "task_meta": {
+      "abc304_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 15318.4,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc304_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 6396.6,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc304_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 20965.4,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc305_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 19752.7,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc312_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 15438.6,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc312_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 10918.9,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc315_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 1438.9,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc318_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 6403.4,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc322_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 2734.0,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc333_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5356.8,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc333_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 21603.5,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc335_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 22234.1,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc336_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 2766.0,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc338_e": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25002.1,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc341_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 2480.3,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc342_e": {
+        "closed_frac": 0.0,
+        "mean_tokens": 22216.0,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc366_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5424.4,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc370_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25001.4,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc372_g": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25005.1,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc377_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 11857.3,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc377_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 12786.0,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc380_g": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25001.3,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc382_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25000.5,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc390_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 6790.0,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc391_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25001.5,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc391_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 23612.4,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc394_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 19980.2,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc395_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 1003.2,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc396_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25005.7,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc397_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25003.9,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      }
+    }
+  },
+  "pless_gini": {
+    "pass_at_k": {
+      "1": 0.58,
+      "5": 0.7373015873015875,
+      "10": 0.7666666666666667
+    },
+    "solved": 23,
+    "n_total": 30,
+    "termination_pct": 0.0,
+    "mean_tokens": 15346.553333333333,
+    "timeout_pct": 0.3333333333333333,
+    "task_meta": {
+      "abc304_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 17672.2,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc304_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 6815.9,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc304_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 22430.0,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc305_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 19281.9,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc312_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 15835.1,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc312_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 10618.3,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc315_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 1075.8,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc318_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5927.4,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc322_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 2371.1,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc333_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5206.6,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc333_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 22137.4,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc335_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 22741.6,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc336_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 2796.2,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc338_e": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25001.0,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc341_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 2735.4,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc342_e": {
+        "closed_frac": 0.0,
+        "mean_tokens": 22897.0,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc366_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5576.9,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc370_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25000.7,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc372_g": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25000.5,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc377_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 9521.4,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc377_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 13576.6,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc380_g": {
+        "closed_frac": 0.0,
+        "mean_tokens": 24975.3,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc382_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25003.9,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc390_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 7132.8,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc391_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25002.3,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc391_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 22225.4,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc394_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 21479.4,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc395_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 782.4,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc396_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 25003.3,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc397_f": {
+        "closed_frac": 0.0,
+        "mean_tokens": 24572.8,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      }
+    }
+  },
+  "pless_top1half": {
+    "pass_at_k": {
+      "1": 0.7529411764705882,
+      "5": 0.9512138188608777,
+      "10": 1.0
+    },
+    "solved": 17,
+    "n_total": 17,
+    "termination_pct": 0.0,
+    "mean_tokens": 12227.770588235295,
+    "timeout_pct": 0.5882352941176471,
+    "task_meta": {
+      "abc304_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 14811.6,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc304_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 6938.6,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc304_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 20974.2,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc305_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 19615.6,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc312_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 14092.3,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc312_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 10057.3,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc315_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 1091.5,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc318_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5719.0,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc322_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 3137.6,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc333_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5271.0,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc333_d": {
+        "closed_frac": 0.0,
+        "mean_tokens": 21307.7,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc335_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 23757.8,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      },
+      "abc336_b": {
+        "closed_frac": 0.0,
+        "mean_tokens": 3193.9,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc338_e": {
+        "closed_frac": 0.0,
+        "mean_tokens": 24671.1,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc341_a": {
+        "closed_frac": 0.0,
+        "mean_tokens": 2738.7,
+        "n_samples": 10,
+        "difficulty": "easy",
+        "platform": "atcoder"
+      },
+      "abc342_e": {
+        "closed_frac": 0.0,
+        "mean_tokens": 24721.1,
+        "n_samples": 10,
+        "difficulty": "hard",
+        "platform": "atcoder"
+      },
+      "abc366_c": {
+        "closed_frac": 0.0,
+        "mean_tokens": 5773.1,
+        "n_samples": 10,
+        "difficulty": "medium",
+        "platform": "atcoder"
+      }
+    }
+  },
+  "pless_default_t1_5": null,
+  "pless_default_t2_0": null,
+  "pless_default_t2_5": null,
+  "pless_default_t3_0": null,
+  "top_p_1_0": null,
+  "top_p_0_95": null,
+  "top_p_0_9": null,
+  "top_p_0_85": null,
+  "top_p_0_8": null,
+  "top_p_0_75": null,
+  "top_p_0_7": null,
+  "ministral_recipe": null
+}

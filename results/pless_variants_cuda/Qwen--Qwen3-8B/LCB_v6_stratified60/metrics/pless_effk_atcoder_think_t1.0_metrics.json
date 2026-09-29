@@ -25,12 +25,7 @@
     "0.5": 56.666666666666664,
     "0.7": 43.333333333333336
   },
-  "structural_diversity": 0.3188,
-  "codebleu_diversity": 0.4332,
-  "syntax_match_diversity": 0.2461,
-  "dataflow_match_diversity": 0.3617,
-  "ngram_match_diversity": 0.5887,
-  "weighted_ngram_match_diversity": 0.5363,
+  "structural_diversity": null,
   "per_task": [
     {
       "task_id": "abc304_b",
@@ -131,14 +126,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.4338,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.6002,
-      "self_syntax_match": 0.4526,
-      "self_dataflow_match": 0.4522,
-      "self_ngram_match": 0.7616,
-      "self_weighted_ngram_match": 0.7345
+      "num_distinct_correct": 8
     },
     {
       "task_id": "abc304_c",
@@ -239,14 +227,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 9,
-      "mean_pairwise_distance": 0.3582,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.3516,
-      "self_syntax_match": 0.1399,
-      "self_dataflow_match": 0.4168,
-      "self_ngram_match": 0.4446,
-      "self_weighted_ngram_match": 0.4051
+      "num_distinct_correct": 9
     },
     {
       "task_id": "abc304_d",
@@ -347,14 +328,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.2928,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.337,
-      "self_syntax_match": 0.1759,
-      "self_dataflow_match": 0.354,
-      "self_ngram_match": 0.4315,
-      "self_weighted_ngram_match": 0.3865
+      "num_distinct_correct": 8
     },
     {
       "task_id": "abc305_d",
@@ -455,14 +429,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.4472,
-      "num_ast_clusters": 10,
-      "self_codebleu": 0.4058,
-      "self_syntax_match": 0.2487,
-      "self_dataflow_match": 0.3068,
-      "self_ngram_match": 0.5579,
-      "self_weighted_ngram_match": 0.5097
+      "num_distinct_correct": 10
     },
     {
       "task_id": "abc312_c",
@@ -563,14 +530,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.3364,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.4072,
-      "self_syntax_match": 0.2874,
-      "self_dataflow_match": 0.3625,
-      "self_ngram_match": 0.5136,
-      "self_weighted_ngram_match": 0.4651
+      "num_distinct_correct": 10
     },
     {
       "task_id": "abc312_d",
@@ -671,14 +631,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 9,
-      "mean_pairwise_distance": 0.1589,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.329,
-      "self_syntax_match": 0.0581,
-      "self_dataflow_match": 0.4238,
-      "self_ngram_match": 0.4373,
-      "self_weighted_ngram_match": 0.3966
+      "num_distinct_correct": 9
     },
     {
       "task_id": "abc315_a",
@@ -779,14 +732,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 1,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.0,
-      "self_syntax_match": 0.0,
-      "self_dataflow_match": 0.0,
-      "self_ngram_match": 0.0,
-      "self_weighted_ngram_match": 0.0
+      "num_distinct_correct": 1
     },
     {
       "task_id": "abc318_a",
@@ -887,14 +833,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.097,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.54,
-      "self_syntax_match": 0.2692,
-      "self_dataflow_match": 0.0,
-      "self_ngram_match": 0.969,
-      "self_weighted_ngram_match": 0.9219
+      "num_distinct_correct": 2
     },
     {
       "task_id": "abc322_a",
@@ -995,14 +934,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.266,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.3785,
-      "self_syntax_match": 0.2982,
-      "self_dataflow_match": 0.346,
-      "self_ngram_match": 0.4654,
-      "self_weighted_ngram_match": 0.4043
+      "num_distinct_correct": 6
     },
     {
       "task_id": "abc333_b",
@@ -1103,14 +1035,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 9,
-      "mean_pairwise_distance": 0.4747,
-      "num_ast_clusters": 8,
-      "self_codebleu": 0.5448,
-      "self_syntax_match": 0.2435,
-      "self_dataflow_match": 0.4385,
-      "self_ngram_match": 0.7661,
-      "self_weighted_ngram_match": 0.7312
+      "num_distinct_correct": 9
     },
     {
       "task_id": "abc333_d",
@@ -1211,14 +1136,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.4214,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.5177,
-      "self_syntax_match": 0.3002,
-      "self_dataflow_match": 0.5626,
-      "self_ngram_match": 0.6157,
-      "self_weighted_ngram_match": 0.5922
+      "num_distinct_correct": 5
     },
     {
       "task_id": "abc335_c",
@@ -1262,7 +1180,7 @@
       "n_tests_passed": [
         13,
         13,
-        10,
+        11,
         13,
         3,
         13,
@@ -1274,7 +1192,7 @@
       "first_failing_idx": [
         null,
         null,
-        10,
+        11,
         null,
         3,
         null,
@@ -1319,14 +1237,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.2588,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.3407,
-      "self_syntax_match": 0.2002,
-      "self_dataflow_match": 0.2929,
-      "self_ngram_match": 0.4529,
-      "self_weighted_ngram_match": 0.4167
+      "num_distinct_correct": 8
     },
     {
       "task_id": "abc336_b",
@@ -1427,14 +1338,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.1439,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.3779,
-      "self_syntax_match": 0.2063,
-      "self_dataflow_match": 0.1944,
-      "self_ngram_match": 0.5621,
-      "self_weighted_ngram_match": 0.5486
+      "num_distinct_correct": 3
     },
     {
       "task_id": "abc338_e",
@@ -1535,14 +1439,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.4743,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.4626,
-      "self_syntax_match": 0.2222,
-      "self_dataflow_match": 0.53,
-      "self_ngram_match": 0.5978,
-      "self_weighted_ngram_match": 0.5002
+      "num_distinct_correct": 10
     },
     {
       "task_id": "abc341_a",
@@ -1643,14 +1540,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.4255,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.5513,
-      "self_syntax_match": 0.3988,
-      "self_dataflow_match": 0.225,
-      "self_ngram_match": 0.8244,
-      "self_weighted_ngram_match": 0.757
+      "num_distinct_correct": 5
     },
     {
       "task_id": "abc342_e",
@@ -1751,14 +1641,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.2612,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.423,
-      "self_syntax_match": 0.1222,
-      "self_dataflow_match": 0.3069,
-      "self_ngram_match": 0.6521,
-      "self_weighted_ngram_match": 0.6108
+      "num_distinct_correct": 6
     },
     {
       "task_id": "abc366_c",
@@ -1859,14 +1742,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.4794,
-      "num_ast_clusters": 6,
-      "self_codebleu": 0.5517,
-      "self_syntax_match": 0.2965,
-      "self_dataflow_match": 0.5741,
-      "self_ngram_match": 0.6942,
-      "self_weighted_ngram_match": 0.6421
+      "num_distinct_correct": 10
     },
     {
       "task_id": "abc370_f",
@@ -1967,14 +1843,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "abc372_g",
@@ -2016,28 +1885,28 @@
         27
       ],
       "n_tests_passed": [
+        7,
         2,
-        2,
-        2,
+        7,
         1,
+        7,
         2,
-        2,
-        2,
+        7,
         0,
-        2,
-        2
+        7,
+        7
       ],
       "first_failing_idx": [
+        7,
         2,
-        2,
-        2,
+        7,
         1,
+        7,
         2,
-        2,
-        2,
+        7,
         0,
-        2,
-        2
+        7,
+        7
       ],
       "extracted_codes": [
         "import sys\n\ndef main():\n    input = sys.stdin.read().split()\n    ptr = 0\n    T = int(input[ptr])\n    ptr += 1\n    results = []\n    for _ in range(T):\n        N = int(input[ptr])\n        ptr += 1\n        A = []\n        B = []\n        C = []\n        for _ in range(N):\n            a = int(input[ptr])\n            b = int(input[ptr+1])\n            c = int(input[ptr+2])\n            ptr += 3\n            A.append(a)\n            B.append(b)\n            C.append(c)\n        # Check if any B_i >= C_i\n        valid = True\n        for i in range(N):\n            if B[i] >= C[i]:\n                valid = False\n                break\n        if not valid:\n            results.append('0')\n            continue\n        # Compute X_max\n        X_max = float('inf')\n        for i in range(N):\n            temp = (C[i] - 1) // A[i]\n            if temp < X_max:\n                X_max = temp\n        if X_max == float('inf'):\n            results.append('0')\n            continue\n        # Compute X_min\n        X_min = float('inf')\n        for i in range(N):\n            temp = (C[i] - B[i] - 1) // A[i]\n            if temp < X_min:\n                X_min = temp\n        K = min(X_max, X_min)\n        if K < 1:\n            results.append('0')\n            continue\n        total = 0\n        for x in range(1, K + 1):\n            min_val = float('inf')\n            for i in range(N):\n                numerator = C[i] - A[i] * x - 1\n                val = numerator // B[i]\n                if val < min_val:\n                    min_val = val\n            if min_val >= 1:\n                total += min_val\n        results.append(str(total))\n    print('\\n'.join(results))\n\nif __name__ == \"__main__\":\n    main()\n",
@@ -2075,14 +1944,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "abc377_b",
@@ -2183,14 +2045,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.2551,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.3749,
-      "self_syntax_match": 0.198,
-      "self_dataflow_match": 0.3043,
-      "self_ngram_match": 0.5434,
-      "self_weighted_ngram_match": 0.4538
+      "num_distinct_correct": 4
     },
     {
       "task_id": "abc377_c",
@@ -2291,14 +2146,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 9,
-      "mean_pairwise_distance": 0.468,
-      "num_ast_clusters": 8,
-      "self_codebleu": 0.5155,
-      "self_syntax_match": 0.2365,
-      "self_dataflow_match": 0.5422,
-      "self_ngram_match": 0.663,
-      "self_weighted_ngram_match": 0.6203
+      "num_distinct_correct": 9
     },
     {
       "task_id": "abc380_g",
@@ -2399,14 +2247,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "abc382_f",
@@ -2507,14 +2348,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "abc390_a",
@@ -2615,14 +2449,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 7,
-      "mean_pairwise_distance": 0.3996,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.5475,
-      "self_syntax_match": 0.3932,
-      "self_dataflow_match": 0.3605,
-      "self_ngram_match": 0.7491,
-      "self_weighted_ngram_match": 0.6871
+      "num_distinct_correct": 7
     },
     {
       "task_id": "abc391_d",
@@ -2723,14 +2550,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "abc391_f",
@@ -2773,7 +2593,7 @@
       ],
       "n_tests_passed": [
         2,
-        3,
+        6,
         3,
         43,
         3,
@@ -2785,7 +2605,7 @@
       ],
       "first_failing_idx": [
         2,
-        3,
+        6,
         3,
         null,
         3,
@@ -2831,14 +2651,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.5692,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.6513,
-      "self_syntax_match": 0.4319,
-      "self_dataflow_match": 0.5663,
-      "self_ngram_match": 0.8263,
-      "self_weighted_ngram_match": 0.7807
+      "num_distinct_correct": 2
     },
     {
       "task_id": "abc394_c",
@@ -2939,14 +2752,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.3084,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.467,
-      "self_syntax_match": 0.2683,
-      "self_dataflow_match": 0.6353,
-      "self_ngram_match": 0.5331,
-      "self_weighted_ngram_match": 0.4312
+      "num_distinct_correct": 8
     },
     {
       "task_id": "abc395_a",
@@ -3047,14 +2853,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.1169,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.296,
-      "self_syntax_match": 0.2708,
-      "self_dataflow_match": 0.1044,
-      "self_ngram_match": 0.4652,
-      "self_weighted_ngram_match": 0.3435
+      "num_distinct_correct": 4
     },
     {
       "task_id": "abc396_f",
@@ -3155,14 +2954,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "abc397_f",
@@ -3263,17 +3055,10 @@
         true,
         false
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.2053,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.4263,
-      "self_syntax_match": 0.1876,
-      "self_dataflow_match": 0.3808,
-      "self_ngram_match": 0.6036,
-      "self_weighted_ngram_match": 0.5333
+      "num_distinct_correct": 4
     }
   ],
-  "timestamp": "2026-09-26T06:38:25.654073+00:00",
+  "timestamp": "2026-09-29T14:51:42.384914+00:00",
   "extraction_diagnostics": {
     "n_samples_total": 300,
     "n_records_skipped_no_problem": 0,
@@ -3298,9 +3083,9 @@
     "pass_rate": 0.7066666666666667,
     "first_failing_test_idx": {
       "p50": 0,
-      "p90": 3,
-      "p99": 6,
-      "max": 10
+      "p90": 6,
+      "p99": 7,
+      "max": 11
     }
   }
 }

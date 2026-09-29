@@ -5,6 +5,21 @@ Dataset: LiveCodeBench v6, 60 problems stratified 10/10/10 (easy/medium/hard)
 across AtCoder + LeetCode. n=10 samples/task, cap=25,000 tokens, seed=42
 (except qwen_recipe: T=0.6; all others T=1.0).
 
+> **STALE pass@k numbers below (2026-09-29)** — every pass@1/3/5/10 number in
+> this hand-maintained document was computed before a confirmed eval-harness
+> bug fix (see `docs/theory/todos.md` A65): the LeetCode-functional path ran
+> every one of a problem's test cases (median 28, max 103) inside one flat
+> 5.0s timeout instead of LiveCodeBench's own official 6.0s-per-test-case
+> budget, silently under-counting passes on any problem with enough test
+> cases. Re-running after the fix moved **every** currently-complete config's
+> combined pass@1 up by +0.33% to +1.17% (small, consistent, all in the same
+> direction — see the before/after diff run 2026-09-29). This file has no
+> generator (confirmed: hand-edited) and re-transcribing every affected cell
+> across its ~7 tables risked introducing new errors, so it was **not**
+> hand-patched. The corrected, authoritative numbers are in
+> `analysis/lcb_v6_stratified60_report.json` (same directory) — read from
+> there, not from the tables below, until this file is regenerated.
+
 ## AtCoder (30 tasks)
 
 ### pless_topmass
@@ -927,13 +942,15 @@ samples to be structurally distinct (AST-fingerprint deduplicated) — the stric
 | 3 | pless_gini | 0.703 | 0.760 | 0.780 | 0.793 | 0.800 | 70.0% | 56.7% | 90.3% | 11,672 | 0.3357 | 0.4581 |
 | 4 | gk_0_35 | 0.700 | 0.774 | 0.794 | 0.800 | 0.800 | 70.0% | 56.7% | 92.0% | 11,679 | 0.2920 | 0.4264 |
 | 4 | top_nsigma | 0.700 | 0.782 | 0.810 | 0.827 | 0.833 | 70.0% | 56.7% | 92.3% | 11,532 | 0.3155 | 0.4465 |
-| 6 | pless_default_t2_0 | 0.697 | 0.772 | 0.794 | 0.800 | 0.800 | 70.0% | 50.0% | 92.3% | 11,487 | 0.2726 | 0.4005 |
-| 7 | pless_topmass | 0.693 | 0.754 | 0.775 | 0.793 | 0.800 | 70.0% | 46.7% | 91.3% | 11,642 | 0.3184 | 0.4762 |
-| 7 | pless_top1half | 0.693 | 0.796 | 0.826 | 0.853 | 0.867 | 76.7% | 53.3% | 89.7% | 11,680 | 0.2981 | 0.4316 |
-| 9 | top_nsigma_1_5 | 0.677 | 0.769 | 0.803 | 0.826 | 0.833 | 66.7% | 46.7% | 91.0% | 11,698 | 0.3061 | 0.4473 |
-| 10 | qwen_recipe | 0.673 | 0.755 | 0.789 | 0.819 | 0.833 | 66.7% | 46.7% | 82.7% | 12,118 | 0.2895 | 0.4168 |
-| 11 | pless_default_t1_5 | 0.650 | 0.709 | 0.731 | 0.753 | 0.767 | 66.7% | 50.0% | 81.3% | 12,153 | 0.2704 | 0.4028 |
-| 12 | pless_default | 0.637 | 0.727 | 0.747 | 0.760 | 0.767 | 70.0% | 50.0% | 74.0% | 12,814 | 0.2653 | 0.3940 |
+| 4 | pless_default_t2_5 | 0.700 | 0.773 | 0.805 | 0.826 | 0.833 | 66.7% | 53.3% | 90.3% | 11,626 | 0.3059 | 0.4198 |
+| 7 | pless_default_t2_0 | 0.697 | 0.772 | 0.794 | 0.800 | 0.800 | 70.0% | 50.0% | 92.3% | 11,487 | 0.2726 | 0.4005 |
+| 8 | pless_topmass | 0.693 | 0.754 | 0.775 | 0.793 | 0.800 | 70.0% | 46.7% | 91.3% | 11,642 | 0.3184 | 0.4762 |
+| 8 | pless_top1half | 0.693 | 0.796 | 0.826 | 0.853 | 0.867 | 76.7% | 53.3% | 89.7% | 11,680 | 0.2981 | 0.4316 |
+| 10 | top_nsigma_1_5 | 0.677 | 0.769 | 0.803 | 0.826 | 0.833 | 66.7% | 46.7% | 91.0% | 11,698 | 0.3061 | 0.4473 |
+| 11 | qwen_recipe | 0.673 | 0.755 | 0.789 | 0.819 | 0.833 | 66.7% | 46.7% | 82.7% | 12,118 | 0.2895 | 0.4168 |
+| 12 | pless_default_t1_5 | 0.650 | 0.709 | 0.731 | 0.753 | 0.767 | 66.7% | 50.0% | 81.3% | 12,153 | 0.2704 | 0.4028 |
+| 13 | pless_default | 0.637 | 0.727 | 0.747 | 0.760 | 0.767 | 70.0% | 50.0% | 74.0% | 12,814 | 0.2653 | 0.3940 |
+| 14 | pless_default_t3_0 | 0.420 | 0.492 | 0.523 | 0.553 | 0.567 | 43.3% | 26.7% | 48.0% | 7,908 | 0.2992 | 0.4314 |
 
 ### LeetCode only (30 tasks)
 
@@ -944,13 +961,15 @@ samples to be structurally distinct (AST-fingerprint deduplicated) — the stric
 | 3 | gk_0_35 | 0.780 | 0.846 | 0.873 | 0.893 | 0.900 | 80.0% | 43.3% | 96.7% | 9,076 | 0.2813 | 0.4180 |
 | 4 | pless_effk | 0.773 | 0.828 | 0.833 | 0.833 | 0.833 | 83.3% | 63.3% | 98.0% | 9,267 | 0.3000 | 0.4332 |
 | 4 | pless_gini | 0.773 | 0.821 | 0.831 | 0.833 | 0.833 | 80.0% | 60.0% | 98.7% | 9,111 | 0.2882 | 0.4229 |
-| 6 | pless_topmass | 0.763 | 0.811 | 0.825 | 0.833 | 0.833 | 76.7% | 50.0% | 96.0% | 9,476 | 0.3042 | 0.4250 |
-| 6 | pless_default_t2_0 | 0.763 | 0.818 | 0.830 | 0.833 | 0.833 | 76.7% | 43.3% | 97.7% | 9,050 | 0.2821 | 0.3873 |
-| 8 | top_nsigma | 0.757 | 0.811 | 0.825 | 0.833 | 0.833 | 76.7% | 56.7% | 97.3% | 9,287 | 0.3105 | 0.4370 |
-| 9 | pless_default_t1_5 | 0.753 | 0.829 | 0.854 | 0.866 | 0.867 | 76.7% | 46.7% | 90.7% | 9,515 | 0.2717 | 0.3848 |
-| 10 | pless_top1half | 0.750 | 0.806 | 0.824 | 0.833 | 0.833 | 73.3% | 53.3% | 98.0% | 9,246 | 0.3106 | 0.4294 |
-| 11 | qwen_recipe | 0.740 | 0.816 | 0.830 | 0.833 | 0.833 | 76.7% | 46.7% | 90.7% | 9,579 | 0.2732 | 0.3795 |
-| 12 | pless_default | 0.730 | 0.823 | 0.847 | 0.860 | 0.867 | 73.3% | 40.0% | 86.7% | 10,099 | 0.2498 | 0.3810 |
+| 6 | pless_default_t2_5 | 0.770 | 0.807 | 0.817 | 0.827 | 0.833 | 80.0% | 50.0% | 97.7% | 9,185 | 0.2694 | 0.3861 |
+| 7 | pless_topmass | 0.763 | 0.811 | 0.825 | 0.833 | 0.833 | 76.7% | 50.0% | 96.0% | 9,476 | 0.3042 | 0.4250 |
+| 7 | pless_default_t2_0 | 0.763 | 0.818 | 0.830 | 0.833 | 0.833 | 76.7% | 43.3% | 97.7% | 9,050 | 0.2821 | 0.3873 |
+| 9 | top_nsigma | 0.757 | 0.811 | 0.825 | 0.833 | 0.833 | 76.7% | 56.7% | 97.3% | 9,287 | 0.3105 | 0.4370 |
+| 10 | pless_default_t1_5 | 0.753 | 0.829 | 0.854 | 0.866 | 0.867 | 76.7% | 46.7% | 90.7% | 9,515 | 0.2717 | 0.3848 |
+| 11 | pless_top1half | 0.750 | 0.806 | 0.824 | 0.833 | 0.833 | 73.3% | 53.3% | 98.0% | 9,246 | 0.3106 | 0.4294 |
+| 12 | qwen_recipe | 0.740 | 0.816 | 0.830 | 0.833 | 0.833 | 76.7% | 46.7% | 90.7% | 9,579 | 0.2732 | 0.3795 |
+| 13 | pless_default | 0.730 | 0.823 | 0.847 | 0.860 | 0.867 | 73.3% | 40.0% | 86.7% | 10,099 | 0.2498 | 0.3810 |
+| 14 | pless_default_t3_0 | 0.480 | 0.569 | 0.594 | 0.600 | 0.600 | 53.3% | 20.0% | 54.0% | 7,665 | 0.2357 | 0.4004 |
 
 ### Combined (AtCoder+LeetCode, 60 tasks)
 
@@ -961,29 +980,41 @@ samples to be structurally distinct (AST-fingerprint deduplicated) — the stric
 | 3 | gk_0_35 | 0.740 | 0.810 | 0.833 | 0.846 | 0.850 | 75.0% | 50.0% | 94.3% | 10,378 | 0.2864 | 0.4221 |
 | 4 | pless_gini | 0.738 | 0.791 | 0.805 | 0.813 | 0.817 | 75.0% | 58.3% | 94.5% | 10,392 | 0.3109 | 0.4398 |
 | 4 | top_nsigma_1_5 | 0.738 | 0.801 | 0.818 | 0.830 | 0.833 | 75.0% | 55.0% | 94.7% | 10,428 | 0.3029 | 0.4370 |
-| 6 | pless_default_t2_0 | 0.730 | 0.795 | 0.812 | 0.817 | 0.817 | 73.3% | 46.7% | 95.0% | 10,268 | 0.2774 | 0.3938 |
-| 7 | pless_topmass | 0.728 | 0.783 | 0.800 | 0.813 | 0.817 | 73.3% | 48.3% | 93.7% | 10,559 | 0.3110 | 0.4495 |
-| 7 | top_nsigma | 0.728 | 0.797 | 0.818 | 0.830 | 0.833 | 73.3% | 56.7% | 94.8% | 10,410 | 0.3129 | 0.4416 |
-| 9 | pless_top1half | 0.722 | 0.801 | 0.825 | 0.843 | 0.850 | 75.0% | 53.3% | 93.8% | 10,463 | 0.3045 | 0.4305 |
-| 10 | qwen_recipe | 0.707 | 0.786 | 0.809 | 0.826 | 0.833 | 71.7% | 46.7% | 86.7% | 10,849 | 0.2810 | 0.3974 |
-| 11 | pless_default_t1_5 | 0.702 | 0.769 | 0.792 | 0.810 | 0.817 | 71.7% | 48.3% | 86.0% | 10,834 | 0.2711 | 0.3928 |
-| 12 | pless_default | 0.683 | 0.775 | 0.797 | 0.810 | 0.817 | 71.7% | 45.0% | 80.3% | 11,456 | 0.2571 | 0.3871 |
+| 6 | pless_default_t2_5 | 0.735 | 0.790 | 0.811 | 0.826 | 0.833 | 73.3% | 51.7% | 94.0% | 10,405 | 0.2876 | 0.4029 |
+| 7 | pless_default_t2_0 | 0.730 | 0.795 | 0.812 | 0.817 | 0.817 | 73.3% | 46.7% | 95.0% | 10,268 | 0.2774 | 0.3938 |
+| 8 | pless_topmass | 0.728 | 0.783 | 0.800 | 0.813 | 0.817 | 73.3% | 48.3% | 93.7% | 10,559 | 0.3110 | 0.4495 |
+| 8 | top_nsigma | 0.728 | 0.797 | 0.818 | 0.830 | 0.833 | 73.3% | 56.7% | 94.8% | 10,410 | 0.3129 | 0.4416 |
+| 10 | pless_top1half | 0.722 | 0.801 | 0.825 | 0.843 | 0.850 | 75.0% | 53.3% | 93.8% | 10,463 | 0.3045 | 0.4305 |
+| 11 | qwen_recipe | 0.707 | 0.786 | 0.809 | 0.826 | 0.833 | 71.7% | 46.7% | 86.7% | 10,849 | 0.2810 | 0.3974 |
+| 12 | pless_default_t1_5 | 0.702 | 0.769 | 0.792 | 0.810 | 0.817 | 71.7% | 48.3% | 86.0% | 10,834 | 0.2711 | 0.3928 |
+| 13 | pless_default | 0.683 | 0.775 | 0.797 | 0.810 | 0.817 | 71.7% | 45.0% | 80.3% | 11,456 | 0.2571 | 0.3871 |
+| 14 | pless_default_t3_0 | 0.450 | 0.531 | 0.559 | 0.576 | 0.583 | 48.3% | 23.3% | 51.0% | 7,787 | 0.2646 | 0.4145 |
 
-**T1-sweep result (temp-before-pless, raising the pre-truncation temperature above 1.0 for
-canonical `pless`):** both `pless_default_t1_5` (T=1.5) and `pless_default_t2_0` (T=2.0) beat
-canonical `pless_default` (T=1.0) on combined pass@1 (0.702 and 0.730 vs. 0.683) and termination
-(86.0% and 95.0% vs. 80.3%) — confirming the flattened-pre-truncation-distribution hypothesis from
-the earlier APPS/entropy-probe work. `pless_default_t2_0` in particular is now competitive with the
-mid-pack of the other 10 configs (pass@1=0.730, beating `pless_topmass`/`top_nsigma`'s 0.728) purely
-from the temperature change, no sampler change. Combined pass@10 is unchanged/flat across all three
-T-values (0.817) — consistent with the earlier finding that pass@10 at n=k=10 is a low-resolution
-ceiling metric insensitive to per-sample quality improvements that don't also change *which* tasks
-get solved at least once.
+**Full T-sweep result (temp-before-pless, sweeping the pre-truncation temperature for canonical
+`pless` across T={1.0(default), 1.5, 2.0, 2.5, 3.0}):** the relationship is a clear **inverted-U**,
+not monotonic. T=1.5→2.5 each successively beat canonical `pless_default` (T=1.0) on combined pass@1
+(0.702 → 0.730 → 0.735 vs. 0.683) and termination (86.0% → 95.0% → 94.0% vs. 80.3%), confirming the
+flattened-pre-truncation-distribution hypothesis from the earlier APPS/entropy-probe work — `T=2.5`
+is now the single best point, edging out `T=2.0` and landing in the top 6 of all 14 configs. But
+**T=3.0 collapses catastrophically**: pass@1 crashes to 0.450 (worse than canonical `pless_default`,
+dead last of all 14 configs), termination drops to 51.0% (worse than the T=1.0 baseline's 80.3% it
+was supposed to fix), and mean tokens fall sharply to 7,787 (vs. ~10,000-12,800 everywhere else) —
+short, low-quality completions rather than long rambling ones. The breakdown by difficulty
+(combined) shows the damage concentrates in harder tasks: easy pass@1 barely drops (0.985→0.940 from
+T=2.5→T=3.0) while medium collapses (0.855→0.355) and hard nearly vanishes (0.365→0.055) — consistent
+with excessive pre-truncation temperature destroying the model's ability to sustain long, coherent
+multi-step reasoning, even though it still flattens the distribution enough to avoid short rambling
+loops. **Practical takeaway: there is a real sweet spot around T=2.0-2.5 for this intervention, and
+T=3.0 is a clear overshoot, not "more of a good thing."** Combined pass@10 stays flat at ~0.817-0.833
+for T=1.0-2.5 (the earlier n=k=10 ceiling-effect finding), but even pass@10 finally breaks from that
+ceiling at T=3.0 (0.583) — strong independent confirmation that T=3.0 is a genuine quality collapse,
+not just a metric-resolution artifact.
 
 **Overall winner (pass@1, combined): `gk_0_1`** — also the pass@10 leader (0.883) on the combined
 60-task stratified set. Rank ordering shifts somewhat by metric/platform: `pless_top1half` led
-AtCoder-only pass@10 (0.867) despite ranking 6th on AtCoder pass@1; `pless_default` has the lowest
-pass@1 everywhere but is not always last on pass@10 (e.g. beats several configs on LeetCode pass@10).
+AtCoder-only pass@10 (0.867) despite ranking 8th on AtCoder pass@1; `pless_default_t3_0` is now the
+clear worst performer on every metric, well below canonical `pless_default` which previously held
+that position.
 
 ## Combined diversity by difficulty (60 tasks: 20 easy/20 medium/20 hard, AtCoder+LeetCode pooled)
 
@@ -1007,6 +1038,8 @@ filtered on num_correct>=2 per task, so its `n` column is <=20 and generally dif
 | top_nsigma_1_5 | 0.970 | 1.000 | 0.2377 | 0.4209 | 20 |
 | pless_default_t1_5 | 0.975 | 1.000 | 0.2173 | 0.3897 | 20 |
 | pless_default_t2_0 | 0.985 | 1.000 | 0.2352 | 0.3838 | 20 |
+| pless_default_t2_5 | 0.985 | 1.000 | 0.2209 | 0.3703 | 20 |
+| pless_default_t3_0 | 0.940 | 1.000 | 0.2160 | 0.3933 | 20 |
 
 **Medium (pass@k base n=20):**
 
@@ -1024,6 +1057,8 @@ filtered on num_correct>=2 per task, so its `n` column is <=20 and generally dif
 | top_nsigma_1_5 | 0.870 | 0.950 | 0.3421 | 0.4340 | 19 |
 | pless_default_t1_5 | 0.810 | 0.950 | 0.2738 | 0.3644 | 18 |
 | pless_default_t2_0 | 0.850 | 0.950 | 0.2813 | 0.3731 | 19 |
+| pless_default_t2_5 | 0.855 | 0.950 | 0.2885 | 0.3774 | 18 |
+| pless_default_t3_0 | 0.355 | 0.600 | 0.3078 | 0.4335 | 11 |
 
 **Hard (pass@k base n=20):**
 
@@ -1041,6 +1076,8 @@ filtered on num_correct>=2 per task, so its `n` column is <=20 and generally dif
 | top_nsigma_1_5 | 0.375 | 0.550 | 0.3587 | 0.4748 | 10 |
 | pless_default_t1_5 | 0.320 | 0.500 | 0.3854 | 0.4566 | 9 |
 | pless_default_t2_0 | 0.355 | 0.500 | 0.3544 | 0.4531 | 10 |
+| pless_default_t2_5 | 0.365 | 0.550 | 0.4195 | 0.5140 | 10 |
+| pless_default_t3_0 | 0.055 | 0.150 | 0.5129 | 0.5219 | 2 |
 
 **Note:** `gk_0_1` has both the best hard-pass@1 (0.430) and best hard-pass@10 (0.700) — a wider
 lead on hard tasks than the overall leaderboard numbers alone suggest, since hard tasks make up

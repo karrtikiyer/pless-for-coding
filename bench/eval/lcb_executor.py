@@ -31,7 +31,7 @@ from bench.eval.apps_extractor import (
 from bench.livecodebench.dataset import LcbProblem
 
 
-def _make_lcb_fn_harness(code: str, fn_name: str) -> str:
+def _make_lcb_fn_harness(code: str, fn_name: str, per_call_timeout: float) -> str:
     """Wrap LeetCode-style code (defines class Solution) with a call harness.
 
     Reads {"inputs": ..., "outputs": ...} JSON from stdin: inputs[i] is the
@@ -39,14 +39,33 @@ def _make_lcb_fn_harness(code: str, fn_name: str) -> str:
     argv instead overflows the OS argument-length limit once a problem has
     enough private tests — see the E2BIG this replaced). Exits 0 iff every
     call matches (float-tolerant for numeric returns); 1 on mismatch, 2 on
-    runtime error — encoding the failing index in stderr for diagnostics
-    (same protocol as apps_executor's harness)."""
+    runtime error, 3 on a single call exceeding its own per-call budget —
+    encoding the failing index + reason in stderr for diagnostics (same
+    protocol as apps_executor's harness).
+
+    Per-call timeout via signal.alarm, reset fresh before each call —
+    verified against LiveCodeBench's own official reference implementation
+    (grade_call_based in lcb_runner/evaluation/testing_util.py, fetched
+    2026-09-29): it does exactly this, resetting an alarm inside its loop
+    once per test case, not once for the whole test suite. Previously this
+    harness ran the entire loop (up to 103 test cases in this project's own
+    LeetCode data) inside ONE flat outer subprocess timeout — a genuine bug,
+    unrelated to CPU load, confirmed by measuring real test-case counts
+    (median 28, max 103) against the old 5.0s budget."""
+    # signal.alarm() takes an int number of seconds; 0 disables the alarm
+    # entirely, so a sub-1s timeout must not round down to 0.
+    alarm_secs = max(1, round(per_call_timeout))
     return (
         "from typing import *\n"
         "import json as _json\n"
         "import sys as _sys\n"
+        "import signal as _signal\n"
         + code
         + "\n\n# ── harness injected by bench.eval.lcb_executor ──\n"
+        + "class _TimeoutErr(Exception): pass\n"
+        + "def _alarm_handler(_sig, _frame): raise _TimeoutErr()\n"
+        + "_signal.signal(_signal.SIGALRM, _alarm_handler)\n"
+        + f"_ALARM_SECS = {alarm_secs}\n"
         + "def _cmp(_g, _w):\n"
         + "    if _g == _w: return True\n"
         + "    try:\n"
@@ -60,10 +79,15 @@ def _make_lcb_fn_harness(code: str, fn_name: str) -> str:
         + "_sol = Solution()\n"
         + f"_fn = getattr(_sol, {fn_name!r})\n"
         + "for _i, (_args, _want) in enumerate(zip(_inputs, _outputs)):\n"
+        + "    _signal.alarm(_ALARM_SECS)\n"
         + "    try:\n"
         + "        _got = _fn(*_args)\n"
+        + "    except _TimeoutErr:\n"
+        + "        print(f'_FAIL_AT_{_i}_TIMEOUT', file=_sys.stderr); _sys.exit(3)\n"
         + "    except Exception as _e:\n"
         + "        print(f'_FAIL_AT_{_i}_RUNTIME', file=_sys.stderr); _sys.exit(2)\n"
+        + "    finally:\n"
+        + "        _signal.alarm(0)\n"
         + "    if not _cmp(_got, _want):\n"
         + "        print(f'_FAIL_AT_{_i}_MISMATCH', file=_sys.stderr); _sys.exit(1)\n"
     )
@@ -71,14 +95,23 @@ def _make_lcb_fn_harness(code: str, fn_name: str) -> str:
 
 def _run_lcb_fn_tests(code: str, fn_name: str, inputs: list, outputs: list,
                       timeout: float) -> AppsSampleResult:
-    """Functional (LeetCode) execution: Solution().fn(*args) vs expected return."""
-    program = _make_lcb_fn_harness(code, fn_name)
+    """Functional (LeetCode) execution: Solution().fn(*args) vs expected return.
+
+    ``timeout`` is the PER-CALL budget (matching LCB's own convention, and
+    how ``_run_stdin_tests`` already treats its own ``timeout`` argument for
+    the stdin path). The outer subprocess wrapper is sized generously enough
+    to cover every test case getting its own full budget plus a safety
+    margin — mirroring LCB's own ``(timeout+1)*n_tests+5`` formula in
+    ``compute_code_generation_metrics.py``'s ``check_correctness`` — rather
+    than being the primary enforcement mechanism."""
+    program = _make_lcb_fn_harness(code, fn_name, timeout)
     payload = json.dumps({"inputs": inputs, "outputs": outputs})
+    outer_timeout = (timeout + 1) * max(len(inputs), 1) + 5
     try:
         proc = subprocess.run(
             ["python3", "-c", program],
             input=payload,
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True, text=True, timeout=outer_timeout,
         )
     except subprocess.TimeoutExpired:
         return AppsSampleResult(status="Timeout", n_tests_total=len(inputs))
@@ -89,8 +122,14 @@ def _run_lcb_fn_tests(code: str, fn_name: str, inputs: list, outputs: list,
     m = re.search(r"_FAIL_AT_(\d+)_(\w+)", err)
     first_idx = int(m.group(1)) if m else None
     fail_type = m.group(2) if m else "UNKNOWN"
+    if fail_type == "RUNTIME":
+        status = "RuntimeError"
+    elif fail_type == "TIMEOUT":
+        status = "Timeout"
+    else:
+        status = "Failed"
     return AppsSampleResult(
-        status="RuntimeError" if fail_type == "RUNTIME" else "Failed",
+        status=status,
         n_tests_total=len(inputs),
         n_tests_passed=first_idx if first_idx is not None else 0,
         first_failing_idx=first_idx,
@@ -99,9 +138,15 @@ def _run_lcb_fn_tests(code: str, fn_name: str, inputs: list, outputs: list,
 
 
 def evaluate_lcb_sample(raw_sample: str, problem: LcbProblem,
-                        per_test_timeout: float = 10.0
+                        per_test_timeout: float = 6.0
                         ) -> tuple[AppsSampleResult, ExtractionResult]:
-    """Extract → compile-check → run tests (stdin or functional)."""
+    """Extract → compile-check → run tests (stdin or functional).
+
+    ``per_test_timeout`` means seconds per individual test case (matching
+    LiveCodeBench's own official default of 6.0s, fetched and verified
+    2026-09-29 against lcb_runner/evaluation/testing_util.py) for BOTH the
+    stdin path (already true before this change) and the functional/LeetCode
+    path (fixed by this change — see _run_lcb_fn_tests's docstring)."""
     ext = extract_python_code_apps(raw_sample, fn_name=problem.fn_name)
     if not ext.success or not ext.code:
         return AppsSampleResult(status="ParsingError",
@@ -134,7 +179,7 @@ def evaluate_all_lcb(
     records: list[dict],
     problems_by_id: dict[str, LcbProblem],
     *,
-    per_test_timeout: float = 10.0,
+    per_test_timeout: float = 6.0,
     workers: int = 4,
 ) -> tuple[list, dict, dict]:
     """Run LCB evaluation across every (task, sample). Mirrors evaluate_all_apps;

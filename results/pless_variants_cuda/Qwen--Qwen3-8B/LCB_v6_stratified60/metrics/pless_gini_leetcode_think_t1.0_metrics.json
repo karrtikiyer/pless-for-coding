@@ -8,29 +8,24 @@
   "num_tasks": 30,
   "num_samples_per_task": 10,
   "pass_at_k": {
-    "1": 0.7733333333333333,
-    "3": 0.8213888888888888,
-    "5": 0.8305555555555555,
-    "10": 0.8333333333333334
+    "1": 0.8066666666666666,
+    "3": 0.8547222222222222,
+    "5": 0.8638888888888888,
+    "10": 0.8666666666666667
   },
   "cover_at_t": {
-    "0.1": 83.33333333333334,
-    "0.3": 83.33333333333334,
-    "0.5": 80.0,
-    "0.7": 73.33333333333333
+    "0.1": 86.66666666666667,
+    "0.3": 86.66666666666667,
+    "0.5": 83.33333333333334,
+    "0.7": 76.66666666666667
   },
   "cover_at_t_distinct": {
-    "0.1": 83.33333333333334,
-    "0.3": 70.0,
-    "0.5": 60.0,
-    "0.7": 46.666666666666664
+    "0.1": 86.66666666666667,
+    "0.3": 73.33333333333333,
+    "0.5": 63.33333333333333,
+    "0.7": 50.0
   },
-  "structural_diversity": 0.2882,
-  "codebleu_diversity": 0.4229,
-  "syntax_match_diversity": 0.3018,
-  "dataflow_match_diversity": 0.4017,
-  "ngram_match_diversity": 0.5191,
-  "weighted_ngram_match_diversity": 0.4692,
+  "structural_diversity": null,
   "per_task": [
     {
       "task_id": "2756",
@@ -131,14 +126,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0386,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.3102,
-      "self_syntax_match": 0.2903,
-      "self_dataflow_match": 0.375,
-      "self_ngram_match": 0.3193,
-      "self_weighted_ngram_match": 0.2562
+      "num_distinct_correct": 2
     },
     {
       "task_id": "2828",
@@ -239,14 +227,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.4338,
-      "num_ast_clusters": 7,
-      "self_codebleu": 0.5158,
-      "self_syntax_match": 0.337,
-      "self_dataflow_match": 0.5405,
-      "self_ngram_match": 0.6039,
-      "self_weighted_ngram_match": 0.582
+      "num_distinct_correct": 10
     },
     {
       "task_id": "2869",
@@ -347,14 +328,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.045,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.2217,
-      "self_syntax_match": 0.0754,
-      "self_dataflow_match": 0.1174,
-      "self_ngram_match": 0.3629,
-      "self_weighted_ngram_match": 0.3311
+      "num_distinct_correct": 6
     },
     {
       "task_id": "2952",
@@ -455,14 +429,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 9,
-      "mean_pairwise_distance": 0.4479,
-      "num_ast_clusters": 7,
-      "self_codebleu": 0.5077,
-      "self_syntax_match": 0.3046,
-      "self_dataflow_match": 0.4794,
-      "self_ngram_match": 0.6541,
-      "self_weighted_ngram_match": 0.5927
+      "num_distinct_correct": 9
     },
     {
       "task_id": "2955",
@@ -563,14 +530,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.201,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.4362,
-      "self_syntax_match": 0.4889,
-      "self_dataflow_match": 0.3007,
-      "self_ngram_match": 0.5728,
-      "self_weighted_ngram_match": 0.3826
+      "num_distinct_correct": 3
     },
     {
       "task_id": "2999",
@@ -671,14 +631,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.18,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.4868,
-      "self_syntax_match": 0.4328,
-      "self_dataflow_match": 0.1562,
-      "self_ngram_match": 0.6856,
-      "self_weighted_ngram_match": 0.6727
+      "num_distinct_correct": 3
     },
     {
       "task_id": "3047",
@@ -779,14 +732,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3188",
@@ -887,14 +833,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.1061,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.385,
-      "self_syntax_match": 0.3334,
-      "self_dataflow_match": 0.2514,
-      "self_ngram_match": 0.4897,
-      "self_weighted_ngram_match": 0.4654
+      "num_distinct_correct": 5
     },
     {
       "task_id": "3193",
@@ -995,14 +934,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0101,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.3513,
-      "self_syntax_match": 0.0769,
-      "self_dataflow_match": 0.5556,
-      "self_ngram_match": 0.3883,
-      "self_weighted_ngram_match": 0.3843
+      "num_distinct_correct": 2
     },
     {
       "task_id": "3225",
@@ -1103,14 +1035,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.1658,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.3554,
-      "self_syntax_match": 0.2551,
-      "self_dataflow_match": 0.2601,
-      "self_ngram_match": 0.4867,
-      "self_weighted_ngram_match": 0.4196
+      "num_distinct_correct": 6
     },
     {
       "task_id": "3299",
@@ -1211,14 +1136,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.1643,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.3244,
-      "self_syntax_match": 0.2063,
-      "self_dataflow_match": 0.2519,
-      "self_ngram_match": 0.43,
-      "self_weighted_ngram_match": 0.4093
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3309",
@@ -1319,14 +1237,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0105,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.1546,
-      "self_syntax_match": 0.0189,
-      "self_dataflow_match": 0.5152,
-      "self_ngram_match": 0.0843,
-      "self_weighted_ngram_match": 0.0
+      "num_distinct_correct": 2
     },
     {
       "task_id": "3317",
@@ -1427,14 +1338,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.5484,
-      "num_ast_clusters": 7,
-      "self_codebleu": 0.5952,
-      "self_syntax_match": 0.3862,
-      "self_dataflow_match": 0.5852,
-      "self_ngram_match": 0.7486,
-      "self_weighted_ngram_match": 0.6606
+      "num_distinct_correct": 8
     },
     {
       "task_id": "3354",
@@ -1535,41 +1439,34 @@
         true,
         true
       ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.4321,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.4812,
-      "self_syntax_match": 0.2689,
-      "self_dataflow_match": 0.5307,
-      "self_ngram_match": 0.5921,
-      "self_weighted_ngram_match": 0.5331
+      "num_distinct_correct": 6
     },
     {
       "task_id": "3376",
-      "num_correct": 0,
+      "num_correct": 10,
       "pass_results": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
       ],
       "statuses": [
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout"
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed"
       ],
       "n_tests_total": [
         27,
@@ -1584,16 +1481,16 @@
         27
       ],
       "n_tests_passed": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
+        27,
+        27,
+        27,
+        27,
+        27,
+        27,
+        27,
+        27,
+        27,
+        27
       ],
       "first_failing_idx": [
         null,
@@ -1643,14 +1540,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3396",
@@ -1751,14 +1641,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.3476,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.3817,
-      "self_syntax_match": 0.3245,
-      "self_dataflow_match": 0.4006,
-      "self_ngram_match": 0.4448,
-      "self_weighted_ngram_match": 0.357
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3437",
@@ -1859,14 +1742,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.3321,
-      "num_ast_clusters": 6,
-      "self_codebleu": 0.4091,
-      "self_syntax_match": 0.255,
-      "self_dataflow_match": 0.3389,
-      "self_ngram_match": 0.536,
-      "self_weighted_ngram_match": 0.5063
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3454",
@@ -1967,14 +1843,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3466",
@@ -2016,27 +1885,27 @@
         29
       ],
       "n_tests_passed": [
-        0,
+        3,
         29,
         29,
-        0,
+        3,
         29,
         29,
-        0,
+        3,
         29,
-        0,
+        3,
         29
       ],
       "first_failing_idx": [
+        3,
         null,
         null,
+        3,
         null,
         null,
+        3,
         null,
-        null,
-        null,
-        null,
-        null,
+        3,
         null
       ],
       "extracted_codes": [
@@ -2075,14 +1944,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.044,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.3228,
-      "self_syntax_match": 0.2115,
-      "self_dataflow_match": 0.2632,
-      "self_ngram_match": 0.4179,
-      "self_weighted_ngram_match": 0.3986
+      "num_distinct_correct": 2
     },
     {
       "task_id": "3471",
@@ -2183,14 +2045,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.4652,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.513,
-      "self_syntax_match": 0.391,
-      "self_dataflow_match": 0.5994,
-      "self_ngram_match": 0.5514,
-      "self_weighted_ngram_match": 0.5103
+      "num_distinct_correct": 3
     },
     {
       "task_id": "3476",
@@ -2291,14 +2146,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 7,
-      "mean_pairwise_distance": 0.4497,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.5054,
-      "self_syntax_match": 0.5404,
-      "self_dataflow_match": 0.4236,
-      "self_ngram_match": 0.558,
-      "self_weighted_ngram_match": 0.4996
+      "num_distinct_correct": 7
     },
     {
       "task_id": "3579",
@@ -2399,14 +2247,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.1595,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.3654,
-      "self_syntax_match": 0.2627,
-      "self_dataflow_match": 0.2788,
-      "self_ngram_match": 0.4749,
-      "self_weighted_ngram_match": 0.4451
+      "num_distinct_correct": 8
     },
     {
       "task_id": "3604",
@@ -2507,14 +2348,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.4506,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.428,
-      "self_syntax_match": 0.1998,
-      "self_dataflow_match": 0.467,
-      "self_ngram_match": 0.5407,
-      "self_weighted_ngram_match": 0.5046
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3626",
@@ -2615,14 +2449,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 9,
-      "mean_pairwise_distance": 0.3717,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.4299,
-      "self_syntax_match": 0.3773,
-      "self_dataflow_match": 0.4041,
-      "self_ngram_match": 0.4933,
-      "self_weighted_ngram_match": 0.445
+      "num_distinct_correct": 9
     },
     {
       "task_id": "3631",
@@ -2664,27 +2491,27 @@
         43
       ],
       "n_tests_passed": [
+        11,
+        11,
         0,
+        11,
+        11,
+        11,
+        11,
         0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
+        11,
         0
       ],
       "first_failing_idx": [
+        11,
+        11,
         null,
+        11,
+        11,
+        11,
+        11,
         null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
+        11,
         null
       ],
       "extracted_codes": [
@@ -2723,14 +2550,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3646",
@@ -2831,14 +2651,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.401,
-      "num_ast_clusters": 8,
-      "self_codebleu": 0.5527,
-      "self_syntax_match": 0.378,
-      "self_dataflow_match": 0.4425,
-      "self_ngram_match": 0.7301,
-      "self_weighted_ngram_match": 0.6604
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3682",
@@ -2939,14 +2752,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.4638,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.5401,
-      "self_syntax_match": 0.3966,
-      "self_dataflow_match": 0.6074,
-      "self_ngram_match": 0.5908,
-      "self_weighted_ngram_match": 0.5654
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3687",
@@ -3047,14 +2853,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3737",
@@ -3155,14 +2954,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.3834,
-      "num_ast_clusters": 6,
-      "self_codebleu": 0.5106,
-      "self_syntax_match": 0.3489,
-      "self_dataflow_match": 0.4221,
-      "self_ngram_match": 0.6518,
-      "self_weighted_ngram_match": 0.6194
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3809",
@@ -3263,17 +3055,10 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.5525,
-      "num_ast_clusters": 6,
-      "self_codebleu": 0.4895,
-      "self_syntax_match": 0.3839,
-      "self_dataflow_match": 0.476,
-      "self_ngram_match": 0.5684,
-      "self_weighted_ngram_match": 0.5299
+      "num_distinct_correct": 10
     }
   ],
-  "timestamp": "2026-09-28T04:02:32.666099+00:00",
+  "timestamp": "2026-09-29T14:59:41.203148+00:00",
   "extraction_diagnostics": {
     "n_samples_total": 300,
     "n_records_skipped_no_problem": 0,
@@ -3288,16 +3073,16 @@
   },
   "execution_diagnostics": {
     "by_status": {
-      "Passed": 232,
+      "Passed": 242,
       "Failed": 38,
       "RuntimeError": 9,
-      "Timeout": 21,
+      "Timeout": 11,
       "SyntaxError": 0,
       "ParsingError": 0
     },
-    "pass_rate": 0.7733333333333333,
+    "pass_rate": 0.8066666666666666,
     "first_failing_test_idx": {
-      "p50": 1,
+      "p50": 2,
       "p90": 17,
       "p99": 17,
       "max": 17

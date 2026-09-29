@@ -8,29 +8,24 @@
   "num_tasks": 30,
   "num_samples_per_task": 10,
   "pass_at_k": {
-    "1": 0.7300000000000001,
-    "3": 0.8227777777777778,
-    "5": 0.8474867724867726,
-    "10": 0.8666666666666667
+    "1": 0.76,
+    "3": 0.8561111111111112,
+    "5": 0.880820105820106,
+    "10": 0.9
   },
   "cover_at_t": {
-    "0.1": 86.66666666666667,
-    "0.3": 83.33333333333334,
-    "0.5": 73.33333333333333,
-    "0.7": 66.66666666666666
+    "0.1": 90.0,
+    "0.3": 86.66666666666667,
+    "0.5": 76.66666666666667,
+    "0.7": 70.0
   },
   "cover_at_t_distinct": {
-    "0.1": 86.66666666666667,
-    "0.3": 73.33333333333333,
-    "0.5": 40.0,
-    "0.7": 33.33333333333333
+    "0.1": 90.0,
+    "0.3": 76.66666666666667,
+    "0.5": 43.333333333333336,
+    "0.7": 36.666666666666664
   },
-  "structural_diversity": 0.2498,
-  "codebleu_diversity": 0.381,
-  "syntax_match_diversity": 0.2818,
-  "dataflow_match_diversity": 0.363,
-  "ngram_match_diversity": 0.4619,
-  "weighted_ngram_match_diversity": 0.4172,
+  "structural_diversity": null,
   "per_task": [
     {
       "task_id": "2756",
@@ -131,14 +126,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0686,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.3102,
-      "self_syntax_match": 0.2903,
-      "self_dataflow_match": 0.375,
-      "self_ngram_match": 0.3193,
-      "self_weighted_ngram_match": 0.2562
+      "num_distinct_correct": 2
     },
     {
       "task_id": "2828",
@@ -239,14 +227,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.297,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.3448,
-      "self_syntax_match": 0.2113,
-      "self_dataflow_match": 0.3294,
-      "self_ngram_match": 0.4438,
-      "self_weighted_ngram_match": 0.3949
+      "num_distinct_correct": 8
     },
     {
       "task_id": "2869",
@@ -347,14 +328,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.0227,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.1835,
-      "self_syntax_match": 0.0754,
-      "self_dataflow_match": 0.1042,
-      "self_ngram_match": 0.3005,
-      "self_weighted_ngram_match": 0.2538
+      "num_distinct_correct": 4
     },
     {
       "task_id": "2952",
@@ -455,14 +429,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.3996,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.4861,
-      "self_syntax_match": 0.2633,
-      "self_dataflow_match": 0.4409,
-      "self_ngram_match": 0.6384,
-      "self_weighted_ngram_match": 0.6019
+      "num_distinct_correct": 5
     },
     {
       "task_id": "2955",
@@ -563,14 +530,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.2014,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.4501,
-      "self_syntax_match": 0.4889,
-      "self_dataflow_match": 0.3769,
-      "self_ngram_match": 0.5636,
-      "self_weighted_ngram_match": 0.3709
+      "num_distinct_correct": 3
     },
     {
       "task_id": "2999",
@@ -671,14 +631,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.1759,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.3849,
-      "self_syntax_match": 0.3434,
-      "self_dataflow_match": 0.1344,
-      "self_ngram_match": 0.553,
-      "self_weighted_ngram_match": 0.5087
+      "num_distinct_correct": 5
     },
     {
       "task_id": "3047",
@@ -779,14 +732,7 @@
         false,
         false
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3188",
@@ -887,14 +833,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.1051,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.4026,
-      "self_syntax_match": 0.3723,
-      "self_dataflow_match": 0.2605,
-      "self_ngram_match": 0.5156,
-      "self_weighted_ngram_match": 0.462
+      "num_distinct_correct": 3
     },
     {
       "task_id": "3193",
@@ -995,14 +934,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0201,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.1803,
-      "self_syntax_match": 0.2308,
-      "self_dataflow_match": 0.0,
-      "self_ngram_match": 0.2502,
-      "self_weighted_ngram_match": 0.2402
+      "num_distinct_correct": 2
     },
     {
       "task_id": "3225",
@@ -1103,14 +1035,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.1102,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.1985,
-      "self_syntax_match": 0.1925,
-      "self_dataflow_match": 0.2606,
-      "self_ngram_match": 0.2224,
-      "self_weighted_ngram_match": 0.1186
+      "num_distinct_correct": 4
     },
     {
       "task_id": "3299",
@@ -1211,14 +1136,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.2977,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.3234,
-      "self_syntax_match": 0.2593,
-      "self_dataflow_match": 0.2566,
-      "self_ngram_match": 0.401,
-      "self_weighted_ngram_match": 0.3766
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3309",
@@ -1319,14 +1237,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0101,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.1983,
-      "self_syntax_match": 0.0714,
-      "self_dataflow_match": 0.5429,
-      "self_ngram_match": 0.0851,
-      "self_weighted_ngram_match": 0.0937
+      "num_distinct_correct": 2
     },
     {
       "task_id": "3317",
@@ -1427,14 +1338,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.495,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.5678,
-      "self_syntax_match": 0.3525,
-      "self_dataflow_match": 0.5893,
-      "self_ngram_match": 0.708,
-      "self_weighted_ngram_match": 0.6212
+      "num_distinct_correct": 8
     },
     {
       "task_id": "3354",
@@ -1535,41 +1439,34 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.5421,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.5069,
-      "self_syntax_match": 0.291,
-      "self_dataflow_match": 0.6078,
-      "self_ngram_match": 0.5734,
-      "self_weighted_ngram_match": 0.5555
+      "num_distinct_correct": 4
     },
     {
       "task_id": "3376",
-      "num_correct": 0,
+      "num_correct": 9,
       "pass_results": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
         false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
+        true,
+        true,
+        true
       ],
       "statuses": [
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
         "Failed",
-        "Timeout",
-        "Timeout",
-        "Timeout"
+        "Passed",
+        "Passed",
+        "Passed"
       ],
       "n_tests_total": [
         27,
@@ -1584,16 +1481,16 @@
         27
       ],
       "n_tests_passed": [
+        27,
+        27,
+        27,
+        27,
+        27,
+        27,
         0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
+        27,
+        27,
+        27
       ],
       "first_failing_idx": [
         null,
@@ -1643,14 +1540,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 9
     },
     {
       "task_id": "3396",
@@ -1751,14 +1641,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 9,
-      "mean_pairwise_distance": 0.25,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.3423,
-      "self_syntax_match": 0.2478,
-      "self_dataflow_match": 0.41,
-      "self_ngram_match": 0.3843,
-      "self_weighted_ngram_match": 0.3271
+      "num_distinct_correct": 9
     },
     {
       "task_id": "3437",
@@ -1859,14 +1742,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.338,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.3866,
-      "self_syntax_match": 0.2386,
-      "self_dataflow_match": 0.3245,
-      "self_ngram_match": 0.5092,
-      "self_weighted_ngram_match": 0.4739
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3454",
@@ -1967,14 +1843,7 @@
         false,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3466",
@@ -2016,27 +1885,27 @@
         29
       ],
       "n_tests_passed": [
-        0,
-        0,
-        0,
-        0,
-        0,
+        3,
+        3,
+        3,
+        3,
+        3,
         29,
         29,
         29,
-        0,
+        3,
         29
       ],
       "first_failing_idx": [
+        3,
+        3,
+        3,
+        3,
+        3,
         null,
         null,
         null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
+        3,
         null
       ],
       "extracted_codes": [
@@ -2075,14 +1944,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.1476,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.4392,
-      "self_syntax_match": 0.1667,
-      "self_dataflow_match": 0.2456,
-      "self_ngram_match": 0.693,
-      "self_weighted_ngram_match": 0.6516
+      "num_distinct_correct": 3
     },
     {
       "task_id": "3471",
@@ -2183,14 +2045,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.3398,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.5378,
-      "self_syntax_match": 0.4074,
-      "self_dataflow_match": 0.5139,
-      "self_ngram_match": 0.6243,
-      "self_weighted_ngram_match": 0.6056
+      "num_distinct_correct": 3
     },
     {
       "task_id": "3476",
@@ -2291,14 +2146,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.0826,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.2484,
-      "self_syntax_match": 0.3192,
-      "self_dataflow_match": 0.3214,
-      "self_ngram_match": 0.1769,
-      "self_weighted_ngram_match": 0.1762
+      "num_distinct_correct": 4
     },
     {
       "task_id": "3579",
@@ -2399,14 +2247,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.015,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.3215,
-      "self_syntax_match": 0.1902,
-      "self_dataflow_match": 0.2202,
-      "self_ngram_match": 0.4445,
-      "self_weighted_ngram_match": 0.4312
+      "num_distinct_correct": 4
     },
     {
       "task_id": "3604",
@@ -2507,14 +2348,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 9,
-      "mean_pairwise_distance": 0.4783,
-      "num_ast_clusters": 7,
-      "self_codebleu": 0.4623,
-      "self_syntax_match": 0.3048,
-      "self_dataflow_match": 0.5118,
-      "self_ngram_match": 0.5324,
-      "self_weighted_ngram_match": 0.5003
+      "num_distinct_correct": 9
     },
     {
       "task_id": "3626",
@@ -2615,14 +2449,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.3867,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.4597,
-      "self_syntax_match": 0.413,
-      "self_dataflow_match": 0.4077,
-      "self_ngram_match": 0.5153,
-      "self_weighted_ngram_match": 0.5029
+      "num_distinct_correct": 4
     },
     {
       "task_id": "3631",
@@ -2664,7 +2491,7 @@
         43
       ],
       "n_tests_passed": [
-        0,
+        11,
         0,
         0,
         0,
@@ -2676,7 +2503,7 @@
         1
       ],
       "first_failing_idx": [
-        null,
+        11,
         null,
         null,
         null,
@@ -2723,14 +2550,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 1,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 1,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 1
     },
     {
       "task_id": "3646",
@@ -2831,14 +2651,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.3683,
-      "num_ast_clusters": 8,
-      "self_codebleu": 0.4888,
-      "self_syntax_match": 0.3488,
-      "self_dataflow_match": 0.3955,
-      "self_ngram_match": 0.6469,
-      "self_weighted_ngram_match": 0.564
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3682",
@@ -2939,14 +2752,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.4996,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.5501,
-      "self_syntax_match": 0.4865,
-      "self_dataflow_match": 0.5616,
-      "self_ngram_match": 0.5884,
-      "self_weighted_ngram_match": 0.5638
+      "num_distinct_correct": 8
     },
     {
       "task_id": "3687",
@@ -3047,14 +2853,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3737",
@@ -3155,14 +2954,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.4409,
-      "num_ast_clusters": 9,
-      "self_codebleu": 0.5153,
-      "self_syntax_match": 0.3288,
-      "self_dataflow_match": 0.5243,
-      "self_ngram_match": 0.619,
-      "self_weighted_ngram_match": 0.5891
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3809",
@@ -3263,17 +3055,10 @@
         true,
         true
       ],
-      "num_distinct_correct": 7,
-      "mean_pairwise_distance": 0.1518,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.2346,
-      "self_syntax_match": 0.1501,
-      "self_dataflow_match": 0.3599,
-      "self_ngram_match": 0.2378,
-      "self_weighted_ngram_match": 0.1905
+      "num_distinct_correct": 7
     }
   ],
-  "timestamp": "2026-09-28T03:54:32.112542+00:00",
+  "timestamp": "2026-09-29T14:49:56.751642+00:00",
   "extraction_diagnostics": {
     "n_samples_total": 300,
     "n_records_skipped_no_problem": 0,
@@ -3289,16 +3074,16 @@
   },
   "execution_diagnostics": {
     "by_status": {
-      "Passed": 219,
+      "Passed": 228,
       "Failed": 29,
       "RuntimeError": 7,
-      "Timeout": 16,
+      "Timeout": 7,
       "SyntaxError": 0,
       "ParsingError": 29
     },
-    "pass_rate": 0.73,
+    "pass_rate": 0.76,
     "first_failing_test_idx": {
-      "p50": 1,
+      "p50": 2,
       "p90": 17,
       "p99": 17,
       "max": 17

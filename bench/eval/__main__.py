@@ -3,6 +3,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
+from bench.eval._cpu_lock import cpu_heavy_lock
 from bench.eval.executor import evaluate_all
 from bench.eval.loader import load_results
 from bench.eval.metrics import build_metrics_output
@@ -29,8 +30,12 @@ def parse_args():
         help="Comma-separated fractional t values for cover@t (default: 0.1,0.3,0.5,0.7)",
     )
     parser.add_argument(
-        "--timeout", type=float, default=5.0,
-        help="Per-sample execution timeout in seconds (default: 5.0)",
+        "--timeout", type=float, default=None,
+        help="Per-sample (per-test-case for livecodebench/apps) execution timeout "
+             "in seconds. Default: 5.0, except 6.0 for --dataset livecodebench "
+             "(matching LiveCodeBench's own official per-test-case convention -- "
+             "verified 2026-09-29 against lcb_runner/evaluation/testing_util.py). "
+             "Pass this flag explicitly to override either default.",
     )
     parser.add_argument(
         "--output", type=Path, default=None,
@@ -47,7 +52,10 @@ def parse_args():
              "only need pass@k for a quick verdict. The output JSON will "
              "have those fields set to null. Default: False (compute all).",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.timeout is None:
+        args.timeout = 6.0 if args.dataset == "livecodebench" else 5.0
+    return args
 
 
 def infer_output_path(results_file: Path) -> Path:
@@ -97,126 +105,131 @@ def main():
     records = load_results(args.results_file)
     print(f"Loaded {len(records)} tasks")
 
-    # Evaluate
-    print(f"Evaluating samples (workers={args.workers}, timeout={args.timeout}s)...")
-    extraction_diag = None
-    execution_diag = None
-    if args.dataset == "apps":
-        from bench.apps.dataset import load_apps_test_map
-        from bench.eval.apps_executor import evaluate_all_apps
+    # Evaluate + diversity are both CPU-heavy; serialize against any other
+    # concurrent CPU-heavy eval/diversity job on this machine (see
+    # bench/eval/_cpu_lock.py -- a stress test this session showed a normal
+    # ~110s eval taking 3x+ longer under artificial CPU contention).
+    with cpu_heavy_lock(label=f"{args.dataset}:{args.results_file}"):
+        print(f"Evaluating samples (workers={args.workers}, timeout={args.timeout}s)...")
+        extraction_diag = None
+        execution_diag = None
+        if args.dataset == "apps":
+            from bench.apps.dataset import load_apps_test_map
+            from bench.eval.apps_executor import evaluate_all_apps
 
-        # Determine the (source, difficulty) bucket from the JSONL records so
-        # we only load the slice of APPS we need (a few hundred problems vs
-        # all 5K).
-        first = records[0]
-        source = first.get("source")
-        difficulty = first.get("difficulty")
-        if not source or not difficulty:
-            raise SystemExit(
-                "APPS JSONL records must carry 'source' and 'difficulty' fields. "
-                "Was this generated with bench.apps.runner?"
+            # Determine the (source, difficulty) bucket from the JSONL records so
+            # we only load the slice of APPS we need (a few hundred problems vs
+            # all 5K).
+            first = records[0]
+            source = first.get("source")
+            difficulty = first.get("difficulty")
+            if not source or not difficulty:
+                raise SystemExit(
+                    "APPS JSONL records must carry 'source' and 'difficulty' fields. "
+                    "Was this generated with bench.apps.runner?"
+                )
+            print(f"Loading APPS test data for source={source}, difficulty={difficulty}")
+            problems_by_id = load_apps_test_map(source=source, difficulty=difficulty)
+            print(f"Loaded {len(problems_by_id)} APPS problems with tests")
+
+            apps_results, extraction_diag, execution_diag = evaluate_all_apps(
+                records, problems_by_id,
+                per_test_timeout=args.timeout,
+                workers=args.workers,
             )
-        print(f"Loading APPS test data for source={source}, difficulty={difficulty}")
-        problems_by_id = load_apps_test_map(source=source, difficulty=difficulty)
-        print(f"Loaded {len(problems_by_id)} APPS problems with tests")
+            # Convert dataclass results to dicts shaped like MBPP's evaluate_all
+            # output so build_metrics_output works unchanged. Per-task APPS-only
+            # fields (statuses, n_tests_total, etc.) are preserved as extra keys.
+            task_results = [asdict(r) for r in apps_results]
 
-        apps_results, extraction_diag, execution_diag = evaluate_all_apps(
-            records, problems_by_id,
-            per_test_timeout=args.timeout,
-            workers=args.workers,
-        )
-        # Convert dataclass results to dicts shaped like MBPP's evaluate_all
-        # output so build_metrics_output works unchanged. Per-task APPS-only
-        # fields (statuses, n_tests_total, etc.) are preserved as extra keys.
-        task_results = [asdict(r) for r in apps_results]
+            # For diversity metrics: replace records' raw samples with the
+            # APPS-extracted code so AST fingerprints / CodeBLEU operate on
+            # clean compilable code instead of raw thinking-laced output.
+            # Preserves order and length.
+            results_by_id = {r.task_id: r for r in apps_results}
+            for rec in records:
+                tid = int(rec["task_id"])
+                if tid in results_by_id:
+                    extracted = results_by_id[tid].extracted_codes
+                    # Fall back to original sample if extraction yielded empty
+                    # (lets the diversity helpers still attempt to fingerprint
+                    # something rather than skip the sample silently).
+                    rec["samples"] = [
+                        code if code else rec["samples"][i]
+                        for i, code in enumerate(extracted)
+                    ]
+        elif args.dataset == "livecodebench":
+            from bench.eval.lcb_executor import evaluate_all_lcb
+            from bench.livecodebench.dataset import load_lcb_test_map
 
-        # For diversity metrics: replace records' raw samples with the
-        # APPS-extracted code so AST fingerprints / CodeBLEU operate on
-        # clean compilable code instead of raw thinking-laced output.
-        # Preserves order and length.
-        results_by_id = {r.task_id: r for r in apps_results}
-        for rec in records:
-            tid = int(rec["task_id"])
-            if tid in results_by_id:
-                extracted = results_by_id[tid].extracted_codes
-                # Fall back to original sample if extraction yielded empty
-                # (lets the diversity helpers still attempt to fingerprint
-                # something rather than skip the sample silently).
-                rec["samples"] = [
-                    code if code else rec["samples"][i]
-                    for i, code in enumerate(extracted)
-                ]
-    elif args.dataset == "livecodebench":
-        from bench.eval.lcb_executor import evaluate_all_lcb
-        from bench.livecodebench.dataset import load_lcb_test_map
-
-        # The runner writes source=platform; all records in a file share one platform.
-        first = records[0]
-        platform = first.get("source")
-        if not platform:
-            raise SystemExit(
-                "LiveCodeBench JSONL records must carry 'source' (=platform). "
-                "Was this generated with bench.livecodebench.runner?"
+            # The runner writes source=platform; all records in a file share one platform.
+            first = records[0]
+            platform = first.get("source")
+            if not platform:
+                raise SystemExit(
+                    "LiveCodeBench JSONL records must carry 'source' (=platform). "
+                    "Was this generated with bench.livecodebench.runner?"
+                )
+            # Only decode the problems present in this file (avoids the whole platform +
+            # its ~189MB test tail). Fixed test caps keep eval tractable AND constant
+            # across arms (comparisons stay valid); capping is logged, not silent.
+            LCB_MAX_PRIVATE, LCB_MAX_TEST_BYTES = 100, 10_000_000
+            task_ids = {str(r["task_id"]) for r in records}
+            print(f"Loading LiveCodeBench tests: platform={platform}, {len(task_ids)} problems "
+                  f"(caps: <= {LCB_MAX_PRIVATE} private tests/problem, skip tests "
+                  f"> {LCB_MAX_TEST_BYTES // 10**6}MB)")
+            problems_by_id = load_lcb_test_map(
+                platforms=(platform,), task_ids=task_ids,
+                max_private=LCB_MAX_PRIVATE, max_test_bytes=LCB_MAX_TEST_BYTES,
             )
-        # Only decode the problems present in this file (avoids the whole platform +
-        # its ~189MB test tail). Fixed test caps keep eval tractable AND constant
-        # across arms (comparisons stay valid); capping is logged, not silent.
-        LCB_MAX_PRIVATE, LCB_MAX_TEST_BYTES = 100, 10_000_000
-        task_ids = {str(r["task_id"]) for r in records}
-        print(f"Loading LiveCodeBench tests: platform={platform}, {len(task_ids)} problems "
-              f"(caps: <= {LCB_MAX_PRIVATE} private tests/problem, skip tests "
-              f"> {LCB_MAX_TEST_BYTES // 10**6}MB)")
-        problems_by_id = load_lcb_test_map(
-            platforms=(platform,), task_ids=task_ids,
-            max_private=LCB_MAX_PRIVATE, max_test_bytes=LCB_MAX_TEST_BYTES,
+            print(f"Loaded {len(problems_by_id)} LCB problems with tests")
+
+            lcb_results, extraction_diag, execution_diag = evaluate_all_lcb(
+                records, problems_by_id,
+                per_test_timeout=args.timeout, workers=args.workers,
+            )
+            task_results = [asdict(r) for r in lcb_results]
+
+            # For diversity metrics: replace raw samples with extracted code (str task_id).
+            results_by_id = {r.task_id: r for r in lcb_results}
+            for rec in records:
+                tid = str(rec["task_id"])
+                if tid in results_by_id:
+                    extracted = results_by_id[tid].extracted_codes
+                    rec["samples"] = [
+                        code if code else rec["samples"][i]
+                        for i, code in enumerate(extracted)
+                    ]
+        else:
+            task_results = evaluate_all(records, args.dataset, args.timeout, args.workers)
+
+        # Compute all metrics
+        if not args.skip_diversity:
+            print("Computing AST fingerprints and structural diversity...")
+        meta = infer_metadata(args.results_file, records[0])
+
+        if args.skip_diversity:
+            print("Skipping diversity metrics (--skip-diversity).")
+        output = build_metrics_output(
+            task_results,
+            records,
+            model=meta["model"],
+            method=meta["method"],
+            temperature=meta["temperature"],
+            top_p=meta["top_p"],
+            top_k=meta["top_k"],
+            dataset=args.dataset,
+            k_values=k_values,
+            t_values=t_values,
+            skip_diversity=args.skip_diversity,
         )
-        print(f"Loaded {len(problems_by_id)} LCB problems with tests")
+        if extraction_diag is not None:
+            output["extraction_diagnostics"] = extraction_diag
+        if execution_diag is not None:
+            output["execution_diagnostics"] = execution_diag
 
-        lcb_results, extraction_diag, execution_diag = evaluate_all_lcb(
-            records, problems_by_id,
-            per_test_timeout=args.timeout, workers=args.workers,
-        )
-        task_results = [asdict(r) for r in lcb_results]
-
-        # For diversity metrics: replace raw samples with extracted code (str task_id).
-        results_by_id = {r.task_id: r for r in lcb_results}
-        for rec in records:
-            tid = str(rec["task_id"])
-            if tid in results_by_id:
-                extracted = results_by_id[tid].extracted_codes
-                rec["samples"] = [
-                    code if code else rec["samples"][i]
-                    for i, code in enumerate(extracted)
-                ]
-    else:
-        task_results = evaluate_all(records, args.dataset, args.timeout, args.workers)
-
-    # Compute all metrics
-    if not args.skip_diversity:
-        print("Computing AST fingerprints and structural diversity...")
-    meta = infer_metadata(args.results_file, records[0])
-
-    if args.skip_diversity:
-        print("Skipping diversity metrics (--skip-diversity).")
-    output = build_metrics_output(
-        task_results,
-        records,
-        model=meta["model"],
-        method=meta["method"],
-        temperature=meta["temperature"],
-        top_p=meta["top_p"],
-        top_k=meta["top_k"],
-        dataset=args.dataset,
-        k_values=k_values,
-        t_values=t_values,
-        skip_diversity=args.skip_diversity,
-    )
-    if extraction_diag is not None:
-        output["extraction_diagnostics"] = extraction_diag
-    if execution_diag is not None:
-        output["execution_diagnostics"] = execution_diag
-
-    # Write output
+    # Write output (outside the lock -- disk I/O of the result is not the
+    # CPU-heavy part, no need to hold the lock for it)
     output_path = args.output or infer_output_path(args.results_file)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as f:

@@ -8,29 +8,24 @@
   "num_tasks": 30,
   "num_samples_per_task": 10,
   "pass_at_k": {
-    "1": 0.74,
-    "3": 0.8163888888888889,
-    "5": 0.8297619047619047,
-    "10": 0.8333333333333334
+    "1": 0.7766666666666667,
+    "3": 0.8497222222222223,
+    "5": 0.863095238095238,
+    "10": 0.8666666666666667
   },
   "cover_at_t": {
-    "0.1": 83.33333333333334,
-    "0.3": 83.33333333333334,
-    "0.5": 76.66666666666667,
-    "0.7": 73.33333333333333
+    "0.1": 86.66666666666667,
+    "0.3": 86.66666666666667,
+    "0.5": 80.0,
+    "0.7": 76.66666666666667
   },
   "cover_at_t_distinct": {
-    "0.1": 83.33333333333334,
-    "0.3": 70.0,
-    "0.5": 46.666666666666664,
-    "0.7": 30.0
+    "0.1": 86.66666666666667,
+    "0.3": 73.33333333333333,
+    "0.5": 50.0,
+    "0.7": 33.33333333333333
   },
-  "structural_diversity": 0.2732,
-  "codebleu_diversity": 0.3795,
-  "syntax_match_diversity": 0.2739,
-  "dataflow_match_diversity": 0.3614,
-  "ngram_match_diversity": 0.4724,
-  "weighted_ngram_match_diversity": 0.4101,
+  "structural_diversity": null,
   "per_task": [
     {
       "task_id": "2756",
@@ -131,14 +126,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0901,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.3102,
-      "self_syntax_match": 0.2903,
-      "self_dataflow_match": 0.375,
-      "self_ngram_match": 0.3193,
-      "self_weighted_ngram_match": 0.2562
+      "num_distinct_correct": 2
     },
     {
       "task_id": "2828",
@@ -239,14 +227,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.3545,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.4499,
-      "self_syntax_match": 0.2545,
-      "self_dataflow_match": 0.5652,
-      "self_ngram_match": 0.4961,
-      "self_weighted_ngram_match": 0.4839
+      "num_distinct_correct": 6
     },
     {
       "task_id": "2869",
@@ -347,14 +328,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.0798,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.349,
-      "self_syntax_match": 0.2275,
-      "self_dataflow_match": 0.2126,
-      "self_ngram_match": 0.4804,
-      "self_weighted_ngram_match": 0.4754
+      "num_distinct_correct": 3
     },
     {
       "task_id": "2952",
@@ -455,14 +429,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 7,
-      "mean_pairwise_distance": 0.5142,
-      "num_ast_clusters": 7,
-      "self_codebleu": 0.5549,
-      "self_syntax_match": 0.3255,
-      "self_dataflow_match": 0.5327,
-      "self_ngram_match": 0.6934,
-      "self_weighted_ngram_match": 0.668
+      "num_distinct_correct": 7
     },
     {
       "task_id": "2955",
@@ -563,14 +530,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.2687,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.3884,
-      "self_syntax_match": 0.4037,
-      "self_dataflow_match": 0.3377,
-      "self_ngram_match": 0.5188,
-      "self_weighted_ngram_match": 0.2932
+      "num_distinct_correct": 3
     },
     {
       "task_id": "2999",
@@ -671,14 +631,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.1468,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.3022,
-      "self_syntax_match": 0.2363,
-      "self_dataflow_match": 0.0,
-      "self_ngram_match": 0.6021,
-      "self_weighted_ngram_match": 0.3702
+      "num_distinct_correct": 4
     },
     {
       "task_id": "3047",
@@ -779,14 +732,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3188",
@@ -887,14 +833,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0084,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.1256,
-      "self_syntax_match": 0.0227,
-      "self_dataflow_match": 0.04,
-      "self_ngram_match": 0.2387,
-      "self_weighted_ngram_match": 0.201
+      "num_distinct_correct": 2
     },
     {
       "task_id": "3193",
@@ -995,14 +934,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0264,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.1819,
-      "self_syntax_match": 0.25,
-      "self_dataflow_match": 0.0,
-      "self_ngram_match": 0.2505,
-      "self_weighted_ngram_match": 0.2271
+      "num_distinct_correct": 2
     },
     {
       "task_id": "3225",
@@ -1103,14 +1035,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.1459,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.2517,
-      "self_syntax_match": 0.2225,
-      "self_dataflow_match": 0.2759,
-      "self_ngram_match": 0.259,
-      "self_weighted_ngram_match": 0.2492
+      "num_distinct_correct": 4
     },
     {
       "task_id": "3299",
@@ -1211,14 +1136,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.35,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.3843,
-      "self_syntax_match": 0.2717,
-      "self_dataflow_match": 0.3273,
-      "self_ngram_match": 0.5029,
-      "self_weighted_ngram_match": 0.4351
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3309",
@@ -1319,14 +1237,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 2,
-      "mean_pairwise_distance": 0.0101,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.1546,
-      "self_syntax_match": 0.0189,
-      "self_dataflow_match": 0.5152,
-      "self_ngram_match": 0.0843,
-      "self_weighted_ngram_match": 0.0
+      "num_distinct_correct": 2
     },
     {
       "task_id": "3317",
@@ -1427,14 +1338,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.39,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.4976,
-      "self_syntax_match": 0.3045,
-      "self_dataflow_match": 0.4823,
-      "self_ngram_match": 0.6407,
-      "self_weighted_ngram_match": 0.5631
+      "num_distinct_correct": 8
     },
     {
       "task_id": "3354",
@@ -1535,41 +1439,34 @@
         true,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.5356,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.4841,
-      "self_syntax_match": 0.2532,
-      "self_dataflow_match": 0.5863,
-      "self_ngram_match": 0.5806,
-      "self_weighted_ngram_match": 0.5164
+      "num_distinct_correct": 4
     },
     {
       "task_id": "3376",
-      "num_correct": 0,
+      "num_correct": 10,
       "pass_results": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
       ],
       "statuses": [
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout",
-        "Timeout"
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed",
+        "Passed"
       ],
       "n_tests_total": [
         27,
@@ -1584,16 +1481,16 @@
         27
       ],
       "n_tests_passed": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
+        27,
+        27,
+        27,
+        27,
+        27,
+        27,
+        27,
+        27,
+        27,
+        27
       ],
       "first_failing_idx": [
         null,
@@ -1643,14 +1540,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3396",
@@ -1751,14 +1641,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.2894,
-      "num_ast_clusters": 4,
-      "self_codebleu": 0.3547,
-      "self_syntax_match": 0.3008,
-      "self_dataflow_match": 0.459,
-      "self_ngram_match": 0.3791,
-      "self_weighted_ngram_match": 0.2799
+      "num_distinct_correct": 6
     },
     {
       "task_id": "3437",
@@ -1859,14 +1742,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.2993,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.347,
-      "self_syntax_match": 0.2061,
-      "self_dataflow_match": 0.2672,
-      "self_ngram_match": 0.4708,
-      "self_weighted_ngram_match": 0.4438
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3454",
@@ -1967,14 +1843,7 @@
         false,
         false
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3466",
@@ -2016,9 +1885,9 @@
         29
       ],
       "n_tests_passed": [
-        0,
-        0,
-        0,
+        3,
+        3,
+        3,
         29,
         29,
         29,
@@ -2028,9 +1897,9 @@
         29
       ],
       "first_failing_idx": [
-        null,
-        null,
-        null,
+        3,
+        3,
+        3,
         null,
         null,
         null,
@@ -2075,14 +1944,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.2186,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.4807,
-      "self_syntax_match": 0.2855,
-      "self_dataflow_match": 0.4115,
-      "self_ngram_match": 0.639,
-      "self_weighted_ngram_match": 0.5866
+      "num_distinct_correct": 5
     },
     {
       "task_id": "3471",
@@ -2183,14 +2045,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 3,
-      "mean_pairwise_distance": 0.4112,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.4574,
-      "self_syntax_match": 0.4581,
-      "self_dataflow_match": 0.3413,
-      "self_ngram_match": 0.5288,
-      "self_weighted_ngram_match": 0.5013
+      "num_distinct_correct": 3
     },
     {
       "task_id": "3476",
@@ -2291,14 +2146,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 5,
-      "mean_pairwise_distance": 0.188,
-      "num_ast_clusters": 2,
-      "self_codebleu": 0.4157,
-      "self_syntax_match": 0.3829,
-      "self_dataflow_match": 0.3454,
-      "self_ngram_match": 0.4999,
-      "self_weighted_ngram_match": 0.4347
+      "num_distinct_correct": 5
     },
     {
       "task_id": "3579",
@@ -2399,22 +2247,15 @@
         false,
         true
       ],
-      "num_distinct_correct": 4,
-      "mean_pairwise_distance": 0.0257,
-      "num_ast_clusters": 1,
-      "self_codebleu": 0.3222,
-      "self_syntax_match": 0.24,
-      "self_dataflow_match": 0.2724,
-      "self_ngram_match": 0.4019,
-      "self_weighted_ngram_match": 0.3746
+      "num_distinct_correct": 4
     },
     {
       "task_id": "3604",
-      "num_correct": 9,
+      "num_correct": 10,
       "pass_results": [
         true,
         true,
-        false,
+        true,
         true,
         true,
         true,
@@ -2426,7 +2267,7 @@
       "statuses": [
         "Passed",
         "Passed",
-        "Timeout",
+        "Passed",
         "Passed",
         "Passed",
         "Passed",
@@ -2450,7 +2291,7 @@
       "n_tests_passed": [
         43,
         43,
-        0,
+        43,
         43,
         43,
         43,
@@ -2507,14 +2348,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 9,
-      "mean_pairwise_distance": 0.4959,
-      "num_ast_clusters": 6,
-      "self_codebleu": 0.4402,
-      "self_syntax_match": 0.2427,
-      "self_dataflow_match": 0.4998,
-      "self_ngram_match": 0.5324,
-      "self_weighted_ngram_match": 0.4861
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3626",
@@ -2615,14 +2449,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 6,
-      "mean_pairwise_distance": 0.3798,
-      "num_ast_clusters": 5,
-      "self_codebleu": 0.438,
-      "self_syntax_match": 0.3514,
-      "self_dataflow_match": 0.3816,
-      "self_ngram_match": 0.5484,
-      "self_weighted_ngram_match": 0.4708
+      "num_distinct_correct": 6
     },
     {
       "task_id": "3631",
@@ -2671,9 +2498,9 @@
         0,
         0,
         0,
-        0,
-        0,
-        0
+        11,
+        11,
+        11
       ],
       "first_failing_idx": [
         null,
@@ -2683,9 +2510,9 @@
         null,
         null,
         null,
-        null,
-        null,
-        null
+        11,
+        11,
+        11
       ],
       "extracted_codes": [
         "\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function.\n\n        # Now, the code for the count_same_length function",
@@ -2723,14 +2550,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3646",
@@ -2831,14 +2651,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.4145,
-      "num_ast_clusters": 7,
-      "self_codebleu": 0.4766,
-      "self_syntax_match": 0.3128,
-      "self_dataflow_match": 0.3899,
-      "self_ngram_match": 0.6526,
-      "self_weighted_ngram_match": 0.5508
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3682",
@@ -2939,14 +2752,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 9,
-      "mean_pairwise_distance": 0.4857,
-      "num_ast_clusters": 6,
-      "self_codebleu": 0.5297,
-      "self_syntax_match": 0.4554,
-      "self_dataflow_match": 0.5575,
-      "self_ngram_match": 0.5679,
-      "self_weighted_ngram_match": 0.5378
+      "num_distinct_correct": 9
     },
     {
       "task_id": "3687",
@@ -3047,14 +2853,7 @@
         false,
         true
       ],
-      "num_distinct_correct": 0,
-      "mean_pairwise_distance": 0.0,
-      "num_ast_clusters": 0,
-      "self_codebleu": null,
-      "self_syntax_match": null,
-      "self_dataflow_match": null,
-      "self_ngram_match": null,
-      "self_weighted_ngram_match": null
+      "num_distinct_correct": 0
     },
     {
       "task_id": "3737",
@@ -3155,14 +2954,7 @@
         true,
         true
       ],
-      "num_distinct_correct": 10,
-      "mean_pairwise_distance": 0.4085,
-      "num_ast_clusters": 6,
-      "self_codebleu": 0.464,
-      "self_syntax_match": 0.2868,
-      "self_dataflow_match": 0.4724,
-      "self_ngram_match": 0.5649,
-      "self_weighted_ngram_match": 0.5319
+      "num_distinct_correct": 10
     },
     {
       "task_id": "3809",
@@ -3263,17 +3055,10 @@
         true,
         true
       ],
-      "num_distinct_correct": 8,
-      "mean_pairwise_distance": 0.294,
-      "num_ast_clusters": 3,
-      "self_codebleu": 0.3263,
-      "self_syntax_match": 0.2445,
-      "self_dataflow_match": 0.3877,
-      "self_ngram_match": 0.3571,
-      "self_weighted_ngram_match": 0.316
+      "num_distinct_correct": 8
     }
   ],
-  "timestamp": "2026-09-28T04:25:48.654428+00:00",
+  "timestamp": "2026-09-29T15:13:52.348708+00:00",
   "extraction_diagnostics": {
     "n_samples_total": 300,
     "n_records_skipped_no_problem": 0,
@@ -3289,16 +3074,16 @@
   },
   "execution_diagnostics": {
     "by_status": {
-      "Passed": 222,
+      "Passed": 233,
       "Failed": 32,
       "RuntimeError": 9,
-      "Timeout": 17,
+      "Timeout": 6,
       "SyntaxError": 0,
       "ParsingError": 20
     },
-    "pass_rate": 0.74,
+    "pass_rate": 0.7766666666666666,
     "first_failing_test_idx": {
-      "p50": 2,
+      "p50": 3,
       "p90": 17,
       "p99": 17,
       "max": 17
