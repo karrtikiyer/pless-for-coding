@@ -22,12 +22,12 @@ def parse_args():
         help="Dataset type (determines test program builder)",
     )
     parser.add_argument(
-        "--k", default="1,3,5,10",
-        help="Comma-separated k values for pass@k (default: 1,3,5,10)",
+        "--k", default="1,3,5,8,10",
+        help="Comma-separated k values for pass@k (default: 1,3,5,8,10)",
     )
     parser.add_argument(
-        "--t", default="0.1,0.3,0.5,0.7",
-        help="Comma-separated fractional t values for cover@t (default: 0.1,0.3,0.5,0.7)",
+        "--t", default="0.3,0.5,0.7",
+        help="Comma-separated fractional t values for cover@t (default: 0.3,0.5,0.7)",
     )
     parser.add_argument(
         "--timeout", type=float, default=None,
@@ -210,6 +210,24 @@ def main():
 
         if args.skip_diversity:
             print("Skipping diversity metrics (--skip-diversity).")
+
+        tokenizer = None
+        think_end_marker = None
+        if records and "samples_with_thinking" in records[0]:
+            from bench.eval.think_markers import resolve_think_end_marker
+
+            think_end_marker = resolve_think_end_marker(meta["model"])
+            if think_end_marker is None:
+                raise SystemExit(
+                    f"Records carry 'samples_with_thinking' but model "
+                    f"{meta['model']!r} has no entry in "
+                    f"THINK_END_MARKER_BY_MODEL_SUBSTR "
+                    f"(bench/eval/think_markers.py) -- add it."
+                )
+            print(f"Loading tokenizer for {meta['model']} (termination%/mean_token_size)...")
+            from transformers import AutoTokenizer
+            tokenizer = AutoTokenizer.from_pretrained(meta["model"])
+
         output = build_metrics_output(
             task_results,
             records,
@@ -222,6 +240,9 @@ def main():
             k_values=k_values,
             t_values=t_values,
             skip_diversity=args.skip_diversity,
+            tokenizer=tokenizer,
+            think_end_marker=think_end_marker,
+            execution_diagnostics=execution_diag,
         )
         if extraction_diag is not None:
             output["extraction_diagnostics"] = extraction_diag
@@ -242,6 +263,11 @@ def main():
     print(f"  pass@k: {output['pass_at_k']}")
     print(f"  cover@t: {output['cover_at_t']}")
     print(f"  cover@t (distinct): {output['cover_at_t_distinct']}")
+    if output["termination_pct"] is not None:
+        print(f"  termination%: {output['termination_pct']:.1f}%")
+        print(f"  mean_token_size: {output['mean_token_size']:.0f}")
+    if output["timeout_pct"] is not None:
+        print(f"  timeout%: {output['timeout_pct']:.1f}%")
     if output["structural_diversity"] is not None:
         print(f"  structural_diversity: {output['structural_diversity']}")
     else:

@@ -271,6 +271,49 @@ def add_self_codebleu_cached(task_results, records, metrics_path, full_metrics=N
     return True
 
 
+def compute_termination_and_tokens(
+    records: list[dict],
+    tokenizer,
+    think_end_marker: str,
+) -> tuple[float, float]:
+    """Aggregate termination% (samples that closed their think block before
+    the token cap) and mean token size, across all samples in all records.
+
+    ``records`` must carry ``samples_with_thinking`` (raw, pre-extraction
+    text) — falls back to ``samples`` for records without a thinking phase.
+    """
+    closed = 0
+    total = 0
+    token_counts: list[int] = []
+    for r in records:
+        swt = r.get("samples_with_thinking", r.get("samples", []))
+        for s in swt:
+            total += 1
+            if think_end_marker in s:
+                closed += 1
+            token_counts.append(len(tokenizer.encode(s)))
+    termination_pct = 100 * closed / total if total else 0.0
+    mean_token_size = sum(token_counts) / len(token_counts) if token_counts else 0.0
+    return termination_pct, mean_token_size
+
+
+def compute_timeout_pct(execution_diagnostics: dict | None) -> float | None:
+    """Fraction of samples whose execution outcome was ``Timeout``.
+
+    Reads the ``by_status`` breakdown already computed by
+    ``apps_executor.evaluate_all_apps``/``lcb_executor.evaluate_all_lcb``
+    (APPS/LiveCodeBench only — MBPP/HumanEval's generic executor doesn't
+    track per-sample failure reasons, so this is ``None`` for those).
+    """
+    if not execution_diagnostics:
+        return None
+    by_status = execution_diagnostics.get("by_status", {})
+    total = sum(by_status.values())
+    if not total:
+        return None
+    return 100 * by_status.get("Timeout", 0) / total
+
+
 def build_metrics_output(
     task_results: list[dict],
     records: list[dict],
@@ -284,6 +327,9 @@ def build_metrics_output(
     k_values: list[int],
     t_values: list[float],
     skip_diversity: bool = False,
+    tokenizer=None,
+    think_end_marker: str | None = None,
+    execution_diagnostics: dict | None = None,
 ) -> dict:
     """Aggregate all metrics into a single output dict.
 
@@ -294,6 +340,14 @@ def build_metrics_output(
     self-CodeBLEU computations are bypassed. The output dict will have
     ``structural_diversity = None`` and no ``self_*`` keys. Useful for
     quick pass@k-only verdicts on large cells.
+
+    ``tokenizer``/``think_end_marker`` are optional — pass both to populate
+    ``termination_pct``/``mean_token_size`` for reasoning-model runs (records
+    carrying a ``samples_with_thinking`` field). Omit for non-reasoning runs
+    (MBPP/HumanEval on non-reasoning models); both fields are then ``None``.
+    ``execution_diagnostics`` (from ``evaluate_all_apps``/``evaluate_all_lcb``)
+    populates ``timeout_pct`` when supplied; ``None`` for the generic MBPP/
+    HumanEval executor, which doesn't track per-sample failure reasons.
     """
     add_distinct_counts(task_results, records)
     if not skip_diversity:
@@ -313,6 +367,13 @@ def build_metrics_output(
         structural_diversity = compute_structural_diversity(task_results)
         codebleu_diversity = compute_self_codebleu_diversity(task_results)
 
+    termination_pct = mean_token_size = None
+    if tokenizer is not None and think_end_marker is not None:
+        termination_pct, mean_token_size = compute_termination_and_tokens(
+            records, tokenizer, think_end_marker
+        )
+    timeout_pct = compute_timeout_pct(execution_diagnostics)
+
     return {
         "model": model,
         "method": method,
@@ -327,6 +388,9 @@ def build_metrics_output(
         "cover_at_t_distinct": cover_at_t_distinct,
         "structural_diversity": structural_diversity,
         **codebleu_diversity,
+        "termination_pct": termination_pct,
+        "mean_token_size": mean_token_size,
+        "timeout_pct": timeout_pct,
         "per_task": task_results,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

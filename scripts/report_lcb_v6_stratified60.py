@@ -3,10 +3,11 @@ stratified-60 pless-variants-vs-baselines comparison (Qwen3-8B).
 
 Reuses ``bench.eval`` (via its CLI entrypoint, same pattern used all session
 for the APPS tables) for pass@k / solved task_ids — no custom scoring logic.
-Adds termination% (fraction of samples that closed ``</think>`` before the
-token cap) and mean token size (via the model's own tokenizer, not a char-
-length proxy) on top, then aggregates per-config across the two platform
-files and reports a stratified breakdown by platform and by difficulty.
+Adds termination% (fraction of samples that closed their think block before
+the token cap — marker is model-specific, see THINK_END_MARKER_BY_MODEL_SUBSTR)
+and mean token size (via the model's own tokenizer, not a char-length proxy)
+on top, then aggregates per-config across the two platform files and reports
+a stratified breakdown by platform and by difficulty.
 
 Usage::
 
@@ -50,6 +51,13 @@ RECIPE_BY_MODEL_SUBSTR = [
     ("qwen", "qwen_recipe"),
     ("ministral", "ministral_recipe"),
 ]
+# Think-close marker varies by model family (Qwen3/DeepSeek use "</think>",
+# Ministral uses "[/THINK]" — see bench/generator.py:_strip_think_content).
+# Same substring-match convention as RECIPE_BY_MODEL_SUBSTR above.
+THINK_END_MARKER_BY_MODEL_SUBSTR = [
+    ("qwen", "</think>"),
+    ("ministral", "[/THINK]"),
+]
 ALL_CONFIGS = COMMON_CONFIGS + [r for _, r in RECIPE_BY_MODEL_SUBSTR]
 PLATFORMS = ["atcoder", "leetcode"]
 
@@ -80,7 +88,18 @@ def _run_bench_eval(jsonl_path: Path) -> dict | None:
     return json.load(metrics_path.open())
 
 
-def _termination_and_tokens(jsonl_path: Path, tokenizer) -> dict[str, dict]:
+def _think_end_marker_for_model(model: str) -> str:
+    model_lower = model.lower()
+    for substr, marker in THINK_END_MARKER_BY_MODEL_SUBSTR:
+        if substr in model_lower:
+            return marker
+    raise ValueError(
+        f"No think-end-marker mapping for model {model!r} — add it to "
+        f"THINK_END_MARKER_BY_MODEL_SUBSTR."
+    )
+
+
+def _termination_and_tokens(jsonl_path: Path, tokenizer, think_end_marker: str) -> dict[str, dict]:
     """Per-task_id: {closed_frac, mean_tokens, n_samples}."""
     out = {}
     if not jsonl_path.exists():
@@ -90,7 +109,7 @@ def _termination_and_tokens(jsonl_path: Path, tokenizer) -> dict[str, dict]:
         swt = r.get("samples_with_thinking", r.get("samples", []))
         if not swt:
             continue
-        closed = sum("</think>" in s for s in swt)
+        closed = sum(think_end_marker in s for s in swt)
         token_counts = [len(tokenizer.encode(s)) for s in swt]
         out[str(r["task_id"])] = {
             "closed_frac": closed / len(swt),
@@ -112,6 +131,7 @@ def main() -> None:
     args = ap.parse_args()
     if args.configs is None:
         args.configs = _default_configs_for_model(args.model)
+    think_end_marker = _think_end_marker_for_model(args.model)
 
     from transformers import AutoTokenizer
     print(f"Loading tokenizer for {args.model} (CPU-only, no GPU needed)...")
@@ -140,7 +160,7 @@ def main() -> None:
                         continue
                     jsonl_path = candidates[0]
                     m = _run_bench_eval(jsonl_path)
-                    tm = _termination_and_tokens(jsonl_path, tokenizer)
+                    tm = _termination_and_tokens(jsonl_path, tokenizer, think_end_marker)
                     task_meta.update(tm)
                     if m:
                         for t in m.get("per_task", []):
