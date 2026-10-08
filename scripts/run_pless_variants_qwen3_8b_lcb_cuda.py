@@ -71,8 +71,17 @@ CONFIGS: list[tuple[str, str, float, float | None]] = [
     ("qwen_recipe",      "temp_standard",    0.6, None),
     ("pless_default",    "pless",            1.0, None),
     ("pless_effk",       "pless_effk",       1.0, None),
+    # Isolates effk's rank-cut-vs-threshold selection rule from its min-2
+    # floor (the missing 4th cell of the {threshold,rank-cut}x{floor,no-floor}
+    # factorial -- see bench/pless_variants_vllm.py:pless_effk_nofloor_mask_logits
+    # and the 2026-10-06 methodology review that found effk's floor-active set
+    # is a strict SUBSET of min2's, not a superset).
+    ("pless_effk_nofloor", "pless_effk_nofloor", 1.0, None),
+    ("pless_min2",       "pless_min2",       1.0, None),
     ("pless_topmass",    "pless_topmass",    1.0, None),
+    ("pless_topmass_nofloor", "pless_topmass_nofloor", 1.0, None),
     ("pless_gini",       "pless_gini",       1.0, None),
+    ("pless_gini_nofloor", "pless_gini_nofloor", 1.0, None),
     ("pless_top1half",   "pless_top1half",   1.0, None),
     # T1-only sweep: canonical pless with the pre-truncation temperature raised
     # above 1.0 to flatten the (often very peaked, RL-sharpened) distribution
@@ -84,6 +93,18 @@ CONFIGS: list[tuple[str, str, float, float | None]] = [
     ("pless_default_t2_0", "pless",          2.0, None),
     ("pless_default_t2_5", "pless",          2.5, None),
     ("pless_default_t3_0", "pless",          3.0, None),
+    # Standard nucleus (top-p only, top-k disabled, T=1.0) sweep — same
+    # comparison-baseline mechanism used for the APPS-252 G_k benchmark
+    # (confirmed against that run's actual output files: temp=1.0, top_k=0,
+    # top_p in {1.0,0.9,0.85,0.8,0.75,0.7}), extended here with an extra 0.95
+    # point per user request. p=1.0 reuses "temp_pure" (identical output).
+    ("top_p_1_0",  "temp_pure",   1.0, None),
+    ("top_p_0_95", "top_p_0_95",  1.0, None),
+    ("top_p_0_9",  "top_p_0_9",   1.0, None),
+    ("top_p_0_85", "top_p_0_85",  1.0, None),
+    ("top_p_0_8",  "top_p_0_8",   1.0, None),
+    ("top_p_0_75", "top_p_0_75",  1.0, None),
+    ("top_p_0_7",  "top_p_0_7",   1.0, None),
 ]
 CONFIG_NAMES = [c[0] for c in CONFIGS]
 
@@ -98,8 +119,14 @@ def _load_task_selection() -> dict[str, list[dict]]:
 
 
 def _output_path(out_root: Path, config_name: str, platform: str,
-                  temperature: float) -> Path:
-    return out_root / f"{config_name}_{platform}_think_t{temperature}.jsonl"
+                  temperature: float, enable_thinking: bool = True) -> Path:
+    # "nothink" discriminator is load-bearing, not cosmetic: without it, an
+    # enable_thinking=False run would silently resume/overwrite into the
+    # SAME filename as an existing enable_thinking=True run for this
+    # config+platform+temperature -- flagged by independent review
+    # (2026-10-08) as a real risk of corrupting already-collected data.
+    suffix = "think" if enable_thinking else "nothink"
+    return out_root / f"{config_name}_{platform}_{suffix}_t{temperature}.jsonl"
 
 
 def _run_config_on_platform(
@@ -107,9 +134,10 @@ def _run_config_on_platform(
     renyi_k: float | None, platform: str, problems: list, engine, tokenizer,
     n_samples: int, max_new_tokens: int, out_root: Path, model_id: str,
     seed: int | None, per_config_deadline: float, global_deadline: float,
+    enable_thinking: bool = True,
 ) -> Path:
     out_root.mkdir(parents=True, exist_ok=True)
-    out_path = _output_path(out_root, config_name, platform, temperature)
+    out_path = _output_path(out_root, config_name, platform, temperature, enable_thinking)
 
     done_ids: set[str] = set()
     if out_path.exists():
@@ -132,7 +160,7 @@ def _run_config_on_platform(
             break
         t0 = time.time()
         prompt_text, code_prefix = format_prompt_lcb_instruct(
-            problem, tokenizer, enable_thinking=True,
+            problem, tokenizer, enable_thinking=enable_thinking,
         )
         prompt_text = encode_prompt_for_vllm(
             prompt_text, getattr(engine, "_safe_tokenizer", None)
@@ -164,7 +192,7 @@ def _run_config_on_platform(
             "prompt_text": problem.question,
             "samples": samples, "samples_with_thinking": samples_with_think,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "enable_thinking": True,
+            "enable_thinking": enable_thinking,
         }
         with out_path.open("a") as fh:
             fh.write(json.dumps(record) + "\n")
@@ -192,7 +220,13 @@ def main() -> None:
     ap.add_argument("--budget-minutes", type=float, default=3000.0)
     ap.add_argument("--per-config-minutes", type=float, default=400.0)
     ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--no-thinking", action="store_true",
+                    help="Disable Qwen3's reasoning phase (enable_thinking=False) -- "
+                         "for the reasoning-vs-instruct ablation. Output files get a "
+                         "'nothink' discriminator so they never collide with existing "
+                         "enable_thinking=True data for the same config/platform/temp.")
     args = ap.parse_args()
+    enable_thinking = not args.no_thinking
 
     global_start = time.time()
     global_deadline = global_start + args.budget_minutes * 60.0
@@ -238,6 +272,7 @@ def main() -> None:
                 out_root=out_root, model_id=args.model, seed=args.seed,
                 per_config_deadline=per_config_deadline,
                 global_deadline=global_deadline,
+                enable_thinking=enable_thinking,
             )
             written.append(p)
 
