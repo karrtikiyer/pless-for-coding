@@ -183,8 +183,18 @@ def _build_argparser() -> argparse.ArgumentParser:
                         "so Qwen codes from Claude's outline rather than its own CoT). "
                         "Only valid with --prompt-format auto and no --paper-replica-model.")
     p.add_argument("--dtype", choices=["bfloat16", "float16"], default="bfloat16")
+    p.add_argument("--max-model-len", type=int, default=None,
+                   help="vLLM backend only. Caps the engine's max sequence "
+                        "length (prompt + generation). Omitted (default) lets "
+                        "vLLM use the model's native max, which can exceed "
+                        "available KV cache memory for long-context models "
+                        "(e.g. Ministral-3's 262144 needs 26GiB; pass e.g. "
+                        "37500 to fit a 16GB GPU).")
     p.add_argument("--attn-impl", choices=["sdpa", "eager"], default=None)
     p.add_argument("--enable-thinking", action="store_true")
+    p.add_argument("--seed", type=int, default=None,
+                   help="vLLM backend only (ignored for --backend hf). Omitted "
+                        "(default) preserves existing unseeded behavior.")
     # split-decoding knobs
     p.add_argument("--temp-think", type=float, default=None)
     p.add_argument("--temp-code", type=float, default=None)
@@ -344,7 +354,8 @@ def main():
         # Deferred import — only happens when --backend vllm is requested,
         # so the apps runner is still importable in the main .venv (no vLLM).
         from bench.generator_vllm import load_engine
-        engine = load_engine(args.model, dtype=args.dtype)
+        engine = load_engine(args.model, dtype=args.dtype,
+                              max_model_len=args.max_model_len)
         model = engine          # alias for downstream code that holds it
         # Prefer the safe tokenizer when vLLM's default mangles whitespace
         # (DeepSeek-R1-Distill / #45488) so prompt FORMATTING matches the HF
@@ -503,6 +514,7 @@ def main():
                         temperature=args.temperature, stop_strings=None,
                         top_p=args.top_p, top_k=args.top_k,
                         repetition_penalty=args.repetition_penalty,
+                        seed=args.seed,
                     )
                 elif args.method == "split":
                     raw_samples = generate_samples_split_vllm(
@@ -513,6 +525,7 @@ def main():
                         temperature_think=args.temp_think,
                         temperature_code=args.temp_code,
                         stop_strings=None,
+                        seed=args.seed,
                     )
                 else:
                     raw_samples = generate_samples_vllm(
@@ -525,6 +538,7 @@ def main():
                         loop_ngram_n=args.loop_ngram_n if args.force_think_on_loop else None,
                         loop_ngram_k=args.loop_ngram_k if args.force_think_on_loop else None,
                         loop_window=args.loop_window,
+                        seed=args.seed,
                     )
             elif args.method == "temp":
                 # generate_samples_standard handles chunking internally via

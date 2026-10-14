@@ -201,8 +201,30 @@ def _build_argparser() -> argparse.ArgumentParser:
     p.add_argument("--task-ids", type=int, nargs="+", default=None)
     p.add_argument("--task-ids-file", type=Path, default=None)
     p.add_argument("--enable-thinking", action="store_true")
+    p.add_argument("--treat-as-instruct", action="store_true",
+                   help="Force instruct-prompt formatting even when the model "
+                        "id does not contain 'Instruct' or 'Chat'. Mirrors "
+                        "bench.apps.runner's flag of the same name. Use for "
+                        "models like Ministral-3-3B-Reasoning that are "
+                        "chat-tuned but not named accordingly.")
     p.add_argument("--dtype", choices=["bfloat16", "float16"], default="bfloat16")
+    p.add_argument("--max-model-len", type=int, default=None,
+                   help="Caps the engine's max sequence length (prompt + "
+                        "generation). Mirrors bench.apps.runner's flag of the "
+                        "same name. Omitted (default) lets vLLM use the "
+                        "model's native max, which can exceed available KV "
+                        "cache memory for long-context models.")
     p.add_argument("--no-resume", action="store_true")
+    p.add_argument("--seed", type=int, default=None,
+                   help="Applied to every arm's SamplingParams. Omitted "
+                        "(default) preserves existing unseeded behavior.")
+    p.add_argument("--cache-stats-file", type=Path, default=None,
+                   help="Optional. When set, writes one JSON line per "
+                        "(problem_id, arm_name, num_cached_tokens) to this "
+                        "path -- real vLLM RequestOutput.num_cached_tokens "
+                        "via a spy on engine.generate, NOT inferred from "
+                        "loop position. Diagnostic only; omitted (default) "
+                        "is a complete no-op, zero behavior change.")
 
     # Arm specification.
     p.add_argument(
@@ -228,9 +250,11 @@ def main():
     parser = _build_argparser()
     args = parser.parse_args()
 
-    if not is_instruct_model(args.model):
+    if not is_instruct_model(args.model) and not args.treat_as_instruct:
         raise SystemExit(
-            f"Multi-arm runner expects an instruct model; got {args.model!r}."
+            f"Multi-arm runner expects an instruct model; got {args.model!r}. "
+            "Pass --treat-as-instruct if the model is chat-tuned but not "
+            "named accordingly."
         )
 
     arms: list[dict] = [_preset_arm_spec(name) for name in args.arms]
@@ -261,8 +285,27 @@ def main():
         generate_samples_vllm,
         load_engine,
     )
-    engine = load_engine(args.model, dtype=args.dtype, enable_prefix_caching=True)
+    engine = load_engine(args.model, dtype=args.dtype, enable_prefix_caching=True,
+                          max_model_len=args.max_model_len)
     tokenizer = getattr(engine, "_safe_tokenizer", None) or engine.get_tokenizer()
+
+    # Optional diagnostic: spy on engine.generate to capture each call's real
+    # RequestOutput.num_cached_tokens (same pattern as
+    # scripts/test_prefix_caching_determinism.py). Only active when
+    # --cache-stats-file is passed; otherwise engine.generate is untouched
+    # and captured_outputs/cache_stats_fh stay unused (zero behavior change).
+    captured_outputs: list = []
+    cache_stats_fh = None
+    if args.cache_stats_file is not None:
+        _real_generate = engine.generate
+
+        def _spying_generate(*a, **kw):
+            outs = _real_generate(*a, **kw)
+            captured_outputs.append(outs)
+            return outs
+
+        engine.generate = _spying_generate
+        cache_stats_fh = args.cache_stats_file.open("a")
 
     # Runtime assertion: verify prefix caching is actually on. In vLLM 0.21
     # this lives on cache_config (NOT model_config — that was removed/never
@@ -330,6 +373,7 @@ def main():
                 continue
 
             try:
+                _cache_stats_before = len(captured_outputs)
                 if arm["method"] == "temp":
                     raw_samples = generate_samples_standard_vllm(
                         engine=engine, tokenizer=tokenizer,
@@ -339,6 +383,7 @@ def main():
                         temperature=arm["temperature"], stop_strings=None,
                         top_p=arm["top_p"], top_k=arm["top_k"],
                         repetition_penalty=1.0,
+                        seed=args.seed,
                     )
                 else:
                     raw_samples = generate_samples_vllm(
@@ -350,7 +395,22 @@ def main():
                         temperature=arm["temperature"], stop_strings=None,
                         alpha=arm["alpha"], renyi_k=arm["renyi_k"],
                         loop_ngram_n=None, loop_ngram_k=None, loop_window=None,
+                        seed=args.seed,
                     )
+
+                if cache_stats_fh is not None:
+                    new_outputs = captured_outputs[_cache_stats_before:]
+                    assert len(new_outputs) == 1, (
+                        f"expected exactly one engine.generate() call per "
+                        f"(problem, arm), spy captured {len(new_outputs)}"
+                    )
+                    num_cached = getattr(new_outputs[0][0], "num_cached_tokens", None)
+                    cache_stats_fh.write(json.dumps({
+                        "problem_id": problem.problem_id,
+                        "arm_name": arm_name,
+                        "num_cached_tokens": num_cached,
+                    }) + "\n")
+                    cache_stats_fh.flush()
 
                 has_cot = args.enable_thinking
                 samples_with_think = [code_prefix + s for s in raw_samples]
@@ -392,6 +452,9 @@ def main():
                 pbar.update(1)
 
     pbar.close()
+    if cache_stats_fh is not None:
+        cache_stats_fh.close()
+        engine.generate = _real_generate  # restore, tidiness only (process exits next)
     print("\nDone. Per-arm JSONLs:")
     for arm in arms:
         print(f"  {arm['name']:<22} → {arm_out_paths[arm['name']]}")

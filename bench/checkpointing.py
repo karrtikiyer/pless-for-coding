@@ -1,3 +1,4 @@
+import fcntl
 import json
 from pathlib import Path
 
@@ -31,7 +32,20 @@ def load_completed_ids(path: Path) -> set:
 
 
 def append_result(path: Path, record: dict) -> None:
-    """Append a single JSON record to the JSONL file and flush."""
+    """Append a single JSON record to the JSONL file and flush.
+
+    Holds an exclusive flock for the duration of the write. Records can be
+    multi-MB (many generated samples per task), so a single os.write() is not
+    guaranteed to be one atomic syscall -- without this lock, two processes
+    appending to the same shared file (e.g. two full-dataset batches writing
+    disjoint task_ids into one output file) could interleave partial writes
+    and corrupt a line. No-op cost for the single-writer case (every other
+    caller of this function).
+    """
     with open(path, "a") as f:
-        f.write(json.dumps(record) + "\n")
-        f.flush()
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            f.write(json.dumps(record) + "\n")
+            f.flush()
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)

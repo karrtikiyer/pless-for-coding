@@ -718,6 +718,7 @@ def generate_samples_split_vllm(
     temperature_code: float,
     stop_strings: list[str] | None = None,
     think_end_token_id: int | None = None,  # default: resolve from the model tokenizer
+    seed: int | None = None,
 ) -> list[str]:
     """vLLM-backed split decoding. Same return type as the HF version.
 
@@ -744,7 +745,7 @@ def generate_samples_split_vllm(
     # ``load_engine(..., register_pless_logitsproc=True)`` (the default)
     # or by passing ``logits_processors=[processor_cls]`` to ``LLM()``.
     # Per-request activation happens via ``extra_args`` below.
-    sp = SamplingParams(
+    sp_kwargs = dict(
         n=n_samples,
         max_tokens=max_new_tokens,
         temperature=1.0,    # our LogitsProcessor handles temperature itself
@@ -761,6 +762,9 @@ def generate_samples_split_vllm(
             },
         },
     )
+    if seed is not None:
+        sp_kwargs["seed"] = int(seed)
+    sp = SamplingParams(**sp_kwargs)
 
     # Accept either a string prompt or a pre-tokenized list of ids (parity
     # with the HF backend, which supports both for old-Qwen direct tokenize).
@@ -900,6 +904,7 @@ def generate_samples_standard_vllm(
     top_p: float = 1.0,
     top_k: int = 0,
     repetition_penalty: float = 1.0,
+    seed: int | None = None,
 ) -> list[str]:
     """vLLM-backed standard temperature / top-p / top-k sampling. No custom processor.
 
@@ -907,7 +912,7 @@ def generate_samples_standard_vllm(
     """
     from vllm import SamplingParams
 
-    sp = SamplingParams(
+    sp_kwargs = dict(
         n=n_samples,
         max_tokens=max_new_tokens,
         temperature=temperature,
@@ -916,6 +921,9 @@ def generate_samples_standard_vllm(
         repetition_penalty=repetition_penalty,
         stop=stop_strings or None,
     )
+    if seed is not None:
+        sp_kwargs["seed"] = int(seed)
+    sp = SamplingParams(**sp_kwargs)
 
     if isinstance(prompt_text, list):
         from vllm import TokensPrompt
