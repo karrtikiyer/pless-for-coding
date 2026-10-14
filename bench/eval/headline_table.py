@@ -73,6 +73,30 @@ CANONICAL_COLUMNS = [
 # summaries generated with a dedicated, non---skip-diversity eval pass).
 TERMINAL_COLUMNS = [c for c in CANONICAL_COLUMNS if c not in ("struct_div", "cb_div")]
 
+# One-line definition per column -- single source of truth so any report
+# that renders CANONICAL_COLUMNS/TERMINAL_COLUMNS can also render a legend
+# without hand-typing descriptions (which would drift from the real
+# semantics the way the old hand-maintained progress_report.md did).
+COLUMN_DESCRIPTIONS: dict[str, str] = {
+    "N": "Number of tasks with data in this metrics file (60 = fully complete for this benchmark; <60 = partial/in-progress).",
+    "pass@1": "Probability at least 1 of 1 sampled solution is correct (unbiased estimator, Chen et al. 2021).",
+    "pass@3": "Probability at least 1 of 3 independent samples is correct.",
+    "pass@5": "Probability at least 1 of 5 independent samples is correct.",
+    "pass@8": "Probability at least 1 of 8 independent samples is correct.",
+    "pass@10": "Probability at least 1 of 10 independent samples is correct (= all samples drawn for this benchmark).",
+    "cov@0.3": "% of tasks where at least 30% of the 10 samples were correct.",
+    "cov@0.5": "% of tasks where at least 50% of the 10 samples were correct.",
+    "cov@0.7": "% of tasks where at least 70% of the 10 samples were correct.",
+    "cov@0.3d": "Same as cov@0.3, but counting only AST-fingerprint-DISTINCT correct solutions (penalizes a config that passes a task only by repeating the same solution).",
+    "cov@0.5d": "Same as cov@0.5, but counting only AST-fingerprint-distinct correct solutions.",
+    "cov@0.7d": "Same as cov@0.7, but counting only AST-fingerprint-distinct correct solutions.",
+    "term%": "% of samples that closed their think block (</think> or [/THINK], model-specific) before hitting the token cap, vs. getting cut off mid-reasoning.",
+    "mean_tok": "Mean token length of the raw generated sample (thinking + code combined).",
+    "timeout%": "% of samples whose generated code timed out during test execution. Tracked for APPS/LiveCodeBench only — shows as — for datasets without per-sample failure-reason tracking, e.g. MBPP/HumanEval.",
+    "struct_div": "Structural diversity: mean pairwise AST edit distance among a task's correct solutions (higher = more structurally different correct answers).",
+    "cb_div": "CodeBLEU-based diversity: mean pairwise CodeBLEU dissimilarity among a task's correct solutions.",
+}
+
 _MISSING = "—"
 _DISTINCT_T_SUFFIX = "d"  # "cov@0.3d" -> cover_at_t_distinct["0.3"]
 

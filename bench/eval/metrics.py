@@ -275,12 +275,24 @@ def compute_termination_and_tokens(
     records: list[dict],
     tokenizer,
     think_end_marker: str,
-) -> tuple[float, float]:
+    think_phase_expected: bool = True,
+) -> tuple[float | None, float]:
     """Aggregate termination% (samples that closed their think block before
     the token cap) and mean token size, across all samples in all records.
 
     ``records`` must carry ``samples_with_thinking`` (raw, pre-extraction
     text) — falls back to ``samples`` for records without a thinking phase.
+
+    ``think_phase_expected=False`` (set when every record's own
+    ``enable_thinking`` field is explicitly False) makes ``termination_pct``
+    return ``None`` instead of a deterministic, meaningless 0.0 -- confirmed
+    by independent review (2026-10-08) that e.g. Qwen3's chat template
+    injects the closing think marker into the *prompt* when thinking is
+    disabled, so the completion can structurally never contain it; a plain
+    marker-presence count would silently read as "always rambles, never
+    stops" when the true story is "no think phase by design." ``mean_token_size``
+    is unaffected -- total generated length is meaningful either way, so it's
+    still computed and returned normally.
     """
     closed = 0
     total = 0
@@ -292,7 +304,7 @@ def compute_termination_and_tokens(
             if think_end_marker in s:
                 closed += 1
             token_counts.append(len(tokenizer.encode(s)))
-    termination_pct = 100 * closed / total if total else 0.0
+    termination_pct = (100 * closed / total if total else 0.0) if think_phase_expected else None
     mean_token_size = sum(token_counts) / len(token_counts) if token_counts else 0.0
     return termination_pct, mean_token_size
 
@@ -369,8 +381,14 @@ def build_metrics_output(
 
     termination_pct = mean_token_size = None
     if tokenizer is not None and think_end_marker is not None:
+        # Default True preserves existing behavior for every record already
+        # on disk (all either lack this field -- MBPP/HumanEval, never hits
+        # this branch anyway since tokenizer/think_end_marker stay None for
+        # those -- or already have it set True). Only an explicit False
+        # (the enable_thinking=False ablation) changes anything.
+        think_phase_expected = bool(records[0].get("enable_thinking", True)) if records else True
         termination_pct, mean_token_size = compute_termination_and_tokens(
-            records, tokenizer, think_end_marker
+            records, tokenizer, think_end_marker, think_phase_expected=think_phase_expected
         )
     timeout_pct = compute_timeout_pct(execution_diagnostics)
 

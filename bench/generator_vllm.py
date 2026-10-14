@@ -50,22 +50,22 @@ if TYPE_CHECKING:  # pragma: no cover — type hints only, never executed at imp
 QWEN3_THINK_END_TOKEN_ID = 151668
 
 
-def resolve_think_end_id(tokenizer) -> int:
-    """Resolve a model's single-token ``</think>`` id from its own tokenizer.
+def resolve_think_end_id(tokenizer, marker: str = "</think>") -> int | None:
+    """Resolve a model's single-token think-end marker id from its own tokenizer.
 
     Model-aware replacement for the hardcoded ``QWEN3_THINK_END_TOKEN_ID``: the
     split / loop-force processor needs the integer id both to detect the
-    think→code boundary and to force ``</think>`` on a loop. Qwen3 → 151668,
-    DeepSeek-R1-Distill → 128014. Raises if ``</think>`` is not a single token —
-    the processor can only force one id, so a multi-token result is a hard error
-    (and on a smaller-vocab model the stale Qwen3 default would IndexError).
+    think→code boundary and to force the marker on a loop. Qwen3 → 151668,
+    DeepSeek-R1-Distill → 128014. Some model families (e.g. Ministral's
+    ``[THINK]``/``[/THINK]``) tokenize their marker to more than one id, which
+    the processor cannot force in a single decode step — returns ``None`` in
+    that case instead of raising, since our own usage never needs a valid id
+    unless genuine loop-force decoding is requested (see
+    ``generate_samples_vllm``, which raises loudly for that specific case).
     """
-    ids = tokenizer.encode("</think>", add_special_tokens=False)
+    ids = tokenizer.encode(marker, add_special_tokens=False)
     if len(ids) != 1:
-        raise AssertionError(
-            f"</think> must be a single token for split/loop-force decoding, "
-            f"got {ids} from tokenizer {tokenizer.__class__.__name__}"
-        )
+        return None
     return ids[0]
 
 
@@ -225,6 +225,21 @@ _SAMPLER_LOGIT_FN: dict[str, Callable[[torch.Tensor], torch.Tensor]] = {
     "pless_norm":    _pless_norm_mask_logits,
     "temp_pure":     lambda x: x,  # no truncation
     "temp_standard": lambda x: _top_p_top_k_mask_logits(x, top_p=0.95, top_k=20),
+    # Mistral's documented recommended recipe for Ministral-3 reasoning models:
+    # T=0.7 (supplied via the temperature param, not here), top_p=0.95, no
+    # top_k truncation (cross-verified against the model card's vLLM example).
+    "ministral_recipe": lambda x: _top_p_top_k_mask_logits(x, top_p=0.95, top_k=0),
+    # Standard nucleus (top-p only, top-k disabled, T=1.0) sweep — same
+    # mechanism as the APPS-252 G_k comparison baseline
+    # (run_top_p_sweep_full252_apps_qwen3.sh: "--method temp --top-p <p>
+    # --top-k 0 --temperature 1.0"), extended here with an extra 0.95 point.
+    # p=1.0 needs no separate entry — identical output to "temp_pure" above.
+    "top_p_0_95": lambda x: _top_p_top_k_mask_logits(x, top_p=0.95, top_k=0),
+    "top_p_0_9":  lambda x: _top_p_top_k_mask_logits(x, top_p=0.9,  top_k=0),
+    "top_p_0_85": lambda x: _top_p_top_k_mask_logits(x, top_p=0.85, top_k=0),
+    "top_p_0_8":  lambda x: _top_p_top_k_mask_logits(x, top_p=0.8,  top_k=0),
+    "top_p_0_75": lambda x: _top_p_top_k_mask_logits(x, top_p=0.75, top_k=0),
+    "top_p_0_7":  lambda x: _top_p_top_k_mask_logits(x, top_p=0.7,  top_k=0),
 }
 
 
@@ -460,10 +475,13 @@ def _build_pless_split_logits_processor_class() -> type:
                     # called every step but defensive.
                     continue
                 # Model-aware </think> id (set per-request in cfg; falls back to
-                # the Qwen3 default if a caller didn't supply one).
+                # the Qwen3 default if a caller didn't supply one). Explicitly
+                # None when the model's marker isn't a single token (see
+                # resolve_think_end_id) — boundary-detection/loop-force below are
+                # skipped in that case since neither can act on a multi-token id.
                 think_end_id = cfg.get("think_end_id", QWEN3_THINK_END_TOKEN_ID)
                 in_code = self._in_code.get(idx, False)
-                if not in_code:
+                if think_end_id is not None and not in_code:
                     # Cheap check: scan only the last token (the one just
                     # appended this step). If it was THINK_END, flip phase.
                     out = self._out.get(idx)
@@ -480,7 +498,7 @@ def _build_pless_split_logits_processor_class() -> type:
                 # fired (or fires now), force </think> this step — mask the row to
                 # the THINK_END token only. vLLM then samples </think>, and next
                 # step in_code flips to True (code phase). Opt-in via cfg["loop_n"].
-                if not in_code and "loop_n" in cfg:
+                if think_end_id is not None and not in_code and "loop_n" in cfg:
                     out = self._out.get(idx) or []
                     if not self._loop_fired.get(idx, False):
                         if len(out) % _LOOP_CHECK_EVERY == 0 and ngram_loop_fired(
@@ -542,6 +560,13 @@ def load_engine(
 
     Mirrors `bench/generator.py:load_model_and_tokenizer` in role — call
     once before the per-task loop, reuse for all generations.
+
+    NOTE: ``enable_prefix_caching`` is NOT set here — it's caller-controlled
+    via ``**kwargs`` (forwarded to ``vllm.LLM``). vLLM's own default applies
+    when unset. Callers that depend on cross-request KV reuse (e.g.
+    ``bench.apps.multi_arm_runner``) MUST pass ``enable_prefix_caching=True``
+    explicitly and verify it at runtime; relying on vLLM's default is fragile
+    across versions.
 
     vLLM 0.21+ requires custom LogitsProcessor *classes* to be registered
     at engine init via ``LLM(logits_processors=[...])`` rather than
@@ -654,16 +679,26 @@ def _extract_completion_texts(request_output, engine) -> list[str]:
     ]
 
 
-def _verify_think_end_id(engine) -> int:
-    """Resolve and return the loaded model's single-token ``</think>`` id from the
+def _verify_think_end_id(engine, marker: str = "</think>") -> int:
+    """Resolve and return the loaded model's single-token think-end id from the
     engine tokenizer (model-aware; see :func:`resolve_think_end_id`).
 
-    Replaces the old hardcoded-equality assertion: we still fail loudly if
-    ``</think>`` is not a single token (the processor can force only one id, and
-    would otherwise sample from the wrong phase forever), but the id itself comes
-    from whatever model is loaded — Qwen3 → 151668, DeepSeek → 128014.
+    Only caller is :func:`generate_samples_split_vllm`, which does genuine
+    split-phase sampling — unlike :func:`generate_samples_vllm`'s no-op usage,
+    a missing id here isn't safely ignorable, so this keeps the original
+    fail-loud contract explicit: still raises if the marker isn't a single
+    token (the processor can force only one id, and would otherwise sample
+    from the wrong phase forever), even though :func:`resolve_think_end_id`
+    itself now returns ``None`` rather than raising.
     """
-    return resolve_think_end_id(engine.get_tokenizer())
+    result = resolve_think_end_id(engine.get_tokenizer(), marker=marker)
+    if result is None:
+        raise AssertionError(
+            f"{marker!r} must be a single token for split/loop-force decoding, "
+            f"got a multi-token result from tokenizer "
+            f"{engine.get_tokenizer().__class__.__name__}"
+        )
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -756,6 +791,8 @@ def generate_samples_vllm(
     loop_ngram_k: int | None = None,
     loop_window: int = 400,
     seed: int | None = None,
+    think_end_marker: str = "</think>",
+    skip_special_tokens: bool = True,
 ) -> list[str]:
     """vLLM-backed single-sampler generation (no think/code split).
 
@@ -768,6 +805,21 @@ def generate_samples_vllm(
     When ``loop_ngram_n`` and ``loop_ngram_k`` are set, the processor runs live
     n-gram loop detection in the THINK phase and forces </think> on detection
     (the deployable "detect-rambling → end-thinking" intervention).
+
+    ``think_end_marker`` is the model's reasoning-close tag (default matches
+    Qwen3/DeepSeek's ``</think>``; pass e.g. ``"[/THINK]"`` for Ministral).
+
+    ``skip_special_tokens`` defaults to ``True`` (vLLM's own default, and a
+    no-op for Qwen3/DeepSeek — verified their ``<think>``/``</think>`` are
+    registered with ``special=False``). Ministral's ``[THINK]``/``[/THINK]``
+    ARE registered ``special=True``, so vLLM's default decode silently drops
+    them from the output text (confirmed empirically: raw generation showed
+    genuine chain-of-thought prose but never the literal bracket markers,
+    even at the very start of the completion) — pass ``False`` for that
+    model family to keep the markers in the decoded text.
+    Since ``sampler_think == sampler_code`` always below, boundary-detection
+    against this marker is a behavioral no-op for this function regardless of
+    whether it resolves — see :func:`resolve_think_end_id`.
     """
     from vllm import SamplingParams
 
@@ -795,10 +847,22 @@ def generate_samples_vllm(
         cfg["loop_n"] = int(loop_ngram_n)
         cfg["loop_k"] = int(loop_ngram_k)
         cfg["loop_window"] = int(loop_window)
-    # Model-aware </think> id for think→code detection + loop-force masking
-    # (Qwen3 → 151668, DeepSeek-R1-Distill → 128014). Without this the processor
-    # falls back to the Qwen3 default and IndexErrors on smaller-vocab models.
-    cfg["think_end_id"] = resolve_think_end_id(engine.get_tokenizer())
+    # Model-aware think-end id for think→code detection + loop-force masking
+    # (Qwen3 </think> -> 151668, DeepSeek-R1-Distill </think> -> 128014). When
+    # the model's marker isn't a single token (e.g. Ministral's [/THINK]),
+    # resolution returns None: harmless here since sampler_think == sampler_code
+    # makes boundary-detection a no-op, UNLESS loop-force was genuinely
+    # requested (loop_n already in cfg above) — that case still needs a real
+    # id to force, so fail loud instead of silently never breaking a loop.
+    think_end_id = resolve_think_end_id(engine.get_tokenizer(), marker=think_end_marker)
+    if think_end_id is None and "loop_n" in cfg:
+        raise ValueError(
+            f"loop-force decoding was requested (loop_ngram_n/loop_ngram_k) but "
+            f"{think_end_marker!r} is not a single token for this model's "
+            f"tokenizer — multi-token reasoning markers aren't supported for "
+            f"loop-force decoding yet."
+        )
+    cfg["think_end_id"] = think_end_id
     # NOTE: vLLM 0.21+ removed SamplingParams.logits_processors; the
     # processor class is pre-registered at engine load (see load_engine).
     sp_kwargs = dict(
@@ -809,6 +873,7 @@ def generate_samples_vllm(
         top_k=-1,
         stop=stop_strings or None,
         extra_args={processor_cls.EXTRA_ARG_KEY: cfg},
+        skip_special_tokens=skip_special_tokens,
     )
     if seed is not None:
         sp_kwargs["seed"] = int(seed)

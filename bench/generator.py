@@ -167,13 +167,15 @@ def _truncate_at_stop(text: str, stop_strings: list[str]) -> str:
     return text[:earliest]
 
 
-def _strip_think_content(text: str) -> str:
+def _strip_think_content(text: str, marker: str = "</think>") -> str:
     """Strip <think>...</think> block from decoded text.
 
-    Finds the last </think> tag and returns everything after it, stripped of
-    leading whitespace. If no </think> found, returns the original text.
+    Finds the last occurrence of ``marker`` (default matches Qwen3/DeepSeek's
+    ``</think>``; pass e.g. ``"[/THINK]"`` for Ministral) and returns
+    everything after it, stripped of leading whitespace. If not found,
+    returns the original text. Plain substring search — unlike the vLLM
+    think-end *token* id, a multi-character marker works identically here.
     """
-    marker = "</think>"
     idx = text.rfind(marker)
     if idx == -1:
         return text

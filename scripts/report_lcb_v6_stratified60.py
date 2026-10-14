@@ -54,6 +54,18 @@ COMMON_CONFIGS = [
 RECIPE_BY_MODEL_SUBSTR = [
     ("qwen", "qwen_recipe"),
     ("ministral", "ministral_recipe"),
+    ("deepseek", "deepseek_recipe"),
+]
+# Extra configs only some models' runner scripts define, on top of
+# COMMON_CONFIGS — kept separate (not merged into COMMON_CONFIGS) so other
+# models' --configs choices/defaults don't grow spurious entries they never
+# produce data for. Ministral's finer Rényi G_k grid
+# (scripts/run_pless_variants_ministral_3b_lcb_cuda.py CONFIGS) was added
+# after COMMON_CONFIGS was last hand-synced, which silently hid 6 configs
+# with real completed data from this report (found 2026-10-08).
+EXTRA_CONFIGS_BY_MODEL_SUBSTR = [
+    ("ministral", ["gk_0_025", "gk_0_0325", "gk_0_05", "gk_0_075", "gk_0_8", "gk_1_6"]),
+    ("deepseek", ["gk_0_4"]),
 ]
 # Think-close marker varies by model family (Qwen3/DeepSeek use "</think>",
 # Ministral uses "[/THINK]" — see bench/generator.py:_strip_think_content).
@@ -61,8 +73,13 @@ RECIPE_BY_MODEL_SUBSTR = [
 THINK_END_MARKER_BY_MODEL_SUBSTR = [
     ("qwen", "</think>"),
     ("ministral", "[/THINK]"),
+    ("deepseek", "</think>"),
 ]
-ALL_CONFIGS = COMMON_CONFIGS + [r for _, r in RECIPE_BY_MODEL_SUBSTR]
+ALL_CONFIGS = (
+    COMMON_CONFIGS
+    + [r for _, r in RECIPE_BY_MODEL_SUBSTR]
+    + [c for _, extra in EXTRA_CONFIGS_BY_MODEL_SUBSTR for c in extra]
+)
 PLATFORMS = ["atcoder", "leetcode"]
 
 
@@ -70,7 +87,11 @@ def _default_configs_for_model(model: str) -> list[str]:
     model_lower = model.lower()
     for substr, recipe in RECIPE_BY_MODEL_SUBSTR:
         if substr in model_lower:
-            return COMMON_CONFIGS + [recipe]
+            configs = COMMON_CONFIGS + [recipe]
+            for extra_substr, extra in EXTRA_CONFIGS_BY_MODEL_SUBSTR:
+                if extra_substr in model_lower:
+                    configs = configs + extra
+            return configs
     raise ValueError(
         f"No recipe-config mapping for model {model!r} — add it to RECIPE_BY_MODEL_SUBSTR."
     )
@@ -290,6 +311,11 @@ def main() -> None:
                           "--no-thinking flag. Independent review (2026-10-08) found the "
                           "discovery glob was 'think'-only, so nothink data would silently "
                           "show as pending/no-data rather than actually being reported.")
+    ap.add_argument("--full-dataset", action="store_true",
+                     help="Report on the full LCB v6 dataset (1046 tasks, "
+                          "LCB_v6_full1046 output dir) instead of the 60-task "
+                          "stratified subset -- matches the --full-dataset flag "
+                          "added to the generation scripts.")
     args = ap.parse_args()
     if args.configs is None:
         args.configs = _default_configs_for_model(args.model)
@@ -300,7 +326,11 @@ def main() -> None:
     tokenizer = AutoTokenizer.from_pretrained(args.model)
 
     model_slug = args.model.replace("/", "--")
-    out_root = REPO / OUT_ROOT_TEMPLATE.format(model_slug=model_slug)
+    out_root_template = (
+        "results/pless_variants_cuda/{model_slug}/LCB_v6_full1046"
+        if args.full_dataset else OUT_ROOT_TEMPLATE
+    )
+    out_root = REPO / out_root_template.format(model_slug=model_slug)
 
     from bench.eval.headline_table import COLUMN_DESCRIPTIONS, TERMINAL_COLUMNS, headline_table
     from bench.eval.metrics import compute_cover_at_t, compute_pass_at_k
@@ -438,14 +468,17 @@ def main() -> None:
         # glob fix addresses: without it, a --no-thinking run would silently
         # overwrite the normal reasoning-mode report (review finding, 2026-10-08).
         out_suffix = "_nothink" if args.no_thinking else ""
-        out_json = out_root / "analysis" / f"lcb_v6_stratified60_report{out_suffix}.json"
+        report_stem = "lcb_v6_full1046_report" if args.full_dataset else "lcb_v6_stratified60_report"
+        out_json = out_root / "analysis" / f"{report_stem}{out_suffix}.json"
         out_json.parent.mkdir(parents=True, exist_ok=True)
         json.dump(all_rows, out_json.open("w"), indent=2, default=str)
         print(f"\nWrote {out_json}")
         if failed_configs:
             print(f"WARNING: {len(failed_configs)} config(s) failed eval and were skipped: {failed_configs}")
 
-        print(f"\n{args.model} -- LCB v6 stratified-60 (canonical columns; N=60 means both "
+        dataset_label = "LCB v6 full-1046" if args.full_dataset else "LCB v6 stratified-60"
+        n_total_label = "1046" if args.full_dataset else "60"
+        print(f"\n{args.model} -- {dataset_label} (canonical columns; N={n_total_label} means both "
               f"platforms fully done)")
         print(leaderboard_md)
         if pending_configs:
@@ -510,21 +543,32 @@ def main() -> None:
         # impossible to go stale the way a hand-edited doc did (see
         # docs/theory/todos.md A65's staleness incident). Same format for
         # every model; only the title/model line differs.
+        report_title = "LCB v6 Full-1046" if args.full_dataset else "LCB v6 Stratified-60"
+        dataset_desc = (
+            "Dataset: LiveCodeBench v6, full 1046 problems (602 AtCoder + 444 LeetCode, "
+            "CodeForces's 9 excluded -- not wired into --platforms). n=10 samples/task, "
+            "seed=42 (vendor-recipe configs use their own temperature; all others T=1.0). "
+            "Per-run token cap varies by model/config -- see the generation script's own "
+            "--max-new-tokens for the actual value used, not hardcoded here."
+            if args.full_dataset else
+            "Dataset: LiveCodeBench v6, 60 problems stratified 10/10/10 (easy/medium/hard) "
+            "across AtCoder + LeetCode. n=10 samples/task, cap=25,000 tokens, seed=42 "
+            "(vendor-recipe configs use their own temperature; all others T=1.0)."
+        )
+        regen_flag = " --full-dataset" if args.full_dataset else ""
         report_md = [
-            f"# LCB v6 Stratified-60 — Progress Report ({args.model})",
+            f"# {report_title} — Progress Report ({args.model})",
             "",
             "**Auto-generated by `scripts/report_lcb_v6_stratified60.py` — do not hand-edit.** "
             "Regenerate with the same command shown below; this file and "
-            "`analysis/lcb_v6_stratified60_report.json` are always in sync (same run, same data).",
+            f"`analysis/{report_stem}.json` are always in sync (same run, same data).",
             "",
             f"Generated: {datetime.now(timezone.utc).isoformat()}",
             "",
-            "Dataset: LiveCodeBench v6, 60 problems stratified 10/10/10 (easy/medium/hard) "
-            "across AtCoder + LeetCode. n=10 samples/task, cap=25,000 tokens, seed=42 "
-            "(vendor-recipe configs use their own temperature; all others T=1.0).",
+            dataset_desc,
             "",
             f"Regenerate: `uv run python scripts/report_lcb_v6_stratified60.py --model {args.model}"
-            f"{' --no-thinking' if args.no_thinking else ''}`",
+            f"{regen_flag}{' --no-thinking' if args.no_thinking else ''}`",
             "",
             "## Leaderboard (sorted by pass@1, descending)",
             "",
