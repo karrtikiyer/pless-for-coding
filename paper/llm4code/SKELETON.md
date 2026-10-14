@@ -80,8 +80,7 @@ Every claim listed under **Evidence:** is anchored to a specific file the paper 
 **Setup**:
 - Same reasoning models, same benchmark, same sampling config.
 - Under test: `pless_renyi` (implementation of Tan et al. Appendix B.5) at multiple k values.
-- Qwen3-8B k-sweep: {0.05, 0.1, 0.2, 0.25, 0.3, 0.35, 0.4, 0.8, 1.6}
-- DeepSeek k-sweep: {0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.8, 1.6}
+- k-sweep (both models): {0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.8, 1.6}
 - Baseline (α=2 collision entropy): matches p-less by construction.
 
 **Result 5A — best-k per model**:

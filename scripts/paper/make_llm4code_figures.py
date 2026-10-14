@@ -26,7 +26,7 @@ FIG_DIR_PAPER = REPO_ROOT.parent / "pless-for-coding-paper" / "figures"
 
 # k-sweeps per model. Baseline (α=2) plotted as a dashed horizontal line.
 # Values must be sorted; matplotlib plots them in order.
-QWEN3_KS = [0.05, 0.1, 0.2, 0.25, 0.3, 0.35, 0.4, 0.8, 1.6]
+QWEN3_KS = [0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.8, 1.6]
 DEEPSEEK_KS = [0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.8, 1.6]
 
 RENYI_DIR = {
