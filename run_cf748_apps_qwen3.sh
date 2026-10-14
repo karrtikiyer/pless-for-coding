@@ -18,9 +18,17 @@
 # Usage:
 #   MAX_PROBLEMS=5 N_SAMPLES=3 ARMS="pless renyi_k0.1" GPUS=0,1 ./run_cf748_apps_qwen3.sh   # smoke
 #   GPUS=0,1 ./run_cf748_apps_qwen3.sh                                                       # full
+#   MULTI_ARM=1 GPUS=0 ./run_cf748_apps_qwen3.sh                                             # one process, shared prefix cache (opt-in)
 # Env: MODEL, SOURCE, DIFFICULTY, RESULTS_DIR, N_SAMPLES(10), MAX_TOKENS(32768),
 #   MAX_PROBLEMS(unset=full 748 via TASK_IDS_FILE), TASK_IDS_FILE, VLLM_VENV, WORKERS(32),
-#   TOKENIZER, GPUS, ARMS.
+#   TOKENIZER, GPUS, ARMS, MULTI_ARM(0).
+#
+# MULTI_ARM=1 opt-in: all arms run in ONE Python process with ONE vLLM engine so
+# vLLM's prefix cache is reused across arms sharing the same prompt. ~10-20%
+# compute savings on 16-arm sweeps (eliminates per-arm warmup + redundant prefill).
+# Pins to the FIRST GPU in $GPUS; multi-GPU parallelism not used in this mode.
+# JSONL layout, eval, and cot_efficiency report are UNCHANGED — downstream tools
+# don't distinguish MULTI_ARM output from single-arm output.
 
 set -euo pipefail
 
@@ -95,7 +103,31 @@ echo " Qwen3-8B CF-interview 748  model=$MODEL  cap=$MAX_TOKENS  arms=${#ARMS_AR
 echo "   subset=$TASK_IDS_FILE  ${MAX_PROBLEMS:+PILOT: first $MAX_PROBLEMS of subset, n=$N_SAMPLES}"
 echo "=================================================================="
 
-if [ -n "${GPUS:-}" ]; then
+if [ "${MULTI_ARM:-0}" = "1" ]; then
+  # ---------- MULTI_ARM path (opt-in) ----------
+  # One Python process, one vLLM engine, all arms share the prefix cache.
+  # Pins to the FIRST GPU in $GPUS if set, else vLLM's default device.
+  # Behaviour outside the generation step (eval + cot_efficiency below) is
+  # unchanged — JSONLs land at the same per-arm paths single-arm would use.
+  if [ -n "${GPUS:-}" ]; then
+    IFS=',' read -ra GPULIST <<< "$GPUS"
+    if [ "${#GPULIST[@]}" -gt 1 ]; then
+      echo "MULTI_ARM uses a single GPU for all arms (shared engine); using GPU ${GPULIST[0]}, ignoring the rest: ${GPULIST[*]:1}" >&2
+    fi
+    export CUDA_VISIBLE_DEVICES="${GPULIST[0]}"
+  fi
+  echo "=== MULTI_ARM: single process, ${#ARMS_ARR[@]} arms via shared vLLM engine ==="
+  PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}" \
+  "$VLLM_VENV/bin/python" -m bench.apps.multi_arm_runner \
+    --model "$MODEL" --backend vllm \
+    --source "$SOURCE" --difficulty "$DIFFICULTY" \
+    --task-ids-file "$TASK_IDS_FILE" \
+    --enable-thinking \
+    --n-samples "$N_SAMPLES" --max-new-tokens "$MAX_TOKENS" \
+    ${MAX_PROBLEMS:+--max-problems "$MAX_PROBLEMS"} \
+    --results-dir "$RESULTS_DIR" \
+    --arms "${ARMS_ARR[@]}"
+elif [ -n "${GPUS:-}" ]; then
   IFS=',' read -ra GPULIST <<< "$GPUS"; ngpu=${#GPULIST[@]}
   echo "Parallel: ${#ARMS_ARR[@]} arms across $ngpu GPU(s) [$GPUS]"
   pids=()
