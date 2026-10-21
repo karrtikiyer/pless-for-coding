@@ -155,6 +155,8 @@ CONFIGS: list[tuple[str, str, float, float | None]] = [
     ("gk_0_0325",        "pless_renyi",      1.0, 0.0325),
     ("gk_0_05",          "pless_renyi",      1.0, 0.05),
     ("gk_0_075",         "pless_renyi",      1.0, 0.075),
+    ("gk_0_2",           "pless_renyi",      1.0, 0.2),
+    ("gk_0_4",           "pless_renyi",      1.0, 0.4),
     ("gk_0_8",           "pless_renyi",      1.0, 0.8),
     ("gk_1_6",           "pless_renyi",      1.0, 1.6),
     ("ministral_recipe", "ministral_recipe", 0.7, None),
