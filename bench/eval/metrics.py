@@ -271,6 +271,58 @@ def add_self_codebleu_cached(task_results, records, metrics_path, full_metrics=N
     return True
 
 
+def add_self_codebleu_from_prior_output(task_results, records, prior_per_task):
+    """``add_self_codebleu`` that reuses per-task values from a prior run's
+    output JSON instead of writing one itself.
+
+    Unlike ``add_self_codebleu_cached`` (which owns the metrics file and
+    writes back into it mid-computation — built for callers like
+    ``build_decoder_comparison_table.py`` that read an already-written
+    metrics file), ``bench.eval``'s own CLI doesn't have a metrics file to
+    read from on a task's *first* run — it assembles and writes the full
+    output dict only at the very end of ``main()``. So this function just
+    merges cached ``self_*`` fields (keyed by ``task_id``) from a
+    previously-loaded output dict's ``per_task`` list, and computes
+    ``add_self_codebleu`` only for the tasks missing from that cache. The
+    CLI's normal end-of-run write is what makes the *next* run's cache hit —
+    no separate persistence step needed here.
+
+    ``prior_per_task``: the ``per_task`` list from a previously written
+    metrics JSON for this same results file (``None`` or ``[]`` if there is
+    no prior output, e.g. first run — every task is computed fresh then).
+
+    Cache entries with ``self_codebleu is None`` (the <2-correct-samples
+    case — see ``add_self_codebleu``) are deliberately NOT treated as hits:
+    that recomputation is O(1) (no ``calc_codebleu`` calls), and a task
+    whose ``num_correct`` has since crossed the >=2 threshold (e.g. a
+    resume/retry regenerated its samples) must get a real value rather than
+    a stale ``None`` frozen in forever — a cached ``None`` is
+    indistinguishable from "genuinely still <2 correct" by key presence
+    alone, so trusting it would silently and permanently drop the task from
+    ``compute_self_codebleu_diversity``'s aggregate.
+    """
+    prior_by_id = {
+        t["task_id"]: t
+        for t in (prior_per_task or [])
+        if t.get("self_codebleu") is not None
+    }
+
+    to_compute = []
+    for result in task_results:
+        prior = prior_by_id.get(result["task_id"])
+        if prior is not None:
+            for key in (
+                "self_codebleu", "self_syntax_match", "self_dataflow_match",
+                "self_ngram_match", "self_weighted_ngram_match",
+            ):
+                result[key] = prior.get(key)
+        else:
+            to_compute.append(result)
+
+    if to_compute:
+        add_self_codebleu(to_compute, records)
+
+
 def compute_termination_and_tokens(
     records: list[dict],
     tokenizer,
@@ -339,6 +391,8 @@ def build_metrics_output(
     k_values: list[int],
     t_values: list[float],
     skip_diversity: bool = False,
+    skip_structural_diversity: bool = False,
+    prior_per_task: list[dict] | None = None,
     tokenizer=None,
     think_end_marker: str | None = None,
     execution_diagnostics: dict | None = None,
@@ -348,10 +402,26 @@ def build_metrics_output(
     Expects task_results from evaluate_all() and the original records.
     Mutates task_results in-place (adds fingerprint/diversity fields).
 
-    When ``skip_diversity=True``, the expensive AST-fingerprint and
-    self-CodeBLEU computations are bypassed. The output dict will have
-    ``structural_diversity = None`` and no ``self_*`` keys. Useful for
-    quick pass@k-only verdicts on large cells.
+    When ``skip_diversity=True``, both the AST-fingerprint/zss structural-
+    diversity and self-CodeBLEU computations are bypassed. The output dict
+    will have ``structural_diversity = None`` and no ``self_*`` keys. Useful
+    for quick pass@k-only verdicts on large cells.
+
+    When ``skip_structural_diversity=True`` (and ``skip_diversity=False``),
+    only the zss pairwise AST edit-distance is bypassed; self-CodeBLEU is
+    still computed. Use this when zss's cost is prohibitive: measured
+    directly, ``zss.simple_distance`` costs ~1s per pairwise comparison
+    regardless of tree size (confirmed on real LCB/CF samples with ASTs as
+    small as ~190 nodes), while ``calc_codebleu`` costs ~3ms per call --
+    three orders of magnitude cheaper. Ignored if ``skip_diversity=True``.
+
+    ``prior_per_task``: the ``per_task`` list from a previously written
+    metrics JSON for this exact results file, if one exists (``None`` on a
+    first run). When supplied and self-CodeBLEU is being computed, cached
+    ``self_*`` fields are reused per ``task_id`` instead of recomputed (see
+    ``add_self_codebleu_from_prior_output``) -- codebleu is cheap enough
+    that this is a minor optimization for CLI re-runs, not a correctness
+    requirement.
 
     ``tokenizer``/``think_end_marker`` are optional — pass both to populate
     ``termination_pct``/``mean_token_size`` for reasoning-model runs (records
@@ -361,10 +431,17 @@ def build_metrics_output(
     populates ``timeout_pct`` when supplied; ``None`` for the generic MBPP/
     HumanEval executor, which doesn't track per-sample failure reasons.
     """
+    compute_structural = not skip_diversity and not skip_structural_diversity
+    compute_codebleu = not skip_diversity
+
     add_distinct_counts(task_results, records)
-    if not skip_diversity:
+    if compute_structural:
         add_structural_diversity(task_results, records)
-        add_self_codebleu(task_results, records)
+    if compute_codebleu:
+        if prior_per_task:
+            add_self_codebleu_from_prior_output(task_results, records, prior_per_task)
+        else:
+            add_self_codebleu(task_results, records)
 
     num_samples_per_task = len(records[0]["samples"]) if records else 0
 
@@ -372,12 +449,12 @@ def build_metrics_output(
     cover_at_t, cover_at_t_distinct = compute_cover_at_t(
         task_results, t_values, num_samples_per_task
     )
-    if skip_diversity:
-        structural_diversity = None
-        codebleu_diversity: dict = {}
-    else:
-        structural_diversity = compute_structural_diversity(task_results)
-        codebleu_diversity = compute_self_codebleu_diversity(task_results)
+    structural_diversity = (
+        compute_structural_diversity(task_results) if compute_structural else None
+    )
+    codebleu_diversity = (
+        compute_self_codebleu_diversity(task_results) if compute_codebleu else {}
+    )
 
     termination_pct = mean_token_size = None
     if tokenizer is not None and think_end_marker is not None:

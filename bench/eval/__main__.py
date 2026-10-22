@@ -52,6 +52,27 @@ def parse_args():
              "only need pass@k for a quick verdict. The output JSON will "
              "have those fields set to null. Default: False (compute all).",
     )
+    parser.add_argument(
+        "--skip-structural-diversity", action="store_true",
+        help="Skip only structural_diversity (AST fingerprint + zss tree "
+             "edit distance); self_codebleu is still computed. zss's "
+             "pairwise edit distance measured at ~1s/comparison regardless "
+             "of tree size, vs ~3ms/comparison for codebleu -- use this to "
+             "get cb_div without paying zss's cost. Ignored if "
+             "--skip-diversity is also passed. Default: False.",
+    )
+    parser.add_argument(
+        "--use-codebleu-cache", action="store_true",
+        help="Reuse self_codebleu values from this results file's own prior "
+             "output JSON (if --output/the auto-inferred path already "
+             "exists) keyed by task_id, instead of recomputing them. Only "
+             "tasks missing from the prior output are computed fresh. "
+             "Opt-in, since it trusts the prior output to still be valid "
+             "for this file's current samples -- pass this when re-running "
+             "eval on a results file whose samples haven't changed since "
+             "the prior run. No effect when --skip-diversity is passed "
+             "(self_codebleu isn't computed at all then). Default: False.",
+    )
     args = parser.parse_args()
     if args.timeout is None:
         args.timeout = 6.0 if args.dataset == "livecodebench" else 5.0
@@ -104,6 +125,23 @@ def main():
     print(f"Loading results from {args.results_file}")
     records = load_results(args.results_file)
     print(f"Loaded {len(records)} tasks")
+
+    # Output path is a pure function of --output/--results-file -- compute it
+    # up front so --use-codebleu-cache can read this file's own prior output
+    # (if any) before metrics are computed, not just at write time.
+    output_path = args.output or infer_output_path(args.results_file)
+
+    prior_per_task = None
+    if args.use_codebleu_cache and not args.skip_diversity and output_path.exists():
+        try:
+            with open(output_path) as f:
+                prior_output = json.load(f)
+            prior_per_task = prior_output.get("per_task")
+            print(f"Loaded prior output from {output_path} for --use-codebleu-cache "
+                  f"({len(prior_per_task or [])} cached task entries)")
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"WARNING: --use-codebleu-cache couldn't read prior output "
+                  f"{output_path} ({e}); computing self_codebleu fresh for all tasks.")
 
     # Evaluate + diversity are both CPU-heavy; serialize against any other
     # concurrent CPU-heavy eval/diversity job on this machine (see
@@ -204,12 +242,16 @@ def main():
             task_results = evaluate_all(records, args.dataset, args.timeout, args.workers)
 
         # Compute all metrics
-        if not args.skip_diversity:
+        compute_structural = not args.skip_diversity and not args.skip_structural_diversity
+        if compute_structural:
             print("Computing AST fingerprints and structural diversity...")
         meta = infer_metadata(args.results_file, records[0])
 
         if args.skip_diversity:
             print("Skipping diversity metrics (--skip-diversity).")
+        elif args.skip_structural_diversity:
+            print("Skipping structural_diversity only (--skip-structural-diversity); "
+                  "self_codebleu still computed.")
 
         tokenizer = None
         think_end_marker = None
@@ -240,6 +282,8 @@ def main():
             k_values=k_values,
             t_values=t_values,
             skip_diversity=args.skip_diversity,
+            skip_structural_diversity=args.skip_structural_diversity,
+            prior_per_task=prior_per_task,
             tokenizer=tokenizer,
             think_end_marker=think_end_marker,
             execution_diagnostics=execution_diag,
@@ -251,7 +295,6 @@ def main():
 
     # Write output (outside the lock -- disk I/O of the result is not the
     # CPU-heavy part, no need to hold the lock for it)
-    output_path = args.output or infer_output_path(args.results_file)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as f:
         json.dump(output, f, indent=2)

@@ -18,11 +18,21 @@ The canonical columns (in display order) are:
   struct_div                             — AST-edit-distance structural diversity
   cb_div                                 — CodeBLEU mean pairwise diversity
 
-``struct_div``/``cb_div`` are CPU-heavy (pairwise AST edit distance / self-
-CodeBLEU) and require a separate, non---skip-diversity eval pass — reserve
-them for documentation (markdown summaries), not routine terminal reports.
-``TERMINAL_COLUMNS`` (= ``CANONICAL_COLUMNS`` minus those two) is the set to
-use for terminal/CLI reporting.
+``struct_div``/``cb_div`` are CPU-heavy and require a non-``--skip-diversity``
+eval pass — reserve them for documentation (markdown summaries), not routine
+terminal reports. ``TERMINAL_COLUMNS`` (= ``CANONICAL_COLUMNS`` minus those
+two) is the set to use for terminal/CLI reporting.
+
+The two columns are NOT equally expensive, and as of the
+``--skip-structural-diversity`` flag (``bench.eval``'s CLI) they no longer
+have to be computed together: measured directly, ``zss.simple_distance``
+(``struct_div``'s all-pairs AST edit distance) costs ~1s per pairwise
+comparison regardless of tree size, while ``calc_codebleu`` (``cb_div``)
+costs ~3ms per call — ~300x cheaper. Passing ``--skip-structural-diversity``
+gets ``cb_div`` without paying ``struct_div``'s cost; the resulting metrics
+JSON has ``structural_diversity: null`` with populated ``self_codebleu``
+fields, a combination this module already handles field-independently (see
+``_div`` usage below).
 
 Reads metrics JSONs written by `bench.eval.__main__` (which dumps
 ``pass_at_k`` / ``cover_at_t`` / ``cover_at_t_distinct`` / ``termination_pct``
