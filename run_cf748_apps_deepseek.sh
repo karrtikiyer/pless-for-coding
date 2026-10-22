@@ -3,7 +3,7 @@
 # 748-problem subset.
 #
 # MIRRORS run_cf748_apps_qwen3.sh, retargeted to DeepSeek. Runs the full Paper-B Table-1
-# config set + top-p sweep (22 arms) on the seeded-random 748-of-2386 CodeForces-interview
+# config set + top-p sweep (16 arms by default) on the seeded-random 748-of-2386 CodeForces-interview
 # subset (scripts/select_cf_subset.py -> data/cf_interview_748_ids.txt, seed 20260902).
 # BYTE-IDENTICAL generation settings to the 252 AtCoder runs; only source, subset, and results
 # dir differ. DeepSeek's #45488 safe-tokenizer fix is auto-applied on the vLLM path.
@@ -17,6 +17,14 @@
 # Usage:
 #   MAX_PROBLEMS=5 N_SAMPLES=3 ARMS="pless renyi_k0.4" GPUS=0,1 ./run_cf748_apps_deepseek.sh   # smoke
 #   GPUS=0,1 ./run_cf748_apps_deepseek.sh                                                        # full
+#   MULTI_ARM=1 ./run_cf748_apps_deepseek.sh                                                     # one process, shared prefix cache (opt-in)
+#
+# MULTI_ARM=1 opt-in (mirrors run_cf748_apps_qwen3.sh): all arms run in ONE Python process with ONE
+# vLLM engine (bench.apps.multi_arm_runner). Pins to the FIRST GPU in $GPUS (extra GPUs unused; with
+# several GPUs the default per-arm parallel loop is faster in wall-clock). Resume is per output file
+# by task_id, so already-finished arms are skipped. NOTE: the multi-arm preset `rec` hardcodes
+# top_k=20 (Qwen); DeepSeek's `rec` has NO top-k, so this script passes `rec` via --arm-raw and never
+# via --arms. Eval and cot_efficiency below are unchanged. The speedup is only warmup (unmeasured).
 
 set -euo pipefail
 
@@ -91,7 +99,42 @@ echo " DeepSeek CF-interview 748  model=$MODEL  cap=$MAX_TOKENS  arms=${#ARMS_AR
 echo "   subset=$TASK_IDS_FILE  ${MAX_PROBLEMS:+PILOT: first $MAX_PROBLEMS of subset, n=$N_SAMPLES}"
 echo "=================================================================="
 
-if [ -n "${GPUS:-}" ]; then
+if [ "${MULTI_ARM:-0}" = "1" ]; then
+  # ---------- MULTI_ARM path (opt-in) ----------
+  # One Python process, one vLLM engine, all arms share the prefix cache.
+  # Pins to the FIRST GPU in $GPUS if set, else vLLM's default device.
+  if [ -n "${GPUS:-}" ]; then
+    IFS=',' read -ra GPULIST <<< "$GPUS"
+    if [ "${#GPULIST[@]}" -gt 1 ]; then
+      echo "MULTI_ARM uses a single GPU for all arms (shared engine); using GPU ${GPULIST[0]}, ignoring the rest: ${GPULIST[*]:1}" >&2
+    fi
+    export CUDA_VISIBLE_DEVICES="${GPULIST[0]}"
+  fi
+  # `rec` must NOT go through --arms: the multi-arm preset hardcodes top_k=20 (Qwen). DeepSeek's
+  # recommended config is T0.6 / top-p 0.95 with NO top-k, so pass it as a raw spec; its output file
+  # is then temp_p0.95_think_t0.6_t0.6.jsonl (what build_decoder_comparison_table SET=deepseek_cf expects).
+  PRESET_ARMS=(); RAW_ARMS=()
+  for a in "${ARMS_ARR[@]}"; do
+    case "$a" in
+      rec) RAW_ARMS+=(--arm-raw "name=rec,method=temp,temperature=0.6,top_p=0.95") ;;
+      *)   PRESET_ARMS+=("$a") ;;
+    esac
+  done
+  ARMS_FLAG=()
+  if [ "${#PRESET_ARMS[@]}" -gt 0 ]; then ARMS_FLAG=(--arms "${PRESET_ARMS[@]}"); fi
+  echo "=== MULTI_ARM: single process, ${#ARMS_ARR[@]} arms via shared vLLM engine ==="
+  PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}" \
+  "$VLLM_VENV/bin/python" -m bench.apps.multi_arm_runner \
+    --model "$MODEL" --backend vllm \
+    --source "$SOURCE" --difficulty "$DIFFICULTY" \
+    --task-ids-file "$TASK_IDS_FILE" \
+    --enable-thinking \
+    --n-samples "$N_SAMPLES" --max-new-tokens "$MAX_TOKENS" \
+    ${MAX_PROBLEMS:+--max-problems "$MAX_PROBLEMS"} \
+    --results-dir "$RESULTS_DIR" \
+    ${ARMS_FLAG[@]+"${ARMS_FLAG[@]}"} \
+    ${RAW_ARMS[@]+"${RAW_ARMS[@]}"}
+elif [ -n "${GPUS:-}" ]; then
   IFS=',' read -ra GPULIST <<< "$GPUS"; ngpu=${#GPULIST[@]}
   echo "Parallel: ${#ARMS_ARR[@]} arms across $ngpu GPU(s) [$GPUS]"
   pids=()

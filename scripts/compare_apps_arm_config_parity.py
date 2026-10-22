@@ -75,6 +75,16 @@ PRESET_EQUIVALENT_CLI: list[tuple[str, list[str]]] = [
     ("temp", ["--method", "temp", "--temperature", "1.0"]),
 ]
 
+# --arm-raw specs and the runner.py CLI flags they claim to be equivalent to. The second row is
+# DeepSeek's recommended config (T0.6 / top-p 0.95, NO top-k): run_cf748_apps_deepseek.sh passes `rec`
+# through --arm-raw because the multi-arm preset `rec` hardcodes top_k=20 (Qwen).
+ARM_RAW_EQUIVALENT_CLI: list[tuple[str, list[str]]] = [
+    ("name=custom1,method=temp,temperature=1.5,top_p=0.85",
+     ["--method", "temp", "--temperature", "1.5", "--top-p", "0.85"]),
+    ("name=rec,method=temp,temperature=0.6,top_p=0.95",
+     ["--method", "temp", "--temperature", "0.6", "--top-p", "0.95"]),
+]
+
 # Fields that actually flow into generation (SamplingParams / custom-sampler
 # cfg) or the output filename -- NOT every Namespace field, since the
 # single-arm runner.py Namespace has many fields multi-arm's Namespace
@@ -138,24 +148,25 @@ def _run_all_checks(base_args, enable_thinking_label: str) -> bool:
             print(f"  [PASS] arm={arm_name!r}: key={key_multi!r}")
 
     print(f"\n=== --arm-raw custom spec parity [enable_thinking={enable_thinking_label}] ===")
-    raw_spec_str = "name=custom1,method=temp,temperature=1.5,top_p=0.85"
-    raw_spec = _parse_arm_raw(raw_spec_str)
-    multi_arm_ns = _arm_to_namespace(raw_spec, base_args)
-    extra = ["--method", "temp", "--temperature", "1.5", "--top-p", "0.85"]
-    extra += ["--enable-thinking"] if base_args.enable_thinking else []
-    runner_ns = _runner_namespace_for(extra)
-    mismatches = [
-        (f, getattr(multi_arm_ns, f), getattr(runner_ns, f))
-        for f in COMPARE_FIELDS
-        if getattr(multi_arm_ns, f) != getattr(runner_ns, f)
-    ]
-    if mismatches:
-        any_fail = True
-        print(f"  [FAIL] arm-raw={raw_spec_str!r}:")
-        for field, a, b in mismatches:
-            print(f"    {field}: multi-arm={a!r} vs runner.py-equivalent={b!r}")
-    else:
-        print(f"  [PASS] arm-raw={raw_spec_str!r} ({len(COMPARE_FIELDS)} fields match)")
+    for raw_spec_str, cli_flags in ARM_RAW_EQUIVALENT_CLI:
+        raw_spec = _parse_arm_raw(raw_spec_str)
+        multi_arm_ns = _arm_to_namespace(raw_spec, base_args)
+        extra = cli_flags + (["--enable-thinking"] if base_args.enable_thinking else [])
+        runner_ns = _runner_namespace_for(extra)
+        mismatches = [
+            (f, getattr(multi_arm_ns, f), getattr(runner_ns, f))
+            for f in COMPARE_FIELDS
+            if getattr(multi_arm_ns, f) != getattr(runner_ns, f)
+        ]
+        if getattr(multi_arm_ns, "top_k") != getattr(runner_ns, "top_k") or _method_key(multi_arm_ns) != _method_key(runner_ns):
+            mismatches.append(("_method_key", _method_key(multi_arm_ns), _method_key(runner_ns)))
+        if mismatches:
+            any_fail = True
+            print(f"  [FAIL] arm-raw={raw_spec_str!r}:")
+            for field, a, b in mismatches:
+                print(f"    {field}: multi-arm={a!r} vs runner.py-equivalent={b!r}")
+        else:
+            print(f"  [PASS] arm-raw={raw_spec_str!r} ({len(COMPARE_FIELDS)} fields + _method_key match)")
 
     print()
     return any_fail
