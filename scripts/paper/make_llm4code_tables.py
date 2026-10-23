@@ -266,6 +266,7 @@ APPS_RENYI: dict[str, list[tuple[str, str]]] = {
         ("top-p @0.8",  "results/_top_p_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/metrics/temp_p0.8_think_t1.0_t1.0_metrics.json"),
         ("top-p @0.85", "results/_top_p_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/metrics/temp_p0.85_think_t1.0_t1.0_metrics.json"),
         ("top-p @0.9",  "results/_top_p_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/metrics/temp_p0.9_think_t1.0_t1.0_metrics.json"),
+        ("top-p @0.95", "results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/metrics/temp_p0.95_think_t1.0_t1.0_metrics.json"),
         ("p-less baseline (k=2)", "results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/metrics/pless_think_t1.0_t1.0_metrics.json"),
         ("G_k=0.05", "results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_renyi_think_t1.0_k0.05_t1.0_metrics.json"),
         ("G_k=0.075", "results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_renyi_think_t1.0_k0.075_t1.0_metrics.json"),
@@ -290,6 +291,13 @@ APPS_RENYI: dict[str, list[tuple[str, str]]] = {
         ("top-p @0.8",  "results/_top_p_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/metrics/temp_p0.8_think_t1.0_t1.0_metrics.json"),
         ("top-p @0.85", "results/_top_p_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/metrics/temp_p0.85_think_t1.0_t1.0_metrics.json"),
         ("top-p @0.9",  "results/_top_p_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/metrics/temp_p0.9_think_t1.0_t1.0_metrics.json"),
+        # DeepSeek top-p @0.95 sourced from `_deepseek_fixed_full252/` (post-tokenizer-fix),
+        # NOT `pless_cot_efficiency_vllm/...temp_p0.95_think_t1.0_t1.0_metrics.json` which is
+        # the pre-fix copy (pass@1=0.3282 vs 0.4798 fixed — ~15pp artifact of the fix).
+        # Every other DeepSeek row in this table sources from a post-fix dir
+        # (`_deepseek_fixed_full252/`, `_renyi_sweep_full252/`, or `_top_p_sweep_full252/`);
+        # mixing the pre-fix copy would silently drag this row below p-less baseline.
+        ("top-p @0.95", "results/_deepseek_fixed_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/metrics/temp_p0.95_think_t1.0_t1.0_metrics.json"),
         ("p-less baseline (k=2)", "results/_deepseek_fixed_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/metrics/pless_think_t1.0_t1.0_metrics.json"),
         ("G_k=0.05", "results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/metrics/pless_renyi_think_t1.0_k0.05_t1.0_metrics.json"),
         ("G_k=0.075", "results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/metrics/pless_renyi_think_t1.0_k0.075_t1.0_metrics.json"),
