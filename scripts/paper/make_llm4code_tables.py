@@ -315,6 +315,28 @@ APPS_RENYI: dict[str, list[tuple[str, str]]] = {
 }
 
 
+# Appendix A.3 — Qwen3-8B robustness check on a 748-problem subset of APPS-CODEFORCES-interview.
+# Not matched to APPS_RENYI: coarser G_k grid (6 pts), narrower top-p sweep (5 pts), Qwen only.
+APPS_RENYI_CF748_QWEN: dict[str, list[tuple[str, str]]] = {
+    "Qwen3-8B (CF-748)": [
+        ("recommended", "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/temp_p0.95_k20_think_t0.6_t0.6_metrics.json"),
+        ("top-p @0.7",  "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/temp_p0.7_think_t1.0_t1.0_metrics.json"),
+        ("top-p @0.75", "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/temp_p0.75_think_t1.0_t1.0_metrics.json"),
+        ("top-p @0.8",  "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/temp_p0.8_think_t1.0_t1.0_metrics.json"),
+        ("top-p @0.85", "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/temp_p0.85_think_t1.0_t1.0_metrics.json"),
+        ("top-p @0.9",  "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/temp_p0.9_think_t1.0_t1.0_metrics.json"),
+        ("p-less baseline (k=2)", "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/pless_think_t1.0_t1.0_metrics.json"),
+        ("p-less-norm", "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/pless_norm_think_t1.0_t1.0_metrics.json"),
+        ("G_k=0.05", "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/pless_renyi_think_t1.0_k0.05_t1.0_metrics.json"),
+        ("G_k=0.1",  "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/pless_renyi_think_t1.0_k0.1_t1.0_metrics.json"),
+        ("G_k=0.2",  "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/pless_renyi_think_t1.0_k0.2_t1.0_metrics.json"),
+        ("G_k=0.4",  "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/pless_renyi_think_t1.0_k0.4_t1.0_metrics.json"),
+        ("G_k=0.8",  "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/pless_renyi_think_t1.0_k0.8_t1.0_metrics.json"),
+        ("G_k=1.6",  "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview/metrics/pless_renyi_think_t1.0_k1.6_t1.0_metrics.json"),
+    ],
+}
+
+
 import json  # noqa: E402
 
 
@@ -329,6 +351,7 @@ _EXPECTED_NUM_TASKS: dict[str, int] = {
     "table_a1_mbpp_appendix": 500,
     "table_a2_humaneval_appendix": 164,
     "table_5a_apps_renyi": 252,
+    "table_a3_cf748_qwen": 748,
 }
 
 
@@ -468,6 +491,7 @@ def main() -> None:
     _write_both(APPS_RENYI, "table_5a_apps_renyi", "Table 5A — APPS-252 (ATCODER-interview, n=10, thinking-ON)", "5a")
     _write_both(MBPP_APPENDIX, "table_a1_mbpp_appendix", "Table A1 — MBPP appendix (additional base/instruct models)", "a1")
     _write_both(HUMANEVAL_APPENDIX, "table_a2_humaneval_appendix", "Table A2 — HumanEval appendix (additional base/instruct models)", "a2")
+    _write_both(APPS_RENYI_CF748_QWEN, "table_a3_cf748_qwen", "Table A3 — Qwen3-8B APPS-CODEFORCES-748 robustness check (n=10, thinking-ON)", "a3")
 
 
     # Mirror .tex + .md tables into sibling paper repo (Overleaf-linked) if it exists.
@@ -479,7 +503,7 @@ def main() -> None:
             n += 1
         print(f"mirrored {n} table files to {TABLES_DIR_PAPER}", file=sys.stderr)
 
-    print(f"Wrote {len(MBPP) + len(HUMANEVAL) + len(SMALL_MODELS_2507) + len(APPS_RENYI) + len(MBPP_APPENDIX) + len(HUMANEVAL_APPENDIX)} per-model sections across 6 md + 6 tex files in {TABLES_DIR.relative_to(REPO_ROOT)}/", file=sys.stderr)
+    print(f"Wrote {len(MBPP) + len(HUMANEVAL) + len(SMALL_MODELS_2507) + len(APPS_RENYI) + len(MBPP_APPENDIX) + len(HUMANEVAL_APPENDIX) + len(APPS_RENYI_CF748_QWEN)} per-model sections across 7 md + 7 tex files in {TABLES_DIR.relative_to(REPO_ROOT)}/", file=sys.stderr)
 
 
 if __name__ == "__main__":
