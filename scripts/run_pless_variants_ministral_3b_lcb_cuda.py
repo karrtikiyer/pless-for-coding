@@ -220,6 +220,19 @@ _NATIVE_TOP_P_TOP_K: dict[str, tuple[float, int]] = {
 }
 
 
+def _all_configs_native(configs: list[str], config_by_name: dict) -> bool:
+    """True iff every selected config's sampler_name is in
+    _NATIVE_TOP_P_TOP_K (no pless/top-nsigma config requested).
+
+    Used to decide whether to skip registering the custom
+    PlessSplitLogitsProcessor at engine construction -- vllm-metal (Apple
+    Silicon) refuses ANY custom logits processor outright at LLM()
+    construction, regardless of whether it would actually be invoked for
+    the selected configs' per-task generation.
+    """
+    return all(config_by_name[name][1] in _NATIVE_TOP_P_TOP_K for name in configs)
+
+
 def _load_task_selection() -> dict[str, list[dict]]:
     """Return {platform: [ {task_id, difficulty, contest_date}, ... ]}."""
     by_platform: dict[str, list[dict]] = {}
@@ -376,11 +389,25 @@ def main() -> None:
     out_root = REPO / out_root_template.format(model_slug=model_slug)
     batch_assignment = _load_batch_assignment() if args.batch is not None else None
 
+    config_by_name = {c[0]: c for c in CONFIGS}
+
     load_kwargs = {"dtype": args.dtype,
                    "gpu_memory_utilization": args.gpu_memory_utilization,
                    "max_model_len": args.max_model_len}
     if args.quantization:
         load_kwargs["quantization"] = args.quantization
+    # If every selected config is a native-sampling baseline (no pless/
+    # top-nsigma config requested), skip registering the custom
+    # PlessSplitLogitsProcessor at engine construction entirely. vllm-metal
+    # (Apple Silicon) refuses ANY custom logits processor outright at
+    # LLM() construction -- before any per-task code runs -- regardless of
+    # whether that processor would actually be invoked for the selected
+    # configs. On CUDA this is a pure no-op optimization (the processor was
+    # already never consulted for these configs' per-task generation, which
+    # routes through generate_samples_standard_vllm -- see
+    # _NATIVE_TOP_P_TOP_K above), not a behavior change.
+    if _all_configs_native(args.configs, config_by_name):
+        load_kwargs["register_pless_logitsproc"] = False
     print(f"Loading engine: {args.model} (kwargs={load_kwargs})")
     t0 = time.time()
     engine = load_engine(args.model, **load_kwargs)
@@ -398,7 +425,6 @@ def main() -> None:
     # new branch, so bench/livecodebench/prompts.py needs no further changes.
     tokenizer._qwen_direct_tokenize = True
 
-    config_by_name = {c[0]: c for c in CONFIGS}
     written = []
     for platform in args.platforms:
         if args.full_dataset:
