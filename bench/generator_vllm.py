@@ -558,6 +558,26 @@ def _build_pless_split_logits_processor_class() -> type:
 
 _build_pless_split_logits_processor_class._cached = None  # type: ignore[attr-defined]
 
+# Eagerly build (and module-register) the class at import time, when vLLM is
+# importable. The __qualname__/__module__ rebind above only populates this
+# module's PlessSplitLogitsProcessor attribute as a side effect of CALLING
+# the factory -- but under multiprocessing 'spawn', the freshly-spawned
+# EngineCore child process imports this module fresh (as part of unpickling
+# the parent's pickled engine args) WITHOUT ever calling load_engine() or
+# the factory itself first, so the attribute wouldn't exist yet at the
+# moment the unpickler needs it (confirmed: "AttributeError: Can't get
+# attribute 'PlessSplitLogitsProcessor' on <module 'bench.generator_vllm'>"
+# -- the module import succeeds, only the attribute is missing). Running the
+# factory here, at import time, means merely importing this module -- which
+# unpickling itself triggers -- is enough. Caught ImportError preserves the
+# "must parse on a vLLM-free environment" contract (see module docstring):
+# if vllm isn't installed, this silently no-ops and _cached stays None, same
+# as before this eager call existed.
+try:
+    _build_pless_split_logits_processor_class()
+except ImportError:
+    pass
+
 
 # ---------------------------------------------------------------------------
 # Engine lifecycle
