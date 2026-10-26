@@ -30,6 +30,7 @@ only. All vLLM imports are pushed inside functions / class factories.
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any, Callable
 
 import torch
@@ -534,6 +535,22 @@ def _build_pless_split_logits_processor_class() -> type:
                     row = _SAMPLER_LOGIT_FN[sampler_name](row)
                 logits[idx] = row
             return logits
+
+    # Make the class picklable under multiprocessing's 'spawn' start method
+    # (macOS default since Python 3.8 -- fork is unsafe there; Linux/CUDA
+    # still defaults to 'fork', which never pickles the process target at
+    # all, so this is a no-op on that path). Without this, vLLM's v1 engine
+    # fails to launch EngineCore as a subprocess with
+    # "AttributeError: Can't get local object '..._split_logits_processor_class
+    # .<locals>.PlessSplitLogitsProcessor'" -- pickle resolves classes via
+    # getattr(sys.modules[cls.__module__], cls.__qualname__), which can't
+    # traverse a '<locals>' qualname. Rebinding __qualname__ and injecting
+    # the class into this module's namespace under that name makes the
+    # lookup succeed; the class's actual behavior (apply/update_state/
+    # validate_params) is unchanged.
+    PlessSplitLogitsProcessor.__qualname__ = "PlessSplitLogitsProcessor"
+    PlessSplitLogitsProcessor.__module__ = __name__
+    sys.modules[__name__].PlessSplitLogitsProcessor = PlessSplitLogitsProcessor
 
     _build_pless_split_logits_processor_class._cached = PlessSplitLogitsProcessor  # type: ignore[attr-defined]
     return PlessSplitLogitsProcessor
