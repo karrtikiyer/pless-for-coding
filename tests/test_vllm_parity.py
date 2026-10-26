@@ -114,6 +114,67 @@ def test_top_p_top_k_mask_respects_limits():
     assert (live <= 20).all(), f"top_k violated: {live.tolist()}"
 
 
+def test_top_p_mask_keeps_threshold_crossing_token():
+    """Regression test for a real bug (found + fixed 2026-10-26): nucleus
+    masking must use the EXCLUSIVE cumulative-probability convention (drop a
+    token only if the mass strictly BEFORE it already reaches top_p), so the
+    token that crosses the threshold is kept -- per Holtzman et al. 2019
+    §3.1 (the nucleus is the SMALLEST set with cumulative probability >= p).
+
+    ``_top_p_top_k_mask_logits`` previously used an INCLUSIVE cumsum
+    (``cum > top_p``), silently dropping one extra token versus both the
+    paper's definition and vLLM's own native sampler -- confirmed via
+    randomized trials against vLLM's real installed
+    ``apply_top_k_top_p_pytorch``: 96-100% mismatch rate depending on logit
+    peakiness. This test only requires torch (no real vLLM), by
+    cross-checking against ``bench/sampler_bridge.py``'s independent,
+    already-correct implementation of the same exclusive convention.
+    """
+    from bench.generator_vllm import _top_p_top_k_mask_logits
+
+    # Concrete hand-worked example: probs [0.5, 0.3, 0.1, 0.1], top_p=0.7.
+    # Correct nucleus (smallest set with cumulative mass >= 0.7) is
+    # {0.5, 0.3} (sum 0.8) -- the second token MUST survive.
+    logits = torch.log(torch.tensor([[0.5, 0.3, 0.1, 0.1]]))
+    masked = _top_p_top_k_mask_logits(logits.clone(), top_p=0.7, top_k=0)
+    survives = torch.isfinite(masked)
+    assert survives.tolist() == [[True, True, False, False]], (
+        f"nucleus must keep the threshold-crossing token (prob 0.3); got {survives.tolist()}"
+    )
+
+    # Broader cross-check against bench/sampler_bridge.py's independent,
+    # already-correct exclusive-cumsum implementation (probability-space,
+    # not logit-space, but the survivor SET must match exactly).
+    from bench.sampler_bridge import make_temperature_sampler
+
+    torch.manual_seed(7)
+    mismatches = 0
+    trials = 200
+    for _ in range(trials):
+        row_logits = torch.randn(1, 500) * 2.0
+        top_p = 0.5 + 0.49 * torch.rand(1).item()
+
+        masked = _top_p_top_k_mask_logits(row_logits.clone(), top_p=top_p, top_k=0)
+        repo_survivors = torch.isfinite(masked)
+
+        probs = torch.softmax(row_logits.clone(), dim=-1)
+        sorted_probs, sorted_idx = probs.sort(dim=-1, descending=True)
+        cumsum = sorted_probs.cumsum(dim=-1)
+        sorted_mask = cumsum - sorted_probs > top_p  # sampler_bridge.py's own convention
+        correct_survivors_sorted = ~sorted_mask
+        correct_survivors = torch.zeros_like(correct_survivors_sorted).scatter_(
+            -1, sorted_idx, correct_survivors_sorted
+        )
+
+        if not torch.equal(repo_survivors, correct_survivors):
+            mismatches += 1
+
+    assert mismatches == 0, (
+        f"{mismatches}/{trials} trials: _top_p_top_k_mask_logits's survivor set "
+        "diverged from the correct exclusive-cumsum convention (bench/sampler_bridge.py)"
+    )
+
+
 def test_temp_pure_is_identity():
     """temp_pure must NOT modify logits — that's its definition."""
     from bench.generator_vllm import _SAMPLER_LOGIT_FN

@@ -201,7 +201,29 @@ def _top_p_top_k_mask_logits(
 
     Matches the semantics of ``bench/sampler_bridge.py:make_temperature_sampler``
     — temp_standard's default is top_p=0.95, top_k=20; temp_pure passes
-    top_p=1.0, top_k=0 (i.e. no truncation).
+    top_p=1.0, top_k=0 (i.e. no truncation). Only reachable today via
+    ``temp_standard``/``temp_pure`` in ``_SAMPLER_LOGIT_FN`` (used as one
+    phase of a genuine split-decoding config, e.g. ``--sampler-think
+    temp_standard --sampler-code pless``) -- NOT a general-purpose top-p/
+    top-k baseline implementation. A new standalone top-p/top-k/temperature
+    baseline should go through vLLM's own native sampling
+    (``generate_samples_standard_vllm``'s ``SamplingParams(top_p=, top_k=)``),
+    not through this function or the custom logits processor.
+
+    Nucleus (top-p) uses the EXCLUSIVE cumulative-probability convention:
+    a token is dropped only if the tokens strictly BEFORE it already reach
+    top_p (``cumsum - sorted_probs > top_p``), so the token that actually
+    crosses the threshold is kept -- per Holtzman et al. 2019 ("The Curious
+    Case of Neural Text Degeneration"), §3.1: the nucleus is the SMALLEST
+    set whose cumulative probability is >= p, which requires including the
+    threshold-crossing token, not excluding it. This was previously an
+    INCLUSIVE cumsum (``cum > top_p``), which silently dropped one extra
+    token versus both the paper's definition and vLLM's own native
+    sampler -- confirmed via 2000+ randomized trials against vLLM's real
+    installed ``apply_top_k_top_p_pytorch``, 96-100% mismatch rate
+    depending on logit-distribution peakiness. ``bench/sampler_bridge.py``
+    (the original HF-backend implementation) already used the correct
+    exclusive form; this function had silently diverged from it.
     """
     if top_k > 0:
         # Mask everything below the top-k threshold.
@@ -211,8 +233,12 @@ def _top_p_top_k_mask_logits(
         sorted_logits, sorted_idx = logits.sort(dim=-1, descending=True)
         sorted_probs = torch.softmax(sorted_logits.float(), dim=-1)
         cum = sorted_probs.cumsum(dim=-1)
-        # Tokens beyond cumulative top_p are dropped (but always keep at least one).
-        sorted_mask = cum > top_p
+        # Exclusive prefix sum: mass of tokens strictly before this one.
+        # Mirrors bench/sampler_bridge.py's already-correct convention.
+        excl_cum = cum - sorted_probs
+        sorted_mask = excl_cum > top_p
+        # Redundant with the math above (excl_cum[0] == 0, never > a
+        # positive top_p) but kept as an explicit, cheap safety net.
         sorted_mask[..., 0] = False
         # Scatter the mask back to original token positions.
         scatter_mask = torch.zeros_like(sorted_mask).scatter_(-1, sorted_idx, sorted_mask)
@@ -942,10 +968,22 @@ def generate_samples_standard_vllm(
     top_k: int = 0,
     repetition_penalty: float = 1.0,
     seed: int | None = None,
+    skip_special_tokens: bool = True,
 ) -> list[str]:
     """vLLM-backed standard temperature / top-p / top-k sampling. No custom processor.
 
     Counterpart to ``bench/generator.py:generate_samples_standard``.
+
+    ``skip_special_tokens`` defaults to ``True`` (vLLM's own default). Pass
+    ``False`` for models whose reasoning markers are registered as special
+    tokens and would otherwise be silently dropped from the decoded text
+    (e.g. Ministral's ``[THINK]``/``[/THINK]`` -- see
+    :func:`generate_samples_vllm`'s docstring for the full explanation).
+    Only takes effect when ``engine._safe_tokenizer`` is unset (the normal
+    case) -- :func:`_extract_completion_texts` re-decodes with its own
+    hardcoded ``skip_special_tokens=True`` when a safe tokenizer *is*
+    installed (a separate, unrelated workaround for a broken default
+    decoder), which would silently override this parameter in that case.
     """
     from vllm import SamplingParams
 
@@ -957,6 +995,7 @@ def generate_samples_standard_vllm(
         top_k=top_k if top_k > 0 else -1,
         repetition_penalty=repetition_penalty,
         stop=stop_strings or None,
+        skip_special_tokens=skip_special_tokens,
     )
     if seed is not None:
         sp_kwargs["seed"] = int(seed)

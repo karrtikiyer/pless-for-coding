@@ -52,6 +52,7 @@ _register_topnsigma()
 from bench.generator import _strip_think_content
 from bench.generator_vllm import (
     encode_prompt_for_vllm,
+    generate_samples_standard_vllm,
     generate_samples_vllm,
     load_engine,
 )
@@ -107,6 +108,28 @@ CONFIGS: list[tuple[str, str, float, float | None]] = [
     ("top_p_0_7",  "top_p_0_7",   1.0, None),
 ]
 CONFIG_NAMES = [c[0] for c in CONFIGS]
+
+# Sampler names that are genuinely standard (vLLM-native-equivalent) top-p/
+# temperature baselines -- per CLAUDE.md Known Gotchas #8, these must NOT go
+# through the custom PlessSplitLogitsProcessor (that path's reimplementation,
+# _top_p_top_k_mask_logits, silently diverged from the standard nucleus-
+# sampling definition for months -- fixed 2026-10-26, but new baselines
+# should use vLLM's own native SamplingParams going forward regardless).
+# Maps sampler_name -> (top_p, top_k); temperature is already carried
+# per-CONFIGS-row. top_nsigma/top_nsigma_1_5/pless* are deliberately NOT
+# here: top_nsigma has no vLLM-native equivalent (a genuinely custom
+# algorithm, Tang et al. 2025), and pless* is this project's own method --
+# both correctly stay on the custom-processor path below.
+_NATIVE_TOP_P_TOP_K: dict[str, tuple[float, int]] = {
+    "temp_pure":     (1.0, 0),
+    "temp_standard": (0.95, 20),  # qwen_recipe
+    "top_p_0_95":    (0.95, 0),
+    "top_p_0_9":     (0.9, 0),
+    "top_p_0_85":    (0.85, 0),
+    "top_p_0_8":     (0.8, 0),
+    "top_p_0_75":    (0.75, 0),
+    "top_p_0_7":     (0.7, 0),
+}
 
 
 def _load_task_selection() -> dict[str, list[dict]]:
@@ -169,12 +192,21 @@ def _run_config_on_platform(
         if renyi_k is not None:
             kwargs["renyi_k"] = renyi_k
         try:
-            raw_samples = generate_samples_vllm(
-                engine=engine, tokenizer=tokenizer, prompt_text=prompt_text,
-                sampler_name=sampler_name, n_samples=n_samples,
-                max_new_tokens=max_new_tokens, temperature=temperature,
-                stop_strings=None, seed=seed, **kwargs,
-            )
+            if sampler_name in _NATIVE_TOP_P_TOP_K:
+                top_p, top_k = _NATIVE_TOP_P_TOP_K[sampler_name]
+                raw_samples = generate_samples_standard_vllm(
+                    engine=engine, tokenizer=tokenizer, prompt_text=prompt_text,
+                    n_samples=n_samples, max_new_tokens=max_new_tokens,
+                    temperature=temperature, stop_strings=None,
+                    top_p=top_p, top_k=top_k, seed=seed,
+                )
+            else:
+                raw_samples = generate_samples_vllm(
+                    engine=engine, tokenizer=tokenizer, prompt_text=prompt_text,
+                    sampler_name=sampler_name, n_samples=n_samples,
+                    max_new_tokens=max_new_tokens, temperature=temperature,
+                    stop_strings=None, seed=seed, **kwargs,
+                )
         except Exception as exc:
             print(f"[{config_name}/{platform}] task {problem.task_id} crashed: {exc!r}")
             continue
