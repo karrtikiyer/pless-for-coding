@@ -257,3 +257,77 @@ def test_render_paired_section_has_holm_interaction_and_caveats(mod, tmp_path):
     assert "Holm" in sec and "ATCODER−CODEFORCES" in sec
     assert "unadjusted" in sec and "problem-level" in sec
     assert "two-level" not in sec
+
+
+# ---------------------------------------------------------------- --allow-partial (rows present on BOTH sides only)
+
+
+def _synthetic_pair(tmp_path, tag, seed):
+    """252 ATCODER-side + 748 CF-side synthetic metrics for one config; returns (a_path, c_path)."""
+    rng = np.random.default_rng(seed)
+    def tasks(ids):
+        out = []
+        for tid in ids:
+            nc = int(rng.integers(0, 11))
+            out.append((tid, nc, 0.4 if nc >= 2 else None))
+        return out
+    a = _metrics(tmp_path / "a" / f"{tag}.json", tasks(range(1, 253)))
+    c = _metrics(tmp_path / "c" / f"{tag}.json", tasks(range(1001, 1749)))
+    return a, c
+
+
+def test_common_rows_only_existing_keeps_configs_with_both_files(mod, tmp_path, monkeypatch):
+    a_ok = _metrics(tmp_path / "a_ok.json", [(1, 5, 0.4)])
+    a_only = _metrics(tmp_path / "a_only.json", [(1, 5, 0.4)])
+    c_ok = _metrics(tmp_path / "cf" / "stemA_metrics.json", [(2, 5, 0.4)])
+    monkeypatch.setattr(mod, "APPS_RENYI", {"Qwen3-8B": [("A", str(a_ok)), ("B", str(a_only))]})
+    monkeypatch.setattr(mod, "_cf_rows", lambda model: [("A", "stemA"), ("B", "stemB"), ("C", "stemC")])
+    cf_dir = tmp_path / "cf"
+    # default: every label in both config maps (A, B), regardless of file existence
+    assert [r[0] for r in mod.common_rows("qwen3", cf_dir)] == ["A", "B"]
+    # only_existing: also requires BOTH metrics files on disk (B has no CF file)
+    assert [r[0] for r in mod.common_rows("qwen3", cf_dir, only_existing=True)] == ["A"]
+
+
+def _patch_deepseek_env(mod, tmp_path, monkeypatch, present_cf):
+    """Patch the module to a tmp tree: 4 candidate configs, 252-side files for all, CF files for `present_cf`."""
+    labels = ["top-p @0.9", "p-less baseline (k=2)", "G_k=0.35", "G_k=1.6"]
+    stems = dict(mod.cf.build_rows("deepseek"))
+    apps = []
+    for i, lab in enumerate(labels):
+        a, c = _synthetic_pair(tmp_path, f"cfg{i}", seed=i)
+        apps.append((lab, str(a)))
+        if lab in present_cf:
+            dest = tmp_path / mod.cf.MODELS["deepseek"]["dir"] / "metrics" / f"{stems[lab]}_metrics.json"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(c.read_text())
+    monkeypatch.setattr(mod, "APPS_RENYI", {"DeepSeek-R1-Distill-Llama-8B": apps})
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+    ids = tmp_path / "data" / "cf_interview_748_ids.txt"
+    ids.parent.mkdir(parents=True, exist_ok=True)
+    ids.write_text(" ".join(str(i) for i in range(1001, 1749)))
+    return labels
+
+
+def test_main_allow_partial_end_to_end_lists_pending(mod, tmp_path, monkeypatch):
+    _patch_deepseek_env(mod, tmp_path, monkeypatch, present_cf={"top-p @0.9", "p-less baseline (k=2)", "G_k=0.35"})
+    out = tmp_path / "t.md"
+    mod.main(["--model", "deepseek", "--allow-partial", "--boot", "50", "--out", str(out)])
+    text = out.read_text()
+    assert "Partial: 3 of 4" in text and "Pending" in text and "G_k=1.6" in text.split("Pending")[1].split("\n")[0]
+    pooled = text.split("## Pooled")[1].split("## ATCODER")[0]
+    assert "| G_k=0.35 |" in pooled and "| top-p @0.9 |" in pooled and "| G_k=1.6 |" not in pooled
+    assert "--allow-partial" in text
+
+
+def test_main_without_allow_partial_still_fails_on_missing_cf_file(mod, tmp_path, monkeypatch):
+    _patch_deepseek_env(mod, tmp_path, monkeypatch, present_cf={"top-p @0.9"})
+    with pytest.raises(SystemExit):
+        mod.main(["--model", "deepseek", "--boot", "50", "--out", str(tmp_path / "t.md")])
+
+
+def test_main_allow_partial_with_no_common_configs_fails(mod, tmp_path, monkeypatch):
+    _patch_deepseek_env(mod, tmp_path, monkeypatch, present_cf=set())
+    with pytest.raises(SystemExit) as e:
+        mod.main(["--model", "deepseek", "--allow-partial", "--boot", "50", "--out", str(tmp_path / "t.md")])
+    assert "no configs have metrics on both sides" in str(e.value)

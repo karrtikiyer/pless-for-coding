@@ -119,3 +119,74 @@ def test_pairwise_cb_delta_uses_only_tasks_valid_in_both(mod):
 def test_informative_share(mod):
     C = np.array([[0, 5, 10, 3], [0, 6, 10, 3], [0, 5, 10, 4]])   # configs x tasks
     assert mod.informative_share(C) == pytest.approx(0.5)         # tasks 1 and 3 vary
+
+
+# ---------------------------------------------------------------- model-aware caveats + --allow-partial wiring
+
+
+def _write_cfg(tmp_path, tag, seed, n_a, n_c):
+    import json
+    rng = np.random.default_rng(seed)
+    def mk(path, ids):
+        per = []
+        for tid in ids:
+            nc = int(rng.integers(0, 11))
+            per.append({"task_id": tid, "num_correct": nc, "pass_results": [True] * nc + [False] * (10 - nc),
+                        "self_codebleu": 0.4 if nc >= 2 else None, "num_distinct_correct": min(nc, 3)})
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"num_tasks": len(per), "timestamp": "2026-01-01T00:00:00+00:00", "per_task": per}))
+        return path
+    return mk(tmp_path / "a" / f"{tag}.json", range(1, n_a + 1)), mk(tmp_path / "c" / f"{tag}.json", range(1001, 1001 + n_c))
+
+
+def _rows(tmp_path, labels):
+    return [(lab, *_write_cfg(tmp_path, f"x{i}", i, 6, 10)) for i, lab in enumerate(labels)]
+
+
+def test_caveats_use_the_model_title_not_qwen(mod):
+    import tempfile
+    rows = _rows(Path(tempfile.mkdtemp()), ["top-p @0.9", "G_k=0.35", "p-less baseline (k=2)"])
+    out = mod.analyze(rows, expected=(6, 10), boot=50, seed=0, model_title="DeepSeek-R1-Distill-Llama-8B")
+    assert "DeepSeek-R1-Distill-Llama-8B, thinking-ON" in out
+    assert "Qwen3-8B" not in out
+    assert "recommended is T0.6/p0.95/k20" not in out      # no `recommended` row => no such sentence
+
+
+def test_recommended_clause_only_when_a_recommended_row_exists(mod):
+    import tempfile
+    rows = _rows(Path(tempfile.mkdtemp()), ["recommended", "top-p @0.9", "p-less baseline (k=2)"])
+    out = mod.analyze(rows, expected=(6, 10), boot=50, seed=0, model_title="Qwen3-8B")
+    assert "recommended" in out.split("## Caveats")[1]
+    assert "Qwen3-8B, thinking-ON" in out
+
+
+def test_main_allow_partial_end_to_end(mod, tmp_path, monkeypatch):
+    mp = mod.mp
+    stems = dict(mp.cf.build_rows("deepseek"))
+    labels = ["top-p @0.9", "p-less baseline (k=2)", "G_k=0.35", "G_k=1.6"]
+    apps = []
+    for i, lab in enumerate(labels):
+        a, c = _write_cfg(tmp_path, f"cfg{i}", i, 252, 748)
+        apps.append((lab, str(a)))
+        if lab != "G_k=1.6":   # no CF file for the 4th config
+            dest = tmp_path / mp.cf.MODELS["deepseek"]["dir"] / "metrics" / f"{stems[lab]}_metrics.json"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(c.read_text())
+    monkeypatch.setattr(mp, "APPS_RENYI", {"DeepSeek-R1-Distill-Llama-8B": apps})
+    monkeypatch.setattr(mp, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+    out = tmp_path / "w.md"
+    mod.main(["--model", "deepseek", "--allow-partial", "--boot", "50", "--out", str(out)])
+    text = out.read_text()
+    assert "Partial: 3 of 4" in text
+    assert "G_k=1.6" not in text.split("## Metrics")[1].split("## Ranks")[0]
+    with pytest.raises(SystemExit):
+        mod.main(["--model", "deepseek", "--boot", "50", "--out", str(tmp_path / "strict.md")])
+
+
+def test_common_subset_label_uses_the_actual_config_count(mod):
+    import tempfile
+    rows = _rows(Path(tempfile.mkdtemp()), ["top-p @0.9", "G_k=0.35", "p-less baseline (k=2)"])
+    out = mod.analyze(rows, expected=(6, 10), boot=50, seed=0, model_title="X")
+    cb = out.split("## cb_div")[1].split("## Information")[0]
+    assert "3-way common subset" in cb and "13-way" not in cb
