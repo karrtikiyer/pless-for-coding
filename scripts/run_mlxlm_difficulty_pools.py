@@ -46,7 +46,7 @@ from bench.livecodebench.dataset import load_lcb  # noqa: E402
 from bench.livecodebench.prompts import _SYSTEM, _user_message  # noqa: E402
 from bench.mlx_difficulty_pools import (  # noqa: E402
     EASY_CAP_DEFAULT, HARD_CAP_DEFAULT, MEDIUM_CAP_DEFAULT,
-    PoolBatch, build_pool_batches, select_next_phase,
+    PoolBatch, assign_row_ranges, batch_seed, build_pool_batches, select_next_phase,
 )
 from bench.mlx_pless_logits_processors import make_pless_logits_processor  # noqa: E402
 from bench.mlx_seq_groups_resume import (  # noqa: E402
@@ -77,9 +77,8 @@ ONLY_PHASE = os.environ.get("MLXLM_POOLS_ONLY_PHASE") or None
 MAX_BATCHES = _env_int("MLXLM_POOLS_MAX_BATCHES", 0) or None
 POLL_EVERY_N_STEPS = 50
 RUN_ID = str(int(time.time()))
-# Per-process seed: a bare SEED would replay the same RNG state on every
-# restart and risk duplicate samples for the first resumed batch.
-RUN_SEED = SEED + (int(RUN_ID) % 100_000)
+# Seeds are per batch (bench.mlx_difficulty_pools.batch_seed over the batch's
+# absolute row ranges): crash-free reruns reproduce, resumes never replay banked rows.
 
 OUT_DIR = Path(os.environ.get(
     "MLXLM_POOLS_OUT_DIR",
@@ -169,8 +168,10 @@ def _write_main_record(problem, record: dict) -> None:
 
 
 def run_batch(model, tokenizer, label: str, batch: PoolBatch,
+              ranges: list[tuple[str, int, int]], seed: int,
               problem_by_id: dict, prompt_ids_by_task: dict,
               banked_by_task: dict[str, list[dict]]) -> None:
+    mx.random.seed(seed)
     gen = BatchGenerator(
         model,
         stop_tokens=[[t] for t in tokenizer.eos_token_ids],
@@ -182,12 +183,14 @@ def run_batch(model, tokenizer, label: str, batch: PoolBatch,
     try:
         prompts: list[list[int]] = []
         task_for_prompt: list = []
-        for tid, n in batch.rows:
-            for _ in range(n):
+        row_of: list[int] = []
+        for tid, start, n in ranges:
+            for j in range(n):
                 prompts.append(prompt_ids_by_task[tid])
                 task_for_prompt.append(problem_by_id[tid])
+                row_of.append(start + j)
 
-        log(f"\n=== {label}: {batch.rows} ({len(prompts)} rows, "
+        log(f"\n=== {label}: {ranges} ({len(prompts)} rows, seed={seed}, "
             f"completion_batch_size={batch.completion_batch_size}) "
             f"active_before={mx.get_active_memory()/1e9:.3f}GB "
             f"peak_before_reset={mx.get_peak_memory()/1e9:.3f}GB ===")
@@ -197,6 +200,7 @@ def run_batch(model, tokenizer, label: str, batch: PoolBatch,
         uid_tokens: dict[int, list[int]] = {uid: [] for uid in uids}
         uid_done: dict[int, bool] = {uid: False for uid in uids}
         uid_problem = dict(zip(uids, task_for_prompt))
+        uid_row = dict(zip(uids, row_of))
         fresh: dict[str, list[dict]] = {tid: [] for tid, _ in batch.rows}
         written: set[str] = set()
         attempt_id = f"{label.replace(' ', '')}_run{RUN_ID}"
@@ -218,8 +222,9 @@ def run_batch(model, tokenizer, label: str, batch: PoolBatch,
                     with_thinking = tokenizer.decode(uid_tokens[r.uid], skip_special_tokens=True)
                     rec = banked_sample_record(
                         problem.task_id, with_thinking, _strip_think_content(with_thinking),
-                        r.finish_reason, len(uid_tokens[r.uid]), attempt_id, seed=RUN_SEED,
+                        r.finish_reason, len(uid_tokens[r.uid]), attempt_id, seed=seed,
                     )
+                    rec["row_index"] = uid_row[r.uid]
                     with PARTIAL_PATHS[problem.platform].open("a") as pf:
                         pf.write(json.dumps(rec) + "\n")
                     fresh[problem.task_id].append(rec)
@@ -299,16 +304,16 @@ def main() -> None:
         log("ALL_PHASES_DONE" if ONLY_PHASE is None else f"PHASE_EMPTY {ONLY_PHASE}")
         return
     phase = batches[0].phase
+    ranges = assign_row_ranges(batches, {tid: len(v) for tid, v in banked_by_task.items()})
     if MAX_BATCHES is not None:
-        batches = batches[:MAX_BATCHES]
+        batches, ranges = batches[:MAX_BATCHES], ranges[:MAX_BATCHES]
     log(f"PHASE_START {phase}: {len(batches)} batch(es), "
         f"{sum(n for b in batches for _, n in b.rows)} rows")
 
     log(f"Loading model: {CHECKPOINT_PATH}")
     model, tokenizer = load(path_or_hf_repo=CHECKPOINT_PATH)
     log(f"After model load: active={mx.get_active_memory()/1e9:.3f}GB "
-        f"RUN_ID={RUN_ID} RUN_SEED={RUN_SEED}")
-    mx.random.seed(RUN_SEED)
+        f"RUN_ID={RUN_ID}")
 
     prompt_ids_by_task = {
         p.task_id: tokenizer.apply_chat_template(
@@ -318,8 +323,9 @@ def main() -> None:
         for p in problems
     }
 
-    for i, batch in enumerate(batches):
-        run_batch(model, tokenizer, f"{phase} batch {i+1}/{len(batches)}", batch,
+    for i, (batch, rr) in enumerate(zip(batches, ranges)):
+        seed = batch_seed(SEED, "pless_default", phase, rr)
+        run_batch(model, tokenizer, f"{phase} batch {i+1}/{len(batches)}", batch, rr, seed,
                   problem_by_id, prompt_ids_by_task, banked_by_task)
         # Next batch must see what this one banked/wrote (a task can span batches).
         banked_by_task = _load_all_banked()

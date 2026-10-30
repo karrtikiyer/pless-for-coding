@@ -161,3 +161,61 @@ class TestSelectNextPhase:
     def test_only_phase_rejects_unknown(self):
         with pytest.raises(ValueError, match="unknown phase"):
             select_next_phase([], only_phase="extreme")
+
+
+from bench.mlx_difficulty_pools import assign_row_ranges, batch_seed  # noqa: E402
+
+
+class TestAssignRowRanges:
+    def test_starts_at_banked_count_and_advances_across_batches(self):
+        batches = build_pool_batches([("a", "easy", 10), ("b", "easy", 10), ("c", "easy", 10)])
+        ranges = assign_row_ranges(batches, banked={"c": 0})
+        assert ranges == [[("a", 0, 10), ("b", 0, 10), ("c", 0, 5)], [("c", 5, 5)]]
+
+    def test_resume_offsets_by_banked(self):
+        batches = build_pool_batches([("c", "easy", 5)])
+        assert assign_row_ranges(batches, banked={"c": 5}) == [[("c", 5, 5)]]
+
+    def test_shape_matches_batches(self):
+        batches = build_pool_batches(_tasks("e", "easy", 3) + _tasks("h", "hard", 2))
+        ranges = assign_row_ranges(batches, banked={})
+        assert [[(t, n) for t, _, n in r] for r in ranges] == [b.rows for b in batches]
+
+
+class TestBatchSeed:
+    def test_deterministic_and_in_uint32_range(self):
+        s = batch_seed(42, "gk_0_1", "easy", [("a", 0, 10)])
+        assert s == batch_seed(42, "gk_0_1", "easy", [("a", 0, 10)])
+        assert 0 <= s < 2**32
+
+    def test_python_hash_salt_does_not_matter(self):
+        import subprocess, sys
+        code = ("from bench.mlx_difficulty_pools import batch_seed;"
+                "print(batch_seed(42, 'gk_0_1', 'easy', [('a', 0, 10)]))")
+        outs = {subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                               env={"PYTHONHASHSEED": h, "PATH": ""}, cwd=".").stdout for h in ("1", "2")}
+        assert len(outs) == 1 and outs != {""}
+
+    @pytest.mark.parametrize("change", [
+        dict(base=43), dict(config="gk_0_15"), dict(phase="hard"),
+        dict(rows=[("a", 5, 10)]), dict(rows=[("a", 0, 9)]), dict(rows=[("b", 0, 10)]),
+    ])
+    def test_any_input_change_changes_seed(self, change):
+        args = dict(base=42, config="gk_0_1", phase="easy", rows=[("a", 0, 10)])
+        ref = batch_seed(args["base"], args["config"], args["phase"], args["rows"])
+        args.update(change)
+        assert batch_seed(args["base"], args["config"], args["phase"], args["rows"]) != ref
+
+    def test_crash_resume_counterexample_gets_a_new_seed(self):
+        # Reviewer's counterexample: X = A10, B10, C5 with C's 5 banked before the crash.
+        # Content-only seeding rebuilt an identical batch and seed -> duplicate C samples.
+        x = assign_row_ranges(build_pool_batches([("A", "easy", 10), ("B", "easy", 10), ("C", "easy", 10)]),
+                              banked={})[0]
+        resumed = assign_row_ranges(build_pool_batches([("A", "easy", 10), ("B", "easy", 10), ("C", "easy", 5)]),
+                                    banked={"C": 5})[0]
+        assert [(t, n) for t, _, n in x] == [(t, n) for t, _, n in resumed]
+        assert batch_seed(42, "k", "easy", x) != batch_seed(42, "k", "easy", resumed)
+
+    def test_low_cap_identical_batches_get_distinct_seeds(self):
+        ranges = assign_row_ranges(build_pool_batches([("A", "hard", 10)], hard_cap=5), banked={})
+        assert batch_seed(42, "k", "hard", ranges[0]) != batch_seed(42, "k", "hard", ranges[1])

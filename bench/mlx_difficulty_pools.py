@@ -16,6 +16,8 @@ by the live v5 run. No mlx-lm/torch import on purpose.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 
 MLX_DEFAULT_COMPLETION_BATCH_SIZE = 32
@@ -107,3 +109,35 @@ def select_next_phase(
         if selected:
             return selected
     return []
+
+
+def assign_row_ranges(
+    batches: list[PoolBatch], banked: dict[str, int],
+) -> list[list[tuple[str, int, int]]]:
+    """Give each (task_id, n) in each batch a row range (task_id, first_row, n).
+    A task's first row starts at its banked count and advances in batch order.
+    Banked counts only grow, so a range that banked anything never recurs (the
+    seed guarantee). The numbers are slot labels, NOT unique row ids: after a
+    mid-batch crash, rows that finished out of order can repeat a label."""
+    cursor = dict(banked)
+    out = []
+    for b in batches:
+        ranges = []
+        for tid, n in b.rows:
+            start = cursor.get(tid, 0)
+            ranges.append((tid, start, n))
+            cursor[tid] = start + n
+        out.append(ranges)
+    return out
+
+
+def batch_seed(base: int, config: str, phase: str, row_ranges: list[tuple[str, int, int]]) -> int:
+    """Deterministic per-batch seed from (base, config, phase, row ranges).
+
+    A repeated seed can only recur if the earlier batch banked nothing for any
+    of its tasks (banking moves the row ranges on), so it can only replay work
+    that was lost -- never duplicate a saved sample. sha256, not hash(): hash()
+    is salted per process.
+    """
+    payload = json.dumps([base, config, phase, [list(r) for r in row_ranges]])
+    return int.from_bytes(hashlib.sha256(payload.encode()).digest()[:4], "big")
