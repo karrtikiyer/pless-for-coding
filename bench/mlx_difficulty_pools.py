@@ -2,14 +2,15 @@
 docs/mlx_seq_groups_difficulty_pool_scheduling_proposal.md).
 
 Replaces "groups of 3 tasks, medium+hard capped together" with three global
-phases drained in order: easy, medium, hard. Every batch is capped and has
-NO backfill: one `insert()` per batch, drained to completion, fresh
-BatchGenerator for the next batch.
+phases drained in order: easy, medium, hard. Every batch is capped: one
+`insert()` per batch, drained to completion, fresh BatchGenerator for the next
+batch. By default nothing backfills.
 
-No backfill, even for easy: mlx-lm's BatchKVCache pads a backfilled row to the
-longest resident row, so a 32-row easy batch with one looping row pins
-32 x ~25k tokens of KV (~118GB for Qwen3-8B) -- easy rows DO hit the cap
-(task 3626). Without backfill the batch shrinks as rows finish.
+Backfill is opt-in for easy only (`easy_backfill`). mlx-lm's BatchKVCache pads a
+backfilled row to the longest resident row, so memory is easy_backfill x the
+longest row, not the shrinking batch: a 32-row easy backfill batch with one
+looping row pins 32 x ~25k tokens of KV (~118GB for Qwen3-8B); easy rows do hit
+the cap (task 3626). Pick easy_backfill from that worst case.
 
 Deliberately a NEW module: `bench/mlx_seq_groups_resume.py` is checksum-gated
 by the live v5 run. No mlx-lm/torch import on purpose.
@@ -21,6 +22,7 @@ import json
 from dataclasses import dataclass
 
 MLX_DEFAULT_COMPLETION_BATCH_SIZE = 32
+MLX_PREFILL_BATCH_SIZE = 8  # mlx-lm BatchGenerator default; completion_batch_size is floored to it
 EASY_CAP_DEFAULT = 25
 MEDIUM_CAP_DEFAULT = 16
 HARD_CAP_DEFAULT = 10
@@ -33,6 +35,7 @@ class PoolBatch:
     phase: str
     rows: list[tuple[str, int]]  # (task_id, n_rows)
     completion_batch_size: int  # pass to BatchGenerator(completion_batch_size=...)
+    prefill_batch_size: int = 8  # pass to BatchGenerator(prefill_batch_size=...)
 
 
 def _pack(rows: list[tuple[str, int]], cap: int) -> list[list[tuple[str, int]]]:
@@ -60,12 +63,19 @@ def build_pool_batches(
     easy_cap: int = EASY_CAP_DEFAULT,
     medium_cap: int = MEDIUM_CAP_DEFAULT,
     hard_cap: int = HARD_CAP_DEFAULT,
+    easy_backfill: int | None = None,
 ) -> list[PoolBatch]:
     """Split (task_id, difficulty, n_to_generate) tuples into ordered batches.
 
     `completion_batch_size >= rows` so mlx-lm never queues a row, and so can
-    never backfill past the cap.
+    never backfill past the cap. Exception, opt-in: `easy_backfill` sets the
+    easy batches' completion_batch_size, so at most that many easy rows run at
+    once and mlx-lm backfills the rest of the batch as rows finish. Memory then
+    scales with easy_backfill x the longest resident row (joining rows are
+    padded to it), not with easy_cap.
     """
+    if easy_backfill is not None and easy_backfill < 1:
+        raise ValueError(f"easy_backfill must be positive, got {easy_backfill}")
     caps = {"easy": easy_cap, "medium": medium_cap, "hard": hard_cap}
     for phase, value in caps.items():
         if value <= 0:
@@ -88,7 +98,13 @@ def build_pool_batches(
     for phase in _PHASE_ORDER:
         for rows in _pack(pools[phase], caps[phase]):
             total = sum(n for _, n in rows)
-            batches.append(PoolBatch(phase, rows, max(total, MLX_DEFAULT_COMPLETION_BATCH_SIZE)))
+            if phase == "easy" and easy_backfill is not None and total > easy_backfill:
+                # prefill 1: mlx-lm admits up to prefill_batch_size prompts while
+                # generation is below the cap, so 8 let a cap of 12 reach 14 rows.
+                batches.append(PoolBatch(phase, rows, easy_backfill, 1))
+            else:
+                batches.append(PoolBatch(phase, rows, max(total, MLX_DEFAULT_COMPLETION_BATCH_SIZE),
+                                         MLX_PREFILL_BATCH_SIZE))
     return batches
 
 

@@ -72,3 +72,50 @@ def test_record_has_every_vllm_field():
     ours = set(runner._base_record_fields("gk_0_1", 0.1, p)) | {
         "task_id", "samples", "samples_with_thinking", "timestamp"}
     assert vllm_keys <= ours, sorted(vllm_keys - ours)
+
+
+def test_easy_backfill_12_in_chunks_of_120():
+    if not {"MLXLM_MGK_EASY_CAP", "MLXLM_MGK_EASY_BACKFILL"} & set(os.environ):
+        assert runner.EASY_CAP == 120 and runner.EASY_BACKFILL == 12
+    assert runner.MEDIUM_CAP == 16 and runner.HARD_CAP == 10
+
+
+def test_plan_gives_easy_backfill_and_no_backfill_elsewhere():
+    from bench.mlx_difficulty_pools import build_pool_batches
+    tasks = [(f"e{i}", "easy", 10) for i in range(30)] + [(f"m{i}", "medium", 10) for i in range(3)]
+    for b in build_pool_batches(tasks, easy_cap=runner.EASY_CAP, medium_cap=runner.MEDIUM_CAP,
+                                hard_cap=runner.HARD_CAP, easy_backfill=runner.EASY_BACKFILL):
+        rows = sum(n for _, n in b.rows)
+        if b.phase == "easy" and rows > runner.EASY_BACKFILL:
+            assert b.completion_batch_size == runner.EASY_BACKFILL
+        else:
+            assert b.completion_batch_size >= rows
+
+
+def test_run_batch_passes_backfill_and_prefill_sizes_to_batchgenerator(monkeypatch, tmp_path):
+    # If prefill_batch_size is dropped, mlx-lm defaults to 8 and a cap of 12 reaches 14+.
+    import importlib
+    g = importlib.import_module("mlx_lm.generate")
+    from bench.mlx_difficulty_pools import PoolBatch
+    seen = {}
+
+    class FakeGen:
+        def __init__(self, model, **kw):
+            seen.update(kw)
+        def insert(self, prompts, max_tokens):
+            return list(range(len(prompts)))
+        def next_generated(self):
+            return []
+        def close(self):
+            pass
+
+    monkeypatch.setattr(g, "BatchGenerator", FakeGen)
+    monkeypatch.setattr(runner, "PARTIAL_DIR", tmp_path)
+    batch = PoolBatch("easy", [("t", 20)], completion_batch_size=12, prefill_batch_size=1)
+    p = SimpleNamespace(platform="atcoder", difficulty="easy", contest_date="x", question="q", task_id="t")
+    try:
+        runner.run_batch(None, None, [2], "gk_0_1", 0.1, "easy batch 1/1", batch, [("t", 0, 20)], 1,
+                         {"t": p}, {"t": [1, 2]}, {})
+    except RuntimeError:
+        pass  # fake generator returns nothing, so the post-drain check fires
+    assert seen["completion_batch_size"] == 12 and seen["prefill_batch_size"] == 1

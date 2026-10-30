@@ -12,6 +12,8 @@ where it affects results:
   * T=1.0, no top-p/top-k, 10 samples/task, 35000 new tokens, stop on EOS;
   * same output file names and record fields.
 
+Easy rows: chunks of 120 per insert with at most 12 running (backfill); medium
+16 / hard 10 with no backfill.
 Runs ONE (config, phase) per process and exits; the shell wrapper relaunches.
 Configs run in CONFIGS order (gk_0_1 last: the same-backend anchor).
 Each batch gets a deterministic seed from its absolute row ranges
@@ -21,7 +23,7 @@ resumed batch can never replay already-banked samples.
 Env overrides (kill-tests / scratch only, never in production):
   MLXLM_MGK_OUT_DIR, MLXLM_MGK_MAX_NEW_TOKENS, MLXLM_MGK_ONLY_CONFIG,
   MLXLM_MGK_ONLY_PHASE, MLXLM_MGK_MAX_BATCHES, MLXLM_MGK_TASK_LIMIT,
-  MLXLM_MGK_EASY_CAP / _MEDIUM_CAP / _HARD_CAP, MLXLM_MGK_OMLX_SITE_PACKAGES,
+  MLXLM_MGK_EASY_CAP / _EASY_BACKFILL / _MEDIUM_CAP / _HARD_CAP, MLXLM_MGK_OMLX_SITE_PACKAGES,
   MLXLM_MGK_ALLOW_DIRTY=1 (skip the git check, local dev only).
 """
 from __future__ import annotations
@@ -82,7 +84,11 @@ BASE_SEED = 42
 BATCHES = (1, 2)
 PLATFORMS = ("atcoder", "leetcode")
 MAX_NEW_TOKENS = _env_int("MLXLM_MGK_MAX_NEW_TOKENS", 35000)
-EASY_CAP = _env_int("MLXLM_MGK_EASY_CAP", EASY_CAP_DEFAULT)
+# Easy: chunks of 120 rows per insert, at most 12 running at once (mlx-lm backfills
+# the rest as rows finish). Worst case ~6.9GB + 12 x ~4.3GB steady; a brief copy when
+# a row finishes can exceed 83.49GB if a long easy row is resident -> crash + resume.
+EASY_CAP = _env_int("MLXLM_MGK_EASY_CAP", 120)
+EASY_BACKFILL = _env_int("MLXLM_MGK_EASY_BACKFILL", 12)
 MEDIUM_CAP = _env_int("MLXLM_MGK_MEDIUM_CAP", MEDIUM_CAP_DEFAULT)
 HARD_CAP = _env_int("MLXLM_MGK_HARD_CAP", HARD_CAP_DEFAULT)
 ONLY_CONFIG = os.environ.get("MLXLM_MGK_ONLY_CONFIG") or None
@@ -177,8 +183,9 @@ def _base_record_fields(config: str, k: float, problem) -> dict:
         "contest_date": problem.contest_date, "prompt_text": problem.question,
         "enable_thinking": True,
         "max_new_tokens": MAX_NEW_TOKENS,
-        "architecture": "mlx_difficulty_pools_v1_no_backfill",
+        "architecture": "mlx_difficulty_pools_v2_easy_backfill",
         "pool_caps": {"easy": EASY_CAP, "medium": MEDIUM_CAP, "hard": HARD_CAP},
+        "easy_backfill": EASY_BACKFILL,
     }
 
 
@@ -221,7 +228,8 @@ def _plan(problems: list) -> tuple[str, float, list[PoolBatch], list, dict] | No
                 continue
             tasks.append((p.task_id, p.difficulty, rem))
         batches = select_next_phase(
-            build_pool_batches(tasks, easy_cap=EASY_CAP, medium_cap=MEDIUM_CAP, hard_cap=HARD_CAP),
+            build_pool_batches(tasks, easy_cap=EASY_CAP, medium_cap=MEDIUM_CAP, hard_cap=HARD_CAP,
+                               easy_backfill=EASY_BACKFILL),
             only_phase=ONLY_PHASE,
         )
         if batches:
@@ -244,6 +252,7 @@ def run_batch(model, tok, eos_ids, config, k, label, batch, ranges, seed,
         logits_processors=[make_pless_renyi_logits_processor(k)],
         max_tokens=MAX_NEW_TOKENS,
         completion_batch_size=batch.completion_batch_size,
+        prefill_batch_size=batch.prefill_batch_size,
     )
     try:
         prompts, row_of = [], []
@@ -251,7 +260,9 @@ def run_batch(model, tok, eos_ids, config, k, label, batch, ranges, seed,
             for j in range(n):
                 prompts.append(prompt_ids[tid])
                 row_of.append((tid, start + j))
-        log(f"\n=== {label}: {ranges} ({len(prompts)} rows, seed={seed}, "
+        log(f"\n=== {label}: {ranges} ({len(prompts)} rows, "
+            f"completion_batch_size={batch.completion_batch_size}, "
+            f"prefill_batch_size={batch.prefill_batch_size}, seed={seed}, "
             f"active_before={mx.get_active_memory()/1e9:.3f}GB) ===")
         mx.reset_peak_memory()
         uids = gen.insert(prompts, [MAX_NEW_TOKENS] * len(prompts))
@@ -261,9 +272,10 @@ def run_batch(model, tok, eos_ids, config, k, label, batch, ranges, seed,
         fresh: dict[str, list[dict]] = {tid: [] for tid, _, _ in ranges}
         written: set[str] = set()
         attempt_id = f"{config}:{label.replace(' ', '')}_run{RUN_ID}"
-        t0, step = time.time(), 0
+        t0, step, max_resident = time.time(), 0, 0
         while responses := gen.next_generated():
             step += 1
+            max_resident = max(max_resident, len(responses))
             for r in responses:
                 if r.uid not in toks:
                     continue
@@ -288,9 +300,9 @@ def run_batch(model, tok, eos_ids, config, k, label, batch, ranges, seed,
             if step % POLL_EVERY_N_STEPS == 0:
                 log(f"    step={step:6d} active={mx.get_active_memory()/1e9:7.3f}GB "
                     f"peak={mx.get_peak_memory()/1e9:7.3f}GB "
-                    f"samples_done={sum(finished.values())}/{len(uids)} "
+                    f"samples_done={sum(finished.values())}/{len(uids)} resident={len(responses)} "
                     f"tasks_written={len(written)} elapsed={time.time()-t0:.0f}s")
-        log(f"  batch drain complete: steps={step} elapsed={time.time()-t0:.0f}s "
+        log(f"  batch drain complete: steps={step} max_resident={max_resident} elapsed={time.time()-t0:.0f}s "
             f"peak_during={mx.get_peak_memory()/1e9:.3f}GB")
         expected = {tid for tid, _, n in ranges if len(banked.get(tid, [])) + n >= N_SAMPLES}
         if not expected <= written:
@@ -318,7 +330,7 @@ def main() -> None:
                     log(f"WARNING: {p} did not end cleanly, dropped {dropped} trailing bytes.")
 
     log(f"CONFIG: OUT_DIR={OUT_DIR} MAX_NEW_TOKENS={MAX_NEW_TOKENS} "
-        f"CAPS easy={EASY_CAP} medium={MEDIUM_CAP} hard={HARD_CAP} "
+        f"CAPS easy={EASY_CAP} (backfill {EASY_BACKFILL}) medium={MEDIUM_CAP} hard={HARD_CAP} "
         f"ONLY_CONFIG={ONLY_CONFIG} ONLY_PHASE={ONLY_PHASE} MAX_BATCHES={MAX_BATCHES} TASK_LIMIT={TASK_LIMIT} RETRY={RETRY}")
     problems = _load_problems()
     problem_by_id = {p.task_id: p for p in problems}

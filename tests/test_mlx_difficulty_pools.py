@@ -95,7 +95,7 @@ class TestInvariants:
 
     def test_completion_batch_size_never_queues_a_row(self):
         # >= rows means mlx-lm's BatchGenerator never queues, so it can never
-        # backfill past the cap.
+        # backfill past the cap (default: no easy backfill).
         for b in build_pool_batches(self._mixed()):
             assert b.completion_batch_size >= _total(b)
 
@@ -163,7 +163,7 @@ class TestSelectNextPhase:
             select_next_phase([], only_phase="extreme")
 
 
-from bench.mlx_difficulty_pools import assign_row_ranges, batch_seed  # noqa: E402
+from bench.mlx_difficulty_pools import MLX_PREFILL_BATCH_SIZE, assign_row_ranges, batch_seed  # noqa: E402
 
 
 class TestAssignRowRanges:
@@ -219,3 +219,50 @@ class TestBatchSeed:
     def test_low_cap_identical_batches_get_distinct_seeds(self):
         ranges = assign_row_ranges(build_pool_batches([("A", "hard", 10)], hard_cap=5), banked={})
         assert batch_seed(42, "k", "hard", ranges[0]) != batch_seed(42, "k", "hard", ranges[1])
+
+
+class TestEasyBackfill:
+    """Opt-in backfill for the easy phase only: each easy batch inserts up to
+    easy_cap rows but at most easy_backfill run at once (mlx-lm queues the rest
+    and backfills as rows finish). Medium/hard never backfill."""
+
+    def test_easy_batches_backfill_medium_hard_do_not(self):
+        tasks = _tasks("e", "easy", 30) + _tasks("m", "medium", 4) + _tasks("h", "hard", 2)
+        for b in build_pool_batches(tasks, easy_cap=120, easy_backfill=12):
+            if b.phase == "easy":
+                assert _total(b) <= 120 and b.completion_batch_size == 12
+            else:
+                assert b.completion_batch_size >= _total(b)
+
+    def test_easy_chunking_with_backfill(self):
+        easy = [b for b in build_pool_batches(_tasks("e", "easy", 30), easy_cap=120, easy_backfill=12)
+                if b.phase == "easy"]
+        assert [_total(b) for b in easy] == [120, 120, 60]
+
+    def test_small_easy_batch_does_not_queue(self):
+        easy = [b for b in build_pool_batches([("e", "easy", 5)], easy_cap=120, easy_backfill=12)]
+        assert easy[0].completion_batch_size >= _total(easy[0])
+
+    def test_default_is_no_backfill(self):
+        for b in build_pool_batches(_tasks("e", "easy", 5)):
+            assert b.completion_batch_size >= _total(b)
+
+    @pytest.mark.parametrize("bad", [0, -1])
+    def test_nonpositive_backfill_raises(self, bad):
+        with pytest.raises(ValueError, match="easy_backfill"):
+            build_pool_batches(_tasks("e", "easy", 3), easy_backfill=bad)
+
+    def test_backfill_batches_prefill_one_row_at_a_time(self):
+        # mlx-lm admits up to prefill_batch_size prompts while generation is below
+        # completion_batch_size; at the default 8 a cap of 12 reached 14 resident
+        # rows (measured). prefill_batch_size=1 held exactly 12.
+        tasks = _tasks("e", "easy", 30) + _tasks("m", "medium", 2)
+        for b in build_pool_batches(tasks, easy_cap=120, easy_backfill=12):
+            backfills = b.completion_batch_size < _total(b)
+            assert b.prefill_batch_size == (1 if backfills else MLX_PREFILL_BATCH_SIZE)
+
+    def test_row_ranges_and_seeds_unchanged_by_backfill(self):
+        tasks = _tasks("e", "easy", 30)
+        a = assign_row_ranges(build_pool_batches(tasks, easy_cap=120), banked={})
+        b = assign_row_ranges(build_pool_batches(tasks, easy_cap=120, easy_backfill=12), banked={})
+        assert a == b
