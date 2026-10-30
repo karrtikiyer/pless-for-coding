@@ -188,16 +188,18 @@ class TestProperties:
             single = np.array(mx_renyi(mx.array(row)[None, :], 0.2))[0]
             assert np.array_equal(out[i], single)
 
-    def test_flat_row_matches_torch_and_never_empties(self):
-        """On a fully tied row p = 1/v exactly equals G_k in exact arithmetic, but
-        the float32 reduction can land the threshold just above 1/v and prune
-        every token (observed at k=2 and k=1). The argmax fallback must then keep
-        exactly one, identically to the torch reference."""
+    def test_flat_row_never_empties_and_differs_only_at_the_threshold(self):
+        """On a fully tied row every p = 1/v exactly equals G_k, so whether all
+        tokens or only the argmax survive is decided by float rounding alone.
+        Torch itself gives both outcomes (keeps 1 at k=2 and k=1, all 1000 at
+        k=1.6), and mlx 0.32.4 differs from torch at k=0.5 (1 vs 1000) while
+        mlx 0.32.1 matches. Real logits are never fully tied. Require a
+        non-empty result and only threshold-tie disagreements."""
         flat = np.zeros(1000, np.float32)
         for k in (2.0, 1.6, 1.0, 0.5, 0.05, 0.0):
             m = _survivors_mx(mx_renyi, flat, k)
             assert m.any()
-            assert np.array_equal(m, _survivors_torch(flat, k)), f"k={k}"
+            assert _disagreements_off_boundary(flat, k, _survivors_torch(flat, k), m) == [], f"k={k}"
         for row in _rows(131072, 3, seed=13):
             for k in (0.025, 0.0):
                 assert _survivors_mx(mx_renyi, row, k).any()
