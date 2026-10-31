@@ -117,6 +117,9 @@ OUT_DIR = Path(os.environ.get(
     str(REPO / "results/pless_variants_mlxlm_pools/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046"),
 ))
 PARTIAL_DIR = OUT_DIR / "_partial"
+# One line per row still unfinished when a batch dies (OOM etc.): the rows that
+# get redrawn on resume. Lets crash-redraw bias be audited per config.
+KILLED_DIR = OUT_DIR / "_killed"
 BATCH_ASSIGNMENT_CSV = REPO / "results/lcb_v6_full1046/batch_assignment.csv"
 
 _GATED_FILES = (
@@ -138,6 +141,39 @@ def out_path(config: str, platform: str) -> Path:
 
 def partial_path(config: str, platform: str) -> Path:
     return PARTIAL_DIR / f"{config}_{platform}_think_t{TEMPERATURE}.partial.jsonl"
+
+
+def killed_path(config: str, platform: str) -> Path:
+    return KILLED_DIR / f"{config}_{platform}_think_t{TEMPERATURE}.killed.jsonl"
+
+
+def _write_killed_lines(config, platform, lines):
+    KILLED_DIR.mkdir(parents=True, exist_ok=True)
+    with killed_path(config, platform).open("a") as fh:
+        fh.write("".join(lines))
+
+
+def _log_killed_rows(config, k, phase, seed, attempt_id, toks, banked_uids, slot, problem_by_id, exc):
+    """Append one line per row not banked when the batch died; these are exactly
+    the rows redrawn on resume. Audit by count per task, not row_index (resume
+    renumbers from the banked count). Never raises: a logging failure must not
+    hide the original error."""
+    try:
+        ts = datetime.now(timezone.utc).isoformat()
+        by_platform: dict[str, list[str]] = {}
+        for uid, (tid, row) in slot.items():
+            if uid in banked_uids:
+                continue
+            rec = {"task_id": tid, "row_index": row, "config": config, "renyi_k": k, "phase": phase,
+                   "seed": seed, "attempt_id": attempt_id, "n_tokens_so_far": len(toks[uid]),
+                   "started": len(toks[uid]) > 0, "error": repr(exc)[:300], "timestamp": ts}
+            by_platform.setdefault(problem_by_id[tid].platform, []).append(json.dumps(rec) + "\n")
+        for platform, lines in by_platform.items():
+            _write_killed_lines(config, platform, lines)
+        log(f"  KILLED: logged {sum(map(len, by_platform.values()))} unbanked row(s) to {KILLED_DIR} "
+            f"before exiting ({exc!r:.120})")
+    except Exception as log_exc:
+        log(f"  KILLED: FAILED to log unbanked rows ({log_exc!r:.120}); original error follows")
 
 
 def _check_deployed_code() -> None:
@@ -276,37 +312,45 @@ def run_batch(model, tok, eos_ids, config, k, label, batch, ranges, seed,
         slot = dict(zip(uids, row_of))
         fresh: dict[str, list[dict]] = {tid: [] for tid, _, _ in ranges}
         written: set[str] = set()
+        banked_uids: set[int] = set()
         attempt_id = f"{config}:{label.replace(' ', '')}_run{RUN_ID}"
         t0, step, max_resident = time.time(), 0, 0
-        while responses := gen.next_generated():
-            step += 1
-            max_resident = max(max_resident, len(responses))
-            for r in responses:
-                if r.uid not in toks:
-                    continue
-                if r.finish_reason != "stop":
-                    toks[r.uid].append(r.token)
-                if r.finish_reason is None or finished[r.uid]:
-                    continue
-                finished[r.uid] = True
-                tid, row = slot[r.uid]
-                problem = problem_by_id[tid]
-                text = tok.decode(toks[r.uid], skip_special_tokens=False)
-                rec = banked_sample_record(tid, text, _strip_think_content(text, marker=THINK_END_MARKER),
-                                           r.finish_reason, len(toks[r.uid]), attempt_id, seed=seed)
-                rec["row_index"] = row
-                with partial_path(config, problem.platform).open("a") as pf:
-                    pf.write(json.dumps(rec) + "\n")
-                fresh[tid].append(rec)
-                prior = banked.get(tid, [])
-                if len(prior) + len(fresh[tid]) >= N_SAMPLES and tid not in written:
-                    _write_record(config, k, problem, prior, fresh[tid])
-                    written.add(tid)
-            if step % POLL_EVERY_N_STEPS == 0:
-                log(f"    step={step:6d} active={mx.get_active_memory()/1e9:7.3f}GB "
-                    f"peak={mx.get_peak_memory()/1e9:7.3f}GB "
-                    f"samples_done={sum(finished.values())}/{len(uids)} resident={len(responses)} "
-                    f"tasks_written={len(written)} elapsed={time.time()-t0:.0f}s")
+        try:
+            while responses := gen.next_generated():
+                step += 1
+                max_resident = max(max_resident, len(responses))
+                for r in responses:
+                    if r.uid not in toks:
+                        continue
+                    if r.finish_reason != "stop":
+                        toks[r.uid].append(r.token)
+                    if r.finish_reason is None or finished[r.uid]:
+                        continue
+                    finished[r.uid] = True
+                    tid, row = slot[r.uid]
+                    problem = problem_by_id[tid]
+                    text = tok.decode(toks[r.uid], skip_special_tokens=False)
+                    rec = banked_sample_record(tid, text, _strip_think_content(text, marker=THINK_END_MARKER),
+                                               r.finish_reason, len(toks[r.uid]), attempt_id, seed=seed)
+                    rec["row_index"] = row
+                    with partial_path(config, problem.platform).open("a") as pf:
+                        pf.write(json.dumps(rec) + "\n")
+                    banked_uids.add(r.uid)
+                    fresh[tid].append(rec)
+                    prior = banked.get(tid, [])
+                    if len(prior) + len(fresh[tid]) >= N_SAMPLES and tid not in written:
+                        _write_record(config, k, problem, prior, fresh[tid])
+                        written.add(tid)
+                if step % POLL_EVERY_N_STEPS == 0:
+                    log(f"    step={step:6d} active={mx.get_active_memory()/1e9:7.3f}GB "
+                        f"peak={mx.get_peak_memory()/1e9:7.3f}GB "
+                        f"samples_done={sum(finished.values())}/{len(uids)} resident={len(responses)} "
+                        f"tasks_written={len(written)} elapsed={time.time()-t0:.0f}s")
+        except BaseException as exc:
+            # Rows still unfinished here are lost and redrawn on resume; log them first.
+            _log_killed_rows(config, k, batch.phase, seed, attempt_id, toks, banked_uids, slot,
+                             problem_by_id, exc)
+            raise
         log(f"  batch drain complete: steps={step} max_resident={max_resident} elapsed={time.time()-t0:.0f}s "
             f"peak_during={mx.get_peak_memory()/1e9:.3f}GB")
         expected = {tid for tid, _, n in ranges if len(banked.get(tid, [])) + n >= N_SAMPLES}

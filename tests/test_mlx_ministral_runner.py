@@ -143,3 +143,126 @@ def test_plan_passes_backfill_settings_to_scheduler(monkeypatch):
     assert seen["easy_backfill"] == runner.EASY_BACKFILL
     assert seen["medium_backfill"] == runner.MEDIUM_BACKFILL
     assert seen["medium_cap"] == runner.MEDIUM_CAP and seen["hard_cap"] == runner.HARD_CAP
+
+
+def _fake_gen_class(seen, steps):
+    """Fake BatchGenerator: yields the given per-step response lists, then raises
+    an OOM-like RuntimeError instead of returning []."""
+    class FakeGen:
+        def __init__(self, model, **kw):
+            seen.update(kw)
+            self._steps = list(steps)
+        def insert(self, prompts, max_tokens):
+            return list(range(len(prompts)))
+        def next_generated(self):
+            if self._steps:
+                return self._steps.pop(0)
+            raise RuntimeError("[METAL] Command buffer execution failed: Insufficient Memory")
+        def close(self):
+            pass
+    return FakeGen
+
+
+def test_crash_logs_every_unfinished_row_then_reraises(monkeypatch, tmp_path):
+    import importlib
+    g = importlib.import_module("mlx_lm.generate")
+    from bench.mlx_difficulty_pools import PoolBatch
+    R = lambda uid, tok, fin=None: SimpleNamespace(uid=uid, token=tok, finish_reason=fin)
+    # 3 rows: uid0 finishes, uid1 has 2 tokens in flight, uid2 never produced a token.
+    steps = [[R(0, 5), R(1, 6)], [R(0, 2, "stop"), R(1, 7)]]
+    monkeypatch.setattr(g, "BatchGenerator", _fake_gen_class({}, steps))
+    monkeypatch.setattr(runner, "PARTIAL_DIR", tmp_path)
+    monkeypatch.setattr(runner, "KILLED_DIR", tmp_path / "_killed")
+    tok = SimpleNamespace(decode=lambda ids, skip_special_tokens=False: "x")
+    p = SimpleNamespace(platform="leetcode", difficulty="easy", contest_date="x", question="q", task_id="t")
+    batch = PoolBatch("easy", [("t", 3)], completion_batch_size=12, prefill_batch_size=1)
+    with pytest.raises(RuntimeError, match="Insufficient Memory"):
+        runner.run_batch(None, tok, [2], "gk_0_1", 0.1, "easy batch 1/1", batch, [("t", 4, 3)], 99,
+                         {"t": p}, {"t": [1, 2]}, {})
+    killed = [json.loads(l) for l in (tmp_path / "_killed" / "gk_0_1_leetcode_think_t1.0.killed.jsonl").open()]
+    assert sorted(r["row_index"] for r in killed) == [5, 6]
+    by_row = {r["row_index"]: r for r in killed}
+    assert by_row[5]["n_tokens_so_far"] == 2 and by_row[5]["started"] is True
+    assert by_row[6]["n_tokens_so_far"] == 0 and by_row[6]["started"] is False
+    for r in killed:
+        assert r["task_id"] == "t" and r["seed"] == 99 and r["renyi_k"] == 0.1
+        assert r["phase"] == "easy" and "Insufficient Memory" in r["error"]
+    banked = [json.loads(l) for l in (tmp_path / "gk_0_1_leetcode_think_t1.0.partial.jsonl").open()]
+    assert [b["row_index"] for b in banked] == [4]
+
+
+def test_clean_drain_writes_no_killed_file(monkeypatch, tmp_path):
+    import importlib
+    g = importlib.import_module("mlx_lm.generate")
+    from bench.mlx_difficulty_pools import PoolBatch
+
+    class CleanGen:
+        def __init__(self, model, **kw): self._done = False
+        def insert(self, prompts, max_tokens): return [0]
+        def next_generated(self):
+            if self._done: return []
+            self._done = True
+            return [SimpleNamespace(uid=0, token=2, finish_reason="stop")]
+        def close(self): pass
+
+    monkeypatch.setattr(g, "BatchGenerator", CleanGen)
+    monkeypatch.setattr(runner, "PARTIAL_DIR", tmp_path)
+    monkeypatch.setattr(runner, "KILLED_DIR", tmp_path / "_killed")
+    tok = SimpleNamespace(decode=lambda ids, skip_special_tokens=False: "x")
+    p = SimpleNamespace(platform="atcoder", difficulty="easy", contest_date="x", question="q", task_id="t")
+    runner.run_batch(None, tok, [2], "gk_0_1", 0.1, "b", PoolBatch("easy", [("t", 1)], 32, 8),
+                     [("t", 0, 1)], 1, {"t": p}, {"t": [1]}, {})
+    assert not (tmp_path / "_killed").exists()
+
+
+def _run_crashing_batch(monkeypatch, tmp_path, steps, closed=None):
+    import importlib
+    g = importlib.import_module("mlx_lm.generate")
+    from bench.mlx_difficulty_pools import PoolBatch
+    gen_cls = _fake_gen_class({}, steps)
+    if closed is not None:
+        orig_close = gen_cls.close
+        def close(self):
+            closed.append(True)
+            orig_close(self)
+        gen_cls.close = close
+    monkeypatch.setattr(g, "BatchGenerator", gen_cls)
+    monkeypatch.setattr(runner, "PARTIAL_DIR", tmp_path)
+    monkeypatch.setattr(runner, "KILLED_DIR", tmp_path / "_killed")
+    tok = SimpleNamespace(decode=lambda ids, skip_special_tokens=False: "x")
+    p = SimpleNamespace(platform="leetcode", difficulty="easy", contest_date="x", question="q", task_id="t")
+    batch = PoolBatch("easy", [("t", 3)], completion_batch_size=12, prefill_batch_size=1)
+    return lambda: runner.run_batch(None, tok, [2], "gk_0_1", 0.1, "b", batch, [("t", 0, 3)], 7,
+                                    {"t": p}, {"t": [1]}, {})
+
+
+def test_row_whose_partial_write_fails_is_logged_as_killed(monkeypatch, tmp_path):
+    R = lambda uid, tok, fin=None: SimpleNamespace(uid=uid, token=tok, finish_reason=fin)
+    run = _run_crashing_batch(monkeypatch, tmp_path, [[R(0, 5, "stop"), R(1, 6), R(2, 7)]])
+    real_open = runner.Path.open
+
+    def failing_open(self, mode="r", *a, **kw):
+        if self.name.endswith(".partial.jsonl") and "a" in mode:
+            raise OSError(28, "No space left on device")
+        return real_open(self, mode, *a, **kw)
+
+    monkeypatch.setattr(runner.Path, "open", failing_open)
+    with pytest.raises(OSError, match="No space"):
+        run()
+    monkeypatch.setattr(runner.Path, "open", real_open)
+    killed = [json.loads(l) for l in (tmp_path / "_killed" / "gk_0_1_leetcode_think_t1.0.killed.jsonl").open()]
+    assert sorted(r["row_index"] for r in killed) == [0, 1, 2]
+
+
+def test_failure_while_logging_does_not_mask_the_original_error(monkeypatch, tmp_path):
+    R = lambda uid, tok, fin=None: SimpleNamespace(uid=uid, token=tok, finish_reason=fin)
+    closed = []
+    run = _run_crashing_batch(monkeypatch, tmp_path, [[R(0, 5)]], closed)
+
+    def boom(*a, **kw):
+        raise OSError("disk full while logging")
+
+    monkeypatch.setattr(runner, "_write_killed_lines", boom)
+    with pytest.raises(RuntimeError, match="Insufficient Memory"):
+        run()
+    assert closed == [True]
