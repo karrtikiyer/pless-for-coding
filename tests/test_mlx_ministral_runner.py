@@ -74,20 +74,25 @@ def test_record_has_every_vllm_field():
     assert vllm_keys <= ours, sorted(vllm_keys - ours)
 
 
-def test_easy_backfill_12_in_chunks_of_120():
-    if not {"MLXLM_MGK_EASY_CAP", "MLXLM_MGK_EASY_BACKFILL"} & set(os.environ):
+def test_easy_backfill_12_medium_backfill_8_hard_10():
+    if not set(os.environ) & {"MLXLM_MGK_EASY_CAP", "MLXLM_MGK_EASY_BACKFILL", "MLXLM_MGK_MEDIUM_CAP",
+                              "MLXLM_MGK_MEDIUM_BACKFILL", "MLXLM_MGK_HARD_CAP"}:
         assert runner.EASY_CAP == 120 and runner.EASY_BACKFILL == 12
-    assert runner.MEDIUM_CAP == 16 and runner.HARD_CAP == 10
+        assert runner.MEDIUM_CAP == 120 and runner.MEDIUM_BACKFILL == 8
+        assert runner.HARD_CAP == 10
 
 
 def test_plan_gives_easy_backfill_and_no_backfill_elsewhere():
     from bench.mlx_difficulty_pools import build_pool_batches
-    tasks = [(f"e{i}", "easy", 10) for i in range(30)] + [(f"m{i}", "medium", 10) for i in range(3)]
+    tasks = [(f"e{i}", "easy", 10) for i in range(30)] + [(f"m{i}", "medium", 10) for i in range(30)]
+    tasks += [(f"h{i}", "hard", 10) for i in range(3)]
+    backfill = {"easy": runner.EASY_BACKFILL, "medium": runner.MEDIUM_BACKFILL}
     for b in build_pool_batches(tasks, easy_cap=runner.EASY_CAP, medium_cap=runner.MEDIUM_CAP,
-                                hard_cap=runner.HARD_CAP, easy_backfill=runner.EASY_BACKFILL):
+                                hard_cap=runner.HARD_CAP, easy_backfill=runner.EASY_BACKFILL,
+                                medium_backfill=runner.MEDIUM_BACKFILL):
         rows = sum(n for _, n in b.rows)
-        if b.phase == "easy" and rows > runner.EASY_BACKFILL:
-            assert b.completion_batch_size == runner.EASY_BACKFILL
+        if b.phase in backfill and rows > backfill[b.phase]:
+            assert b.completion_batch_size == backfill[b.phase]
         else:
             assert b.completion_batch_size >= rows
 
@@ -119,3 +124,22 @@ def test_run_batch_passes_backfill_and_prefill_sizes_to_batchgenerator(monkeypat
     except RuntimeError:
         pass  # fake generator returns nothing, so the post-drain check fires
     assert seen["completion_batch_size"] == 12 and seen["prefill_batch_size"] == 1
+
+
+def test_plan_passes_backfill_settings_to_scheduler(monkeypatch):
+    # Without medium_backfill reaching build_pool_batches, medium would insert 120
+    # rows with completion_batch_size=120 (near-certain OOM) and the suite stays green.
+    seen = {}
+
+    def fake_build(tasks, **kw):
+        seen.update(kw)
+        return []
+
+    monkeypatch.setattr(runner, "build_pool_batches", fake_build)
+    monkeypatch.setattr(runner, "_load_done", lambda config: set())
+    monkeypatch.setattr(runner, "_load_banked", lambda config: {})
+    probs = [SimpleNamespace(task_id="t1", difficulty="medium", platform="atcoder")]
+    runner._plan(probs)
+    assert seen["easy_backfill"] == runner.EASY_BACKFILL
+    assert seen["medium_backfill"] == runner.MEDIUM_BACKFILL
+    assert seen["medium_cap"] == runner.MEDIUM_CAP and seen["hard_cap"] == runner.HARD_CAP

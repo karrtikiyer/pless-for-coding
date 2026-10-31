@@ -6,7 +6,8 @@ phases drained in order: easy, medium, hard. Every batch is capped: one
 `insert()` per batch, drained to completion, fresh BatchGenerator for the next
 batch. By default nothing backfills.
 
-Backfill is opt-in for easy only (`easy_backfill`). mlx-lm's BatchKVCache pads a
+Backfill is opt-in per phase for easy and medium (`easy_backfill`,
+`medium_backfill`); hard never backfills. mlx-lm's BatchKVCache pads a
 backfilled row to the longest resident row, so memory is easy_backfill x the
 longest row, not the shrinking batch: a 32-row easy backfill batch with one
 looping row pins 32 x ~25k tokens of KV (~118GB for Qwen3-8B); easy rows do hit
@@ -64,18 +65,22 @@ def build_pool_batches(
     medium_cap: int = MEDIUM_CAP_DEFAULT,
     hard_cap: int = HARD_CAP_DEFAULT,
     easy_backfill: int | None = None,
+    medium_backfill: int | None = None,
 ) -> list[PoolBatch]:
     """Split (task_id, difficulty, n_to_generate) tuples into ordered batches.
 
     `completion_batch_size >= rows` so mlx-lm never queues a row, and so can
-    never backfill past the cap. Exception, opt-in: `easy_backfill` sets the
-    easy batches' completion_batch_size, so at most that many easy rows run at
-    once and mlx-lm backfills the rest of the batch as rows finish. Memory then
-    scales with easy_backfill x the longest resident row (joining rows are
-    padded to it), not with easy_cap.
+    never backfill past the cap. Exception, opt-in per phase (easy, medium;
+    hard never): `easy_backfill` / `medium_backfill` set that phase's
+    completion_batch_size, so at most that many rows run at once and mlx-lm
+    backfills the rest of the batch as rows finish. Memory then scales with
+    the backfill count x the longest resident row (joining rows are padded to
+    it), not with the phase cap.
     """
-    if easy_backfill is not None and easy_backfill < 1:
-        raise ValueError(f"easy_backfill must be positive, got {easy_backfill}")
+    backfill = {"easy": easy_backfill, "medium": medium_backfill}
+    for phase, value in backfill.items():
+        if value is not None and value < 1:
+            raise ValueError(f"{phase}_backfill must be positive, got {value}")
     caps = {"easy": easy_cap, "medium": medium_cap, "hard": hard_cap}
     for phase, value in caps.items():
         if value <= 0:
@@ -98,10 +103,11 @@ def build_pool_batches(
     for phase in _PHASE_ORDER:
         for rows in _pack(pools[phase], caps[phase]):
             total = sum(n for _, n in rows)
-            if phase == "easy" and easy_backfill is not None and total > easy_backfill:
+            limit = backfill.get(phase)
+            if limit is not None and total > limit:
                 # prefill 1: mlx-lm admits up to prefill_batch_size prompts while
                 # generation is below the cap, so 8 let a cap of 12 reach 14 rows.
-                batches.append(PoolBatch(phase, rows, easy_backfill, 1))
+                batches.append(PoolBatch(phase, rows, limit, 1))
             else:
                 batches.append(PoolBatch(phase, rows, max(total, MLX_DEFAULT_COMPLETION_BATCH_SIZE),
                                          MLX_PREFILL_BATCH_SIZE))

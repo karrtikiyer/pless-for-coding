@@ -266,3 +266,36 @@ class TestEasyBackfill:
         a = assign_row_ranges(build_pool_batches(tasks, easy_cap=120), banked={})
         b = assign_row_ranges(build_pool_batches(tasks, easy_cap=120, easy_backfill=12), banked={})
         assert a == b
+
+
+class TestMediumBackfill:
+    """Opt-in backfill for medium, same mechanics as easy; hard never backfills."""
+
+    def test_medium_backfill_8_hard_untouched(self):
+        tasks = _tasks("e", "easy", 3) + _tasks("m", "medium", 30) + _tasks("h", "hard", 3)
+        for b in build_pool_batches(tasks, easy_cap=120, medium_cap=120, easy_backfill=12,
+                                    medium_backfill=8):
+            if b.phase == "medium":
+                assert _total(b) <= 120 and b.completion_batch_size == 8 and b.prefill_batch_size == 1
+            elif b.phase == "hard":
+                assert b.completion_batch_size >= _total(b)
+                assert b.prefill_batch_size == MLX_PREFILL_BATCH_SIZE
+
+    def test_medium_default_is_no_backfill(self):
+        for b in build_pool_batches(_tasks("m", "medium", 30), medium_cap=120):
+            assert b.completion_batch_size >= _total(b)
+
+    def test_medium_chunk_not_larger_than_backfill_does_not_queue(self):
+        b = build_pool_batches([("m", "medium", 5)], medium_cap=120, medium_backfill=8)[0]
+        assert b.completion_batch_size >= _total(b)
+
+    @pytest.mark.parametrize("bad", [0, -2])
+    def test_nonpositive_medium_backfill_raises(self, bad):
+        with pytest.raises(ValueError, match="medium_backfill"):
+            build_pool_batches(_tasks("m", "medium", 3), medium_backfill=bad)
+
+    def test_row_ranges_unchanged_by_medium_backfill(self):
+        tasks = _tasks("m", "medium", 30)
+        a = assign_row_ranges(build_pool_batches(tasks, medium_cap=120), banked={})
+        b = assign_row_ranges(build_pool_batches(tasks, medium_cap=120, medium_backfill=8), banked={})
+        assert a == b
