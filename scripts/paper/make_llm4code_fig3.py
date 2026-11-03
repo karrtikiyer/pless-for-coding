@@ -114,10 +114,12 @@ def _make_fig3a(log_scale: bool = False, out_name: str = "fig3a_passk_curves_mbp
     numeric k-differences instead (5->10 is now the largest gap, matching
     the true magnitude difference of 5 vs. 2 for the other two gaps).
 
-    Legend moved from "lower right" (which visually overlapped the greedy/
-    beam4 flat lines and their k=10 markers) to "upper left" -- verified
-    empty of all 6 curves across the whole k range in both scalings, since
-    the lowest-k points are also the lowest-value points for every config.
+    Legend moved outside the axes (below the plot) rather than any in-plot
+    corner. "Lower right" visually overlapped the greedy/beam4 flat lines
+    and their k=10 markers; a follow-up "upper left" placement still came
+    close to touching temp@0.7's steep rise at k=3 (y~47, near the legend's
+    bottom-right corner). Placing the legend fully outside the data area
+    is the only placement that's robust to curve shape by construction.
     """
     fig, ax = plt.subplots(figsize=(4.5, 3.2))
     for cfg in CONFIG_ORDER:
@@ -138,7 +140,8 @@ def _make_fig3a(log_scale: bool = False, out_name: str = "fig3a_passk_curves_mbp
     ax.set_xlabel("$k$ in pass@$k$")
     ax.set_ylabel("pass@k (%), mean over 7 MBPP models")
     ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=7, loc="upper left", frameon=True)
+    ax.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.22),
+              ncol=3, frameon=True)
     fig.tight_layout()
     for out in (FIG_DIR_CODE, FIG_DIR_PAPER):
         out.mkdir(parents=True, exist_ok=True)
