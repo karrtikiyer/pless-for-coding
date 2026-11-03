@@ -103,8 +103,22 @@ def _passk(path: Path, k: int) -> float | None:
     return v if v is not None else None
 
 
-def _make_fig3a() -> None:
-    """Pass@k curves per sampler, averaged over 7 MBPP models."""
+def _make_fig3a(log_scale: bool = False, out_name: str = "fig3a_passk_curves_mbpp.png") -> None:
+    """Pass@k curves per sampler, averaged over 7 MBPP models.
+
+    Linear x-axis (default) chosen over log after user review: with k in
+    {1,3,5,10} (only a 10x range), log-scaling made the 1->3 gap look
+    disproportionately large relative to 3->5 and 5->10 -- a real, verified
+    visual artifact of log-scaling this irregular 4-point set, not a bug,
+    but one the user preferred to avoid. Linear spacing reflects the actual
+    numeric k-differences instead (5->10 is now the largest gap, matching
+    the true magnitude difference of 5 vs. 2 for the other two gaps).
+
+    Legend moved from "lower right" (which visually overlapped the greedy/
+    beam4 flat lines and their k=10 markers) to "upper left" -- verified
+    empty of all 6 curves across the whole k range in both scalings, since
+    the lowest-k points are also the lowest-value points for every config.
+    """
     fig, ax = plt.subplots(figsize=(4.5, 3.2))
     for cfg in CONFIG_ORDER:
         vals_per_k = []
@@ -117,18 +131,19 @@ def _make_fig3a() -> None:
         # use a dashed stroke so both are visible without one hiding the other.
         linestyle = "--" if cfg == "p-less-norm" else "-"
         ax.plot(KS, vals_per_k, marker="o", label=cfg, color=CONFIG_COLORS[cfg], linewidth=1.5, markersize=5, linestyle=linestyle)
-    ax.set_xscale("log")
+    if log_scale:
+        ax.set_xscale("log")
     ax.set_xticks(KS)
     ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     ax.set_xlabel("$k$ in pass@$k$")
     ax.set_ylabel("pass@k (%), mean over 7 MBPP models")
     ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=7, loc="lower right", frameon=True)
+    ax.legend(fontsize=7, loc="upper left", frameon=True)
     fig.tight_layout()
     for out in (FIG_DIR_CODE, FIG_DIR_PAPER):
         out.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out / "fig3a_passk_curves_mbpp.png", dpi=180, bbox_inches="tight")
-    print("wrote fig3a_passk_curves_mbpp.png", file=sys.stderr)
+        fig.savefig(out / out_name, dpi=180, bbox_inches="tight")
+    print(f"wrote {out_name}", file=sys.stderr)
 
 
 def _make_fig3b() -> None:
