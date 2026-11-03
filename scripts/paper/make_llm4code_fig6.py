@@ -66,8 +66,16 @@ def _passk(path: Path, k: int) -> float | None:
 
 
 def _make_fig6a() -> None:
-    """pass@k curves per sampler on APPS-252, 2 panels."""
-    fig, axes = plt.subplots(1, 2, figsize=(8.5, 3.2), sharey=True)
+    """pass@k curves per sampler on APPS-252, 2 panels.
+
+    Legend moved outside each panel (below it) instead of in-plot "lower
+    right", which visually overlapped the climbing p-less/p-less-norm
+    curves. Kept as a PER-PANEL legend (not one shared fig-level legend
+    like Figs 3/4) because the G_k entry differs by model (G_k=0.1 for
+    Qwen3-8B, G_k=0.35 for DeepSeek) -- consolidating into one legend
+    would have to drop that per-model distinction or use a generic label.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(8.5, 4.3), sharey=True)
     for i, (model, cells) in enumerate(APPS_CELLS):
         ax = axes[i]
         for label, rel in cells.items():
@@ -86,7 +94,8 @@ def _make_fig6a() -> None:
         short = model.replace("-R1-Distill-Llama-8B", "-R1-Distill")
         ax.set_title(short)
         ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=7, loc="lower right", frameon=True)
+        ax.legend(fontsize=6.5, loc="upper center", bbox_to_anchor=(0.5, -0.22),
+                  ncol=2, frameon=True)
     fig.tight_layout()
     for out in (FIG_DIR_CODE, FIG_DIR_PAPER):
         out.mkdir(parents=True, exist_ok=True)
@@ -125,7 +134,9 @@ def _make_fig6b() -> None:
     ax.set_xticklabels([m.replace("-R1-Distill-Llama-8B", "-R1-Distill") for m, _ in APPS_CELLS], fontsize=9)
     ax.set_ylabel("pass@10 $-$ pass@1 (pp)")
     ax.grid(True, alpha=0.3, axis="y")
-    ax.legend(fontsize=7, loc="upper right", frameon=True, ncols=2)
+    # Legend moved outside (below) rather than "upper right" in-plot.
+    ax.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.25),
+              ncol=3, frameon=True)
     ax.axhline(0, color="black", linewidth=0.5)
     fig.tight_layout()
     for out in (FIG_DIR_CODE, FIG_DIR_PAPER):

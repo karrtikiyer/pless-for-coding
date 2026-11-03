@@ -93,6 +93,17 @@ CONFIG_COLORS = {
     "p-less":      "#d62728",  # matplotlib red
     "p-less-norm": "#e377c2",  # matplotlib pink
 }
+# Display text for figure legends only (CONFIG_ORDER / CONFIG_COLORS keys are
+# unchanged -- still used for data lookup and color lookup throughout).
+# top-p@0.9 is genuinely a T=1.0 config (see top_p0.9_bigcode_t1.0_metrics.json
+# above); p-less/p-less-norm here are both T=0.7 (pless[_norm]_*t0.7*).
+DISPLAY_LABEL = {
+    "beam4":       "beam@4",
+    "temp@0.7":    "T@0.7",
+    "top-p@0.9":   "top-p@0.9 with T=1.0",
+    "p-less":      "p-less with T=0.7",
+    "p-less-norm": "p-less-norm with T=0.7",
+}
 KS = [1, 3, 5, 10]
 
 
@@ -132,7 +143,7 @@ def _make_fig3a(log_scale: bool = False, out_name: str = "fig3a_passk_curves_mbp
         # p-less-norm overlaps p-less near-perfectly (within ~0.5 pp per Table 3A);
         # use a dashed stroke so both are visible without one hiding the other.
         linestyle = "--" if cfg == "p-less-norm" else "-"
-        ax.plot(KS, vals_per_k, marker="o", label=cfg, color=CONFIG_COLORS[cfg], linewidth=1.5, markersize=5, linestyle=linestyle)
+        ax.plot(KS, vals_per_k, marker="o", label=DISPLAY_LABEL.get(cfg, cfg), color=CONFIG_COLORS[cfg], linewidth=1.5, markersize=5, linestyle=linestyle)
     if log_scale:
         ax.set_xscale("log")
     ax.set_xticks(KS)
@@ -166,13 +177,17 @@ def _make_fig3b() -> None:
             p10 = _passk(p, 10) if p else None
             lifts.append((p10 - p1) * 100 if p1 is not None and p10 is not None else 0.0)
         offset = (i - (n_cfgs - 1) / 2) * bar_width
-        ax.bar(x + offset, lifts, bar_width, label=cfg, color=CONFIG_COLORS[cfg])
+        ax.bar(x + offset, lifts, bar_width, label=DISPLAY_LABEL.get(cfg, cfg), color=CONFIG_COLORS[cfg])
 
     ax.set_xticks(x)
     ax.set_xticklabels([m for m, _ in MBPP_CELLS], rotation=25, ha="right", fontsize=8)
     ax.set_ylabel("pass@10 $-$ pass@1 (pp)")
     ax.grid(True, alpha=0.3, axis="y")
-    ax.legend(fontsize=7, loc="upper right", frameon=True, ncols=2)
+    # Legend moved outside (below) rather than "upper right" in-plot -- same
+    # overlap-robustness rationale as fig3a: guaranteed clear of bars by
+    # construction, regardless of bar heights per model.
+    ax.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.3),
+              ncol=4, frameon=True)
     ax.axhline(0, color="black", linewidth=0.5)
     fig.tight_layout()
     for out in (FIG_DIR_CODE, FIG_DIR_PAPER):
