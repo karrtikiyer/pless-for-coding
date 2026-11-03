@@ -119,17 +119,23 @@ def main() -> None:
         ax = ax5a[i]
         ax.plot(ks_p, p1, marker="o", color="C0", label=("pass@1" if i == 0 else None))
         ax.plot(ks_p, p10, marker="s", color="C1", label=("pass@10" if i == 0 else None))
+        # Connect the last swept k (1.6) to the k=2 (p-less) baseline point, so the
+        # curve visually reaches the baseline instead of stopping at k=1.6. The
+        # flat dashed axhline below is kept too (per user: "keep both") as an
+        # easy-to-read reference across the whole k range.
+        ax.plot([ks_p[-1], 2.0], [p1[-1], bp1], marker="o", color="C0")
+        ax.plot([ks_p[-1], 2.0], [p10[-1], bp10], marker="s", color="C1")
         ax.axhline(bp1, linestyle="--", color="C0", alpha=0.5, linewidth=0.9,
-                   label=("$k{=}2$ (p-less) pass@1" if i == 0 else None))
+                   label=(r"$\alpha{=}2$ (p-less) pass@1" if i == 0 else None))
         ax.axhline(bp10, linestyle="--", color="C1", alpha=0.5, linewidth=0.9,
-                   label=("$k{=}2$ (p-less) pass@10" if i == 0 else None))
+                   label=(r"$\alpha{=}2$ (p-less) pass@10" if i == 0 else None))
         ax.set_xscale("log")
         # Sparse round-number ticks; data markers show all measured k values
         sparse_ticks = [0.05, 0.1, 0.2, 0.5, 1.0, 2.0]
         ax.set_xticks(sparse_ticks)
         ax.set_xticklabels([f"{k:g}" for k in sparse_ticks], fontsize=8)
         ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
-        ax.set_xlabel("k (Rényi order)")
+        ax.set_xlabel(r"$\alpha$ (Rényi order)")
         ax.set_title(model.replace("-R1-Distill-Llama-8B", "-R1-Distill"))
         if i == 0:
             ax.set_ylabel("pass@k (%)")
@@ -139,13 +145,15 @@ def main() -> None:
         ax = ax5b[i]
         ax.plot(ks_p, tr, marker="o", color="C3",
                 label=("truncation" if i == 0 else None))
+        # Same connecting segment as Fig 5A: k=1.6 -> k=2 (p-less) baseline point.
+        ax.plot([ks_p[-1], 2.0], [tr[-1], btr], marker="o", color="C3")
         ax.axhline(btr, linestyle="--", color="C3", alpha=0.5, linewidth=0.9,
-                   label=("$k{=}2$ (p-less) baseline" if i == 0 else None))
+                   label=(r"$\alpha{=}2$ (p-less) baseline" if i == 0 else None))
         ax.set_xscale("log")
         ax.set_xticks(sparse_ticks)
         ax.set_xticklabels([f"{k:g}" for k in sparse_ticks], fontsize=8)
         ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
-        ax.set_xlabel("k (Rényi order)")
+        ax.set_xlabel(r"$\alpha$ (Rényi order)")
         ax.set_title(model.replace("-R1-Distill-Llama-8B", "-R1-Distill"))
         if i == 0:
             ax.set_ylabel("truncation (%)")
