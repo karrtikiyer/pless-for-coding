@@ -77,3 +77,12 @@ def test_blue_bars_equal_share_above_half(tmp_path):
     fig = mod.make_figure(pooled, bins=40)
     blue = [p for p in fig.axes[0].patches if p.get_facecolor()[:3] == (0x2a / 255, 0x78 / 255, 0xd6 / 255)]
     assert sum(p.get_height() for p in blue) == 100.0 * pooled["n_gt_half"] / pooled["n"]
+
+
+def test_canvas_matches_sibling_figures(tmp_path):
+    """Drawn at the same native width as Fig 1 (fig3a, 4.5 in) so that, scaled to the column, its default-size
+    text prints at the same size as the other figures instead of oversized (a 3.5 in canvas prints at ~10 pt)."""
+    rows = [{"cls": "clean", "onset_token": None, "coll": [0.2, 0.9]}]
+    fig = mod.make_figure(mod.pooled_stats(mod.class_stats(_write(tmp_path, rows), bins=40)), bins=40)
+    assert fig.get_size_inches()[0] == 4.5
+    assert mod.SAVE_DPI == 180

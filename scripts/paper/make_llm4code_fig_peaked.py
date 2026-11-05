@@ -31,6 +31,7 @@ FIG_DIR_CODE = REPO_ROOT / "paper" / "llm4code" / "figures"
 FIG_DIR_PAPER = REPO_ROOT.parent / "pless-for-coding-paper" / "figures"
 DATA = REPO_ROOT / "results" / "signal_diagnostic" / "Qwen--Qwen3-8B" / "per_sample.jsonl"
 OUT_NAME = "figA1_lp_peakedness_qwen3.png"
+SAVE_DPI = 180  # same as the other paper figures
 
 LOOP_CLASSES = ("looping_completed", "looping_truncated")
 def class_stats(path: Path, bins: int = 40) -> dict[str, dict]:
@@ -67,12 +68,12 @@ def make_figure(pooled: dict, bins: int = 40) -> plt.Figure:
     pct = 100.0 * pooled["counts"] / pooled["n"]
     share = 100.0 * pooled["n_gt_half"] / pooled["n"]
     lo = edges[:-1] < 0.5 - 1e-9  # bins entirely below 1/2 (bins=40 puts an edge exactly at 0.5)
-    fig, ax = plt.subplots(figsize=(3.5, 2.3))
+    fig, ax = plt.subplots(figsize=(4.5, 3.0))
     ax.bar(edges[:-1][lo], pct[lo], width=1.0 / bins, align="edge", color="#b9b8b4", edgecolor="#52514e", linewidth=0.4)
     ax.bar(edges[:-1][~lo], pct[~lo], width=1.0 / bins, align="edge", color="#2a78d6", edgecolor="#1a4f93", linewidth=0.4)
     ax.axvline(0.5, color="#222222", linewidth=1.0, linestyle="--")
     ax.text(0.53, 0.80, f"{share:.0f}% of tokens\nhave L[P] > \u00bd",
-            transform=ax.get_xaxis_transform(), ha="left", va="center", fontsize=8, color="#0b0b0b")
+            transform=ax.get_xaxis_transform(), ha="left", va="center", fontsize=9, color="#0b0b0b")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 50)
     ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
@@ -94,7 +95,7 @@ def main() -> None:
     fig = make_figure(pooled, bins=bins)
     for out in (FIG_DIR_CODE, FIG_DIR_PAPER):
         out.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out / OUT_NAME, dpi=300, bbox_inches="tight")
+        fig.savefig(out / OUT_NAME, dpi=SAVE_DPI, bbox_inches="tight")
     print(f"wrote {OUT_NAME}", file=sys.stderr)
 
 
