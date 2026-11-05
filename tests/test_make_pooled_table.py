@@ -331,3 +331,14 @@ def test_main_allow_partial_with_no_common_configs_fails(mod, tmp_path, monkeypa
     with pytest.raises(SystemExit) as e:
         mod.main(["--model", "deepseek", "--allow-partial", "--boot", "50", "--out", str(tmp_path / "t.md")])
     assert "no configs have metrics on both sides" in str(e.value)
+
+
+def test_common_rows_joins_on_metrics_stem_when_labels_differ(mod, tmp_path, monkeypatch):
+    """The 252-side display labels were renamed for the paper tables ('top-p@0.9 with T=1.0'); the join must
+    not silently drop configs whose label differs but whose metrics-file stem is identical on both sides."""
+    a = _metrics(tmp_path / "a" / "temp_p0.9_think_t1.0_t1.0_metrics.json", [(1, 5, 0.4)])
+    c = _metrics(tmp_path / "cf" / "temp_p0.9_think_t1.0_t1.0_metrics.json", [(2, 5, 0.4)])
+    monkeypatch.setattr(mod, "APPS_RENYI", {"Qwen3-8B": [("top-p@0.9 with T=1.0", str(a))]})
+    monkeypatch.setattr(mod, "_cf_rows", lambda model: [("top-p @0.9", "temp_p0.9_think_t1.0_t1.0")])
+    rows = mod.common_rows("qwen3", tmp_path / "cf", only_existing=True)
+    assert [(r[0], r[1], r[2]) for r in rows] == [("top-p @0.9", a, tmp_path / "cf" / "temp_p0.9_think_t1.0_t1.0_metrics.json")]

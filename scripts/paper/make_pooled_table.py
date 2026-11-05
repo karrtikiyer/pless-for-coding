@@ -53,10 +53,13 @@ def common_rows(model: str, cf_metrics_dir: Path, only_existing: bool = False) -
     Default: every label in both config maps (files are validated later, so a missing file fails loudly).
     only_existing=True additionally requires BOTH metrics files to exist on disk (for --allow-partial)."""
     a_by_label = {label: REPO_ROOT / p for label, p in APPS_RENYI[APPS_KEY[model]]}
+    # The 252-side labels are paper display names and may differ from the CF labels; the metrics-file stem
+    # (identical on both sides for the same config) is the fallback key when the label does not match.
+    a_by_stem = {Path(p).name.removesuffix("_metrics.json"): REPO_ROOT / p for _, p in APPS_RENYI[APPS_KEY[model]]}
     rows = [
-        (label, a_by_label[label], Path(cf_metrics_dir) / f"{stem}_metrics.json")
+        (label, a_by_label.get(label, a_by_stem.get(stem)), Path(cf_metrics_dir) / f"{stem}_metrics.json")
         for label, stem in _cf_rows(model)
-        if label in a_by_label
+        if label in a_by_label or stem in a_by_stem
     ]
     return [r for r in rows if r[1].exists() and r[2].exists()] if only_existing else rows
 
