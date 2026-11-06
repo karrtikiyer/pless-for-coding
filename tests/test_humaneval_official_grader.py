@@ -282,3 +282,39 @@ def test_cli_refuses_legacy_grader_on_regen_records(tmp_path, monkeypatch):
                                      "--skip-diversity", "--workers", "1", "--output", str(tmp_path / "m.json")])
     with pytest.raises(SystemExit):
         cli.main()
+
+
+# ---------- indented first def + column-0 helper (code re-review 2026-11-06, blocker) ----------
+
+def test_indented_entry_def_with_column0_helper_passes():
+    reply = ("  def has_close_elements(numbers, threshold):\n" + BODY.replace("return True", "return _hit()")
+             + "\n\ndef _hit():\n    return True\n")
+    prog, mode = he.build_program(_rec("chat", [reply]), reply)
+    assert mode == "chat_function", mode
+    assert he.run_program(prog, timeout=3.0)[0]
+
+
+def test_uniformly_indented_reply_still_dedents():
+    # Must not be broken by the first-line fix: the whole block is indented by 2.
+    reply = "  from typing import List\n  def has_close_elements(numbers, threshold):\n" + "\n".join(
+        "  " + ln for ln in BODY.splitlines()) + "\n"
+    prog, mode = he.build_program(_rec("chat", [reply]), reply)
+    assert mode == "chat_function", mode
+    assert he.run_program(prog, timeout=3.0)[0]
+
+
+def test_real_codellama_reply_humaneval_107():
+    datasets = pytest.importorskip("datasets")
+    try:
+        task = next(t for t in datasets.load_dataset("openai/openai_humaneval", split="test") if t["task_id"] == "HumanEval/107")
+    except Exception as e:
+        pytest.skip(f"dataset unavailable: {e}")
+    reply = ('  def even_odd_palindrome(n):\n    even_count = 0\n    odd_count = 0\n    for i in range(1, n+1):\n'
+             '        if is_palindrome(i) and i % 2 == 0:\n            even_count += 1\n'
+             '        elif is_palindrome(i) and i % 2 == 1:\n            odd_count += 1\n'
+             '    return (even_count, odd_count)\n\ndef is_palindrome(n):\n    return str(n) == str(n)[::-1]')
+    rec = {"task_id": task["task_id"], "prompt_style": "chat", "task_prompt": task["prompt"], "test": task["test"],
+           "entry_point": task["entry_point"], "samples": [reply]}
+    prog, mode = he.build_program(rec, reply)
+    assert mode == "chat_function"
+    assert he.run_program(prog, timeout=3.0)[0]

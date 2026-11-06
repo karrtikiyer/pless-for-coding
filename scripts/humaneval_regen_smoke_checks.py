@@ -54,6 +54,14 @@ def identical_share(a: dict[str, list[str]], b: dict[str, list[str]]) -> tuple[i
     return sum(a[t] == b[t] for t in shared), len(shared)
 
 
+def first_divergence(a: list[str], b: list[str]) -> tuple[int, int] | None:
+    """(sample index, character position) of the first difference between two sample lists, else None."""
+    for i, (x, y) in enumerate(zip(a, b)):
+        if x != y:
+            return i, next((k for k, (cx, cy) in enumerate(zip(x, y)) if cx != cy), min(len(x), len(y)))
+    return None if len(a) == len(b) else (min(len(a), len(b)), 0)
+
+
 def seconds_per_task(timestamps: list[str]) -> float | None:
     if len(timestamps) < 2:
         return None
@@ -101,6 +109,10 @@ def main(argv=None) -> int:
         hits = stop_hits(raws, recs[0]["stop"] or []) if style == "base" else 0
         if hits and recs[0].get("backend_stop_strings"):
             failures.append(f"{model} {config}: backend did not stop on {hits} raw samples (stop text present)")
+        mism = [m for r in recs for m in (r.get("sample_meta") or []) if m and m.get("text_matches_reference") is False]
+        if mism and recs[0].get("backend_stop_strings"):
+            failures.append(f"{model} {config}: vLLM text differs from the reference decoding in {len(mism)} samples "
+                            "while vLLM applied the stop strings (stops unreliable)")
         capped = [at_cap(r.get("sample_meta")) for r in recs]
         capped = None if any(c is None for c in capped) else sum(capped)
         if config in MUST_VARY and n_cfg > 1 and all(len(set(r["raw_samples"])) == 1 for r in recs):
@@ -114,7 +126,10 @@ def main(argv=None) -> int:
                 k, n = identical_share(a, b)
                 same = f"{k}/{n}"
                 if k != n:
-                    failures.append(f"{model} {config}: rerun differs on {n - k}/{n} tasks")
+                    tid = next(t for t in sorted(set(a) & set(b)) if a[t] != b[t])
+                    pos = first_divergence(a[tid], b[tid])
+                    failures.append(f"{model} {config}: rerun differs on {n - k}/{n} tasks "
+                                    f"(first: {tid}, sample {pos[0]}, char {pos[1]})")
         rows.append((model, config, style, len(recs), len(comps), indent4, hits, capped, same,
                      seconds_per_task([r["timestamp"] for r in recs]), recs[0].get("backend_stop_strings")))
 

@@ -103,3 +103,17 @@ def test_identical_samples_within_every_task_are_a_hard_failure(tmp_path, capsys
 def test_at_cap_counts_come_from_generation_metadata():
     metas = [{"finish_reason": "length", "num_output_tokens": 512}, {"finish_reason": "stop", "num_output_tokens": 9}]
     assert smoke.at_cap(metas) == 1
+
+
+def test_first_divergence_position():
+    assert smoke.first_divergence(["abcd", "xy"], ["abXd", "xy"]) == (0, 2)
+    assert smoke.first_divergence(["a"], ["a"]) is None
+
+
+def test_smoke_configs_cover_every_vllm_sampler():
+    import re
+    from pathlib import Path
+    script = (Path(__file__).resolve().parents[1] / "run_regen_humaneval_8models.sh").read_text()
+    smoke_line = next(ln for ln in script.splitlines() if "--max-problems 5" in ln and "beam4" not in ln and "greedy" in ln)
+    for c in ("greedy", "temp_t0.7", "top_p0.9_t1.0", "pless_t0.7", "pless_norm_t0.7"):
+        assert c in smoke_line, c

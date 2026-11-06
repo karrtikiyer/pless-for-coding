@@ -166,7 +166,10 @@ def generate(config: Config, backend_obj, tokenizer, prompt_ids: list[int], *, s
     When vLLM's own detokenizer is broken for the model (``engine._safe_tokenizer`` set, e.g. OCI /
     DeepSeek-Coder, whose vLLM text loses whitespace), stop strings matched on that text could fire early
     (``"\n    if"`` read as ``"\nif"``) or never. Generation then runs without them and the completion is
-    cut afterwards on the correctly decoded text — identical tokens up to the stop, only slower.
+    cut afterwards on the correctly decoded text: the same sampling distribution up to the stop (sampling is
+    seeded per request and autoregressive); tokens can differ only through batch-size numerics, since a
+    sample that would have stopped keeps running. vLLM's text is also audited against the HF tokenizer
+    per sample (``sample_meta[i]["text_matches_reference"]``).
     """
     stops = list(BIGCODE_HUMANEVAL_STOP_SEQUENCES) if style == "base" else None
     if config.backend == "hf":
@@ -199,7 +202,8 @@ def postprocess(raw: str, style: str) -> str:
 
 def make_record(task: dict, *, model_id: str, style: str, config: Config, config_name: str,
                 prompt_ids: list[int], raw: list[str], seed: int, max_new_tokens: int,
-                versions: dict, metas: list[dict] | None = None, backend_stops: bool | None = None) -> dict:
+                versions: dict, metas: list[dict] | None = None, backend_stops: bool | None = None,
+                count_tokens=None) -> dict:
     rec = {
         "task_id": task["task_id"],
         "model": model_id,
@@ -212,7 +216,9 @@ def make_record(task: dict, *, model_id: str, style: str, config: Config, config
         "task_prompt": task["prompt"],
         "prompt_token_ids_head": prompt_ids[:8],
         "num_prompt_tokens": len(prompt_ids),
-        "samples": [postprocess(r, style) for r in raw],
+        "samples": (samples := [postprocess(r, style) for r in raw]),
+        # tokens in the stored (cut) completion; sample_meta.num_output_tokens counts the uncut generation
+        "completion_num_tokens": [count_tokens(x) for x in samples] if count_tokens else None,
         "raw_samples": raw,
         "test": task["test"],
         "entry_point": task["entry_point"],
@@ -246,13 +252,22 @@ def completed_task_ids(path: Path, resume: bool, expected: dict | None = None) -
         return set()
     if not resume:
         raise FileExistsError(f"{path} exists; pass --resume to continue it (never overwritten)")
-    with open(path) as f:
-        recs = [json.loads(line) for line in f if line.strip()]
+    lines = [ln for ln in Path(path).read_text().split("\n") if ln.strip()]
+    recs = []
+    for i, line in enumerate(lines):
+        try:
+            recs.append(json.loads(line))
+        except json.JSONDecodeError:
+            where = "last" if i == len(lines) - 1 else f"line {i + 1}"
+            raise ValueError(f"{path}: {where} record is truncated or corrupt (interrupted write?); "
+                             "inspect and remove it by hand before resuming") from None
     if expected and recs:
         first = recs[0]
         diff = {k: (first.get(k), expected.get(k)) for k in RESUME_KEYS if first.get(k) != expected.get(k)}
         fv, ev = first.get("versions") or {}, expected.get("versions") or {}
         diff.update({f"versions.{k}": (fv.get(k), ev.get(k)) for k in RESUME_VERSION_KEYS if fv.get(k) != ev.get(k)})
+        if fv.get("env") != ev.get("env"):   # vLLM runtime switches (model runner, sampler, multiprocessing)
+            diff["versions.env"] = (fv.get("env"), ev.get("env"))
         if diff:
             raise ValueError(f"cannot resume {path}: settings differ (file, now): {diff}")
     return {r["task_id"] for r in recs}
@@ -413,7 +428,8 @@ def main(argv=None) -> None:
                 rec = make_record(task, model_id=args.model, style=spec.prompt_style, config=config,
                                   config_name=name, prompt_ids=prompt_ids[task["task_id"]], raw=raw,
                                   seed=args.seed, max_new_tokens=args.max_new_tokens, versions=versions,
-                                  metas=metas, backend_stops=backend_stops)
+                                  metas=metas, backend_stops=backend_stops,
+                                  count_tokens=lambda t: len(tokenizer(t, add_special_tokens=False)["input_ids"]))
                 f.write(json.dumps(rec) + "\n")
                 f.flush()
 

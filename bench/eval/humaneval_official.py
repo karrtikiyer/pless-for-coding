@@ -93,11 +93,24 @@ def normalize_chat_reply(reply: str, entry_point: str) -> tuple[str, bool]:
 
 
 def _strip_leading_indent(code: str, entry_point: str) -> str:
-    """Un-indent the top-level lines before the first column-0 line (e.g. '  import x' before 'def f'),
-    only when the code defines the entry point at column 0. Bodies of helper functions are untouched."""
+    """Repair mis-indented top-level lines at the start of a reply. Same rule for every config.
+
+    1. A first line indented like ``  def <entry>(`` / ``  import`` / ``  from``, when the rest of the reply
+       is NOT uniformly indented (it has a column-0 line, e.g. a helper ``def``), is un-indented
+       (CodeLlama-Instruct writes ``  def f(n):\\n    body\\n\\ndef helper(...)``). A uniformly indented
+       block is left for ``textwrap.dedent`` in ``extract_python_code``.
+    2. When the entry point is then defined at column 0, indented top-level lines before the first column-0
+       line (e.g. ``  import hashlib`` before ``def f``) are un-indented. Helper bodies are untouched.
+    """
     lines = code.split("\n")
+    first = next((i for i, ln in enumerate(lines) if ln.strip()), None)
+    if first is not None and lines[first][:1].isspace() and re.match(
+            rf"\s+(def\s+{re.escape(entry_point)}\s*\(|import\s|from\s)", lines[first]):
+        rest_has_col0 = any(ln.strip() and not ln[0].isspace() for ln in lines[first + 1:])
+        if rest_has_col0:
+            lines[first] = lines[first].lstrip()
     if not any(re.match(rf"def\s+{re.escape(entry_point)}\s*\(", ln) for ln in lines):
-        return code
+        return "\n".join(lines)
     first_col0 = next((i for i, ln in enumerate(lines) if ln.strip() and not ln[0].isspace()), len(lines))
     return "\n".join(ln.lstrip() if i < first_col0 else ln for i, ln in enumerate(lines))
 

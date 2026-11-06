@@ -6,6 +6,7 @@
 #
 #   ./run_regen_humaneval_8models.sh smoke          # 5 tasks, models 1-3, writes results/humaneval_regen_2026_11_smoke
 #   ./run_regen_humaneval_8models.sh smoke-rerun    # same, second copy for the reproducibility check
+#                                                   (SMOKE_NAME=smoke2 ... writes ..._smoke2 / ..._smoke2_rerun)
 #   ./run_regen_humaneval_8models.sh fit MODEL_ID   # 7B fit test: engine start + 5 tasks (vLLM greedy, HF beam)
 #   ./run_regen_humaneval_8models.sh small          # full run, models 1-3 (resumable)
 #   ./run_regen_humaneval_8models.sh large [IDS..]  # full run, 7B models (resumable); default all five
@@ -46,9 +47,9 @@ run() {  # run MODEL CONFIGS OUT_ROOT [extra args...]
 
 case "${1:-}" in
   smoke|smoke-rerun)
-    root="results/humaneval_regen_2026_11_smoke"; [[ "$1" == smoke-rerun ]] && root="${root}_rerun"
+    root="results/humaneval_regen_2026_11_${SMOKE_NAME:-smoke}"; [[ "$1" == smoke-rerun ]] && root="${root}_rerun"
     for m in "${SMALL[@]}"; do
-      run "$m" "greedy,temp_t0.7,pless_t0.7" "$root" --max-problems 5
+      run "$m" "greedy,temp_t0.7,top_p0.9_t1.0,pless_t0.7,pless_norm_t0.7" "$root" --max-problems 5
       run "$m" "beam4" "$root" --max-problems 5
     done ;;
   fit)

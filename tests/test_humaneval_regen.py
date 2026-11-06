@@ -229,6 +229,22 @@ def test_existing_file_without_resume_is_refused(tmp_path):
     assert regen.completed_task_ids(tmp_path / "missing.jsonl", resume=False) == set()
 
 
+def test_resume_refuses_a_truncated_last_line(tmp_path):
+    p = tmp_path / "x.jsonl"
+    p.write_text(json.dumps({"task_id": "HumanEval/0"}) + "\n" + '{"task_id": "HumanEval/1", "sam')
+    with pytest.raises(ValueError, match="truncated"):
+        regen.completed_task_ids(p, resume=True)
+
+
+def test_record_counts_completion_tokens_after_the_cut():
+    task = {"task_id": "HumanEval/0", "prompt": TASK_PROMPT, "test": "T", "entry_point": "f"}
+    rec = regen.make_record(task, model_id="m/x", style="base", config=regen.CONFIGS["greedy"], config_name="greedy",
+                            prompt_ids=[1], raw=["    return 1\n\ndef g():\n    pass\n"], seed=42,
+                            max_new_tokens=512, versions={}, metas=[{"num_output_tokens": 30}], backend_stops=False,
+                            count_tokens=lambda text: len(text.split()))
+    assert rec["completion_num_tokens"] == [2]        # "return", "1" (the cut text)
+
+
 def test_resume_refuses_a_file_written_with_different_settings(tmp_path):
     p = tmp_path / "x.jsonl"
     p.write_text(json.dumps({"task_id": "HumanEval/0", "model": "m/x", "config": "temp_t0.7", "seed": 42, "n": 10,
@@ -241,6 +257,9 @@ def test_resume_refuses_a_file_written_with_different_settings(tmp_path):
         regen.completed_task_ids(p, resume=True, expected=dict(same, seed=7))
     with pytest.raises(ValueError):
         regen.completed_task_ids(p, resume=True, expected=dict(same, versions=dict(same["versions"], vllm="0.32.0")))
+    with pytest.raises(ValueError):   # vLLM runtime switches are part of the settings
+        regen.completed_task_ids(p, resume=True, expected=dict(same, versions=dict(same["versions"],
+                                                                                 env={"VLLM_USE_V2_MODEL_RUNNER": "1"})))
 
 
 def test_vllm_completion_meta_is_extracted():
@@ -252,6 +271,23 @@ def test_vllm_completion_meta_is_extracted():
         {"finish_reason": "stop", "stop_reason": "\ndef", "num_output_tokens": 3},
         {"finish_reason": "length", "stop_reason": None, "num_output_tokens": 512},
     ]
+
+
+def test_vllm_text_is_audited_against_the_reference_tokenizer():
+    # vLLM's own text must equal decoding prompt+completion with the HF tokenizer minus the decoded prompt
+    # (so leading spaces of SentencePiece pieces are judged in context). A mismatch flags unreliable stops.
+    from types import SimpleNamespace
+    from bench.generator_vllm import _extract_completion_meta
+    tok = _tok("codellama/CodeLlama-7b-hf")
+    prompt = tok("def f():\n")["input_ids"]
+    gen = tok("def f():\n    return 1\n", add_special_tokens=False)["input_ids"][len(prompt) - 1:]
+    good = tok.decode(prompt + gen, skip_special_tokens=True)[len(tok.decode(prompt, skip_special_tokens=True)):]
+    out = SimpleNamespace(prompt_token_ids=prompt, outputs=[
+        SimpleNamespace(finish_reason="stop", stop_reason=None, token_ids=gen, text=good),
+        SimpleNamespace(finish_reason="stop", stop_reason=None, token_ids=gen, text=good.replace("    ", "")),
+    ])
+    metas = _extract_completion_meta(out, reference_tokenizer=tok)
+    assert [m["text_matches_reference"] for m in metas] == [True, False]
 
 
 def test_hf_beam_meta(monkeypatch):

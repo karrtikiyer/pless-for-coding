@@ -8,6 +8,9 @@ Run locally, without adding the package to the project:
     uv run --with human-eval==1.0.3 python scripts/humaneval_regen_crosscheck_official.py \
         --files results/humaneval_regen_2026_11_smoke/*/*.jsonl --max-programs 400
 
+Scope: the official completion is derived from OUR build_program, so this validates execution (harness,
+composition order, exit handling), not our chat-reply normalization; audit that separately on real replies.
+
 Exits 1 if the official harness is inert (its exec line commented out — the package ships it disabled in some
 versions) or if any sample disagrees.
 """

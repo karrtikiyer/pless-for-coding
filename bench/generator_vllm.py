@@ -728,17 +728,32 @@ def encode_prompt_for_vllm(prompt_text, safe_tokenizer):
     return prompt_text
 
 
-def _extract_completion_meta(request_output) -> list[dict]:
+def _extract_completion_meta(request_output, reference_tokenizer=None) -> list[dict]:
     """Per-completion finish metadata (vLLM ``CompletionOutput``): why generation ended and how many
-    tokens were produced. ``stop_reason`` is the matched stop string / token id, or None."""
-    return [
-        {
+    tokens were produced. ``stop_reason`` is the matched stop string / token id, or None.
+
+    With ``reference_tokenizer`` (the HF tokenizer used to build the prompt), also records whether vLLM's own
+    text equals the reference decoding of prompt+completion minus the decoded prompt
+    (``text_matches_reference``). vLLM matches stop strings on its own text, so a mismatch means its stops
+    cannot be trusted for that model.
+    """
+    prompt_ids = getattr(request_output, "prompt_token_ids", None)
+    use_ref = reference_tokenizer is not None and prompt_ids is not None
+    if use_ref:
+        prompt_ids = list(prompt_ids)
+        decoded_prompt = reference_tokenizer.decode(prompt_ids, skip_special_tokens=True)
+    metas = []
+    for completion in request_output.outputs:
+        meta = {
             "finish_reason": completion.finish_reason,
             "stop_reason": completion.stop_reason,
             "num_output_tokens": len(completion.token_ids),
         }
-        for completion in request_output.outputs
-    ]
+        if use_ref:
+            full = reference_tokenizer.decode(prompt_ids + list(completion.token_ids), skip_special_tokens=True)
+            meta["text_matches_reference"] = completion.text == full[len(decoded_prompt):]
+        metas.append(meta)
+    return metas
 
 
 def _extract_completion_texts(request_output, engine) -> list[str]:
@@ -972,7 +987,7 @@ def generate_samples_vllm(
     outputs = engine.generate([prompt], sp, use_tqdm=False)
     texts = _extract_completion_texts(outputs[0], engine)
     if return_meta:
-        return texts, _extract_completion_meta(outputs[0])
+        return texts, _extract_completion_meta(outputs[0], reference_tokenizer=tokenizer)
     return texts
 
 
@@ -1033,5 +1048,5 @@ def generate_samples_standard_vllm(
     outputs = engine.generate([prompt], sp, use_tqdm=False)
     texts = _extract_completion_texts(outputs[0], engine)
     if return_meta:
-        return texts, _extract_completion_meta(outputs[0])
+        return texts, _extract_completion_meta(outputs[0], reference_tokenizer=tokenizer)
     return texts
