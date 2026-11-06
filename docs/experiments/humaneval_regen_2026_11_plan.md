@@ -102,9 +102,19 @@ For n=1 configs, pass@3/5/10 copy pass@1 (`bench/eval/metrics.py:compute_pass_at
   tokenize=True, add_generation_prompt=True)`. Reason: the chat-template *string* already starts with `<s>`;
   encoding it again added a second BOS (CodeLlama-7b-Instruct tokenizer, transformers 5.3.0: ids `[1, 1, …]`).
 - Text: base completions decoded from the full sequence with the prompt removed (the `d872d45` fix);
-  stored sample = raw prompt + completion. Chat: the reply text.
+  stored `samples` = the completion only, cut at the stop list (`raw_samples` keeps the uncut text); the grader
+  prepends the stored `task_prompt`. Storing the completion only keeps CodeBLEU diversity (computed on stored
+  samples) comparable with MBPP, whose base samples also exclude the prompt. Chat: the reply text.
 - Stop sequences, base models only: `["\nclass", "\ndef", "\n#", "\n@", "\nprint", "\nif", "\n```", "<file_sep>"]`
   (BigCode harness `tasks/humaneval.py`); also applied as post-truncation. Chat models: none.
+- When vLLM's own detokenizer is broken for a model (the engine installs a "safe" tokenizer — OCI /
+  DeepSeek-Coder), stop strings matched on vLLM's text could fire early or never, so those runs pass no stop
+  strings to vLLM and cut afterwards on the correctly decoded text (same tokens up to the stop; recorded as
+  `backend_stop_strings: false`).
+- Per sample, records store `sample_meta` = vLLM/HF `finish_reason`, `stop_reason`, `num_output_tokens`.
+- `--resume` refuses a file whose records were written with different settings or library versions; the context
+  length is computed over all 164 prompts even for 5-task smoke/fit runs; the manifest records a SHA-256 of the
+  dataset content and whether the git tree was dirty.
 - Beam runs as a separate step per model (one model in GPU memory at a time).
 - Each record stores: `task_id`, `model`, `config`, `backend`, `task_prompt` (raw), `prompt_text`,
   first prompt token ids, `samples`, `test`, `entry_point`, `seed`, `n`, `max_new_tokens`, `stop`,
@@ -126,9 +136,17 @@ Program = prompt + completion + `"\n"` + test + `"\n"` + `check(entry_point)` (o
 
 | Sample | Program |
 |---|---|
-| base | sample (must start with the raw prompt — asserted) + test + check |
+| base | raw prompt + completion (re-cut at the stop list; idempotent) + test + check |
 | chat reply containing `def <entry_point>` | raw prompt + extracted code + test + check (the reply's function replaces the stub; prompt imports stay) |
-| chat reply without it (body fragment; 29/1640 CodeLlama-Instruct replies in the old run) | raw prompt + reply as written + test + check |
+| chat reply without it (body fragment) | raw prompt + reply as written (fence/tag markup removed, indentation kept) + test + check |
+
+Chat replies are normalized the same way for every config before extraction (code review, 2026-11-06):
+CodeLlama-Instruct's `[PYTHON] … [/PYTHON]` tags are treated as a code fence (≈11% of its replies; the first
+grader version failed all of them); with several fenced blocks, the one defining `def <entry_point>` is used;
+mis-indented top-level lines before the first column-0 line (e.g. `  import hashlib`) are un-indented. Re-grading
+the old CodeLlama-Instruct p-less@0.6 file with this rule: 658/1640 samples pass (64/180 tagged replies), versus
+28.11% under the old no-prompt grader. Body fragments with wrong indentation (e.g. 2-space) still fail, as in the
+official harness; the grader reports counts per program mode (`by_program_mode`).
 
 - `exit`, `quit` and `SystemExit` count as failures (official `reliability_guard` sets `exit`/`quit` to None and
   treats any exception as failure; ours previously passed on exit code 0).
@@ -143,6 +161,18 @@ Validation before any number is used:
    no double prepend; `sys.exit(0)` fails; a timeout fails; MBPP builder output unchanged.
 3. Cross-check ~200 programs against the official `human_eval` package (run via `uv`, outside the project deps).
 
+## Implementation (2026-11-06, branch `feat/humaneval-regen`)
+
+| File | Role |
+|---|---|
+| `bench/humaneval/regen.py` | runner (models, configs, token-id prompts, records, resume guard, manifest) |
+| `bench/eval/humaneval_official.py` | grader; used via `python -m bench.eval --dataset humaneval --humaneval-grader official` (default `legacy` unchanged) |
+| `bench/humaneval/prompts.py` | `BIGCODE_HUMANEVAL_STOP_SEQUENCES`, `instruct_messages()` (old runner's wording, unchanged) |
+| `envs/vllm-033/` | pinned generation environment (`uv.lock`, 212 packages) |
+| `run_regen_humaneval_8models.sh` | `smoke`, `smoke-rerun`, `fit MODEL`, `small`, `large` |
+| `scripts/humaneval_regen_smoke_checks.py` | smoke-test pass criteria (local) |
+| `tests/test_humaneval_regen*.py`, `tests/test_humaneval_official_grader.py` | 54 tests, written first |
+
 ## 8. Phases and gates
 
 0. **Machine setup (MSI).** `git pull` only (never copy files). `nvidia-smi` (memory, compute capability, any
@@ -154,10 +184,12 @@ Validation before any number is used:
    orchestration script `run_regen_humaneval_8models.sh`. Then `code-reviewer`.
 3. **Smoke test, small models.** 5 tasks × models 1–3 × {greedy, beam@4, T@0.7, p-less}, seeded. Pass criteria:
    ≥99% of base bodies indented 4 spaces; exactly one BOS for Llama-family chat prompts; greedy rerun identical;
-   seeded rerun identical (vLLM's batch-invariant mode needs compute capability ≥9.0, so this is checked
-   empirically); beam returns one sequence cut at a stop sequence; no base completion contains a stop sequence
-   (stops fire); share of completions reaching 512 tokens reported (expected low, mostly loops); longest prompt
-   fits in `max_model_len`.
+   seeded rerun identical on the raw text (vLLM's batch-invariant mode needs compute capability ≥9.0, so this is
+   checked empirically); beam returns one sequence cut at a stop sequence; when the backend applied stop strings,
+   no raw text contains one (stops fire); T@0.7/top-p do not return 10 identical samples in every task; share of
+   completions reaching 512 tokens reported from the generation metadata (expected low, mostly loops); longest
+   prompt fits in `max_model_len`. Checker: `scripts/humaneval_regen_smoke_checks.py`; grader cross-check against
+   the official package: `scripts/humaneval_regen_crosscheck_official.py`.
    Measure seconds/task per model × config; grade locally; official-package cross-check.
 4. **Budget gate.** Propose a time budget from the measurements; the user approves before any full run.
 5. **Full runs, small models** (1 → 2 → 3): vLLM configs, then HF beam. Per-task resume; status updates carry IST timestamps.

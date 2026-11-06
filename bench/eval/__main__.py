@@ -73,9 +73,24 @@ def parse_args():
              "the prior run. No effect when --skip-diversity is passed "
              "(self_codebleu isn't computed at all then). Default: False.",
     )
+    parser.add_argument(
+        "--humaneval-grader", choices=["legacy", "official"], default="legacy",
+        help="HumanEval program builder. 'legacy' (default, unchanged): sample + test, no task prompt. "
+             "'official': task_prompt + completion + test + check(entry_point) as in openai/human-eval, "
+             "with exit/SystemExit counted as failures and a 3.0 s default timeout "
+             "(bench/eval/humaneval_official.py). Needs records from bench/humaneval/regen.py.",
+    )
     args = parser.parse_args()
+    if args.humaneval_grader == "official" and args.dataset != "humaneval":
+        parser.error("--humaneval-grader official only applies to --dataset humaneval")
     if args.timeout is None:
-        args.timeout = 6.0 if args.dataset == "livecodebench" else 5.0
+        if args.dataset == "livecodebench":
+            args.timeout = 6.0
+        elif args.dataset == "humaneval" and args.humaneval_grader == "official":
+            from bench.eval.humaneval_official import DEFAULT_TIMEOUT
+            args.timeout = DEFAULT_TIMEOUT
+        else:
+            args.timeout = 5.0
     return args
 
 
@@ -125,6 +140,12 @@ def main():
     print(f"Loading results from {args.results_file}")
     records = load_results(args.results_file)
     print(f"Loaded {len(records)} tasks")
+    if (args.dataset == "humaneval" and args.humaneval_grader == "legacy" and records
+            and ("task_prompt" in records[0] or "prompt_style" in records[0])):
+        raise SystemExit(
+            f"{args.results_file} was written by bench/humaneval/regen.py (base samples exclude the prompt); "
+            "the legacy builder would mis-grade it. Re-run with --humaneval-grader official."
+        )
 
     # Output path is a pure function of --output/--results-file -- compute it
     # up front so --use-codebleu-cache can read this file's own prior output
@@ -238,6 +259,9 @@ def main():
                         code if code else rec["samples"][i]
                         for i, code in enumerate(extracted)
                     ]
+        elif args.dataset == "humaneval" and args.humaneval_grader == "official":
+            from bench.eval.humaneval_official import evaluate_all as evaluate_all_official
+            task_results, execution_diag = evaluate_all_official(records, args.timeout, args.workers)
         else:
             task_results = evaluate_all(records, args.dataset, args.timeout, args.workers)
 
@@ -313,8 +337,10 @@ def main():
         print(f"  timeout%: {output['timeout_pct']:.1f}%")
     if output["structural_diversity"] is not None:
         print(f"  structural_diversity: {output['structural_diversity']}")
-    else:
+    elif args.skip_diversity:
         print("  structural_diversity: skipped (--skip-diversity)")
+    else:
+        print("  structural_diversity: skipped (--skip-structural-diversity)")
 
 
 if __name__ == "__main__":

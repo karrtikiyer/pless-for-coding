@@ -728,6 +728,19 @@ def encode_prompt_for_vllm(prompt_text, safe_tokenizer):
     return prompt_text
 
 
+def _extract_completion_meta(request_output) -> list[dict]:
+    """Per-completion finish metadata (vLLM ``CompletionOutput``): why generation ended and how many
+    tokens were produced. ``stop_reason`` is the matched stop string / token id, or None."""
+    return [
+        {
+            "finish_reason": completion.finish_reason,
+            "stop_reason": completion.stop_reason,
+            "num_output_tokens": len(completion.token_ids),
+        }
+        for completion in request_output.outputs
+    ]
+
+
 def _extract_completion_texts(request_output, engine) -> list[str]:
     """Return decoded text per completion, using engine._safe_tokenizer
     to re-decode token_ids if vLLM's default decoder is broken for this
@@ -860,8 +873,12 @@ def generate_samples_vllm(
     seed: int | None = None,
     think_end_marker: str = "</think>",
     skip_special_tokens: bool = True,
-) -> list[str]:
+    return_meta: bool = False,
+) -> list[str] | tuple[list[str], list[dict]]:
     """vLLM-backed single-sampler generation (no think/code split).
+
+    ``return_meta=True`` also returns per-completion finish metadata
+    (:func:`_extract_completion_meta`); the default return value is unchanged.
 
     Matches the role of ``bench/generator.py:generate_samples`` and is the
     target for MBPP / HumanEval runs that use a uniform sampler.
@@ -953,7 +970,10 @@ def generate_samples_vllm(
         prompt = prompt_text
 
     outputs = engine.generate([prompt], sp, use_tqdm=False)
-    return _extract_completion_texts(outputs[0], engine)
+    texts = _extract_completion_texts(outputs[0], engine)
+    if return_meta:
+        return texts, _extract_completion_meta(outputs[0])
+    return texts
 
 
 def generate_samples_standard_vllm(
@@ -969,8 +989,11 @@ def generate_samples_standard_vllm(
     repetition_penalty: float = 1.0,
     seed: int | None = None,
     skip_special_tokens: bool = True,
-) -> list[str]:
+    return_meta: bool = False,
+) -> list[str] | tuple[list[str], list[dict]]:
     """vLLM-backed standard temperature / top-p / top-k sampling. No custom processor.
+
+    ``return_meta=True`` also returns per-completion finish metadata (default return unchanged).
 
     Counterpart to ``bench/generator.py:generate_samples_standard``.
 
@@ -1008,4 +1031,7 @@ def generate_samples_standard_vllm(
         prompt = prompt_text
 
     outputs = engine.generate([prompt], sp, use_tqdm=False)
-    return _extract_completion_texts(outputs[0], engine)
+    texts = _extract_completion_texts(outputs[0], engine)
+    if return_meta:
+        return texts, _extract_completion_meta(outputs[0])
+    return texts

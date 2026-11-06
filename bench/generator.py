@@ -320,8 +320,12 @@ def generate_samples_beam(
     num_beams: int,
     max_new_tokens: int,
     stop_strings: list[str] | None = None,
-) -> list[str]:
+    return_meta: bool = False,
+) -> list[str] | tuple[list[str], list[dict]]:
     """Generate the single best completion via beam search.
+
+    ``return_meta=True`` also returns ``[{"finish_reason", "stop_reason", "num_output_tokens"}]``
+    ("length" when ``max_new_tokens`` was reached, else "stop"); the default return is unchanged.
 
     Beam search explores ``num_beams`` paths but returns only the highest-
     scoring sequence.  Beam width is a search budget, not a sample count —
@@ -357,6 +361,11 @@ def generate_samples_beam(
     text = full_text[len(decoded_prompt):]
     if stop_strings:
         text = _truncate_at_stop(text, stop_strings)
+    if return_meta:
+        n_out = int(output.shape[1] - prompt_len)
+        meta = {"finish_reason": "length" if n_out >= max_new_tokens else "stop",
+                "stop_reason": None, "num_output_tokens": n_out}
+        return [text], [meta]
     return [text]
 
 

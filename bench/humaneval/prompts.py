@@ -3,6 +3,27 @@
 # Trailing spaces/parens avoid false positives on substrings like def_ or class_name.
 HUMANEVAL_STOP_SEQUENCES = ["\nclass ", "\ndef ", "\n#", "\nif ", "\nprint("]
 
+# BigCode evaluation harness stop words (bigcode_eval/tasks/humaneval.py), used with the raw
+# (unstripped) prompt — the harness's "humaneval-unstripped" task. Superset of the Codex paper's list
+# ('\nclass', '\ndef', '\n#', '\nif', '\nprint'; Chen et al. 2021). Used by the 2026-11 HumanEval
+# regeneration (docs/experiments/humaneval_regen_2026_11_plan.md); the list above is kept unchanged
+# for the older runner.
+BIGCODE_HUMANEVAL_STOP_SEQUENCES = ["\nclass", "\ndef", "\n#", "\n@", "\nprint", "\nif", "\n```", "<file_sep>"]
+
+INSTRUCT_SYSTEM_MESSAGE = "You are a helpful coding assistant. Write clean, correct Python code."
+INSTRUCT_USER_PREFIX = (
+    "Complete the following Python function. "
+    "Provide only the function implementation, no explanations.\n\n"
+)
+
+
+def instruct_messages(task_prompt: str) -> list[dict]:
+    """Chat messages for instruct models (system + user), shared by both HumanEval runners."""
+    return [
+        {"role": "system", "content": INSTRUCT_SYSTEM_MESSAGE},
+        {"role": "user", "content": INSTRUCT_USER_PREFIX + task_prompt},
+    ]
+
 
 def is_instruct_model(model_id: str) -> bool:
     """Check if a model ID indicates an instruct/chat model."""
@@ -40,15 +61,7 @@ def format_prompt_instruct(task: dict, tokenizer, enable_thinking: bool = False)
                          must send False to suppress it when not wanted.  Non-Qwen3
                          templates silently ignore the unknown kwarg (Jinja passthrough).
     """
-    user_msg = (
-        f"Complete the following Python function. "
-        f"Provide only the function implementation, no explanations.\n\n"
-        f"{task['prompt']}"
-    )
-    messages = [
-        {"role": "system", "content": "You are a helpful coding assistant. Write clean, correct Python code."},
-        {"role": "user", "content": user_msg},
-    ]
+    messages = instruct_messages(task["prompt"])
     extra_kwargs = {"enable_thinking": enable_thinking}
     return tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True, **extra_kwargs
