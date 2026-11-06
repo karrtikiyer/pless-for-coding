@@ -751,7 +751,13 @@ def _extract_completion_meta(request_output, reference_tokenizer=None) -> list[d
         }
         if use_ref:
             full = reference_tokenizer.decode(prompt_ids + list(completion.token_ids), skip_special_tokens=True)
-            meta["text_matches_reference"] = completion.text == full[len(decoded_prompt):]
+            ref = full[len(decoded_prompt):]
+            if completion.finish_reason == "stop" and isinstance(completion.stop_reason, str):
+                # vLLM removes the matched stop string from .text but keeps its tokens in .token_ids.
+                ok = ref.startswith(completion.text) and ref[len(completion.text):].startswith(completion.stop_reason)
+            else:
+                ok = completion.text == ref
+            meta["text_matches_reference"] = ok
         metas.append(meta)
     return metas
 

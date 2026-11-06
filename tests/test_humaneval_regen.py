@@ -290,6 +290,23 @@ def test_vllm_text_is_audited_against_the_reference_tokenizer():
     assert [m["text_matches_reference"] for m in metas] == [True, False]
 
 
+def test_text_audit_accounts_for_the_removed_stop_string():
+    # vLLM drops the matched stop string from .text (include_stop_str_in_output=False) but keeps its tokens.
+    from types import SimpleNamespace
+    from bench.generator_vllm import _extract_completion_meta
+    tok = _tok("codellama/CodeLlama-7b-hf")
+    prompt = tok("def f():\n")["input_ids"]
+    full = tok("def f():\n    return 1\n\ndef g():", add_special_tokens=False)["input_ids"]
+    gen = full[len(prompt) - 1:]
+    ref = tok.decode(prompt + gen, skip_special_tokens=True)[len(tok.decode(prompt, skip_special_tokens=True)):]
+    text = ref[: ref.index("\ndef")]
+    out = SimpleNamespace(prompt_token_ids=prompt, outputs=[
+        SimpleNamespace(finish_reason="stop", stop_reason="\ndef", token_ids=gen, text=text),
+        SimpleNamespace(finish_reason="stop", stop_reason="\ndef", token_ids=gen, text=text.replace("    ", "")),
+    ])
+    assert [m["text_matches_reference"] for m in _extract_completion_meta(out, reference_tokenizer=tok)] == [True, False]
+
+
 def test_hf_beam_meta(monkeypatch):
     torch = pytest.importorskip("torch")
     tok = _tok("Qwen/Qwen2.5-Coder-1.5B")
