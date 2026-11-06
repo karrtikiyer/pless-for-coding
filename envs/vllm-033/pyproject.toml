@@ -1,0 +1,49 @@
+# Generation environment for the HumanEval regeneration
+# (docs/experiments/humaneval_regen_2026_11_plan.md). Generation only: vLLM configs + HF beam.
+# Grading runs locally on the main project environment (CLAUDE.md gotcha 9).
+#
+# Pins (checked on PyPI 2026-11-06):
+#   * vllm 0.33.0 (released 2026-11-02) requires torch==2.14.0, torchvision==0.29.0, torchaudio==2.11.0,
+#     transformers>=5.16.1,<5.21.0, flashinfer-python==0.7.2.post1.
+#   * torch 2.14.0 Linux wheels depend on cuda-toolkit 13.0.3 (driver on the MSI: 595.99.02).
+#   * transformers 5.20.2 (newest allowed by vllm 0.33.0) requires huggingface-hub>=1.31.0, so datasets is
+#     bumped from the old 2.21.0 pin (kept only for the APPS loading script) to 5.1.0.
+#
+# Build on the GPU box (repo root):
+#   ~/.local/bin/uv venv .venv-vllm033 --python 3.12
+#   UV_PROJECT_ENVIRONMENT=.venv-vllm033 ~/.local/bin/uv sync --frozen --project envs/vllm-033
+#
+# Runtime settings (see the plan): VLLM_USE_V2_MODEL_RUNNER=0 (our p-less processor uses the V1
+# logits-processor interface), VLLM_USE_FLASHINFER_SAMPLER=0, VLLM_ENABLE_V1_MULTIPROCESSING=0.
+
+[project]
+name = "pless-he-regen-vllm033"
+version = "0.1.0"
+description = "vLLM 0.33.0 generation environment for the HumanEval regeneration (GPU box only)."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # Load-bearing, pinned exactly.
+    "vllm==0.33.0",
+    "torch==2.14.0",
+    "torchvision==0.29.0",
+    "torchaudio==2.11.0",
+    "transformers==5.20.2",
+    "datasets==5.1.0",
+    # Runner-side; exact versions are fixed by uv.lock.
+    "accelerate",          # bench/generator.py loads HF models with device_map="auto" (HF beam)
+    "tqdm",
+    "numpy",
+    "sentencepiece",
+    "protobuf",
+    "hf-transfer>=0.1.9",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+[tool.uv]
+package = false
+# Resolve for the GPU box only (vLLM ships Linux wheels); lets the lock be produced and reviewed anywhere.
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
