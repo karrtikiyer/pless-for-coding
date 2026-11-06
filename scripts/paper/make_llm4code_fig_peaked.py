@@ -1,8 +1,9 @@
 """Appendix figure: per-token L[P] = sum_i p_i^2 on Qwen3-8B thinking tokens (APPS-252, p-less T=1.0).
 
 Answers the reviewer question "did we compute L[P] on the reasoning-model distributions, and what counts
-as close to 1?": histogram of L[P] per thinking token, pooled over trace classes (the three classes overlap, so splitting them added nothing), with the L[P] = 1/2 line.
-Above 1/2 the p-less admission set is the top-1 token alone (p-less == greedy at that position):
+as close to 1?": histogram of L[P] per thinking token, pooled over trace classes (the three classes overlap, so splitting them added nothing).
+One bar colour, no threshold line, no in-chart text (user, 2026-11-06); the share above 1/2 is printed to stderr
+for the paper text. Above 1/2 the p-less admission set is the top-1 token alone (p-less == greedy at that position):
   sum p_i^2 <= p_max  => the top token survives;
   a 2nd token would need p_2 >= L > 1/2, but p_1 >= p_2 and p_1 + p_2 <= 1  => impossible.
 
@@ -63,23 +64,17 @@ def pooled_stats(stats: dict[str, dict]) -> dict:
 
 
 def make_figure(pooled: dict, bins: int = 40) -> plt.Figure:
-    """Filled bars: grey below L[P]=1/2, accent blue above it, so the blue mass is the headline share."""
+    """Plain histogram, one colour, no annotations; the L[P] > 1/2 share is stated in the paper text."""
     edges = np.linspace(0.0, 1.0, bins + 1)
     pct = 100.0 * pooled["counts"] / pooled["n"]
-    share = 100.0 * pooled["n_gt_half"] / pooled["n"]
-    lo = edges[:-1] < 0.5 - 1e-9  # bins entirely below 1/2 (bins=40 puts an edge exactly at 0.5)
     fig, ax = plt.subplots(figsize=(4.5, 3.0))
-    ax.bar(edges[:-1][lo], pct[lo], width=1.0 / bins, align="edge", color="#b9b8b4", edgecolor="#52514e", linewidth=0.4)
-    ax.bar(edges[:-1][~lo], pct[~lo], width=1.0 / bins, align="edge", color="#2a78d6", edgecolor="#1a4f93", linewidth=0.4)
-    ax.axvline(0.5, color="#222222", linewidth=1.0, linestyle="--")
-    ax.text(0.53, 0.80, f"{share:.0f}% of tokens\nhave L[P] > \u00bd",
-            transform=ax.get_xaxis_transform(), ha="left", va="center", fontsize=9, color="#0b0b0b")
+    ax.bar(edges[:-1], pct, width=1.0 / bins, align="edge", color="#2a78d6", edgecolor="#1a4f93", linewidth=0.4)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 50)
     ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
     ax.set_xticklabels(["0", "0.25", "\u00bd", "0.75", "1"])
-    ax.set_xlabel(r"$L[P]=\sum_i p_i^2$ (per thinking token)")
-    ax.set_ylabel("% of tokens")
+    ax.set_xlabel("$p$-less Truncation Threshold, $L[P]$")
+    ax.set_ylabel("Frequency of Token\nDistributions (%)")  # one line is taller than the 3.0 in axes and clips
     ax.spines[["top", "right"]].set_visible(False)
     ax.grid(axis="y", alpha=0.25)
     ax.set_axisbelow(True)

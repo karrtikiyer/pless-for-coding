@@ -70,13 +70,31 @@ def test_pooled_sums_classes(tmp_path):
     assert int(np.sum(pooled["counts"])) == pooled["n"]
 
 
-def test_blue_bars_equal_share_above_half(tmp_path):
-    """Bars right of 1/2 must carry the headline share (counts in bins >= 0.5 vs n_gt_half)."""
+def _fig(tmp_path):
     rows = [{"cls": "clean", "onset_token": None, "coll": [0.1, 0.3, 0.6, 0.9, 0.99, 1.0]}]
-    pooled = mod.pooled_stats(mod.class_stats(_write(tmp_path, rows), bins=40))
-    fig = mod.make_figure(pooled, bins=40)
-    blue = [p for p in fig.axes[0].patches if p.get_facecolor()[:3] == (0x2a / 255, 0x78 / 255, 0xd6 / 255)]
-    assert sum(p.get_height() for p in blue) == 100.0 * pooled["n_gt_half"] / pooled["n"]
+    return mod.make_figure(mod.pooled_stats(mod.class_stats(_write(tmp_path, rows), bins=40)), bins=40)
+
+
+def test_all_bars_one_colour_and_sum_to_100(tmp_path):
+    """One fill colour for every bar (user, 2026-11-06); the bars still cover all tokens."""
+    bars = _fig(tmp_path).axes[0].patches
+    assert len(bars) == 40
+    assert len({p.get_facecolor() for p in bars}) == 1
+    assert abs(sum(p.get_height() for p in bars) - 100.0) < 1e-9
+
+
+def test_no_threshold_line_and_no_in_chart_text(tmp_path):
+    """No dashed L[P] = 1/2 line and no '82% ...' annotation (user, 2026-11-06); the share goes in the text."""
+    ax = _fig(tmp_path).axes[0]
+    assert len(ax.get_lines()) == 0
+    assert len(ax.texts) == 0
+
+
+def test_axis_labels(tmp_path):
+    """Axis names chosen by the user (2026-11-06); y keeps the (%) unit like the sibling figures' 'pass@k (%)'."""
+    ax = _fig(tmp_path).axes[0]
+    assert ax.get_ylabel().replace("\n", " ") == "Frequency of Token Distributions (%)"
+    assert ax.get_xlabel() == "$p$-less Truncation Threshold, $L[P]$"
 
 
 def test_canvas_matches_sibling_figures(tmp_path):
