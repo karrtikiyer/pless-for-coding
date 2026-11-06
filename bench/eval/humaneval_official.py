@@ -32,7 +32,7 @@ from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
 
 from bench.eval.executor import extract_python_code
-from bench.humaneval.prompts import BIGCODE_HUMANEVAL_STOP_SEQUENCES
+from bench.humaneval.prompts import BIGCODE_HUMANEVAL_STOP_SEQUENCES, truncate_at_stop  # noqa: F401 (re-exported)
 
 GRADER_VERSION = "humaneval-official-v1"
 DEFAULT_TIMEOUT = 3.0
@@ -67,12 +67,6 @@ MEMORY_LIMIT_BYTES = 4 * 1024**3   # per program, Linux only (macOS does not enf
 def _limit_memory() -> None:
     import resource
     resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT_BYTES, MEMORY_LIMIT_BYTES))
-
-
-def truncate_at_stop(text: str, stops: list[str] = BIGCODE_HUMANEVAL_STOP_SEQUENCES) -> str:
-    """Cut ``text`` at the earliest stop sequence (stop text excluded)."""
-    cut = min((i for i in (text.find(s) for s in stops) if i != -1), default=len(text))
-    return text[:cut]
 
 
 def _defines_entry_point(code: str, entry_point: str) -> bool:

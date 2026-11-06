@@ -10,6 +10,14 @@ HUMANEVAL_STOP_SEQUENCES = ["\nclass ", "\ndef ", "\n#", "\nif ", "\nprint("]
 # for the older runner.
 BIGCODE_HUMANEVAL_STOP_SEQUENCES = ["\nclass", "\ndef", "\n#", "\n@", "\nprint", "\nif", "\n```", "<file_sep>"]
 
+
+def truncate_at_stop(text: str, stops: list[str] = BIGCODE_HUMANEVAL_STOP_SEQUENCES) -> str:
+    """Cut ``text`` at the earliest stop sequence (stop text excluded). Shared by the regeneration runner
+    and the official grader; kept here so generation never imports the bench.eval package."""
+    cut = min((i for i in (text.find(s) for s in stops) if i != -1), default=len(text))
+    return text[:cut]
+
+
 INSTRUCT_SYSTEM_MESSAGE = "You are a helpful coding assistant. Write clean, correct Python code."
 INSTRUCT_USER_PREFIX = (
     "Complete the following Python function. "

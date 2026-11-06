@@ -31,10 +31,9 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from bench.eval.humaneval_official import truncate_at_stop
 from bench.generator import generate_samples_beam
 from bench.generator_vllm import generate_samples_standard_vllm, generate_samples_vllm
-from bench.humaneval.prompts import BIGCODE_HUMANEVAL_STOP_SEQUENCES, instruct_messages
+from bench.humaneval.prompts import BIGCODE_HUMANEVAL_STOP_SEQUENCES, instruct_messages, truncate_at_stop
 
 DEFAULT_OUT_ROOT = Path("results/humaneval_regen_2026_11")
 _ALLOWED_ROOT_PREFIX = "humaneval_regen_2026_11"   # also allows e.g. results/humaneval_regen_2026_11_smoke

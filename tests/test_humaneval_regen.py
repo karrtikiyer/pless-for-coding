@@ -272,3 +272,18 @@ def test_hf_beam_meta(monkeypatch):
     assert texts == ["    return 1\n"]
     assert metas == [{"finish_reason": "stop", "stop_reason": None, "num_output_tokens": len(new)}]
     assert gen.generate_samples_beam(FakeModel(), tok, prompt_ids, num_beams=4, max_new_tokens=512) == ["    return 1\n"]
+
+
+def test_runner_does_not_import_the_eval_package():
+    # The GPU box's slim generation env (envs/vllm-033) lacks bench.eval's deps (zss, codebleu);
+    # importing bench.eval.* there crashes. Generation must not depend on it.
+    import subprocess
+    import sys
+    code = "import sys, bench.humaneval.regen; print(any(m == 'bench.eval' or m.startswith('bench.eval.') for m in sys.modules))"
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout.strip()
+    assert out == "False"
+
+
+def test_truncate_at_stop_lives_with_the_prompts():
+    from bench.humaneval.prompts import truncate_at_stop
+    assert truncate_at_stop("    return 1\n\ndef g():\n") == "    return 1\n"
