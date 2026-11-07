@@ -18,6 +18,11 @@ Usage (GPU box, repo root, the envs/vllm-033 environment):
     .venv-vllm033/bin/python -m bench.humaneval.regen --model Qwen/Qwen2.5-Coder-1.5B \\
         --configs greedy,temp_t0.7,top_p0.9_t1.0,pless_t0.7,pless_norm_t0.7,top_p0.95_t0.2
     .venv-vllm033/bin/python -m bench.humaneval.regen --model Qwen/Qwen2.5-Coder-1.5B --configs beam4
+
+Diagnostics (not part of the default config sets; see run_regen_humaneval_8models.sh diag):
+    --configs greedy_hf                       HF greedy (num_beams=1), same HF path as beam4: backend effect
+    --configs greedy --prompt-variant stripped  prompt.strip() (BigCode task `humaneval`), base models only:
+                                              prompt effect; written to <config>__prompt_stripped.jsonl
 """
 from __future__ import annotations
 
@@ -89,13 +94,34 @@ CONFIGS = {
     "pless_t0.7":      Config("vllm", "pless", 10, 0.7, sampler="pless"),
     "pless_norm_t0.7": Config("vllm", "pless_norm", 10, 0.7, sampler="pless_norm"),
     "top_p0.95_t0.2":  Config("vllm", "top_p", 10, 0.2, 0.95),   # Hasan et al.'s configuration
+    # Diagnostic only: HF greedy through the beam4 code path (generate(num_beams=1, do_sample=False)).
+    "greedy_hf":       Config("hf", "greedy", 1, 0.0, num_beams=1),
 }
 COMMON_CONFIGS = ["greedy", "temp_t0.7", "top_p0.9_t1.0", "pless_t0.7", "pless_norm_t0.7", "beam4"]
 HASAN_CONFIGS = ["top_p0.95_t0.2"]
+DIAG_CONFIGS = ["greedy_hf"]   # accepted via --configs, never in the default (small / large) sets
 
 
 def configs_for(model_id: str) -> list[str]:
+    """The plan's configs for a model (what the default runs execute)."""
     return COMMON_CONFIGS + (HASAN_CONFIGS if get_model(model_id).hasan else [])
+
+
+def allowed_configs(model_id: str) -> list[str]:
+    """Configs accepted by ``--configs``: the plan's configs plus the diagnostic ones."""
+    return configs_for(model_id) + DIAG_CONFIGS
+
+
+def resolve_configs(model_id: str, configs_arg: str | None) -> tuple[list[str], str]:
+    """Config names to run and their single shared backend; SystemExit on unknown names or mixed backends."""
+    names = configs_arg.split(",") if configs_arg else configs_for(model_id)
+    unknown = [n for n in names if n not in allowed_configs(model_id)]
+    if unknown:
+        raise SystemExit(f"configs {unknown} are not in the plan for {model_id}")
+    backends = {CONFIGS[n].backend for n in names}
+    if len(backends) != 1:
+        raise SystemExit(f"configs {names} mix backends {backends}; run vLLM and HF configs separately")
+    return names, backends.pop()
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +139,27 @@ def load_tokenizer(model_id: str):
         if tok.decode(tok.encode(probe), skip_special_tokens=True).strip() != probe:
             raise RuntimeError(f"tokenizer for {model_id} cannot round-trip whitespace")
     return tok
+
+
+PROMPT_VARIANTS = ("unstripped", "stripped")
+DEFAULT_PROMPT_VARIANT = "unstripped"
+
+
+def apply_prompt_variant(prompt: str, style: str, variant: str) -> str:
+    """The task prompt actually given to the model (and stored as ``task_prompt`` for the grader).
+
+    * ``unstripped`` (default, plan §6): the raw HumanEval prompt, ending in the docstring's closing quotes plus a newline (BigCode task
+      ``humaneval-unstripped``); returned unchanged.
+    * ``stripped``: ``prompt.strip()`` (BigCode task ``humaneval``). Base prompts only; refused for chat
+      models, whose prompt is wrapped in a chat template.
+    """
+    if variant == "unstripped":
+        return prompt
+    if variant == "stripped":
+        if style != "base":
+            raise ValueError(f"--prompt-variant stripped applies to base-style prompts only (style {style!r})")
+        return prompt.strip()
+    raise ValueError(f"unknown prompt variant {variant!r}; expected one of {PROMPT_VARIANTS}")
 
 
 def build_prompt_ids(tokenizer, task_prompt: str, style: str) -> list[int]:
@@ -203,7 +250,9 @@ def postprocess(raw: str, style: str) -> str:
 def make_record(task: dict, *, model_id: str, style: str, config: Config, config_name: str,
                 prompt_ids: list[int], raw: list[str], seed: int, max_new_tokens: int,
                 versions: dict, metas: list[dict] | None = None, backend_stops: bool | None = None,
-                count_tokens=None) -> dict:
+                count_tokens=None, prompt_variant: str = DEFAULT_PROMPT_VARIANT) -> dict:
+    """One JSONL record. ``task["prompt"]`` is the raw dataset prompt; ``task_prompt`` stores the prompt
+    actually used (after ``prompt_variant``), which the official grader prepends to each completion."""
     rec = {
         "task_id": task["task_id"],
         "model": model_id,
@@ -213,7 +262,8 @@ def make_record(task: dict, *, model_id: str, style: str, config: Config, config
         "temperature": config.temperature,
         "top_p": config.top_p,
         "prompt_style": style,
-        "task_prompt": task["prompt"],
+        "prompt_variant": prompt_variant,
+        "task_prompt": apply_prompt_variant(task["prompt"], style, prompt_variant),
         "prompt_token_ids_head": prompt_ids[:8],
         "num_prompt_tokens": len(prompt_ids),
         "samples": (samples := [postprocess(r, style) for r in raw]),
@@ -236,11 +286,19 @@ def make_record(task: dict, *, model_id: str, style: str, config: Config, config
     return rec
 
 
-def output_path(out_root: Path, model_id: str, config_name: str) -> Path:
-    return Path(out_root) / model_id.replace("/", "--") / f"{config_name}.jsonl"
+def output_path(out_root: Path, model_id: str, config_name: str,
+                prompt_variant: str = DEFAULT_PROMPT_VARIANT) -> Path:
+    """``<root>/<model>/<config>.jsonl``; a non-default prompt variant adds ``__prompt_<variant>`` so both
+    variants of one config can live in the same folder."""
+    if prompt_variant not in PROMPT_VARIANTS:
+        raise ValueError(f"unknown prompt variant {prompt_variant!r}")
+    suffix = "" if prompt_variant == DEFAULT_PROMPT_VARIANT else f"__prompt_{prompt_variant}"
+    return Path(out_root) / model_id.replace("/", "--") / f"{config_name}{suffix}.jsonl"
 
 
-RESUME_KEYS = ("model", "config", "seed", "n", "max_new_tokens", "temperature", "top_p", "prompt_style")
+RESUME_KEYS = ("model", "config", "seed", "n", "max_new_tokens", "temperature", "top_p", "prompt_style",
+               "prompt_variant")
+RESUME_DEFAULTS = {"prompt_variant": DEFAULT_PROMPT_VARIANT}   # files written before the field existed
 RESUME_VERSION_KEYS = ("vllm", "transformers", "torch")
 
 
@@ -263,7 +321,9 @@ def completed_task_ids(path: Path, resume: bool, expected: dict | None = None) -
                              "inspect and remove it by hand before resuming") from None
     if expected and recs:
         first = recs[0]
-        diff = {k: (first.get(k), expected.get(k)) for k in RESUME_KEYS if first.get(k) != expected.get(k)}
+        def get(d, k):
+            return d.get(k, RESUME_DEFAULTS.get(k))
+        diff = {k: (get(first, k), get(expected, k)) for k in RESUME_KEYS if get(first, k) != get(expected, k)}
         fv, ev = first.get("versions") or {}, expected.get("versions") or {}
         diff.update({f"versions.{k}": (fv.get(k), ev.get(k)) for k in RESUME_VERSION_KEYS if fv.get(k) != ev.get(k)})
         if fv.get("env") != ev.get("env"):   # vLLM runtime switches (model runner, sampler, multiprocessing)
@@ -317,6 +377,19 @@ def dataset_digest(tasks: list[dict]) -> str:
     return h.hexdigest()
 
 
+def manifest_entry(*, model: str, config_name: str, config: Config, out: Path, style: str, prompt_variant: str,
+                   seed: int, max_new_tokens: int, max_model_len: int, gpu_memory_utilization: float,
+                   num_tasks: int, longest: int, digest: str, versions: dict) -> dict:
+    return {
+        "model": model, "config": config_name, "file": str(out), "started": datetime.now(timezone.utc).isoformat(),
+        "config_spec": asdict(config), "prompt_style": style, "prompt_variant": prompt_variant, "seed": seed,
+        "max_new_tokens": max_new_tokens, "max_model_len": max_model_len,
+        "gpu_memory_utilization": gpu_memory_utilization, "num_tasks": num_tasks,
+        "longest_prompt_tokens": longest, "dataset": list(DATASET), "dataset_digest": digest,
+        "versions": versions,
+    }
+
+
 def write_manifest(out_root: Path, entry: dict) -> None:
     """Append one run entry to <out_root>/MANIFEST.json and create README.md once."""
     out_root = Path(out_root)
@@ -354,6 +427,9 @@ def parse_args(argv=None):
     p.add_argument("--gpu-memory-utilization", type=float, default=0.90)
     p.add_argument("--max-problems", type=int, default=None, help="first N tasks only (smoke tests)")
     p.add_argument("--resume", action="store_true")
+    p.add_argument("--prompt-variant", choices=PROMPT_VARIANTS, default=DEFAULT_PROMPT_VARIANT,
+                   help="unstripped (default): raw prompt ending in a newline (BigCode humaneval-unstripped); "
+                        "stripped: prompt.strip() (BigCode humaneval), base models only (diagnostic)")
     return p.parse_args(argv)
 
 
@@ -361,14 +437,12 @@ def main(argv=None) -> None:
     args = parse_args(argv)
     _check_out_root(args.out_root)
     spec = get_model(args.model)
-    names = args.configs.split(",") if args.configs else configs_for(args.model)
-    unknown = [n for n in names if n not in configs_for(args.model)]
-    if unknown:
-        raise SystemExit(f"configs {unknown} are not in the plan for {args.model}")
-    backends = {CONFIGS[n].backend for n in names}
-    if len(backends) != 1:
-        raise SystemExit(f"configs {names} mix backends {backends}; run vLLM and HF configs separately")
-    backend = backends.pop()
+    names, backend = resolve_configs(args.model, args.configs)
+    variant = args.prompt_variant
+    try:
+        apply_prompt_variant("", spec.prompt_style, variant)   # refuse e.g. stripped + chat before loading anything
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
 
     import torch
     from datasets import load_dataset
@@ -379,7 +453,8 @@ def main(argv=None) -> None:
     digest = dataset_digest(all_tasks)
     tokenizer = load_tokenizer(args.model)
     # Prompts and the context length come from ALL 164 tasks, so a smoke/fit slice is sized like the full run.
-    prompt_ids = {t["task_id"]: build_prompt_ids(tokenizer, t["prompt"], spec.prompt_style) for t in all_tasks}
+    prompt_ids = {t["task_id"]: build_prompt_ids(tokenizer, apply_prompt_variant(t["prompt"], spec.prompt_style, variant),
+                                                 spec.prompt_style) for t in all_tasks}
     if tokenizer.bos_token_id is not None:
         bad = [tid for tid, ids in prompt_ids.items() if count_leading_bos(ids, tokenizer) != 1]
         if bad:
@@ -404,22 +479,19 @@ def main(argv=None) -> None:
     versions = collect_versions()
     for name in names:
         config = CONFIGS[name]
-        out = output_path(args.out_root, args.model, name)
+        out = output_path(args.out_root, args.model, name, variant)
         expected = {"model": args.model, "config": name, "seed": args.seed, "n": config.n,
                     "max_new_tokens": args.max_new_tokens, "temperature": config.temperature, "top_p": config.top_p,
-                    "prompt_style": spec.prompt_style, "versions": versions}
+                    "prompt_style": spec.prompt_style, "prompt_variant": variant, "versions": versions}
         done = completed_task_ids(out, args.resume, expected=expected)
         out.parent.mkdir(parents=True, exist_ok=True)
-        write_manifest(args.out_root, {
-            "model": args.model, "config": name, "file": str(out), "started": datetime.now(timezone.utc).isoformat(),
-            "config_spec": asdict(config), "prompt_style": spec.prompt_style, "seed": args.seed,
-            "max_new_tokens": args.max_new_tokens, "max_model_len": max_model_len,
-            "gpu_memory_utilization": args.gpu_memory_utilization, "num_tasks": len(tasks),
-            "longest_prompt_tokens": longest, "dataset": list(DATASET), "dataset_digest": digest,
-            "versions": versions,
-        })
+        write_manifest(args.out_root, manifest_entry(
+            model=args.model, config_name=name, config=config, out=out, style=spec.prompt_style,
+            prompt_variant=variant, seed=args.seed, max_new_tokens=args.max_new_tokens, max_model_len=max_model_len,
+            gpu_memory_utilization=args.gpu_memory_utilization, num_tasks=len(tasks), longest=longest,
+            digest=digest, versions=versions))
         todo = [t for t in tasks if t["task_id"] not in done]
-        print(f"[{args.model} | {name}] {len(todo)}/{len(tasks)} tasks to run -> {out}", flush=True)
+        print(f"[{args.model} | {name} | prompt {variant}] {len(todo)}/{len(tasks)} tasks to run -> {out}", flush=True)
         with open(out, "a") as f:
             for task in tqdm(todo, desc=name):
                 raw, metas, backend_stops = generate(config, backend_obj, tokenizer, prompt_ids[task["task_id"]],
@@ -428,7 +500,7 @@ def main(argv=None) -> None:
                 rec = make_record(task, model_id=args.model, style=spec.prompt_style, config=config,
                                   config_name=name, prompt_ids=prompt_ids[task["task_id"]], raw=raw,
                                   seed=args.seed, max_new_tokens=args.max_new_tokens, versions=versions,
-                                  metas=metas, backend_stops=backend_stops,
+                                  metas=metas, backend_stops=backend_stops, prompt_variant=variant,
                                   count_tokens=lambda t: len(tokenizer(t, add_special_tokens=False)["input_ids"]))
                 f.write(json.dumps(rec) + "\n")
                 f.flush()

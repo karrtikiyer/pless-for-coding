@@ -117,3 +117,9 @@ def test_smoke_configs_cover_every_vllm_sampler():
     smoke_line = next(ln for ln in script.splitlines() if "--max-problems 5" in ln and "beam4" not in ln and "greedy" in ln)
     for c in ("greedy", "temp_t0.7", "top_p0.9_t1.0", "pless_t0.7", "pless_norm_t0.7"):
         assert c in smoke_line, c
+
+
+def test_first_body_indent_skips_the_leading_newline_of_a_stripped_prompt_completion():
+    # --prompt-variant stripped: the prompt ends with '"""', so completions start with "\n    ".
+    assert smoke.first_body_indent("\n    return 1\n") == 4
+    assert smoke.first_body_indent("    return 1\n") == 4   # existing (unstripped) data unchanged

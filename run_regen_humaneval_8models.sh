@@ -10,6 +10,9 @@
 #   ./run_regen_humaneval_8models.sh fit MODEL_ID   # 7B fit test: engine start + 5 tasks (vLLM greedy, HF beam)
 #   ./run_regen_humaneval_8models.sh small          # full run, models 1-3 (resumable)
 #   ./run_regen_humaneval_8models.sh large [IDS..]  # full run, 7B models (resumable); default all five
+#   ./run_regen_humaneval_8models.sh diag           # greedy diagnostics, models 1-3, 164 tasks, writes
+#                                                   results/humaneval_regen_2026_11_diag: HF greedy (greedy_hf.jsonl)
+#                                                   and vLLM greedy on prompt.strip() (greedy__prompt_stripped.jsonl)
 #
 # Full runs need the user's approved time budget first (standing rule). Nothing here deletes files:
 # the runner refuses to touch an existing output unless resuming it.
@@ -40,7 +43,8 @@ print(','.join(c for c in configs_for(sys.argv[1]) if CONFIGS[c].backend == 'vll
 
 run() {  # run MODEL CONFIGS OUT_ROOT [extra args...]
   local model="$1" configs="$2" root="$3"; shift 3
-  local log="logs/regen_humaneval_$(basename "$root")_${model//\//--}_${configs//,/+}_$(date +%Y%m%d_%H%M%S).log"
+  local tag=""; [[ " $* " == *" --prompt-variant stripped "* ]] && tag="__prompt_stripped"
+  local log="logs/regen_humaneval_$(basename "$root")_${model//\//--}_${configs//,/+}${tag}_$(date +%Y%m%d_%H%M%S).log"
   echo "[$(TZ=Asia/Kolkata date '+%F %T IST')] $model | $configs -> $root (log $log)"
   "$PY" -m bench.humaneval.regen --model "$model" --configs "$configs" --out-root "$root" "$@" 2>&1 | tee "$log"
 }
@@ -69,5 +73,10 @@ case "${1:-}" in
       run "$m" "$(vllm_configs "$m")" "results/humaneval_regen_2026_11" --resume
       run "$m" "beam4" "results/humaneval_regen_2026_11" --resume
     done ;;
-  *) sed -n '2,15p' "$0"; exit 2 ;;
+  diag)   # (a) backend effect: HF greedy, unstripped prompt; (b) prompt effect: vLLM greedy, stripped prompt
+    for m in "${SMALL[@]}"; do
+      run "$m" "greedy_hf" "results/humaneval_regen_2026_11_diag" --resume
+      run "$m" "greedy" "results/humaneval_regen_2026_11_diag" --prompt-variant stripped --resume
+    done ;;
+  *) sed -n '2,18p' "$0"; exit 2 ;;
 esac

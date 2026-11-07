@@ -44,8 +44,11 @@ def test_unknown_model_is_rejected():
 
 def test_config_table():
     c = regen.CONFIGS
-    assert set(c) == {"greedy", "beam4", "temp_t0.7", "top_p0.9_t1.0", "pless_t0.7", "pless_norm_t0.7", "top_p0.95_t0.2"}
+    assert set(c) == {"greedy", "beam4", "temp_t0.7", "top_p0.9_t1.0", "pless_t0.7", "pless_norm_t0.7", "top_p0.95_t0.2",
+                      "greedy_hf"}
     assert (c["greedy"].backend, c["greedy"].n, c["greedy"].temperature) == ("vllm", 1, 0.0)
+    g = c["greedy_hf"]
+    assert (g.backend, g.method, g.n, g.temperature, g.num_beams, g.sampler) == ("hf", "greedy", 1, 0.0, 1, None)
     assert (c["beam4"].backend, c["beam4"].n, c["beam4"].num_beams) == ("hf", 1, 4)
     assert (c["temp_t0.7"].n, c["temp_t0.7"].temperature, c["temp_t0.7"].top_p) == (10, 0.7, 1.0)
     assert (c["top_p0.9_t1.0"].temperature, c["top_p0.9_t1.0"].top_p) == (1.0, 0.9)
@@ -58,6 +61,21 @@ def test_hasan_config_only_for_the_three_shared_models():
     with_hasan = [m.model_id for m in regen.MODELS if "top_p0.95_t0.2" in regen.configs_for(m.model_id)]
     assert with_hasan == ["m-a-p/OpenCodeInterpreter-DS-1.3B", "Qwen/Qwen2.5-Coder-1.5B", "Qwen/Qwen2.5-Coder-3B"]
     assert len(regen.configs_for("codellama/CodeLlama-7b-hf")) == 6
+
+
+def test_greedy_hf_is_a_diagnostic_config_outside_the_default_sets():
+    # Never run by the `small` / `large` modes (which use configs_for), but accepted via --configs.
+    for m in regen.MODELS:
+        assert "greedy_hf" not in regen.configs_for(m.model_id)
+        assert "greedy_hf" in regen.allowed_configs(m.model_id)
+    assert regen.resolve_configs("Qwen/Qwen2.5-Coder-1.5B", "greedy_hf") == (["greedy_hf"], "hf")
+    assert regen.resolve_configs("Qwen/Qwen2.5-Coder-1.5B", "beam4,greedy_hf") == (["beam4", "greedy_hf"], "hf")
+    with pytest.raises(SystemExit, match="mix backends"):   # unchanged: the default set mixes vLLM and HF
+        regen.resolve_configs("codellama/CodeLlama-7b-hf", None)
+    with pytest.raises(SystemExit, match="mix backends"):
+        regen.resolve_configs("Qwen/Qwen2.5-Coder-1.5B", "greedy,greedy_hf")
+    with pytest.raises(SystemExit, match="not in the plan"):
+        regen.resolve_configs("codellama/CodeLlama-7b-hf", "top_p0.95_t0.2")
 
 
 # ---------- generation dispatch (faked backends) ----------
@@ -94,6 +112,7 @@ def fake(monkeypatch):
 @pytest.mark.parametrize("name,kind", [
     ("greedy", "standard"), ("temp_t0.7", "standard"), ("top_p0.9_t1.0", "standard"),
     ("top_p0.95_t0.2", "standard"), ("pless_t0.7", "pless"), ("pless_norm_t0.7", "pless"), ("beam4", "beam"),
+    ("greedy_hf", "beam"),
 ])
 def test_dispatch_routes_to_the_right_backend(fake, name, kind):
     texts, metas, backend_stops = regen.generate(regen.CONFIGS[name], "backend", "tok", [1, 2, 3], style="base",
@@ -340,3 +359,188 @@ def test_runner_does_not_import_the_eval_package():
 def test_truncate_at_stop_lives_with_the_prompts():
     from bench.humaneval.prompts import truncate_at_stop
     assert truncate_at_stop("    return 1\n\ndef g():\n") == "    return 1\n"
+
+
+# ---------- diagnostics: HF greedy (backend effect) ----------
+
+def test_greedy_hf_passes_num_beams_1_and_the_base_stops(fake):
+    regen.generate(regen.CONFIGS["greedy_hf"], "m", "t", [1, 2], style="base", seed=42, max_new_tokens=512)
+    (kind, ids, kw), = fake.calls
+    assert (kind, ids, kw["num_beams"], kw["max_new_tokens"]) == ("beam", [1, 2], 1, 512)
+    assert kw["stop_strings"] == BIGCODE_HUMANEVAL_STOP_SEQUENCES
+
+
+def test_hf_num_beams_1_is_plain_greedy():
+    # generate_samples_beam(num_beams=1) (do_sample=False) must equal a hand-written argmax loop.
+    torch = pytest.importorskip("torch")
+    transformers = pytest.importorskip("transformers")
+    tok = _tok("Qwen/Qwen2.5-Coder-1.5B")
+    from bench import generator as gen
+    torch.manual_seed(0)
+    cfg = transformers.LlamaConfig(vocab_size=len(tok), hidden_size=32, intermediate_size=64, num_hidden_layers=2,
+                                   num_attention_heads=4, num_key_value_heads=4, max_position_embeddings=128,
+                                   bos_token_id=tok.bos_token_id, eos_token_id=tok.eos_token_id)
+    model = transformers.LlamaForCausalLM(cfg).eval()
+    prompt_ids = tok("def f():\n")["input_ids"]
+    ids = torch.tensor([prompt_ids])
+    with torch.no_grad():
+        for _ in range(12):
+            nxt = model(ids).logits[0, -1].argmax()
+            ids = torch.cat([ids, nxt.view(1, 1)], dim=1)
+            if int(nxt) == tok.eos_token_id:
+                break
+    expected = tok.decode(ids[0], skip_special_tokens=True)[len(tok.decode(prompt_ids, skip_special_tokens=True)):]
+    texts, metas = gen.generate_samples_beam(model, tok, prompt_ids, num_beams=1, max_new_tokens=12,
+                                             stop_strings=None, return_meta=True)
+    assert texts == [expected]
+    assert metas[0]["num_output_tokens"] == ids.shape[1] - len(prompt_ids)
+
+
+# ---------- diagnostics: prompt variant (prompt effect) ----------
+
+HE0_PROMPT = ('from typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n'
+              '    """ Check if any two numbers are closer than threshold.\n'
+              '    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    """\n')
+HE0_TEST = ("\n\nMETADATA = {}\n\n\ndef check(candidate):\n"
+            "    assert candidate([1.0, 2.0, 3.9, 4.0], 0.3) == True\n"
+            "    assert candidate([1.0, 2.0, 3.0], 0.5) == False\n")
+HE0_BODY = ("    for i, a in enumerate(numbers):\n        for j, b in enumerate(numbers):\n"
+            "            if i != j and abs(a - b) < threshold:\n                return True\n    return False\n")
+
+
+def test_prompt_variant_unstripped_is_the_raw_prompt_unchanged():
+    assert regen.apply_prompt_variant(HE0_PROMPT, "base", "unstripped") is HE0_PROMPT
+    assert regen.apply_prompt_variant(HE0_PROMPT, "chat", "unstripped") is HE0_PROMPT
+    assert regen.DEFAULT_PROMPT_VARIANT == "unstripped"
+
+
+def test_prompt_variant_stripped_is_the_harness_humaneval_task():
+    s = regen.apply_prompt_variant("\n" + HE0_PROMPT, "base", "stripped")
+    assert s == HE0_PROMPT.strip() and s.endswith('    """') and not s.startswith("\n")
+
+
+def test_prompt_variant_stripped_is_rejected_for_chat_models():
+    with pytest.raises(ValueError, match="base"):
+        regen.apply_prompt_variant(HE0_PROMPT, "chat", "stripped")
+    with pytest.raises(ValueError):
+        regen.apply_prompt_variant(HE0_PROMPT, "base", "bogus")
+
+
+def test_cli_prompt_variant_default_and_chat_rejection():
+    assert regen.parse_args(["--model", "Qwen/Qwen2.5-Coder-1.5B"]).prompt_variant == "unstripped"
+    assert regen.parse_args(["--model", "x", "--prompt-variant", "stripped"]).prompt_variant == "stripped"
+    with pytest.raises(SystemExit):
+        regen.parse_args(["--model", "x", "--prompt-variant", "bogus"])
+    with pytest.raises(SystemExit, match="base"):   # refused before any model / dataset is loaded
+        regen.main(["--model", "Qwen/Qwen2.5-Coder-7B-Instruct", "--configs", "greedy", "--prompt-variant", "stripped",
+                    "--out-root", "results/humaneval_regen_2026_11_never_written"])
+
+
+def _he0_record(variant="unstripped", raw=None):
+    task = {"task_id": "HumanEval/0", "prompt": HE0_PROMPT, "test": HE0_TEST, "entry_point": "has_close_elements"}
+    kw = {} if variant is None else {"prompt_variant": variant}
+    return regen.make_record(task, model_id="Qwen/Qwen2.5-Coder-1.5B", style="base", config=regen.CONFIGS["greedy"],
+                             config_name="greedy", prompt_ids=[1], raw=raw or ["\n" + HE0_BODY], seed=42,
+                             max_new_tokens=512, versions={}, **kw)
+
+
+def test_record_stores_the_prompt_variant_and_the_prompt_actually_used():
+    default = _he0_record(variant=None)
+    assert default["prompt_variant"] == "unstripped" and default["task_prompt"] == HE0_PROMPT
+    stripped = _he0_record("stripped")
+    assert stripped["prompt_variant"] == "stripped" and stripped["task_prompt"] == HE0_PROMPT.strip()
+    assert stripped["stop"] == default["stop"] == BIGCODE_HUMANEVAL_STOP_SEQUENCES   # stop list unchanged
+
+
+def test_stripped_record_composes_a_passing_official_program():
+    # The official grader composes task_prompt + completion + "\n" + test + "\n" + check(entry_point);
+    # with the stripped prompt the completion starts with "\n    ".
+    from bench.eval.humaneval_official import build_program, run_program
+    rec = _he0_record("stripped")
+    program, mode = build_program(rec, rec["samples"][0])
+    assert mode == "base"
+    assert program == (HE0_PROMPT.strip() + "\n" + HE0_BODY + "\n" + HE0_TEST + "\n" + "check(has_close_elements)")
+    compile(program, "<he0>", "exec")
+    assert run_program(program) == (True, "passed")
+    wrong = _he0_record("stripped", raw=["\n    return True\n"])
+    assert run_program(build_program(wrong, wrong["samples"][0])[0])[0] is False
+
+
+def test_stripped_completion_starting_with_newline_survives_the_post_cut():
+    rec = _he0_record("stripped", raw=["\n" + HE0_BODY + "\n\ndef check(x):\n    pass\n"])
+    assert rec["samples"] == ["\n" + HE0_BODY + "\n"]
+
+
+def test_output_path_distinguishes_the_prompt_variant(tmp_path):
+    m = "Qwen/Qwen2.5-Coder-1.5B"
+    default = regen.output_path(tmp_path, m, "greedy")
+    assert default == regen.output_path(tmp_path, m, "greedy", "unstripped") == tmp_path / "Qwen--Qwen2.5-Coder-1.5B" / "greedy.jsonl"
+    stripped = regen.output_path(tmp_path, m, "greedy", "stripped")
+    assert stripped == tmp_path / "Qwen--Qwen2.5-Coder-1.5B" / "greedy__prompt_stripped.jsonl"
+    assert stripped != default
+    with pytest.raises(ValueError):
+        regen.output_path(tmp_path, m, "greedy", "bogus")
+
+
+def test_resume_checks_the_prompt_variant_and_reads_old_files_as_unstripped(tmp_path):
+    assert "prompt_variant" in regen.RESUME_KEYS
+    base = {"task_id": "HumanEval/0", "model": "m/x", "config": "greedy", "seed": 42, "n": 1, "max_new_tokens": 512,
+            "temperature": 0.0, "top_p": 1.0, "prompt_style": "base", "versions": {}}
+    expected = {k: v for k, v in base.items() if k != "task_id"}
+    old = tmp_path / "old.jsonl"     # written before prompt_variant existed
+    old.write_text(json.dumps(base) + "\n")
+    assert regen.completed_task_ids(old, True, expected=dict(expected, prompt_variant="unstripped")) == {"HumanEval/0"}
+    with pytest.raises(ValueError, match="prompt_variant"):
+        regen.completed_task_ids(old, True, expected=dict(expected, prompt_variant="stripped"))
+    new = tmp_path / "new.jsonl"
+    new.write_text(json.dumps(dict(base, prompt_variant="stripped")) + "\n")
+    assert regen.completed_task_ids(new, True, expected=dict(expected, prompt_variant="stripped")) == {"HumanEval/0"}
+    with pytest.raises(ValueError, match="prompt_variant"):
+        regen.completed_task_ids(new, True, expected=dict(expected, prompt_variant="unstripped"))
+
+
+def test_manifest_entry_records_the_prompt_variant(tmp_path):
+    entry = regen.manifest_entry(model="m/x", config_name="greedy", config=regen.CONFIGS["greedy"],
+                                 out=tmp_path / "f.jsonl", style="base", prompt_variant="stripped", seed=42,
+                                 max_new_tokens=512, max_model_len=1024, gpu_memory_utilization=0.9, num_tasks=164,
+                                 longest=300, digest="abc", versions={})
+    assert entry["prompt_variant"] == "stripped" and entry["config"] == "greedy"
+    regen.write_manifest(tmp_path, entry)
+    assert json.loads((tmp_path / "MANIFEST.json").read_text())["runs"][0]["prompt_variant"] == "stripped"
+
+
+def test_stripped_prompt_still_has_one_bos():
+    tok = _tok("codellama/CodeLlama-7b-hf")
+    ids = regen.build_prompt_ids(tok, regen.apply_prompt_variant(HE0_PROMPT, "base", "stripped"), "base")
+    assert regen.count_leading_bos(ids, tok) == 1
+    assert tok.decode(ids, skip_special_tokens=True) == HE0_PROMPT.strip()
+
+
+# ---------- orchestration: diag mode ----------
+
+def _diag_block():
+    from pathlib import Path
+    script = (Path(__file__).resolve().parents[1] / "run_regen_humaneval_8models.sh").read_text()
+    lines = script.splitlines()
+    start = next(i for i, ln in enumerate(lines) if ln.strip().startswith("diag)"))
+    end = next(i for i in range(start, len(lines)) if lines[i].strip().endswith(";;"))
+    return "\n".join(lines[start:end + 1])
+
+
+def test_diag_mode_runs_hf_greedy_and_stripped_vllm_greedy_on_the_small_models():
+    block = _diag_block()
+    assert 'for m in "${SMALL[@]}"' in block
+    assert "results/humaneval_regen_2026_11_diag" in block
+    runs = [ln.strip() for ln in block.splitlines() if ln.strip().startswith("run ")]
+    assert len(runs) == 2
+    hf, vllm = runs
+    assert '"greedy_hf"' in hf and "--prompt-variant" not in hf
+    assert '"greedy"' in vllm and "--prompt-variant stripped" in vllm
+    assert "--max-problems" not in block   # full 164 tasks
+
+
+def test_diag_outputs_do_not_collide(tmp_path):
+    m = "Qwen/Qwen2.5-Coder-1.5B"
+    paths = {regen.output_path(tmp_path, m, "greedy_hf"), regen.output_path(tmp_path, m, "greedy", "stripped"),
+             regen.output_path(tmp_path, m, "greedy")}
+    assert len(paths) == 3

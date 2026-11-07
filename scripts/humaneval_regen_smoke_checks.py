@@ -27,7 +27,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-DETERMINISTIC = {"greedy", "beam4"}
+DETERMINISTIC = {"greedy", "beam4", "greedy_hf"}
 MUST_VARY = {"temp_t0.7", "top_p0.9_t1.0", "top_p0.95_t0.2"}   # real sampling: 10 samples must not all coincide
 
 
