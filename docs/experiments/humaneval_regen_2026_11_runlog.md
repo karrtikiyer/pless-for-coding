@@ -478,6 +478,44 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
   - HF login on GPU2, at the user's request using the local `.env` `HF_TOKEN`: the value was piped over SSH stdin
     into `huggingface_hub.login()` and never printed. The `.env` file was not copied. Logged in as `karrtikiyer`;
     access OK to `meta-llama/Llama-2-7b-hf` and `-chat-hf`.
+- **2026-11-07**: Stripped-protocol runner change reviewed (code-reviewer).
+  - Verdict: safe for single-queue runs. Dry run confirmed:
+    - every raw-prompted model gets `--prompt-variant stripped` on its vLLM and beam4 calls;
+    - chat models get no flag;
+    - Qwen-7B base gets top_p0.95_t0.2, last;
+    - the new roots don't collide.
+  - SHOULD-FIX before GPU2's parallel queues:
+    - MANIFEST.json unlocked read-modify-write (reproduced: 290 of 600 entries kept, 33 exceptions);
+    - no guard against the same model in both queues.
+
+    Sent to research-coder.
+  - NITs:
+    - the stripped root mixes `<config>__prompt_stripped.jsonl` (base) with `<config>.jsonl` (chat), so the
+      table builder must not glob only `<config>.jsonl`;
+    - beam4 + stripped was never run in diag, so check it first on the full-run output.
+  - Committed `c8994d0`, pushed.
+- **2026-11-07 16:57:36 IST: STRIPPED SMALL RUN STARTED on the MSI** (`PROMPT_VARIANT=stripped
+  ./run_regen_humaneval_8models.sh small`; marker `logs/regen_stripped_small.done/.failed`).
+  - The first log line confirms `| prompt-variant stripped -> results/humaneval_regen_2026_11_stripped`.
+  - Estimate about 2 h 15 min, no cap.
+- **2026-11-07 17:32:34 IST: 7B FIT TESTS STARTED on GPU2** (GPU0 only, single queue, code `c8994d0`; safe per the
+  review for single-queue runs).
+  - Order: Qwen2.5-Coder-7B → CodeLlama-7b-hf → CodeLlama-7b-Instruct → Llama-2-7b-hf → Llama-2-7b-chat.
+  - Each fit = greedy (vLLM) + beam4 (HF), 5 tasks, into `results/humaneval_regen_2026_11_stripped_fit/`.
+  - Marker: `logs/regen_stripped_fit.done/.failed`. Disk free 117 GB before the model downloads (5 × ~13.5 GB).
+  - The parallel full 7B queues wait for the MANIFEST/queue-lock fix (research-coder running).
+- **2026-11-07 17:44 IST**: Status.
+  - GPU2: Qwen2.5-Coder-7B fit done (greedy + beam4, 5 tasks each, about 9 min including the download); CodeLlama-7b-hf
+    fit running; GPU0 13.5 GB of 24 GB; 0 tracebacks.
+  - **First beam4 + stripped output, inspected by the main session:**
+    - all 10 Qwen-7B fit samples start with `\n    ` and a 4-space body; finish_reason `stop`;
+    - the stored prompt ends `    """`.
+
+    The reviewer's "beam4 + stripped untested" gap is closed for Qwen-7B.
+  - MSI: OCI greedy/temp/top_p0.9/pless done (164), pless_norm 72/164; 0 tracebacks.
+  - The lock fix is done (research-coder: 5 new tests, all failing on HEAD; 87 targeted and 946 full tests pass).
+    Code-reviewer running. Don't `git pull` on GPU2 until the fit loop finishes, since its `bash -c` loop
+    re-invokes the script per model.
 - **2026-11-07**: AI-use acknowledgment (D15 item 6):
   - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
     subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).

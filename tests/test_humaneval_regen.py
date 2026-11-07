@@ -727,3 +727,127 @@ def test_default_diag_commands_are_unchanged(tmp_path):
         "--model m-a-p/OpenCodeInterpreter-DS-1.3B --configs greedy --out-root results/humaneval_regen_2026_11_diag "
         "--prompt-variant stripped --resume",
     ]
+
+
+# ---------- concurrency: two GPU queues sharing one output root ----------
+
+def _manifest_entry(tmp_path, *, config_name="greedy", variant="unstripped", i=0):
+    e = regen.manifest_entry(model="m/x", config_name=config_name, config=regen.CONFIGS["greedy"],
+                             out=tmp_path / "f.jsonl", style="base", prompt_variant=variant, seed=42,
+                             max_new_tokens=512, max_model_len=1024, gpu_memory_utilization=0.9, num_tasks=164,
+                             longest=300, digest="abc", versions={})
+    e["i"] = i
+    return e
+
+
+_MANIFEST_WORKER = """
+import sys
+from pathlib import Path
+from bench.humaneval import regen
+root, wid, m = Path(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3])
+for j in range(m):
+    regen.write_manifest(root, {"model": "m/x", "config": "greedy", "prompt_variant": "unstripped",
+                                "worker": wid, "j": j})
+"""
+
+
+def test_parallel_manifest_writes_keep_every_entry(tmp_path):
+    """N processes x M appends: every entry survives, the file parses, no process raises."""
+    import subprocess
+    import sys
+    from pathlib import Path
+    repo = Path(__file__).resolve().parents[1]
+    root = tmp_path / "humaneval_regen_2026_11_test"
+    n, m = 6, 60
+    procs = [subprocess.Popen([sys.executable, "-c", _MANIFEST_WORKER, str(root), str(w), str(m)], cwd=repo,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) for w in range(n)]
+    results = [(p.wait(timeout=300), p.stderr.read()) for p in procs]
+    errors = [err.strip().splitlines()[-1] for rc, err in results if rc != 0]
+    data = json.loads((root / "MANIFEST.json").read_text())
+    got = {(r["worker"], r["j"]) for r in data["runs"]}
+    assert errors == [] and len(data["runs"]) == n * m and len(got) == n * m, \
+        f"{len(errors)} workers raised ({errors[:2]}); kept {len(data['runs'])}/{n * m} entries"
+    assert sorted(p.name for p in root.iterdir()) == ["MANIFEST.json", "MANIFEST.json.lock", "README.md"]
+
+
+def test_manifest_and_readme_are_replaced_atomically(tmp_path, monkeypatch):
+    """A crash while writing leaves the previous MANIFEST.json intact (temp file + os.replace)."""
+    regen.write_manifest(tmp_path, _manifest_entry(tmp_path, i=0))
+    before = (tmp_path / "MANIFEST.json").read_text()
+
+    def boom(*a, **k):
+        raise KeyboardInterrupt("killed mid-write")
+    monkeypatch.setattr(regen.os, "replace", boom)
+    with pytest.raises(KeyboardInterrupt):
+        regen.write_manifest(tmp_path, _manifest_entry(tmp_path, i=1))
+    assert (tmp_path / "MANIFEST.json").read_text() == before
+    assert not [p for p in tmp_path.iterdir() if p.name.endswith(".tmp")]   # temp file cleaned up
+
+
+def test_readme_names_the_prompt_variants_in_the_root(tmp_path):
+    regen.write_manifest(tmp_path, _manifest_entry(tmp_path, variant="stripped"))
+    readme = (tmp_path / "README.md").read_text()
+    assert "Prompt variant(s) in this root: stripped" in readme
+    regen.write_manifest(tmp_path, _manifest_entry(tmp_path, variant="unstripped"))   # chat model, same root
+    readme = (tmp_path / "README.md").read_text()
+    assert "Prompt variant(s) in this root: stripped, unstripped" in readme
+    assert "__prompt_stripped.jsonl" in readme and "bench.eval" in readme
+
+
+def test_output_lock_is_exclusive_and_invisible_to_jsonl_globs(tmp_path):
+    out = regen.output_path(tmp_path, "m/x", "greedy")
+    out.parent.mkdir(parents=True)
+    out.write_text("")
+    held = regen.acquire_output_lock(out)
+    try:
+        assert out.with_name(out.name + ".lock").exists()
+        with pytest.raises(SystemExit, match="already being generated"):
+            regen.acquire_output_lock(out)
+        assert [p.name for p in tmp_path.glob("*/*.jsonl")] == [out.name]
+    finally:
+        held.close()
+    regen.acquire_output_lock(out).close()   # released -> can be taken again
+
+
+_HOLD_LOCK = """
+import sys, time
+from pathlib import Path
+from bench.humaneval import regen
+held = regen.acquire_output_lock(Path(sys.argv[1]))   # keep a reference: closing releases it
+print("LOCKED", flush=True)
+time.sleep(120)
+"""
+
+# Stub the dataset load so a runner that does NOT check the lock first exits fast (rc 97, no message)
+# instead of loading a model.
+_SECOND_QUEUE = """
+import sys
+import datasets
+datasets.load_dataset = lambda *a, **k: sys.exit(97)
+from bench.humaneval import regen
+regen.main(sys.argv[1:])
+"""
+
+
+def test_second_queue_on_the_same_output_exits_before_loading(tmp_path):
+    import subprocess
+    import sys
+    from pathlib import Path
+    repo = Path(__file__).resolve().parents[1]
+    root = tmp_path / "humaneval_regen_2026_11_test"
+    model = "Qwen/Qwen2.5-Coder-1.5B"
+    out = regen.output_path(root, model, "temp_t0.7")
+    out.parent.mkdir(parents=True)
+    holder = subprocess.Popen([sys.executable, "-c", _HOLD_LOCK, str(out)], cwd=repo, stdout=subprocess.PIPE,
+                              text=True)
+    try:
+        assert holder.stdout.readline().strip() == "LOCKED"
+        p = subprocess.run([sys.executable, "-c", _SECOND_QUEUE, "--model", model, "--configs", "greedy,temp_t0.7",
+                            "--out-root", str(root), "--resume"], cwd=repo, capture_output=True, text=True,
+                           timeout=120)
+    finally:
+        holder.kill()
+        holder.wait()
+    assert p.returncode not in (0, 97), p.stdout + p.stderr
+    assert "already being generated" in p.stderr and str(out) in p.stderr, p.stderr
+    assert not (root / "MANIFEST.json").exists()   # nothing written before refusing
