@@ -23,6 +23,10 @@ Diagnostics (not part of the default config sets; see run_regen_humaneval_8model
     --configs greedy_hf                       HF greedy (num_beams=1), same HF path as beam4: backend effect
     --configs greedy --prompt-variant stripped  prompt.strip() (BigCode task `humaneval`), base models only:
                                               prompt effect; written to <config>__prompt_stripped.jsonl
+
+Stripped-prompt protocol (user decision 2026-11-07, run log): ``PROMPT_VARIANT=stripped
+./run_regen_humaneval_8models.sh <mode>`` passes ``--prompt-variant stripped`` to the raw-prompted models only
+(``prompt_variant_args``) and writes to ``results/humaneval_regen_2026_11_stripped*``.
 """
 from __future__ import annotations
 
@@ -66,7 +70,7 @@ MODELS = [  # run order: small models first, 7B last
     ModelSpec("codellama/CodeLlama-7b-Instruct-hf", "chat"),
     ModelSpec("meta-llama/Llama-2-7b-hf", "base"),
     ModelSpec("meta-llama/Llama-2-7b-chat-hf", "chat"),
-    ModelSpec("Qwen/Qwen2.5-Coder-7B-Instruct", "chat"),
+    ModelSpec("Qwen/Qwen2.5-Coder-7B", "base", hasan=True),   # user decision 2026-11-07: base, replaces -Instruct
 ]
 _MODEL_BY_ID = {m.model_id: m for m in MODELS}
 
@@ -160,6 +164,20 @@ def apply_prompt_variant(prompt: str, style: str, variant: str) -> str:
             raise ValueError(f"--prompt-variant stripped applies to base-style prompts only (style {style!r})")
         return prompt.strip()
     raise ValueError(f"unknown prompt variant {variant!r}; expected one of {PROMPT_VARIANTS}")
+
+
+def prompt_variant_args(model_id: str, variant: str) -> list[str]:
+    """Runner arguments that select ``variant`` for one model (used by run_regen_humaneval_8models.sh).
+
+    ``stripped`` applies to raw-prompted (base-style) models only; chat models get no flag (the runner refuses
+    stripped for them) and keep their chat-template prompt. ``unstripped`` (the default) adds nothing.
+    """
+    style = get_model(model_id).prompt_style          # KeyError for models outside the plan
+    if variant not in PROMPT_VARIANTS:
+        raise ValueError(f"unknown prompt variant {variant!r}; expected one of {PROMPT_VARIANTS}")
+    if variant == DEFAULT_PROMPT_VARIANT or style != "base":
+        return []
+    return ["--prompt-variant", variant]
 
 
 def build_prompt_ids(tokenizer, task_prompt: str, style: str) -> list[int]:
@@ -429,7 +447,8 @@ def parse_args(argv=None):
     p.add_argument("--resume", action="store_true")
     p.add_argument("--prompt-variant", choices=PROMPT_VARIANTS, default=DEFAULT_PROMPT_VARIANT,
                    help="unstripped (default): raw prompt ending in a newline (BigCode humaneval-unstripped); "
-                        "stripped: prompt.strip() (BigCode humaneval), base models only (diagnostic)")
+                        "stripped: prompt.strip() (BigCode humaneval), base models only; the 2026-11-07 protocol "
+                        "(PROMPT_VARIANT=stripped in run_regen_humaneval_8models.sh)")
     return p.parse_args(argv)
 
 

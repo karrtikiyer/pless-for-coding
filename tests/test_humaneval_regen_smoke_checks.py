@@ -123,3 +123,115 @@ def test_first_body_indent_skips_the_leading_newline_of_a_stripped_prompt_comple
     # --prompt-variant stripped: the prompt ends with '"""', so completions start with "\n    ".
     assert smoke.first_body_indent("\n    return 1\n") == 4
     assert smoke.first_body_indent("    return 1\n") == 4   # existing (unstripped) data unchanged
+
+
+# ---------- --prompt-variant stripped: completion starts ----------
+
+def test_classify_start():
+    assert smoke.classify_start("\n    return 1\n") == "new_line"
+    assert smoke.classify_start("  \n\n    return 1\n") == "new_line"   # trailing blanks on the docstring line
+    assert smoke.classify_start(' x = 1\n    return x\n') == "same_line"   # continues on the '"""' line
+    assert smoke.classify_start("") == "empty"
+    assert smoke.classify_start("\n  \n") == "empty"
+
+
+def test_stripped_start_counts():
+    comps = ["\n    return 1\n", "\n   return 2\n", " x\n    return x\n", ""]
+    assert smoke.stripped_start_counts(comps) == {"new_line_4sp": 1, "new_line_other": 1, "same_line": 1, "empty": 1}
+
+
+def _write_variant_run(root, name, raws, variant):
+    import json
+    from bench.humaneval import regen
+    model = "Qwen/Qwen2.5-Coder-1.5B"
+    tok = regen.load_tokenizer(model)
+    task = {"task_id": "HumanEval/0", "prompt": 'def f():\n    """ Doc. """\n', "test": "T", "entry_point": "f"}
+    meta = [META_STOP] * len(raws)
+    rec = regen.make_record(task, model_id=model, style="base", config=regen.CONFIGS[name], config_name=name,
+                            prompt_ids=regen.build_prompt_ids(tok, regen.apply_prompt_variant(task["prompt"], "base", variant),
+                                                              "base"),
+                            raw=raws, seed=42, max_new_tokens=512, versions={}, metas=meta, backend_stops=True,
+                            prompt_variant=variant)
+    p = regen.output_path(root, model, name, variant)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(rec) + "\n")
+
+
+# 10 samples: 7 new-line + 4-space bodies, 2 continuations on the '"""' line, 1 empty (as seen in real stripped data)
+MIXED = [f"\n    return {i}\n" for i in range(7)] + [" x = 1\n    return x\n", " y = 2\n    return y\n", ""]
+
+
+def _main_out(root, capsys):
+    rc = smoke.main(["--smoke-root", str(root)])
+    return rc, capsys.readouterr().out
+
+
+def test_stripped_same_line_and_empty_samples_do_not_fail_and_are_reported(tmp_path, capsys):
+    import pytest
+    try:
+        _write_variant_run(tmp_path / "a", "temp_t0.7", MIXED, "stripped")
+    except Exception as e:
+        pytest.skip(f"tokenizer unavailable: {e}")
+    rc, out = _main_out(tmp_path / "a", capsys)
+    assert rc == 0 and "HARD CHECKS: PASS" in out, out
+    table, starts = out.split("STRIPPED-PROMPT COMPLETION STARTS", 1)
+    row = next(ln for ln in table.splitlines() if "temp_t0.7__prompt_stripped" in ln)   # file stem shown as config
+    assert row.split()[5] == "100.0%"    # 4sp column: share of the 7 new-line starts
+    nums = next(ln for ln in starts.splitlines() if "temp_t0.7__prompt_stripped" in ln).split()[-4:]
+    assert nums == ["7", "0", "2", "1"]   # new line + 4sp, new line other indent, '"""' line, empty
+
+
+def test_unstripped_behaviour_unchanged_for_the_same_samples(tmp_path, capsys):
+    import pytest
+    try:
+        _write_variant_run(tmp_path / "a", "temp_t0.7", MIXED, "unstripped")
+    except Exception as e:
+        pytest.skip(f"tokenizer unavailable: {e}")
+    rc, out = _main_out(tmp_path / "a", capsys)
+    assert rc == 1 and "only 70.0% of completions start with 4 spaces" in out
+    assert "STRIPPED-PROMPT COMPLETION STARTS" not in out
+
+
+def test_stripped_three_space_indent_bug_is_a_hard_failure(tmp_path, capsys):
+    import pytest
+    try:
+        _write_variant_run(tmp_path / "a", "temp_t0.7", [f"\n   return {i}\n" for i in range(10)], "stripped")
+    except Exception as e:
+        pytest.skip(f"tokenizer unavailable: {e}")
+    rc, out = _main_out(tmp_path / "a", capsys)
+    assert rc == 1 and "new-line-starting completions have a 4-space first body line" in out
+
+
+def test_stripped_indent_threshold_is_90_percent_of_new_line_starts(tmp_path, capsys):
+    import pytest
+    ok = [f"\n    return {i}\n" for i in range(9)] + ["\n   return 9\n"]          # 9/10 = 90%: pass
+    bad = [f"\n    return {i}\n" for i in range(8)] + ["\n   return 8\n", "\n   return 9\n"]   # 80%: fail
+    try:
+        _write_variant_run(tmp_path / "ok", "temp_t0.7", ok, "stripped")
+        _write_variant_run(tmp_path / "bad", "temp_t0.7", bad, "stripped")
+    except Exception as e:
+        pytest.skip(f"tokenizer unavailable: {e}")
+    assert _main_out(tmp_path / "ok", capsys)[0] == 0
+    assert _main_out(tmp_path / "bad", capsys)[0] == 1
+
+
+def test_stripped_lost_newlines_are_a_hard_failure(tmp_path, capsys):
+    # A whitespace-losing decode ("\n    x" -> "x") would make every completion look like a '"""'-line
+    # continuation and slip past the 4-space check; a majority of same-line starts is flagged.
+    import pytest
+    try:
+        _write_variant_run(tmp_path / "a", "temp_t0.7", [f"return {i}\n" for i in range(10)], "stripped")
+    except Exception as e:
+        pytest.skip(f"tokenizer unavailable: {e}")
+    rc, out = _main_out(tmp_path / "a", capsys)
+    assert rc == 1 and "start on a new line" in out
+
+
+def test_stripped_all_empty_is_a_hard_failure(tmp_path, capsys):
+    import pytest
+    try:
+        _write_variant_run(tmp_path / "a", "greedy", [""], "stripped")
+    except Exception as e:
+        pytest.skip(f"tokenizer unavailable: {e}")
+    rc, out = _main_out(tmp_path / "a", capsys)
+    assert rc == 1 and "all completions are empty" in out

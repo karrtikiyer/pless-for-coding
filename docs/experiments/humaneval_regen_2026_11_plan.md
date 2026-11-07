@@ -215,6 +215,46 @@ Validation before any number is used:
   instead of `\nif`; lacks `\n<|/` and `` \n``` ``); code comment claims it matches Hasan et al.
 - HumanEval appendix rows (Codestral-22B, Qwen3-Coder-30B, Qwen2.5-Coder-7B base) — decide later.
 
+## 11. Amendment A1 (2026-11-07, user decision): stripped prompt for raw-prompted models
+
+**Change.** For every model prompted with the raw HumanEval text, the prompt becomes `doc["prompt"].strip()`,
+i.e. the BigCode harness task `humaneval` instead of `humaneval-unstripped`. This covers OpenCodeInterpreter-DS-1.3B
+(instruction-tuned but prompted raw), Qwen2.5-Coder-1.5B/3B, CodeLlama-7b-hf and Llama-2-7b-hf. Chat-template
+models are unchanged: their prompt sits inside a user message.
+- Every config is regenerated from scratch into `results/humaneval_regen_2026_11_stripped/`. Generator, stop list,
+  grader, seeds, n and max_new_tokens are unchanged.
+- Smoke and fit runs are repeated under the new protocol.
+
+**Why (stated before any stripped-prompt p-less / temperature / top-p@0.9 / beam results exist).**
+- The stripped prompt is the BigCode harness default (`docs/README.md` HumanEval command: `--tasks humaneval`).
+- It is the setting Hasan et al. ran. Their released config (`results/evaluations/OpenCodeInterpreter-DS-1.3B_humaneval.json`,
+  and the Qwen2.5-Coder-0.5B sibling) has `tasks: "humaneval"`, which their harness fork maps to `prompt.strip()`.
+- The unstripped prompt measurably changed raw-prompted outputs. Diagnostics so far (greedy, top-p@0.95 T=0.2):
+  - Qwen2.5-Coder-1.5B greedy: 37/164 `pass` stubs vs 12 stripped;
+  - paired pass@1 stripped − unstripped at top-p@0.95 T=0.2: Q1.5B +4.45 pp, Q3B +4.39 pp, OCI +2.50 pp.
+- One protocol for every reported HumanEval row avoids mixing prompt formats.
+
+**Known costs, accepted.**
+- This deviates from the pre-registered §2/§6 choice after diagnostics were seen.
+- The stripped prompt has its own failures, reported as produced:
+  - code continued on the `"""` line (a SyntaxError), e.g. Qwen2.5-Coder-3B 77/1640 samples at T=0.2;
+  - empty completions (17/1640 and 16/1640).
+- OpenCodeInterpreter stripped is about 2.5 pp above Hasan et al. at the same config. The cause is unexplained and
+  disclosed, not tuned away.
+
+**Model change (same date, user decision).** Model 8 becomes the BASE `Qwen/Qwen2.5-Coder-7B`, replacing
+`Qwen/Qwen2.5-Coder-7B-Instruct`. It is raw-prompted and stripped, and gets the top-p@0.95 T=0.2 config like the
+other Hasan models.
+- Why: Hasan et al. evaluated the base model (their repo `results/benchmark_result_28032025-1244_Qwen2.5-Coder-7B.json`:
+  `"model": "Qwen/Qwen2.5-Coder-7B"`, HumanEval pass@1 0.62; v4 Table 4 l.419).
+- It also makes the Qwen rows a base-model size series (1.5B / 3B / 7B).
+- Chat models in the study are now CodeLlama-7b-Instruct and Llama-2-7b-chat.
+
+**Kept, not reported in tables.** The unstripped full run `results/humaneval_regen_2026_11/` and the diagnostics in
+`results/humaneval_regen_2026_11_diag/` are retained unchanged. The paper may state in one line that the
+official-prompt (unstripped) results exist and how they differ. §9 applies to the stripped run unchanged: report as
+produced, no further reruns or config changes to move a result.
+
 ## Sources (fetched 2026-11-06)
 
 - vLLM 0.33.0 on PyPI; `vllm/sampling_params.py`, `vllm/entrypoints/generate/beam_search/offline.py`,

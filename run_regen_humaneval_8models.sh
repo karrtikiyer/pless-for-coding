@@ -14,6 +14,12 @@
 #                                                   results/humaneval_regen_2026_11_diag: HF greedy (greedy_hf.jsonl)
 #                                                   and vLLM greedy on prompt.strip() (greedy__prompt_stripped.jsonl)
 #
+# PROMPT_VARIANT=stripped (smoke / smoke-rerun / fit / small / large; user decision 2026-11-07, run log):
+#   prompt.strip() (BigCode task `humaneval`) for the raw-prompted models; chat models keep their chat template
+#   (regen.prompt_variant_args decides per model). Writes NEW roots, chat models included, so the final table
+#   reads one folder: results/humaneval_regen_2026_11_stripped (small, large), ..._stripped_smoke[_rerun]
+#   (SMOKE_NAME=smoke2 -> ..._stripped_smoke2[_rerun]), ..._stripped_fit. Default (unset): unstripped, as before.
+#
 # Full runs need the user's approved time budget first (standing rule). Nothing here deletes files:
 # the runner refuses to touch an existing output unless resuming it.
 set -euo pipefail
@@ -33,50 +39,70 @@ require_hf_login() {
 
 SMALL=(m-a-p/OpenCodeInterpreter-DS-1.3B Qwen/Qwen2.5-Coder-1.5B Qwen/Qwen2.5-Coder-3B)
 LARGE=(codellama/CodeLlama-7b-hf codellama/CodeLlama-7b-Instruct-hf meta-llama/Llama-2-7b-hf
-       meta-llama/Llama-2-7b-chat-hf Qwen/Qwen2.5-Coder-7B-Instruct)
+       meta-llama/Llama-2-7b-chat-hf Qwen/Qwen2.5-Coder-7B)
 mkdir -p logs
+
+PROMPT_VARIANT="${PROMPT_VARIANT:-unstripped}"
+case "$PROMPT_VARIANT" in
+  unstripped) ROOT="results/humaneval_regen_2026_11" ;;
+  stripped)   ROOT="results/humaneval_regen_2026_11_stripped" ;;
+  *) echo "PROMPT_VARIANT must be unstripped or stripped; got '$PROMPT_VARIANT'"; exit 2 ;;
+esac
+SMOKE_NAME="${SMOKE_NAME:-smoke}"   # must start with "smoke": e.g. SMOKE_NAME=stripped would hit the stripped full root
+[[ "$SMOKE_NAME" == smoke* ]] || { echo "SMOKE_NAME must start with 'smoke'; got '$SMOKE_NAME'"; exit 2; }
 
 vllm_configs() {   # all vLLM configs in the plan for a model (single source of truth: bench/humaneval/regen.py)
   "$PY" -c "import sys; from bench.humaneval.regen import CONFIGS, configs_for; \
 print(','.join(c for c in configs_for(sys.argv[1]) if CONFIGS[c].backend == 'vllm'))" "$1"
 }
 
+variant_args() {   # runner flags for PROMPT_VARIANT and a model (single source of truth: regen.prompt_variant_args)
+  [[ "$PROMPT_VARIANT" == unstripped ]] && return 0
+  "$PY" -c "import sys; from bench.humaneval.regen import prompt_variant_args; \
+print(' '.join(prompt_variant_args(sys.argv[1], sys.argv[2])))" "$1" "$PROMPT_VARIANT"
+}
+
 run() {  # run MODEL CONFIGS OUT_ROOT [extra args...]
   local model="$1" configs="$2" root="$3"; shift 3
-  local tag=""; [[ " $* " == *" --prompt-variant stripped "* ]] && tag="__prompt_stripped"
+  local tag="" pv="unstripped"; [[ " $* " == *" --prompt-variant stripped "* ]] && tag="__prompt_stripped" && pv="stripped"
   local log="logs/regen_humaneval_$(basename "$root")_${model//\//--}_${configs//,/+}${tag}_$(date +%Y%m%d_%H%M%S).log"
-  echo "[$(TZ=Asia/Kolkata date '+%F %T IST')] $model | $configs -> $root (log $log)"
+  echo "[$(TZ=Asia/Kolkata date '+%F %T IST')] $model | $configs | prompt-variant $pv -> $root (log $log)"
   "$PY" -m bench.humaneval.regen --model "$model" --configs "$configs" --out-root "$root" "$@" 2>&1 | tee "$log"
 }
 
 case "${1:-}" in
   smoke|smoke-rerun)
-    root="results/humaneval_regen_2026_11_${SMOKE_NAME:-smoke}"; [[ "$1" == smoke-rerun ]] && root="${root}_rerun"
+    root="${ROOT}_${SMOKE_NAME}"; [[ "$1" == smoke-rerun ]] && root="${root}_rerun"
     for m in "${SMALL[@]}"; do
-      run "$m" "greedy,temp_t0.7,top_p0.9_t1.0,pless_t0.7,pless_norm_t0.7" "$root" --max-problems 5
-      run "$m" "beam4" "$root" --max-problems 5
+      va=$(variant_args "$m")   # assigned first so a failure stops the script (set -e); empty by default
+      run "$m" "greedy,temp_t0.7,top_p0.9_t1.0,pless_t0.7,pless_norm_t0.7" "$root" --max-problems 5 $va
+      run "$m" "beam4" "$root" --max-problems 5 $va
     done ;;
   fit)
     m="${2:?model id}"
     [[ "$m" == meta-llama/* ]] && require_hf_login
-    run "$m" "greedy" "results/humaneval_regen_2026_11_fit" --max-problems 5
-    run "$m" "beam4" "results/humaneval_regen_2026_11_fit" --max-problems 5 ;;
+    va=$(variant_args "$m")
+    run "$m" "greedy" "${ROOT}_fit" --max-problems 5 $va
+    run "$m" "beam4" "${ROOT}_fit" --max-problems 5 $va ;;
   small)
     for m in "${SMALL[@]}"; do
-      run "$m" "$(vllm_configs "$m")" "results/humaneval_regen_2026_11" --resume
-      run "$m" "beam4" "results/humaneval_regen_2026_11" --resume
+      va=$(variant_args "$m")
+      run "$m" "$(vllm_configs "$m")" "$ROOT" --resume $va
+      run "$m" "beam4" "$ROOT" --resume $va
     done ;;
   large)
     shift; models=("$@"); [[ ${#models[@]} -eq 0 ]] && models=("${LARGE[@]}")
     for m in "${models[@]}"; do [[ "$m" == meta-llama/* ]] && require_hf_login; done
     for m in "${models[@]}"; do
-      run "$m" "$(vllm_configs "$m")" "results/humaneval_regen_2026_11" --resume
-      run "$m" "beam4" "results/humaneval_regen_2026_11" --resume
+      va=$(variant_args "$m")
+      run "$m" "$(vllm_configs "$m")" "$ROOT" --resume $va
+      run "$m" "beam4" "$ROOT" --resume $va
     done ;;
   diag)   # (a) backend effect: HF greedy, unstripped prompt; (b) prompt effect: vLLM greedy, stripped prompt
+    [[ "$PROMPT_VARIANT" == unstripped ]] || { echo "diag fixes its own prompt variants; unset PROMPT_VARIANT"; exit 2; }
     for m in "${SMALL[@]}"; do
       run "$m" "greedy_hf" "results/humaneval_regen_2026_11_diag" --resume
       run "$m" "greedy" "results/humaneval_regen_2026_11_diag" --prompt-variant stripped --resume
     done ;;
-  *) sed -n '2,18p' "$0"; exit 2 ;;
+  *) sed -n '2,24p' "$0"; exit 2 ;;
 esac

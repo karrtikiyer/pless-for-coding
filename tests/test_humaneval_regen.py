@@ -23,7 +23,7 @@ def test_models_are_the_papers_eight_small_first():
         "codellama/CodeLlama-7b-Instruct-hf",
         "meta-llama/Llama-2-7b-hf",
         "meta-llama/Llama-2-7b-chat-hf",
-        "Qwen/Qwen2.5-Coder-7B-Instruct",
+        "Qwen/Qwen2.5-Coder-7B",   # base model (user decision 2026-11-07), replaced Qwen2.5-Coder-7B-Instruct
     ]
 
 
@@ -33,8 +33,8 @@ def test_prompt_styles():
     assert [m for m, s in style.items() if s == "chat"] == [
         "codellama/CodeLlama-7b-Instruct-hf",
         "meta-llama/Llama-2-7b-chat-hf",
-        "Qwen/Qwen2.5-Coder-7B-Instruct",
     ]
+    assert style["Qwen/Qwen2.5-Coder-7B"] == "base"
 
 
 def test_unknown_model_is_rejected():
@@ -59,8 +59,10 @@ def test_config_table():
 
 def test_hasan_config_only_for_the_three_shared_models():
     with_hasan = [m.model_id for m in regen.MODELS if "top_p0.95_t0.2" in regen.configs_for(m.model_id)]
-    assert with_hasan == ["m-a-p/OpenCodeInterpreter-DS-1.3B", "Qwen/Qwen2.5-Coder-1.5B", "Qwen/Qwen2.5-Coder-3B"]
+    assert with_hasan == ["m-a-p/OpenCodeInterpreter-DS-1.3B", "Qwen/Qwen2.5-Coder-1.5B", "Qwen/Qwen2.5-Coder-3B",
+                          "Qwen/Qwen2.5-Coder-7B"]
     assert len(regen.configs_for("codellama/CodeLlama-7b-hf")) == 6
+    assert regen.configs_for("Qwen/Qwen2.5-Coder-7B") == regen.COMMON_CONFIGS + ["top_p0.95_t0.2"]
 
 
 def test_greedy_hf_is_a_diagnostic_config_outside_the_default_sets():
@@ -432,7 +434,7 @@ def test_cli_prompt_variant_default_and_chat_rejection():
     with pytest.raises(SystemExit):
         regen.parse_args(["--model", "x", "--prompt-variant", "bogus"])
     with pytest.raises(SystemExit, match="base"):   # refused before any model / dataset is loaded
-        regen.main(["--model", "Qwen/Qwen2.5-Coder-7B-Instruct", "--configs", "greedy", "--prompt-variant", "stripped",
+        regen.main(["--model", "meta-llama/Llama-2-7b-chat-hf", "--configs", "greedy", "--prompt-variant", "stripped",
                     "--out-root", "results/humaneval_regen_2026_11_never_written"])
 
 
@@ -544,3 +546,184 @@ def test_diag_outputs_do_not_collide(tmp_path):
     paths = {regen.output_path(tmp_path, m, "greedy_hf"), regen.output_path(tmp_path, m, "greedy", "stripped"),
              regen.output_path(tmp_path, m, "greedy")}
     assert len(paths) == 3
+
+
+# ---------- stripped-prompt protocol: per-model flag (single source of truth for the orchestration) ----------
+
+BASE_IDS = ["m-a-p/OpenCodeInterpreter-DS-1.3B", "Qwen/Qwen2.5-Coder-1.5B", "Qwen/Qwen2.5-Coder-3B",
+            "codellama/CodeLlama-7b-hf", "meta-llama/Llama-2-7b-hf", "Qwen/Qwen2.5-Coder-7B"]
+LARGE_BASE_IDS = ["codellama/CodeLlama-7b-hf", "meta-llama/Llama-2-7b-hf", "Qwen/Qwen2.5-Coder-7B"]
+CHAT_IDS = ["codellama/CodeLlama-7b-Instruct-hf", "meta-llama/Llama-2-7b-chat-hf"]
+
+
+def test_prompt_variant_args_flag_raw_prompted_models_only():
+    for m in BASE_IDS:
+        assert regen.prompt_variant_args(m, "stripped") == ["--prompt-variant", "stripped"], m
+        assert regen.prompt_variant_args(m, "unstripped") == [], m
+    for m in CHAT_IDS:   # chat-template prompts: the runner refuses stripped, so no flag at all
+        assert regen.prompt_variant_args(m, "stripped") == [], m
+        assert regen.prompt_variant_args(m, "unstripped") == [], m
+    with pytest.raises(ValueError):
+        regen.prompt_variant_args(BASE_IDS[0], "bogus")
+    with pytest.raises(KeyError):
+        regen.prompt_variant_args("some/other-model", "stripped")
+
+
+def test_prompt_variant_args_are_accepted_by_the_runner():
+    # Whatever the helper emits for a model must pass main()'s chat refusal (checked via apply_prompt_variant).
+    for m in BASE_IDS + CHAT_IDS:
+        args = regen.parse_args(["--model", m] + regen.prompt_variant_args(m, "stripped"))
+        regen.apply_prompt_variant("x", regen.get_model(m).prompt_style, args.prompt_variant)
+
+
+# ---------- orchestration: commands actually issued (fake interpreter, nothing is generated) ----------
+
+def _run_script(tmp_path, args, env_extra=None):
+    """Run a copy of run_regen_humaneval_8models.sh with PY pointing to a fake interpreter that prints the
+    runner invocations (`-m bench.humaneval.regen ...`) instead of executing them. Returns (rc, calls, stdout)."""
+    import os
+    import shutil
+    import subprocess
+    import sys
+    from pathlib import Path
+    repo = Path(__file__).resolve().parents[1]
+    work = tmp_path / "work"
+    work.mkdir(exist_ok=True)
+    shutil.copy(repo / "run_regen_humaneval_8models.sh", work / "run.sh")
+    fake = work / "fakepy"
+    fake.write_text("#!/usr/bin/env bash\n"
+                    'if [[ "$1" == "-m" ]]; then echo "CALL $*"; exit 0; fi\n'
+                    'if [[ "$*" == *whoami* ]]; then exit 0; fi\n'
+                    f'exec "{sys.executable}" "$@"\n')
+    fake.chmod(0o755)
+    env = {k: v for k, v in os.environ.items() if k not in ("PROMPT_VARIANT", "SMOKE_NAME")}
+    env.update({"PY": str(fake), "PYTHONPATH": str(repo)}, **(env_extra or {}))
+    p = subprocess.run(["bash", str(work / "run.sh"), *args], capture_output=True, text=True, env=env, cwd=work)
+    calls = [ln[len("CALL -m bench.humaneval.regen "):] for ln in p.stdout.splitlines() if ln.startswith("CALL ")]
+    return p.returncode, calls, p.stdout + p.stderr
+
+
+Q15 = "Qwen/Qwen2.5-Coder-1.5B"
+SMOKE_VLLM = "greedy,temp_t0.7,top_p0.9_t1.0,pless_t0.7,pless_norm_t0.7"
+
+
+def test_default_smoke_commands_are_unchanged(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["smoke"])
+    assert rc == 0, out
+    assert calls[:2] == [
+        f"--model m-a-p/OpenCodeInterpreter-DS-1.3B --configs {SMOKE_VLLM} --out-root results/humaneval_regen_2026_11_smoke --max-problems 5",
+        "--model m-a-p/OpenCodeInterpreter-DS-1.3B --configs beam4 --out-root results/humaneval_regen_2026_11_smoke --max-problems 5",
+    ]
+    assert len(calls) == 6 and not any("--prompt-variant" in c for c in calls)
+    rc, calls, out = _run_script(tmp_path, ["smoke-rerun"], {"SMOKE_NAME": "smoke2"})
+    assert rc == 0 and all("--out-root results/humaneval_regen_2026_11_smoke2_rerun " in c for c in calls), out
+
+
+def test_default_fit_small_large_commands_are_unchanged(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["fit", "meta-llama/Llama-2-7b-chat-hf"])
+    assert rc == 0, out
+    assert calls == [
+        "--model meta-llama/Llama-2-7b-chat-hf --configs greedy --out-root results/humaneval_regen_2026_11_fit --max-problems 5",
+        "--model meta-llama/Llama-2-7b-chat-hf --configs beam4 --out-root results/humaneval_regen_2026_11_fit --max-problems 5",
+    ]
+    rc, calls, out = _run_script(tmp_path, ["large", "codellama/CodeLlama-7b-hf"])
+    assert rc == 0, out
+    assert calls == [
+        "--model codellama/CodeLlama-7b-hf --configs greedy,temp_t0.7,top_p0.9_t1.0,pless_t0.7,pless_norm_t0.7 "
+        "--out-root results/humaneval_regen_2026_11 --resume",
+        "--model codellama/CodeLlama-7b-hf --configs beam4 --out-root results/humaneval_regen_2026_11 --resume",
+    ]
+    rc, calls, out = _run_script(tmp_path, ["small"])
+    assert rc == 0 and len(calls) == 6, out
+    assert calls[2] == ("--model Qwen/Qwen2.5-Coder-1.5B --configs greedy,temp_t0.7,top_p0.9_t1.0,pless_t0.7,"
+                        "pless_norm_t0.7,top_p0.95_t0.2 --out-root results/humaneval_regen_2026_11 --resume")
+
+
+STRIPPED = {"PROMPT_VARIANT": "stripped"}
+
+
+def test_stripped_smoke_and_rerun_flag_every_call_into_new_roots(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["smoke"], STRIPPED)
+    assert rc == 0, out
+    assert calls[:2] == [
+        f"--model m-a-p/OpenCodeInterpreter-DS-1.3B --configs {SMOKE_VLLM} --out-root "
+        "results/humaneval_regen_2026_11_stripped_smoke --max-problems 5 --prompt-variant stripped",
+        "--model m-a-p/OpenCodeInterpreter-DS-1.3B --configs beam4 --out-root "
+        "results/humaneval_regen_2026_11_stripped_smoke --max-problems 5 --prompt-variant stripped",
+    ]
+    assert len(calls) == 6 and all(c.endswith("--prompt-variant stripped") for c in calls)   # beam (HF) too
+    assert "prompt-variant stripped" in out   # the echo line shows the variant
+    rc, calls, out = _run_script(tmp_path, ["smoke-rerun"], STRIPPED)
+    assert rc == 0 and all("--out-root results/humaneval_regen_2026_11_stripped_smoke_rerun " in c for c in calls), out
+
+
+def test_stripped_fit_flags_base_but_not_chat(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["fit", "codellama/CodeLlama-7b-hf"], STRIPPED)
+    assert rc == 0, out
+    assert calls == [
+        "--model codellama/CodeLlama-7b-hf --configs greedy --out-root results/humaneval_regen_2026_11_stripped_fit "
+        "--max-problems 5 --prompt-variant stripped",
+        "--model codellama/CodeLlama-7b-hf --configs beam4 --out-root results/humaneval_regen_2026_11_stripped_fit "
+        "--max-problems 5 --prompt-variant stripped",
+    ]
+    rc, calls, out = _run_script(tmp_path, ["fit", "meta-llama/Llama-2-7b-chat-hf"], STRIPPED)
+    assert rc == 0, out
+    assert calls == [
+        "--model meta-llama/Llama-2-7b-chat-hf --configs greedy --out-root results/humaneval_regen_2026_11_stripped_fit "
+        "--max-problems 5",
+        "--model meta-llama/Llama-2-7b-chat-hf --configs beam4 --out-root results/humaneval_regen_2026_11_stripped_fit "
+        "--max-problems 5",
+    ]
+    assert "prompt-variant unstripped" in out
+
+
+def test_stripped_small_and_large_share_one_new_root(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["small"], STRIPPED)
+    assert rc == 0 and len(calls) == 6, out
+    assert all(c.endswith("--out-root results/humaneval_regen_2026_11_stripped --resume --prompt-variant stripped")
+               for c in calls), calls
+    rc, calls, out = _run_script(tmp_path, ["large"], STRIPPED)   # default: all five 7B models
+    assert rc == 0 and len(calls) == 10, out
+    by_model = {}
+    for c in calls:
+        by_model.setdefault(c.split()[1], []).append(c)
+        assert "--out-root results/humaneval_regen_2026_11_stripped --resume" in c
+    assert list(by_model) == ["codellama/CodeLlama-7b-hf", "codellama/CodeLlama-7b-Instruct-hf",
+                              "meta-llama/Llama-2-7b-hf", "meta-llama/Llama-2-7b-chat-hf", "Qwen/Qwen2.5-Coder-7B"]
+    for m in LARGE_BASE_IDS:
+        assert all(c.endswith("--prompt-variant stripped") for c in by_model[m]), m
+    for m in CHAT_IDS:
+        assert not any("--prompt-variant" in c for c in by_model[m]), m
+    assert any("--configs beam4" in c for c in by_model["codellama/CodeLlama-7b-hf"])
+    assert by_model["Qwen/Qwen2.5-Coder-7B"][0].split()[3].endswith(",top_p0.95_t0.2")   # Hasan model
+
+
+def test_stripped_roots_pass_the_guard_and_never_collide_with_existing_roots():
+    from pathlib import Path
+    new = ["results/humaneval_regen_2026_11_stripped", "results/humaneval_regen_2026_11_stripped_smoke",
+           "results/humaneval_regen_2026_11_stripped_smoke_rerun", "results/humaneval_regen_2026_11_stripped_fit"]
+    old = ["results/humaneval_regen_2026_11", "results/humaneval_regen_2026_11_smoke",
+           "results/humaneval_regen_2026_11_smoke_rerun", "results/humaneval_regen_2026_11_fit",
+           "results/humaneval_regen_2026_11_diag", "results/humaneval_regen_2026_11_smoke2"]
+    for r in new:
+        regen._check_out_root(Path(r))
+    assert not set(new) & set(old)
+
+
+def test_orchestration_rejects_bad_variant_and_colliding_smoke_names(tmp_path):
+    rc, calls, _ = _run_script(tmp_path, ["smoke"], {"PROMPT_VARIANT": "bogus"})
+    assert rc != 0 and calls == []
+    rc, calls, _ = _run_script(tmp_path, ["diag"], STRIPPED)   # diag has its own fixed variants
+    assert rc != 0 and calls == []
+    rc, calls, _ = _run_script(tmp_path, ["smoke"], {"SMOKE_NAME": "stripped"})   # would write the stripped full root
+    assert rc != 0 and calls == []
+
+
+def test_default_diag_commands_are_unchanged(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["diag"])
+    assert rc == 0 and len(calls) == 6, out
+    assert calls[:2] == [
+        "--model m-a-p/OpenCodeInterpreter-DS-1.3B --configs greedy_hf --out-root results/humaneval_regen_2026_11_diag --resume",
+        "--model m-a-p/OpenCodeInterpreter-DS-1.3B --configs greedy --out-root results/humaneval_regen_2026_11_diag "
+        "--prompt-variant stripped --resume",
+    ]

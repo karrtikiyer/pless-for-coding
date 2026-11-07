@@ -33,6 +33,22 @@ after a context loss. Every entry carries an IST timestamp. Append to the log; d
 | Smoke checker | `uv run python scripts/humaneval_regen_smoke_checks.py --smoke-root … --rerun-root …` |
 
 **Rules.**
+- **Grading-load protocol (user request 2026-11-07, pre-declared before any stripped-run grading).** Timeouts are
+  wall-clock, so they are sensitive to CPU load (`bench/eval/_cpu_lock.py` docstring: a 3x slowdown under
+  12-core stress).
+  1. Grade only via the `bench.eval` CLI, which holds `/tmp/pless_cpu_heavy.lock` and so serializes with other
+     evals. Use the default 4 workers on this 16-core, 48 GB machine.
+  2. Before each grading batch, log the load average, free memory and other heavy processes (`uptime`,
+     `memory_pressure`, `pgrep -fl bench.eval`).
+  3. **The reported numbers come from ONE final grading pass of all 8 models**, run when no other eval holds the
+     lock and the 1-minute load average is below about 2. Earlier passes are provisional.
+  4. Report timeout% per file. Any file above 1% gets its timed-out programs inspected before reporting.
+  - Baseline at 2026-11-07 16:10 IST: load 5.6–5.8; memory 77% free, no swap; another session's Ministral
+    LiveCodeBench `bench.eval` held the lock.
+- **No edits to the paper until the user's final review (user, 2026-11-07).** That covers
+  `paper/llm4code/tables/`, `paper/llm4code/figures/` and `../pless-for-coding-paper/` (main.tex, tables, refs).
+  New tables and draft text go to `results/humaneval_regen_2026_11/analysis/` or `docs/experiments/`. Note that
+  `make_llm4code_tables.py` writes into both paper locations, so don't run it.
 - Code moves by `git push` / `git pull` only. Results move by `scp` and are never committed.
 - Never read `.env` or token files. The user logs in to Hugging Face on the MSI.
 - Status updates carry IST timestamps.
@@ -248,3 +264,222 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
   - Also: `ast.parse` `MemoryError` on 2 Llama-2-7b samples. Not caught by `ast_fingerprint`; both failed, so no
     crash.
   - Code-reviewer running on the eval fixes.
+- **2026-11-07**: Eval fixes reviewed: no blockers; main session re-ran 50 tests. Committed `5fd6b5b`, pushed.
+  - Reviewer notes:
+    - never re-grade with `--use-codebleu-cache`;
+    - cb_div on base bodies still uses the raw completion, while cov@td uses the full program. Decide before the
+      final table: keep body-only and disclose (default), or switch;
+    - queued: a cache-mix warning and a more robust n=1 detection.
+- **2026-11-07 06:15:14 IST**: **diag run DONE** (`logs/regen_diag.done`): 6 files × 164 lines. Copy and
+  integrity check handed to data-wrangler.
+- **2026-11-07**: Diag copy **DONE** (data-wrangler):
+  - 8 files, all sha256 match; 164 rows before and after.
+  - Versions identical to the full run apart from git_commit (`ef6bef6`). Stripped `task_prompt` == full-run
+    prompt `.strip()` 164/164.
+  - **Stub counts (no `return`, has `pass`):**
+
+    | model | vLLM greedy | HF greedy | vLLM stripped | beam4 |
+    |---|---|---|---|---|
+    | Q1.5B | 37 | 37 | 12 | 2 |
+    | Q3B | 6 | 5 | 3 | 0 |
+    | OCI | 4 | 1 | 2 | 0 |
+
+    The stubs follow the prompt, not the backend.
+  - HF greedy vs vLLM greedy identical cut text: Q1.5B 125/164, Q3B 132, OCI 129.
+  - Smoke checker on the diag folder: HARD FAIL on the 4-space check (stripped: Q1.5B 98.2%, Q3B 94.5%).
+    Main session inspected it: real model behaviour, not an artefact. With the prompt ending in `"""` the model
+    sometimes continues on the same line (`' count = 0'`, HumanEval/98, 90, 79). That gives `""" count = 0`,
+    which becomes a SyntaxError at grading. So the stripped prompt has its own boundary failure.
+  - OCI `text_matches_reference` False 164/164, the same as the full-run OCI greedy (known safe-tokenizer case).
+  - Grading of the 6 diag files handed to experiment-harness.
+- **2026-11-07**: Diag grading **DONE** (experiment-harness).
+  - Official cross-check 984/984 agree. Main session re-checked all 6 pass@1 values from the metrics JSONs.
+  - pass@1 % (correct tasks):
+
+    | row | OCI | Q1.5B | Q3B |
+    |---|---|---|---|
+    | vLLM greedy (full) | 57.93 (95) | 39.02 (64) | 48.17 (79) |
+    | beam4 (full) | 68.29 (112) | 55.49 (91) | 57.32 (94) |
+    | HF greedy | 57.93 (95) | 40.24 (66) | 46.95 (77) |
+    | vLLM greedy stripped | 59.76 (98) | 47.56 (78) | 50.61 (83) |
+
+  - Paired 95% CIs, HF − vLLM: OCI +0.00 [−3.66, 3.05], Q1.5B +1.22 [−2.44, 4.88], Q3B −1.22 [−3.05, 0.00].
+  - Paired 95% CIs, stripped − vLLM: +1.83 [−2.44, 5.49], **+8.54 [0.61, 16.46]**, +2.44 [−3.05, 7.93].
+  - Paired 95% CIs, beam4 − HF greedy: +10.37 [5.49, 15.24], +15.24 [7.93, 21.95], +10.37 [3.66, 17.07].
+  - Stripped failures: continued-on-`"""`-line SyntaxErrors Q1.5B 1, Q3B 8. Every remaining stub failed.
+  - NOT VALIDATED; results-validator running (recompute, check C1–C4, red-team a post-hoc protocol switch).
+- **2026-11-07**: Diag **VALIDATED** (results-validator).
+  - All 12 pass@1 and all differences reproduce. McNemar: HF−vLLM all p ≥ 0.5; stripped−vLLM Q1.5B 29/15,
+    p=0.049 (about 0.15 Holm-corrected over 3 models), others p > 0.5; beam−HF greedy all p ≤ 0.006.
+  - C1 (backend not the cause) confirmed: bounds of about ±3–5 pp, well below the beam gap.
+  - C2 overstated: the Q1.5B gain is net (29 up, 15 down), and only 15 of the 29 gains were stub tasks.
+  - C4: stubs explain a minority of beam's lead. Excluding greedy-stub tasks, beam still leads by
+    +9.4 / +10.2 / +6.3 pp.
+  - **Stub mode is uneven across decoders** (share of samples with `pass` and no `return`; main session
+    reproduced it):
+
+    | model | greedy | pless T0.7 | top_p0.95 T0.2 | temp T0.7 | top_p0.9 T1.0 | beam4 |
+    |---|---|---|---|---|---|---|
+    | Q1.5B | 22.6% | 20.4% | 20.4% | 10.4% | 8.0% | 1.2% |
+    | Q3B | 3.7% | 2.6% | 3.2% | 3.1% | 3.3% | 0.0% |
+    | OCI | 2.4% | 3.0% | 3.8% | 5.7% | 5.7% | 0.0% |
+
+    So the prompt format is **not** decoder-neutral on Q1.5B. A switch would likely help p-less and the low-T
+    configs more than T0.7/top-p T1.0 (that size is unverified; the greedy diagnostic cannot predict it).
+  - Validator: switching outright after seeing the results is not supported. Defensible options:
+    - (a) keep unstripped as primary and disclose the stub mode plus the diagnostic;
+    - (b) run all configs on both prompts, pre-declare the primary now, and report whether the p-less
+      comparisons change sign or significance.
+  - **Decision pending with the user.**
+- **2026-11-07 14:52:31 IST**: User asked for a Hasan et al. reproduction test: `top_p0.95_t0.2` with
+  `--prompt-variant stripped` for Qwen2.5-Coder-1.5B and 3B into `results/humaneval_regen_2026_11_diag/`
+  (output `top_p0.95_t0.2__prompt_stripped.jsonl`).
+  - Run by calling the runner directly on the MSI (`ef6bef6`), with the same 4 env vars the orchestration script
+    exports. No code change. Marker: `logs/regen_diag2.done/.failed`.
+  - Question it answers: does the stripped prompt reproduce Hasan's 0.44 / 0.51? OCI already reproduces
+    unstripped (966 vs 967 of 1640).
+  - Separate from the protocol decision, which is still pending (proposed rule: stripped-prompt sensitivity
+    analysis only for base models with a greedy stub rate > 10%).
+- **2026-11-07 15:00:04 IST**: Hasan reproduction run **DONE** (`logs/regen_diag2.done`): 2 files × 164 lines.
+  Copy and integrity check handed to data-wrangler, then grading.
+- **2026-11-07**: Hasan reproduction **graded** (experiment-harness; official cross-check 400/400; main session
+  recomputed pass@k from per_task).
+  - Copy (data-wrangler): sha256 match; stripped empty samples Q1.5B 17, Q3B 16 (unstripped: 0); `"""`-line
+    continuations 10 / 77 samples.
+  - pass@1 / @2 / @5 / @10:
+
+    | model | stripped (Hasan config) | unstripped (ours) | Hasan v4 Table 4 |
+    |---|---|---|---|
+    | Q1.5B | .4372 / .5064 / .5860 / .6341 | .3927 / .4560 / .5254 / .5610 | .44 / .51 / .58 / .61 |
+    | Q3B | .5146 / .5755 / .6395 / .6768 | .4707 / .5249 / .5904 / .6402 | .51 / .57 / .63 / .66 |
+
+  - **The stripped prompt reproduces Hasan's pass@1 exactly at 2 dp on both Qwen models.** pass@2–10 are within
+    +0.00 to +0.02. Combined with OCI unstripped = Hasan (966 vs 967 of 1640), all 3 small models are now
+    reproduced. The Qwen gap was the prompt format.
+  - Paired pass@1, stripped − unstripped:
+    - Q1.5B +4.45 pp [−0.30, +8.96] (45 up / 31 down);
+    - **Q3B +4.39 pp [+0.30, +8.54]** (44 up / 25 down).
+  - **This corrects an earlier claim:** Q3B is also prompt-sensitive under T=0.2 sampling, despite its low stub
+    rate (3.2%). The proposed "greedy stub rate > 10%" trigger rule would have missed it, so drop it.
+  - Results-validator asked to check.
+- **2026-11-07**: User asked for OCI `top_p0.95_t0.2` with the stripped prompt (same diag folder, same direct
+  invocation). Purpose: check whether stripped is harmful for OCI before possibly adopting stripped uniformly for
+  base models.
+  - Main-session caveats given to the user: a switch must be declared in the plan before the 7B runs, with the
+    existing unstripped results kept as a reported sensitivity analysis. "Uniform" covers base models only, since
+    chat prompts have no trailing newline.
+  - Marker: `logs/regen_diag3.done/.failed`.
+- **2026-11-07**: Hasan reproduction **validated** (results-validator). Verdict: OVERSTATED; the numbers are
+  right.
+  - Run-to-run SD of pass@1 is about 0.006, so a match at 2 dp is weak evidence by itself. The strong evidence is
+    that unstripped sits about 7 SD below Hasan.
+  - Say "consistent with Hasan; the unstripped run is not", not "reproduced exactly". "All three reproduced"
+    mixes two prompt configs until OCI stripped is run (now running).
+  - The 512-includes-prompt hypothesis was tested and does not explain the pass@5/10 residual (at most −0.006).
+    Dropped.
+  - Paired task bootstrap: Q1.5B +4.45 [−0.12, 9.09], p=0.135; Q3B +4.39 [0.24, 8.60], p=0.030 (Holm ≈ 0.06).
+    Q3B significance is fragile.
+  - Mechanism: not stubs. In Q3B's 44 gained tasks the unstripped failures are 66% wrong logic, 10% stubs. The
+    prompt shifts the whole output distribution. Unstripped Q3B also has 77 at-cap samples (stripped 40) and
+    14 `<|fim…` token leaks (stripped 0).
+  - The prompt effect (about 4.4 pp) is larger than p-less vs top_p0.95_t0.2 (+0.85 / +0.19 / −0.42) and uneven
+    across decoders.
+  - **Validator recommends (b):** unstripped primary, plus all sampled configs on both prompts for base models,
+    and a pre-declared robustness criterion. It advises against (c) "switch primary": that is forking paths, and
+    stripped has its own failures (same-line `"""`, empty samples).
+  - The validator's side note (pless vs pless_norm byte check) was already done: 1640/1640 identical on Qwen,
+    1639/1640 on OCI.
+- **2026-11-07**: OCI stripped `top_p0.95_t0.2` **DONE** on the MSI; copy + grade handed to data-wrangler.
+- **2026-11-07**: The user noted that **OCI is instruction-tuned**. Verified:
+  - HF card: "This model is based on deepseek-coder-1.3b-base"; its usage example uses `apply_chat_template`.
+  - `tokenizer_config.json` has a chat_template with the system prompt "You are an AI programming assistant,
+    utilizing the Deepseek Coder model…".
+  - We (and Hasan, and our MBPP runs) prompt it raw. So: label it "instruction-tuned, prompted raw", not "base".
+  - The prompt-protocol question applies to all raw-prompted models: OCI, Q1.5B, Q3B, CodeLlama-7b,
+    Llama-2-7b.
+  - Whether instruction tuning makes it insensitive to the prompt boundary is unverified; the OCI stripped run
+    tests it.
+  - TODO for the user's final review: list where the paper/tables call OCI a base model (MBPP and HumanEval). No
+    edits.
+  - Paper check (read-only): main.tex never calls OCI "base". l.99 says "eight base and instruct … models"; l.121
+    says "base" only of the Qwen models. Suggested clarifying clause near l.99 for the user's review.
+- **2026-11-07**: OCI stripped `top_p0.95_t0.2` graded (data-wrangler; sha256 match; cross-check 400/400;
+  integrity OK; 0 empty, 0 same-line, 31 stubs).
+  - pass@1/2/5/10:
+    - stripped .6140 / .6749 / .7259 / .7500;
+    - unstripped .5890 / .6454 / .6998 / .7195;
+    - Hasan .59 / .65 / .70 / .72.
+  - Paired pass@1, stripped − unstripped: +2.50 pp [−0.67, +5.85] (31 up / 24 down). Not detectably different;
+    not harmful.
+  - **Tension.** Main session verified in BigCode harness `tasks/humaneval.py` l.32/66–67 that the task
+    `humaneval` = `doc["prompt"].strip()`. Hasan's OCI config uses `"tasks": "humaneval"`, so their OCI run
+    was stripped.
+  - Yet our OCI matches Hasan with **unstripped** (all four values at 2 dp), and our stripped OCI is about
+    +2.5 pp (about 4 run-to-run SD) above it. The Qwen models match Hasan under stripped.
+  - So no single protocol of ours reproduces all three Hasan numbers. The Hasan comparison cannot be used as
+    external evidence for the stripped prompt. Report the numbers side by side with the protocol differences;
+    do not claim "reproduced".
+  - OCI-specific pipeline difference (unverified as a cause): vLLM without backend stops plus a safe-tokenizer
+    re-decode, vs HF with stops in the harness.
+- **2026-11-07**: Hasan's OCI protocol **verified at the source** by the main session (earlier it rested only on
+  the paper-reader note).
+  - Authors' repo `results/evaluations/OpenCodeInterpreter-DS-1.3B_humaneval.json`: `config.tasks='humaneval'`,
+    `instruction_tokens=None`, `prefix=''`, T 0.2, top_p 0.95, top_k 0, n 10, `max_length_generation` 512,
+    bf16; pass@1 0.58963, pass@10 0.71951.
+  - The fork's `bigcode_eval/tasks/humaneval.py` differs from upstream only in the k list:
+    `humaneval` → `doc["prompt"].strip()`.
+  - So Hasan ran OCI **stripped, as a base model** (not `instruct-humaneval`, which is a different dataset,
+    `codeparrot/instructhumaneval`, with an instruction+context prompt).
+  - Our unstripped OCI pass@10 = 0.7195, identical to theirs; our stripped OCI = 0.7500. The tension stands,
+    now fully verified.
+  - The Qwen 1.5B/3B summaries key the score under task `humaneval`, and the sibling Qwen-0.5B config says
+    `tasks: "humaneval"`. So Hasan used stripped for Qwen as well [Likely].
+- **2026-11-07: DECISION (user): stripped prompt throughout, all configs regenerated from scratch.**
+  - Recorded as plan **§11 Amendment A1**, covering raw-prompted models (OCI, Q1.5B, Q3B, CodeLlama-7b,
+    Llama-2-7b). Chat models are unchanged, in the same new root.
+  - New root: `results/humaneval_regen_2026_11_stripped/`. The unstripped run and the diag runs are kept
+    unchanged, out of the tables.
+  - Research-coder is adding the stripped variant to the orchestration modes (raw-prompted only), new roots, and
+    a stripped-aware indentation check in the smoke checker. Then code-reviewer → commit/push → MSI pull →
+    stripped smoke + rerun → GPU budget confirmation → small → fit → large.
+  - This supersedes the (a)/(b) options discussion and the stub-rate trigger rule (dropped).
+- **2026-11-07 ~15:55 IST**: User confirmed the 8-model list.
+  - Models: OCI (stripped), Q1.5B, Q3B, CodeLlama-7b-hf, Llama-2-7b-hf and **Qwen2.5-Coder-7B base** (all
+    stripped); CodeLlama-7b-Instruct and Llama-2-7b-chat (chat template).
+  - Defaults stated, no decision needed: no prefix; the BigCode HumanEval stop list for all raw-prompted models;
+    512 new tokens; OCI raw.
+  - **No separate stripped smoke test.** The diag runs already exercised the stripped path for greedy and
+    top_p0.95 on all 3 small models. The smoke checker runs on the full-run output instead, and the 7B fit run
+    (5 tasks) is the 7B smoke test.
+  - Next: research-coder → code-reviewer → commit/push/pull → launch `small` stripped (about 2 h 15 min, no cap,
+    unless the user says hold).
+  - MSI idle at 15:53 IST.
+- **2026-11-07 16:00 IST: the 7B models move to GPU2 (user).**
+  - Machine: `ssh gpu2` (10.132.3.11, user karrtik). 2× RTX 4090 24 GB, cc 8.9, driver 580.178.04 / CUDA 13.0;
+    129 GB free disk; both GPUs idle.
+  - The existing `~/pless-for-coding` (branch `feat/pless-variants-mps`, other work) is **left untouched**.
+  - New clone: `~/pless-for-coding-he-regen` at branch `feat/humaneval-regen`, `5fd6b5b`, submodules initialised.
+    Env `.venv-vllm033` via `uv sync --frozen --project envs/vllm-033` (started 16:02:57 IST).
+  - Planned queues (one model at a time per GPU, Llama models last on both):
+    - GPU0: Qwen2.5-Coder-7B (stripped) → CodeLlama-7b-hf (stripped) → Llama-2-7b-hf (stripped);
+    - GPU1: CodeLlama-7b-Instruct (chat) → Llama-2-7b-chat (chat).
+  - Each model: fit test (5 tasks; acts as its smoke test) → full run. Needs the stripped-variant runner change
+    (research-coder, pending review) pulled first, and the user's HF login on GPU2 before the Llama models.
+  - **Hardware disclosure:** the small models run on the MSI (RTX 4090 Laptop 16 GB), the 7B models on GPU2
+    (RTX 4090 24 GB). Same vLLM 0.33.0 env lock. Every config of a model runs on one machine, so comparisons
+    within a model are unaffected.
+  - Per CLAUDE.md gotcha 9, `bench.eval` grading stays local, never on GPU2.
+- **2026-11-07 16:07 IST: GPU2 ready.**
+  - Env `.venv-vllm033` at the clone root: vllm 0.33.0, torch 2.14.0+cu130, transformers 5.20.2, 2 GPUs visible.
+    `uv pip freeze` is **identical to the MSI's** (211 packages each, empty diff).
+  - Gotcha: `UV_PROJECT_ENVIRONMENT=.venv-vllm033` (relative, as in the `envs/vllm-033/pyproject.toml` comment)
+    resolves against `--project envs/vllm-033`. Use an absolute path (`$PWD/.venv-vllm033`). The misplaced env was
+    removed. TODO: fix the comment in `envs/vllm-033/pyproject.toml`.
+  - HF login on GPU2, at the user's request using the local `.env` `HF_TOKEN`: the value was piped over SSH stdin
+    into `huggingface_hub.login()` and never printed. The `.env` file was not copied. Logged in as `karrtikiyer`;
+    access OK to `meta-llama/Llama-2-7b-hf` and `-chat-hf`.
+- **2026-11-07**: AI-use acknowledgment (D15 item 6):
+  - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
+    subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).
+  - Evidence for the disclosure: 415/421 code-repo commits and 19/37 paper-repo commits carry a
+    Co-Authored-By: Claude trailer (first on 2026-02-25).
