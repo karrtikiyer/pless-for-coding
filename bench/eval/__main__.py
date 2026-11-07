@@ -172,6 +172,7 @@ def main():
         print(f"Evaluating samples (workers={args.workers}, timeout={args.timeout}s)...")
         extraction_diag = None
         execution_diag = None
+        distinct_code_fn = None  # legacy cov@td fingerprint rule (strip_code_fences(sample))
         if args.dataset == "apps":
             from bench.apps.dataset import load_apps_test_map
             from bench.eval.apps_executor import evaluate_all_apps
@@ -262,6 +263,8 @@ def main():
         elif args.dataset == "humaneval" and args.humaneval_grader == "official":
             from bench.eval.humaneval_official import evaluate_all as evaluate_all_official
             task_results, execution_diag = evaluate_all_official(records, args.timeout, args.workers)
+            # cov@td: fingerprint the graded program minus the test tail (base samples are bodies only).
+            from bench.eval.humaneval_official import fingerprint_source as distinct_code_fn
         else:
             task_results = evaluate_all(records, args.dataset, args.timeout, args.workers)
 
@@ -311,6 +314,7 @@ def main():
             tokenizer=tokenizer,
             think_end_marker=think_end_marker,
             execution_diagnostics=execution_diag,
+            distinct_code_fn=distinct_code_fn,
         )
         if extraction_diag is not None:
             output["extraction_diagnostics"] = extraction_diag

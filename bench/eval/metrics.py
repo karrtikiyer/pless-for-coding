@@ -1,6 +1,7 @@
 import ctypes
 import json
 import os
+import sys
 from datetime import datetime, timezone
 from statistics import mean as _mean
 
@@ -88,8 +89,19 @@ def compute_cover_at_t(
     return cover_at_t, cover_at_t_distinct
 
 
-def add_distinct_counts(task_results: list[dict], records: list[dict]) -> None:
-    """Add num_distinct_correct to each task result by fingerprinting correct samples."""
+def add_distinct_counts(
+    task_results: list[dict],
+    records: list[dict],
+    code_for_sample=None,
+) -> None:
+    """Add num_distinct_correct to each task result by fingerprinting correct samples.
+
+    ``code_for_sample(record, sample) -> str`` gives the code to fingerprint. Default (None):
+    ``strip_code_fences(sample)``, the legacy rule used for MBPP and older HumanEval files.
+    HumanEval-regen records graded with the official grader pass
+    ``bench.eval.humaneval_official.fingerprint_source`` (prompt + completion), because their base
+    samples are function bodies that do not parse alone.
+    """
     record_by_id = {r["task_id"]: r for r in records}
 
     for result in task_results:
@@ -100,7 +112,8 @@ def add_distinct_counts(task_results: list[dict], records: list[dict]) -> None:
         fingerprints = set()
         for sample, passed in zip(samples, pass_results):
             if passed:
-                fp = ast_fingerprint(strip_code_fences(sample))
+                code = strip_code_fences(sample) if code_for_sample is None else code_for_sample(record, sample)
+                fp = ast_fingerprint(code)
                 if fp is not None:
                     fingerprints.add(fp)
 
@@ -139,6 +152,83 @@ def add_structural_diversity(
         result["num_ast_clusters"] = diversity["num_clusters"]
 
 
+SELF_CODEBLEU_HASHSEED = 0
+_SELF_CODEBLEU_KEYS = ("self_codebleu", "self_syntax_match", "self_dataflow_match",
+                       "self_ngram_match", "self_weighted_ngram_match")
+
+
+def pairwise_codebleu_in_process(groups: list[list[str]]) -> list[dict | None]:
+    """All-pairs CodeBLEU diversity for each group of codes, in this interpreter.
+
+    Returns, per group, the five ``self_*`` diversity values (1 - mean similarity, 4 dp), or None
+    when no pair could be scored. The result depends on this interpreter's string-hash seed
+    (codebleu's dataflow match); call ``pairwise_codebleu_fixed_seed`` instead.
+    """
+    _patch_tree_sitter_capsule()
+    from codebleu import calc_codebleu
+
+    out: list[dict | None] = []
+    for codes in groups:
+        bleu_scores, syntax_scores, dataflow_scores = [], [], []
+        ngram_scores, weighted_ngram_scores = [], []
+        for i in range(len(codes)):
+            for j in range(i + 1, len(codes)):
+                try:
+                    res = calc_codebleu(references=[codes[i]], predictions=[codes[j]], lang="python")
+                    bleu_scores.append(res["codebleu"])
+                    syntax_scores.append(res["syntax_match_score"])
+                    dataflow_scores.append(res["dataflow_match_score"])
+                    ngram_scores.append(res["ngram_match_score"])
+                    weighted_ngram_scores.append(res["weighted_ngram_match_score"])
+                except Exception:
+                    continue
+        if not bleu_scores:
+            out.append(None)
+            continue
+        out.append({
+            "self_codebleu": round(1.0 - _mean(bleu_scores), 4),
+            "self_syntax_match": round(1.0 - _mean(syntax_scores), 4),
+            "self_dataflow_match": round(1.0 - _mean(dataflow_scores), 4),
+            "self_ngram_match": round(1.0 - _mean(ngram_scores), 4),
+            "self_weighted_ngram_match": round(1.0 - _mean(weighted_ngram_scores), 4),
+        })
+    return out
+
+
+def pairwise_codebleu_fixed_seed(groups: list[list[str]]) -> list[dict | None]:
+    """``pairwise_codebleu_in_process`` under ``PYTHONHASHSEED=SELF_CODEBLEU_HASHSEED``.
+
+    codebleu's dataflow-match score depends on set/dict iteration order of strings, i.e. on the
+    interpreter's hash seed (measured: one HumanEval task's self-CodeBLEU ranged 0.14-0.23 across
+    seeds). The codebleu library is not modified; instead the computation runs in a child
+    interpreter started with a fixed seed. When this interpreter already has hash randomization
+    disabled (started with PYTHONHASHSEED=0), it runs in-process.
+    """
+    if not groups:
+        return []
+    if SELF_CODEBLEU_HASHSEED == 0 and sys.flags.hash_randomization == 0:
+        return pairwise_codebleu_in_process(groups)
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    repo_root = str(Path(__file__).resolve().parents[2])
+    env = {**os.environ, "PYTHONHASHSEED": str(SELF_CODEBLEU_HASHSEED)}
+    env["PYTHONPATH"] = os.pathsep.join([repo_root] + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))
+    with tempfile.TemporaryDirectory(prefix="self_codebleu_") as tmp:
+        out_path = Path(tmp) / "out.json"
+        proc = subprocess.run(
+            [sys.executable, "-m", "bench.eval._codebleu_worker", str(out_path)],
+            input=json.dumps(groups), text=True, capture_output=True, env=env, cwd=repo_root,
+        )
+        if proc.returncode != 0 or not out_path.exists():
+            raise RuntimeError(f"self-CodeBLEU worker failed (exit {proc.returncode}): {proc.stderr[-2000:]}")
+        result = json.loads(out_path.read_text())
+    if len(result) != len(groups):
+        raise RuntimeError(f"self-CodeBLEU worker returned {len(result)} groups, expected {len(groups)}")
+    return result
+
+
 def add_self_codebleu(
     task_results: list[dict],
     records: list[dict],
@@ -147,11 +237,11 @@ def add_self_codebleu(
 
     Computes all-pairs CodeBLEU among correct samples, storing diversity
     (1 - similarity) for the composite score and sub-components.
+    The pairwise scores are computed under a fixed string-hash seed (see
+    ``pairwise_codebleu_fixed_seed``), recorded per task as ``self_codebleu_hashseed``.
     """
-    _patch_tree_sitter_capsule()
-    from codebleu import calc_codebleu
-
     record_by_id = {r["task_id"]: r for r in records}
+    pending: list[tuple[dict, list[str]]] = []
 
     for result in task_results:
         record = record_by_id[result["task_id"]]
@@ -164,12 +254,10 @@ def add_self_codebleu(
             if passed
         ]
 
+        result["self_codebleu_hashseed"] = SELF_CODEBLEU_HASHSEED
         if len(correct_codes) < 2:
-            result["self_codebleu"] = None
-            result["self_syntax_match"] = None
-            result["self_dataflow_match"] = None
-            result["self_ngram_match"] = None
-            result["self_weighted_ngram_match"] = None
+            for key in _SELF_CODEBLEU_KEYS:
+                result[key] = None
             continue
 
         # Deduplicate by AST fingerprint to avoid redundant expensive comparisons
@@ -184,44 +272,16 @@ def add_self_codebleu(
 
         if len(unique_codes) < 2:
             # All correct samples are structurally identical
-            result["self_codebleu"] = 0.0
-            result["self_syntax_match"] = 0.0
-            result["self_dataflow_match"] = 0.0
-            result["self_ngram_match"] = 0.0
-            result["self_weighted_ngram_match"] = 0.0
+            for key in _SELF_CODEBLEU_KEYS:
+                result[key] = 0.0
             continue
 
-        bleu_scores, syntax_scores, dataflow_scores = [], [], []
-        ngram_scores, weighted_ngram_scores = [], []
-        for i in range(len(unique_codes)):
-            for j in range(i + 1, len(unique_codes)):
-                try:
-                    res = calc_codebleu(
-                        references=[unique_codes[i]],
-                        predictions=[unique_codes[j]],
-                        lang="python",
-                    )
-                    bleu_scores.append(res["codebleu"])
-                    syntax_scores.append(res["syntax_match_score"])
-                    dataflow_scores.append(res["dataflow_match_score"])
-                    ngram_scores.append(res["ngram_match_score"])
-                    weighted_ngram_scores.append(res["weighted_ngram_match_score"])
-                except Exception:
-                    continue
+        pending.append((result, unique_codes))
 
-        if not bleu_scores:
-            result["self_codebleu"] = None
-            result["self_syntax_match"] = None
-            result["self_dataflow_match"] = None
-            result["self_ngram_match"] = None
-            result["self_weighted_ngram_match"] = None
-            continue
-
-        result["self_codebleu"] = round(1.0 - _mean(bleu_scores), 4)
-        result["self_syntax_match"] = round(1.0 - _mean(syntax_scores), 4)
-        result["self_dataflow_match"] = round(1.0 - _mean(dataflow_scores), 4)
-        result["self_ngram_match"] = round(1.0 - _mean(ngram_scores), 4)
-        result["self_weighted_ngram_match"] = round(1.0 - _mean(weighted_ngram_scores), 4)
+    scores = pairwise_codebleu_fixed_seed([codes for _, codes in pending])
+    for (result, _), score in zip(pending, scores):
+        for key in _SELF_CODEBLEU_KEYS:
+            result[key] = None if score is None else score[key]
 
 
 def compute_self_codebleu_diversity(task_results: list[dict]) -> dict[str, float]:
@@ -316,6 +376,9 @@ def add_self_codebleu_from_prior_output(task_results, records, prior_per_task):
                 "self_ngram_match", "self_weighted_ngram_match",
             ):
                 result[key] = prior.get(key)
+            # None for entries written before the fixed-seed fix (their values depend on that
+            # run's hash seed); build_metrics_output then records the file-level seed as None.
+            result["self_codebleu_hashseed"] = prior.get("self_codebleu_hashseed")
         else:
             to_compute.append(result)
 
@@ -396,6 +459,7 @@ def build_metrics_output(
     tokenizer=None,
     think_end_marker: str | None = None,
     execution_diagnostics: dict | None = None,
+    distinct_code_fn=None,
 ) -> dict:
     """Aggregate all metrics into a single output dict.
 
@@ -430,11 +494,18 @@ def build_metrics_output(
     ``execution_diagnostics`` (from ``evaluate_all_apps``/``evaluate_all_lcb``)
     populates ``timeout_pct`` when supplied; ``None`` for the generic MBPP/
     HumanEval executor, which doesn't track per-sample failure reasons.
+
+    ``distinct_code_fn(record, sample) -> str``: code fingerprinted for ``num_distinct_correct``
+    (cov@td); see ``add_distinct_counts``. None (default) keeps the legacy rule.
+
+    When self-CodeBLEU is computed, ``self_codebleu_hashseed`` records the string-hash seed it was
+    computed under (``SELF_CODEBLEU_HASHSEED``), or None if any reused cached task value predates
+    the fixed seed.
     """
     compute_structural = not skip_diversity and not skip_structural_diversity
     compute_codebleu = not skip_diversity
 
-    add_distinct_counts(task_results, records)
+    add_distinct_counts(task_results, records, code_for_sample=distinct_code_fn)
     if compute_structural:
         add_structural_diversity(task_results, records)
     if compute_codebleu:
@@ -455,6 +526,11 @@ def build_metrics_output(
     codebleu_diversity = (
         compute_self_codebleu_diversity(task_results) if compute_codebleu else {}
     )
+    if compute_codebleu:
+        seeds = {r.get("self_codebleu_hashseed") for r in task_results}
+        codebleu_diversity["self_codebleu_hashseed"] = (
+            SELF_CODEBLEU_HASHSEED if seeds <= {SELF_CODEBLEU_HASHSEED} else None
+        )
 
     termination_pct = mean_token_size = None
     if tokenizer is not None and think_end_marker is not None:

@@ -115,22 +115,37 @@ def _strip_leading_indent(code: str, entry_point: str) -> str:
     return "\n".join(ln.lstrip() if i < first_col0 else ln for i, ln in enumerate(lines))
 
 
-def build_program(record: dict, sample: str) -> tuple[str, str]:
-    """Return (program, mode) for one sample; mode is base | chat_function | chat_body."""
-    prompt, test, entry_point = record["task_prompt"], record["test"], record["entry_point"]
-    tail = "\n" + test + "\n" + f"check({entry_point})"
+def _build_solution(record: dict, sample: str) -> tuple[str, str]:
+    """Return (prompt + completion, mode): the graded program without the test tail."""
+    prompt, entry_point = record["task_prompt"], record["entry_point"]
     style = record.get("prompt_style")
     if style == "base":
-        return prompt + truncate_at_stop(sample) + tail, "base"
+        return prompt + truncate_at_stop(sample), "base"
     if style == "chat":
         text, fenced = normalize_chat_reply(sample, entry_point)
         text = _strip_leading_indent(text, entry_point)
         code = extract_python_code(text)
         if _defines_entry_point(code, entry_point):
-            return prompt + "\n" + code + tail, "chat_function"
+            return prompt + "\n" + code, "chat_function"
         # A body fragment: appended as written (fence/tag markup removed, indentation kept).
-        return prompt + (text if fenced else sample) + tail, "chat_body"
+        return prompt + (text if fenced else sample), "chat_body"
     raise ValueError(f"unknown prompt_style {style!r} for {record.get('task_id')}")
+
+
+def build_program(record: dict, sample: str) -> tuple[str, str]:
+    """Return (program, mode) for one sample; mode is base | chat_function | chat_body."""
+    solution, mode = _build_solution(record, sample)
+    return solution + "\n" + record["test"] + "\n" + f"check({record['entry_point']})", mode
+
+
+def fingerprint_source(record: dict, sample: str) -> str:
+    """Code used for AST fingerprints (cov@td): the program the grader executes minus the test tail.
+
+    Base samples are function bodies (no ``def``) and do not parse alone; prompt + completion does.
+    The prompt part is the same for every sample of a task, so it does not change which samples
+    are distinct.
+    """
+    return _build_solution(record, sample)[0]
 
 
 def run_program(program: str, timeout: float = DEFAULT_TIMEOUT) -> tuple[bool, str]:

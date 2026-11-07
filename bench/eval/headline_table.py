@@ -110,13 +110,37 @@ COLUMN_DESCRIPTIONS: dict[str, str] = {
 _MISSING = "—"
 _DISTINCT_T_SUFFIX = "d"  # "cov@0.3d" -> cover_at_t_distinct["0.3"]
 
+# Columns with no meaning when a config draws one sample per task (greedy, beam): pass@k for k>1
+# (compute_pass_at_k copies pass@1 into them), cov@t / cov@td (a 0/1 count per task) and the
+# pairwise diversity columns (no pairs). Rendered as "—" only with na_for_single_sample=True.
+SINGLE_SAMPLE_NA_COLUMNS = (
+    "pass@3", "pass@5", "pass@8", "pass@10",
+    "cov@0.3", "cov@0.5", "cov@0.7", "cov@0.3d", "cov@0.5d", "cov@0.7d",
+    "struct_div", "cb_div",
+)
 
-def headline_row(metrics_path: Path | str, label: str) -> dict[str, str]:
+
+def _samples_per_task(d: dict) -> int | None:
+    n = d.get("num_samples_per_task")
+    if n is not None:
+        return n
+    lens = [len(t["pass_results"]) for t in (d.get("per_task") or []) if "pass_results" in t]
+    return max(lens) if lens else None
+
+
+def headline_row(
+    metrics_path: Path | str, label: str, *, na_for_single_sample: bool = False
+) -> dict[str, str]:
     """Extract the canonical fields (label + metrics) from a metrics JSON.
 
     Returns a dict ready to be assembled into a markdown/terminal row. All
     values are pre-formatted strings (percentages or 4-decimal floats) to
     keep the table renderer simple.
+
+    ``na_for_single_sample=True``: when the file has one sample per task
+    (``num_samples_per_task``, else the per-task ``pass_results`` length),
+    the ``SINGLE_SAMPLE_NA_COLUMNS`` cells are "—". Default False keeps the
+    historical output (the paper's MBPP tables are generated with it).
     """
     p = Path(metrics_path)
     with p.open() as f:
@@ -150,7 +174,7 @@ def headline_row(metrics_path: Path | str, label: str) -> dict[str, str]:
 
     num_tasks = d.get("num_tasks")
 
-    return {
+    row = {
         "label": label,
         "N": str(num_tasks) if num_tasks is not None else _MISSING,
         "pass@1": _pct2(pk, 1),
@@ -172,6 +196,10 @@ def headline_row(metrics_path: Path | str, label: str) -> dict[str, str]:
         "struct_div": _div(d.get("structural_diversity")),
         "cb_div": _div(cb_div),
     }
+    if na_for_single_sample and _samples_per_task(d) == 1:
+        for col in SINGLE_SAMPLE_NA_COLUMNS:
+            row[col] = _MISSING
+    return row
 
 
 def headline_table(
@@ -179,6 +207,7 @@ def headline_table(
     *,
     label_header: str = "Config",
     columns: list[str] | None = None,
+    na_for_single_sample: bool = False,
 ) -> str:
     """Render the canonical markdown table.
 
@@ -189,6 +218,9 @@ def headline_table(
         columns: which columns to render, in order (default: CANONICAL_COLUMNS,
             the full documentation set including struct_div/cb_div). Pass
             ``TERMINAL_COLUMNS`` for routine terminal/CLI reports.
+        na_for_single_sample: opt-in; render pass@k (k>1), cov@t, cov@td,
+            struct_div and cb_div as "—" for files with one sample per task
+            (greedy, beam). Default False = unchanged output.
 
     Returns:
         Markdown string. Always emits the header even if rows is empty.
@@ -201,7 +233,7 @@ def headline_table(
 
     body_lines = []
     for path, label in rows:
-        row = headline_row(path, label)
+        row = headline_row(path, label, na_for_single_sample=na_for_single_sample)
         cells = [row["label"]] + [row[c] for c in cols]
         body_lines.append("| " + " | ".join(cells) + " |")
 
