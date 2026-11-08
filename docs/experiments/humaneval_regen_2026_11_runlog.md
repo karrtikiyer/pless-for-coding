@@ -745,6 +745,39 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
   - The mirror skips the Overleaf-edited 5a/a3 by default.
   - 57 tests. Locked dirs verified 50/50 unchanged throughout, then unlocked.
   - D16 added (A2 on the old protocol).
+- **2026-11-08: COMMITTED + PUSHED both repos** (user request after review).
+  - Code `e62bcd1` → origin/feat/humaneval-regen; paper `01bce0a` → origin/main. Both in sync.
+- **2026-11-08: two new analysis-only jobs (user; NOT for the paper; staging):**
+  1. **MBPP (500 tasks, bigcode prompt, HF runner) for Qwen2.5-Coder-7B (base)** on GPU2 GPU0.
+     - Exactly as the other 7 MBPP models (template `run_bigcode_mbpp_qwen25coder3b.sh`).
+     - 7 configs: MBPP's 6 + top-p@0.95 T=0.2 (a Hasan model).
+     - Root `results/mbpp_qwen25coder7b_2026_11/`.
+  2. **HumanEval, Qwen2.5-Coder-7B-Instruct** on GPU2 GPU1.
+     - **Our chat protocol** (user answer), the 6 Table II configs.
+     - Root `results/humaneval_regen_2026_11_instruct7b/`, via a new `instruct7b` mode.
+  - Research-coder preparing both; code-reviewer next; then GPU2 launch after a GPU-time estimate.
+  3. **(added by the user) MBPP for Qwen2.5-Coder-7B-Instruct.**
+     - On whichever GPU2 GPU frees first. Same way as the other instruct MBPP rows (CodeLlama-Instruct, Llama-2-chat).
+     - The 6 MBPP configs (no Hasan). Root `results/mbpp_qwen25coder7binstruct_2026_11/`.
+  - User approval: start once the review and smoke runs pass (no separate budget confirmation; report the measured estimate).
+  - **MBPP stripped/unstripped check (user question), verified by the main session:** BigCode `tasks/mbpp.py` l.55 is
+    `f'"""\n{description}\n{test_example}\n"""\n'`, with no strip option or variant. The harness only prepends an empty prefix
+    (`utils.py` l.61). Hasan's fork's mbpp.py is identical to upstream.
+    - Ours, `bench/prompts.py:83` `format_prompt_base_bigcode`, is the same string, so **no change for MBPP**.
+    - Instruct models use the chat template, so stripping is not applicable.
+    - The remaining known difference is the stop list (E29), kept for comparability with the 7 existing MBPP models.
+- **2026-11-08**: Three GPU2 job setups reviewed (code-reviewer: safe to smoke-run; flags equal the original MBPP runs:
+  HF, bf16, mbpp-config full, 512, n=10 or n=1 for greedy/beam).
+  - Scripts: `run_bigcode_mbpp_qwen25coder7b.sh`, `run_chat_mbpp_qwen25coder7binstruct.sh`, `scripts/mbpp_staging_common.sh`; regen
+    `instruct7b` mode.
+  - GPU2 main env (`uv sync --frozen`): torch 2.11.0+cu130, transformers 5.3.0.
+  - **Code/env drift vs the existing MBPP rows (disclose in any comparison):**
+    - p-less sampler changed in `118292e` (2026-06-05): 1e-3 uniform smoothing → argmax fallback. The reference rows Qwen-3B
+      pless (2026-04-01) and CodeLlama-Instruct pless (2026-03-31) used the smoothed version. The commit reports 0.0138% of
+      positions differ (not re-verified).
+    - The lock moved from torch 2.10.0 → 2.11.0 (transformers 5.3.0 both).
+    - The Qwen-3B temp/top-p rows predate the BPE decode fix `b256b0c` (said not to affect Qwen; unverified).
+    - No seed in the MBPP runner, as in the original runs, so not bit-reproducible.
 - **2026-11-07**: AI-use acknowledgment (D15 item 6):
   - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
     subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).

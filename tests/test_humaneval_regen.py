@@ -957,3 +957,118 @@ def test_default_modes_never_pass_the_extra_configs(tmp_path):
         assert rc == 0 and calls, out
         assert not any(e in c.split()[3].split(",") for c in calls for e in EXTRA), (args, env)
         assert not any("_extra" in c for c in calls), (args, env)
+
+
+# ---------- instruct7b: Qwen2.5-Coder-7B-Instruct with our chat protocol (analysis only, NOT for the paper) ----------
+
+Q7I = "Qwen/Qwen2.5-Coder-7B-Instruct"
+I7_ROOT = "results/humaneval_regen_2026_11_instruct7b"
+I7_SMOKE_ROOT = "results/humaneval_regen_2026_11_instruct7b_smoke"
+I7_VLLM = "greedy,temp_t0.7,top_p0.9_t1.0,pless_t0.7,pless_norm_t0.7"
+
+
+def test_instruct7b_model_is_an_extra_chat_model_outside_the_eight():
+    spec = regen.get_model(Q7I)
+    assert (spec.prompt_style, spec.hasan) == ("chat", False)
+    assert Q7I not in [m.model_id for m in regen.MODELS]          # the paper's eight are unchanged
+    assert [m.model_id for m in regen.INSTRUCT7B_MODELS] == [Q7I]
+    assert regen.prompt_variant_args(Q7I, "stripped") == []        # chat: never a prompt-variant flag
+    assert regen.prompt_variant_args(Q7I, "unstripped") == []
+
+
+def test_instruct7b_configs_are_the_six_table_ii_configs_only():
+    assert regen.configs_for(Q7I) == regen.COMMON_CONFIGS          # no Hasan config
+    assert "top_p0.95_t0.2" not in regen.configs_for(Q7I)
+    assert regen.allowed_configs(Q7I) == regen.COMMON_CONFIGS      # no diagnostic / extra configs either
+    for bad in ["top_p0.95_t0.2", "greedy_hf", "pless_t1.0", "pless_norm_t0.6"]:
+        with pytest.raises(SystemExit, match="not in the plan"):
+            regen.resolve_configs(Q7I, bad)
+    assert regen.resolve_configs(Q7I, I7_VLLM) == (I7_VLLM.split(","), "vllm")
+    assert regen.resolve_configs(Q7I, "beam4") == (["beam4"], "hf")
+
+
+def test_instruct7b_root_passes_the_guards_and_is_not_the_main_root():
+    from pathlib import Path
+    for r in (I7_ROOT, I7_SMOKE_ROOT):
+        regen._check_out_root(Path(r))
+        regen.check_configs_for_root(regen.COMMON_CONFIGS, Path(r))
+        regen.check_model_for_root(Q7I, Path(r))
+    assert I7_ROOT not in ("results/humaneval_regen_2026_11", "results/humaneval_regen_2026_11_stripped")
+
+
+def test_instruct7b_model_is_refused_outside_its_root():
+    from pathlib import Path
+    for bad in ["results/humaneval_regen_2026_11", "results/humaneval_regen_2026_11_stripped",
+                "results/humaneval_regen_2026_11_stripped_extra", "results/humaneval_regen_2026_11_stripped_fit",
+                "results/humaneval_regen_2026_11_smoke", "results/humaneval_regen_2026_11_diag"]:
+        with pytest.raises(SystemExit, match="instruct7b"):
+            regen.check_model_for_root(Q7I, Path(bad))
+        for m in ALL_IDS:   # the eight are unaffected in their roots
+            regen.check_model_for_root(m, Path(bad))
+    for m in ALL_IDS:       # ... and refused in the instruct7b root
+        with pytest.raises(SystemExit, match="instruct7b"):
+            regen.check_model_for_root(m, Path(I7_ROOT))
+
+
+def test_main_refuses_the_instruct7b_model_in_the_stripped_root_before_loading():
+    with pytest.raises(SystemExit, match="instruct7b"):
+        regen.main(["--model", Q7I, "--configs", "greedy", "--out-root", "results/humaneval_regen_2026_11_stripped"])
+    with pytest.raises(SystemExit, match="only"):   # stripped prompt refused for a chat model
+        regen.main(["--model", Q7I, "--configs", "greedy", "--out-root", I7_ROOT, "--prompt-variant", "stripped"])
+
+
+def test_instruct7b_mode_commands(tmp_path):
+    expected = [
+        f"--model {Q7I} --configs {I7_VLLM} --out-root {I7_ROOT} --resume",
+        f"--model {Q7I} --configs beam4 --out-root {I7_ROOT} --resume",
+    ]
+    for env in (None, STRIPPED):   # chat model: identical commands whatever PROMPT_VARIANT says
+        rc, calls, out = _run_script(tmp_path, ["instruct7b"], env)
+        assert rc == 0, out
+        assert calls == expected, (env, calls)
+        assert not any("--prompt-variant" in c for c in calls)
+        assert not any("top_p0.95_t0.2" in c for c in calls)
+
+
+def test_instruct7b_smoke_mode_commands(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["instruct7b-smoke"])
+    assert rc == 0, out
+    assert calls == [
+        f"--model {Q7I} --configs {I7_VLLM} --out-root {I7_SMOKE_ROOT} --max-problems 5",
+        f"--model {Q7I} --configs beam4 --out-root {I7_SMOKE_ROOT} --max-problems 5",
+    ]
+
+
+@pytest.mark.parametrize("args,env", [
+    (["large", Q7I], None), (["large", Q7I], STRIPPED), (["extra", Q7I], STRIPPED), (["fit", Q7I], None),
+    (["fit", Q7I], STRIPPED),
+])
+def test_orchestration_refuses_the_instruct7b_model_outside_its_mode(tmp_path, args, env):
+    rc, calls, out = _run_script(tmp_path, args, env)
+    assert rc != 0 and calls == [], out
+
+
+def test_default_modes_never_include_the_instruct7b_model(tmp_path):
+    for args, env in [(["smoke"], None), (["small"], None), (["large"], None), (["diag"], None),
+                      (["smoke"], STRIPPED), (["small"], STRIPPED), (["large"], STRIPPED), (["extra"], STRIPPED)]:
+        rc, calls, out = _run_script(tmp_path, args, env)
+        assert rc == 0 and calls, out
+        assert not any(Q7I in c for c in calls), (args, env)
+        assert not any("instruct7b" in c for c in calls), (args, env)
+
+
+def test_instruct7b_chat_prompts_fit_the_context():
+    # Every one of the 164 chat prompts must pass check_prompt_fits at the computed max_model_len (main() does the
+    # same over all tasks). Downloads the tokenizer + dataset only; skips when offline.
+    tok = _tok(Q7I)
+    datasets = pytest.importorskip("datasets")
+    try:
+        tasks = list(datasets.load_dataset(regen.DATASET[0], split=regen.DATASET[1]))
+    except Exception as e:
+        pytest.skip(f"dataset unavailable: {e}")
+    ids = {t["task_id"]: regen.build_prompt_ids(tok, t["prompt"], "chat") for t in tasks}
+    assert len(ids) == 164
+    mml = regen.context_length([len(v) for v in ids.values()], regen.DEFAULT_MAX_NEW_TOKENS)
+    for tid, v in ids.items():
+        regen.check_prompt_fits(len(v), regen.DEFAULT_MAX_NEW_TOKENS, mml, tid)
+        assert tok.decode(v).startswith("<|im_start|>system\n")   # our system message, via the chat template

@@ -32,6 +32,11 @@ Extra comparison configs (user request 2026-11-08, NOT for the paper): ``EXTRA_C
 at T=1.0 and T=0.6, otherwise identical to ``pless_t0.7`` / ``pless_norm_t0.7``). Never in a default set; only
 accepted with an ``*_extra`` out-root. ``PROMPT_VARIANT=stripped ./run_regen_humaneval_8models.sh extra [IDS...]``
 writes them to ``results/humaneval_regen_2026_11_stripped_extra``.
+
+Analysis-only extra model (user request 2026-11-08, NOT for the paper): ``Qwen/Qwen2.5-Coder-7B-Instruct``
+(``INSTRUCT7B_MODELS``), chat protocol, the six common configs, no Hasan config.
+``./run_regen_humaneval_8models.sh instruct7b`` writes ``results/humaneval_regen_2026_11_instruct7b``; the model
+is refused in every other root and other models are refused in that one (``check_model_for_root``).
 """
 from __future__ import annotations
 
@@ -79,11 +84,30 @@ MODELS = [  # run order: small models first, 7B last
     ModelSpec("meta-llama/Llama-2-7b-chat-hf", "chat"),
     ModelSpec("Qwen/Qwen2.5-Coder-7B", "base", hasan=True),   # user decision 2026-11-07: base, replaces -Instruct
 ]
-_MODEL_BY_ID = {m.model_id: m for m in MODELS}
+# Analysis-only extra model (user request 2026-11-08, NOT for the paper): Qwen2.5-Coder-7B-Instruct with our chat
+# protocol, as CodeLlama-7b-Instruct / Llama-2-7b-chat. Not one of the eight; only the six common configs; written
+# only to a ``humaneval_regen_2026_11_instruct7b*`` root (check_model_for_root), via
+# ``run_regen_humaneval_8models.sh instruct7b``.
+INSTRUCT7B_MODELS = [ModelSpec("Qwen/Qwen2.5-Coder-7B-Instruct", "chat")]
+INSTRUCT7B_ROOT_PREFIX = "humaneval_regen_2026_11_instruct7b"
+_MODEL_BY_ID = {m.model_id: m for m in MODELS + INSTRUCT7B_MODELS}
+_INSTRUCT7B_IDS = {m.model_id for m in INSTRUCT7B_MODELS}
 
 
 def get_model(model_id: str) -> ModelSpec:
     return _MODEL_BY_ID[model_id]   # KeyError for anything outside the plan
+
+
+def check_model_for_root(model_id: str, out_root: Path) -> None:
+    """The instruct7b model goes only to a ``humaneval_regen_2026_11_instruct7b*`` root, and only it goes there.
+    SystemExit otherwise (keeps it out of the paper roots and out of the small / large / extra / fit runs)."""
+    is_i7_root = Path(out_root).name.startswith(INSTRUCT7B_ROOT_PREFIX)
+    is_i7_model = model_id in _INSTRUCT7B_IDS
+    if is_i7_model and not is_i7_root:
+        raise SystemExit(f"{model_id} is the analysis-only instruct7b model; write it to a {INSTRUCT7B_ROOT_PREFIX}* "
+                         f"root (run_regen_humaneval_8models.sh instruct7b), not {out_root}")
+    if is_i7_root and not is_i7_model:
+        raise SystemExit(f"the instruct7b root {out_root} holds only {sorted(_INSTRUCT7B_IDS)}; got {model_id}")
 
 
 @dataclass(frozen=True)
@@ -127,7 +151,10 @@ def configs_for(model_id: str) -> list[str]:
 
 
 def allowed_configs(model_id: str) -> list[str]:
-    """Configs accepted by ``--configs``: the plan's configs plus the diagnostic and extra ones."""
+    """Configs accepted by ``--configs``: the plan's configs plus the diagnostic and extra ones
+    (the instruct7b model: its six configs only)."""
+    if model_id in _INSTRUCT7B_IDS:
+        return configs_for(model_id)
     return configs_for(model_id) + DIAG_CONFIGS + EXTRA_CONFIGS
 
 
@@ -538,6 +565,7 @@ def main(argv=None) -> None:
     spec = get_model(args.model)
     names, backend = resolve_configs(args.model, args.configs)
     check_configs_for_root(names, args.out_root)
+    check_model_for_root(args.model, args.out_root)
     variant = args.prompt_variant
     try:
         apply_prompt_variant("", spec.prompt_style, variant)   # refuse e.g. stripped + chat before loading anything
