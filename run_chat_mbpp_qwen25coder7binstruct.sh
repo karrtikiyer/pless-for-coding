@@ -12,6 +12,8 @@
 #   CUDA_VISIBLE_DEVICES=0 ./run_chat_mbpp_qwen25coder7binstruct.sh
 #   MAX_PROBLEMS=3 CUDA_VISIBLE_DEVICES=0 ./run_chat_mbpp_qwen25coder7binstruct.sh   # smoke
 #   DRY_RUN=1 ./run_chat_mbpp_qwen25coder7binstruct.sh
+#   EXTRA_PLESS_TEMPS=1 CUDA_VISIBLE_DEVICES=0 ./run_chat_mbpp_qwen25coder7binstruct.sh   # ONLY p-less / p-less-norm at T=1.0 and T=0.6
+#     (user request 2026-11-08; same flags as the T=0.7 configs; see scripts/mbpp_staging_common.sh)
 set -euo pipefail
 cd "$(dirname "$0")"
 

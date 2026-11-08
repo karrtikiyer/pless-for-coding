@@ -37,6 +37,8 @@ Analysis-only extra model (user request 2026-11-08, NOT for the paper): ``Qwen/Q
 (``INSTRUCT7B_MODELS``), chat protocol, the six common configs, no Hasan config.
 ``./run_regen_humaneval_8models.sh instruct7b`` writes ``results/humaneval_regen_2026_11_instruct7b``; the model
 is refused in every other root and other models are refused in that one (``check_model_for_root``).
+``./run_regen_humaneval_8models.sh instruct7b-extra`` runs its four ``EXTRA_CONFIGS`` into
+``results/humaneval_regen_2026_11_instruct7b_extra`` (passes both root checks above).
 """
 from __future__ import annotations
 
@@ -87,7 +89,8 @@ MODELS = [  # run order: small models first, 7B last
 # Analysis-only extra model (user request 2026-11-08, NOT for the paper): Qwen2.5-Coder-7B-Instruct with our chat
 # protocol, as CodeLlama-7b-Instruct / Llama-2-7b-chat. Not one of the eight; only the six common configs; written
 # only to a ``humaneval_regen_2026_11_instruct7b*`` root (check_model_for_root), via
-# ``run_regen_humaneval_8models.sh instruct7b``.
+# ``run_regen_humaneval_8models.sh instruct7b``. Its four EXTRA_CONFIGS (user request 2026-11-08) go to
+# ``humaneval_regen_2026_11_instruct7b_extra`` (both prefix and ``_extra`` suffix), via ``... instruct7b-extra``.
 INSTRUCT7B_MODELS = [ModelSpec("Qwen/Qwen2.5-Coder-7B-Instruct", "chat")]
 INSTRUCT7B_ROOT_PREFIX = "humaneval_regen_2026_11_instruct7b"
 _MODEL_BY_ID = {m.model_id: m for m in MODELS + INSTRUCT7B_MODELS}
@@ -152,9 +155,10 @@ def configs_for(model_id: str) -> list[str]:
 
 def allowed_configs(model_id: str) -> list[str]:
     """Configs accepted by ``--configs``: the plan's configs plus the diagnostic and extra ones
-    (the instruct7b model: its six configs only)."""
+    (the instruct7b model: its six configs plus the extra ones, no diagnostic config; the extra ones go only to
+    its ``*_extra`` root via check_configs_for_root, i.e. ``run_regen_humaneval_8models.sh instruct7b-extra``)."""
     if model_id in _INSTRUCT7B_IDS:
-        return configs_for(model_id)
+        return configs_for(model_id) + EXTRA_CONFIGS
     return configs_for(model_id) + DIAG_CONFIGS + EXTRA_CONFIGS
 
 

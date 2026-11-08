@@ -25,6 +25,10 @@
 #                                                   results/humaneval_regen_2026_11_instruct7b (any PROMPT_VARIANT:
 #                                                   chat prompts take no variant flag)
 #   ./run_regen_humaneval_8models.sh instruct7b-smoke   # same, 5 tasks -> results/humaneval_regen_2026_11_instruct7b_smoke
+#   ./run_regen_humaneval_8models.sh instruct7b-extra   # analysis only (user request 2026-11-08): the same model and
+#                                                   protocol, the four extra configs (regen.EXTRA_CONFIGS: p-less /
+#                                                   p-less-norm at T=1.0 and T=0.6), one vLLM process, resumable;
+#                                                   writes results/humaneval_regen_2026_11_instruct7b_extra
 #
 # PROMPT_VARIANT=stripped (smoke / smoke-rerun / fit / small / large; user decision 2026-11-07, run log):
 #   prompt.strip() (BigCode task `humaneval`) for the raw-prompted models; chat models keep their chat template
@@ -136,11 +140,19 @@ case "${1:-}" in
     [[ -z "$va" ]] || { echo "unexpected prompt-variant args for $I7_MODEL: $va"; exit 2; }
     run "$I7_MODEL" "$(vllm_configs "$I7_MODEL")" "$root" "${lim[@]}"
     run "$I7_MODEL" "beam4" "$root" "${lim[@]}" ;;
+  instruct7b-extra)   # analysis only: Qwen2.5-Coder-7B-Instruct, chat protocol, the four extra configs
+    [[ $# -eq 1 ]] || { echo "instruct7b-extra takes no model ids (it runs $I7_MODEL only)"; exit 2; }
+    root="${I7_ROOT}_extra"
+    check_model_root "$I7_MODEL" "$root"
+    va=$(variant_args "$I7_MODEL")   # empty for a chat model, whatever PROMPT_VARIANT says
+    [[ -z "$va" ]] || { echo "unexpected prompt-variant args for $I7_MODEL: $va"; exit 2; }
+    cfgs=$("$PY" -c "from bench.humaneval.regen import EXTRA_CONFIGS; print(','.join(EXTRA_CONFIGS))")
+    run "$I7_MODEL" "$cfgs" "$root" --resume ;;
   diag)   # (a) backend effect: HF greedy, unstripped prompt; (b) prompt effect: vLLM greedy, stripped prompt
     [[ "$PROMPT_VARIANT" == unstripped ]] || { echo "diag fixes its own prompt variants; unset PROMPT_VARIANT"; exit 2; }
     for m in "${SMALL[@]}"; do
       run "$m" "greedy_hf" "results/humaneval_regen_2026_11_diag" --resume
       run "$m" "greedy" "results/humaneval_regen_2026_11_diag" --prompt-variant stripped --resume
     done ;;
-  *) sed -n '2,37p' "$0"; exit 2 ;;
+  *) sed -n '2,41p' "$0"; exit 2 ;;
 esac

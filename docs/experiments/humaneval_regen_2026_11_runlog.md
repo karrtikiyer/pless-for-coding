@@ -778,6 +778,22 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
     - The lock moved from torch 2.10.0 → 2.11.0 (transformers 5.3.0 both).
     - The Qwen-3B temp/top-p rows predate the BPE decode fix `b256b0c` (said not to affect Qwen; unverified).
     - No seed in the MBPP runner, as in the original runs, so not bit-reproducible.
+- **2026-11-08 13:39–13:47 IST: GPU2 smokes** (code `ce09f99`).
+  - HE instruct7b smoke (5 tasks × 6 configs): HARD CHECKS PASS; 1.3–2.7 s/task.
+  - First MBPP smoke failed: `uv` not on the non-interactive PATH on GPU2. Rerun with `export PATH=$HOME/.local/bin:$PATH`.
+  - MBPP smokes then passed: base 7 configs, instruct 6, 3 tasks each.
+    - Sample counts: n=1 for greedy/beam, n=10 otherwise; base completions start `def …`, instruct replies start with a python fence.
+    - Record keys match the old 3B rows.
+- **FULL RUNS started on GPU2** (approved: start once review and smoke pass).
+  - GPU0: MBPP Qwen-7B base, about 21 s/task over 7 configs → ~3 h (2.5–4.5).
+  - GPU1: HE instruct7b (~0.5 h) → MBPP Qwen-7B-Instruct (~1.3 h).
+  - Markers: `logs/full_gpu{0,1}.done/.failed`. The MBPP runs resume after the 3 smoke tasks (same settings, by design).
+- **2026-11-08: user added 4 configs to all three running jobs:** p-less / p-less-norm at T=1.0 and T=0.6.
+  - Research-coder is adding an opt-in `EXTRA_PLESS_TEMPS=1` to the two MBPP scripts (same roots, standard names) and an
+    `instruct7b-extra` HE mode (root `results/humaneval_regen_2026_11_instruct7b_extra/`).
+  - Then code-reviewer, then queued after the current runs on each GPU (pull only after they finish).
+  - Estimate [Likely]: GPU0 about 40 min; GPU1 about 15 + 40 min.
+  - Naming note: "Qwen2.5-Coder-7B(-Instruct)" throughout; plain "Qwen-7B" in this project means `Qwen/Qwen-7B` (Appendix A1).
 - **2026-11-07**: AI-use acknowledgment (D15 item 6):
   - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
     subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).

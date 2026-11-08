@@ -11,6 +11,10 @@
 #   CUDA_VISIBLE_DEVICES  honoured as given by the caller (never set here)
 #   MAX_PROBLEMS=N        passthrough to --max-problems N (smoke run); completeness check is skipped
 #   DRY_RUN=1             print the commands only (no model load, no uv env check)
+#   EXTRA_PLESS_TEMPS=1   run ONLY p-less / p-less-norm at T=1.0 and T=0.6 (user request 2026-11-08), derived from
+#                         the caller's pless / pless_norm T=0.7 configs by changing --temperature and the stem's
+#                         _t0.7 suffix only (same flags, same root, the runner's standard file names). Unset / 0 /
+#                         empty: the caller's CONFIGS unchanged.
 #
 # Stops on the first failing config (set -euo pipefail + pipefail through tee). bench/runner.py catches
 # per-task exceptions and keeps going ("Error on task_id=..."); this helper turns any such line, or a file
@@ -22,6 +26,7 @@ set -euo pipefail
 : "${MODEL_ID:?}" "${RESULTS_DIR:?}" "${LOG_TAG:?}"
 MAX_PROBLEMS="${MAX_PROBLEMS:-}"
 DRY_RUN="${DRY_RUN:-0}"
+EXTRA_PLESS_TEMPS="${EXTRA_PLESS_TEMPS:-}"
 LOG_DIR="logs"
 MODEL_DIR="${MODEL_ID//\//--}"
 EXPECTED_TASKS=500
@@ -31,7 +36,30 @@ if [[ -n "$MAX_PROBLEMS" && ! "$MAX_PROBLEMS" =~ ^[1-9][0-9]*$ ]]; then
   exit 2
 fi
 
+case "$EXTRA_PLESS_TEMPS" in
+  ""|0|1) ;;
+  *) echo "EXTRA_PLESS_TEMPS must be 1, 0 or unset; got '$EXTRA_PLESS_TEMPS'" >&2; exit 2 ;;
+esac
+
 ist() { TZ=Asia/Kolkata date '+%F %T IST'; }
+
+extra_pless_configs() {   # print the four extra configs, one per line, derived from CONFIGS' T=0.7 p-less entries
+  local t m cfg stem args found
+  for t in 1.0 0.6; do
+    for m in pless pless_norm; do
+      found=""
+      for cfg in "${CONFIGS[@]}"; do
+        stem="${cfg%%|*}"; args="${cfg#*|}"
+        [[ " $args " == *" --method $m --temperature 0.7 "* ]] || continue
+        [[ -z "$found" ]] || { echo "more than one $m T=0.7 config in CONFIGS" >&2; return 1; }
+        [[ "$stem" == *_t0.7 ]] || { echo "stem '$stem' of the $m T=0.7 config does not end in _t0.7" >&2; return 1; }
+        found="${stem%_t0.7}_t${t}|${args/--temperature 0.7/--temperature $t}"
+      done
+      [[ -n "$found" ]] || { echo "no $m T=0.7 config in CONFIGS" >&2; return 1; }
+      echo "$found"
+    done
+  done
+}
 
 check_env() {   # transformers>=5 in the main uv env (Qwen2.5); never mutates pyproject/uv.lock
   uv run python -c "import sys, transformers, torch; v = transformers.__version__; \
@@ -57,10 +85,17 @@ sys.exit(0 if ok else 1)" "$out" "$EXPECTED_TASKS" || { echo "FAIL: $out incompl
 }
 
 run_configs() {
+  if [[ "$EXTRA_PLESS_TEMPS" == 1 ]]; then
+    local extra line
+    extra=$(extra_pless_configs) || exit 7
+    CONFIGS=()
+    while IFS= read -r line; do CONFIGS+=("$line"); done <<< "$extra"
+  fi
   mkdir -p "$LOG_DIR"
   [[ "$DRY_RUN" == 1 ]] || check_env
   echo "[$(ist)] $MODEL_ID -> ${RESULTS_DIR}/${MODEL_DIR}/  (CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-<unset>}," \
        "MAX_PROBLEMS=${MAX_PROBLEMS:-<all 500>}, commit $(git rev-parse --short HEAD 2>/dev/null || echo ?))"
+  [[ "$EXTRA_PLESS_TEMPS" == 1 ]] && echo "    EXTRA_PLESS_TEMPS=1: only p-less / p-less-norm at T=1.0 and T=0.6"
   local cfg stem args
   for cfg in "${CONFIGS[@]}"; do
     stem="${cfg%%|*}"

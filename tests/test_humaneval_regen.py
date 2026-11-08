@@ -979,8 +979,10 @@ def test_instruct7b_model_is_an_extra_chat_model_outside_the_eight():
 def test_instruct7b_configs_are_the_six_table_ii_configs_only():
     assert regen.configs_for(Q7I) == regen.COMMON_CONFIGS          # no Hasan config
     assert "top_p0.95_t0.2" not in regen.configs_for(Q7I)
-    assert regen.allowed_configs(Q7I) == regen.COMMON_CONFIGS      # no diagnostic / extra configs either
-    for bad in ["top_p0.95_t0.2", "greedy_hf", "pless_t1.0", "pless_norm_t0.6"]:
+    # No diagnostic config; the extra configs are accepted (instruct7b-extra, 2026-11-08) but only in the
+    # instruct7b *_extra root (check_configs_for_root; test_instruct7b_extra_root_guards).
+    assert regen.allowed_configs(Q7I) == regen.COMMON_CONFIGS + regen.EXTRA_CONFIGS
+    for bad in ["top_p0.95_t0.2", "greedy_hf"]:
         with pytest.raises(SystemExit, match="not in the plan"):
             regen.resolve_configs(Q7I, bad)
     assert regen.resolve_configs(Q7I, I7_VLLM) == (I7_VLLM.split(","), "vllm")
@@ -1072,3 +1074,64 @@ def test_instruct7b_chat_prompts_fit_the_context():
     for tid, v in ids.items():
         regen.check_prompt_fits(len(v), regen.DEFAULT_MAX_NEW_TOKENS, mml, tid)
         assert tok.decode(v).startswith("<|im_start|>system\n")   # our system message, via the chat template
+
+
+# ---------- instruct7b-extra: the four extra configs for Qwen2.5-Coder-7B-Instruct (analysis only, 2026-11-08) ----------
+
+I7X_ROOT = "results/humaneval_regen_2026_11_instruct7b_extra"
+
+
+def test_instruct7b_extra_root_guards():
+    from pathlib import Path
+    root = Path(I7X_ROOT)
+    regen._check_out_root(root)
+    regen.check_configs_for_root(EXTRA, root)              # extra configs: only in an *_extra root ...
+    regen.check_model_for_root(Q7I, root)                  # ... and the instruct7b model: only in an instruct7b* root
+    assert regen.resolve_configs(Q7I, ",".join(EXTRA)) == (EXTRA, "vllm")
+    with pytest.raises(SystemExit, match="extra"):         # the six common configs stay out of the extra root
+        regen.check_configs_for_root(["pless_t0.7"], root)
+    for r in (I7_ROOT, I7_SMOKE_ROOT):                     # the extras stay out of the instruct7b main / smoke roots
+        with pytest.raises(SystemExit, match="extra"):
+            regen.check_configs_for_root(["pless_t1.0"], Path(r))
+    for m in ALL_IDS:                                      # the eight models stay out of the instruct7b extra root
+        with pytest.raises(SystemExit, match="instruct7b"):
+            regen.check_model_for_root(m, root)
+    with pytest.raises(SystemExit, match="instruct7b"):    # and the instruct7b model out of the 8-model extra root
+        regen.check_model_for_root(Q7I, Path(EXTRA_ROOT))
+    assert I7X_ROOT not in (EXTRA_ROOT, I7_ROOT, I7_SMOKE_ROOT)
+
+
+def test_instruct7b_extra_configs_unchanged_for_the_eight():
+    for m in ALL_IDS:   # the eight models' accepted sets are unaffected by the instruct7b change
+        assert regen.allowed_configs(m) == regen.configs_for(m) + regen.DIAG_CONFIGS + EXTRA
+    assert regen.configs_for(Q7I) == regen.COMMON_CONFIGS   # default (instruct7b mode) set unchanged
+
+
+def test_main_refuses_instruct7b_extras_outside_the_instruct7b_extra_root_before_loading():
+    for bad in (I7_ROOT, EXTRA_ROOT):
+        with pytest.raises(SystemExit, match="extra|instruct7b"):
+            regen.main(["--model", Q7I, "--configs", "pless_t1.0", "--out-root", bad])
+    with pytest.raises(SystemExit, match="extra"):
+        regen.main(["--model", Q7I, "--configs", "greedy", "--out-root", I7X_ROOT])
+
+
+def test_instruct7b_extra_mode_commands(tmp_path):
+    expected = [f"--model {Q7I} --configs {','.join(EXTRA)} --out-root {I7X_ROOT} --resume"]
+    for env in (None, STRIPPED):   # chat model: no prompt-variant flag whatever PROMPT_VARIANT says
+        rc, calls, out = _run_script(tmp_path, ["instruct7b-extra"], env)
+        assert rc == 0, out
+        assert calls == expected, (env, calls)
+        assert "regen_humaneval_humaneval_regen_2026_11_instruct7b_extra_" in out   # log named after the root
+
+
+def test_instruct7b_extra_mode_takes_no_model_ids(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["instruct7b-extra", "Qwen/Qwen2.5-Coder-7B"])
+    assert rc != 0 and calls == [], out
+
+
+def test_instruct7b_extra_never_in_other_modes(tmp_path):
+    for args, env in [(["instruct7b"], None), (["instruct7b-smoke"], None), (["extra"], STRIPPED),
+                      (["small"], None), (["large"], STRIPPED)]:
+        rc, calls, out = _run_script(tmp_path, args, env)
+        assert rc == 0 and calls, out
+        assert not any("instruct7b_extra" in c for c in calls), (args, env)
