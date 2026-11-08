@@ -1,0 +1,289 @@
+"""Stage the HumanEval Table II (stripped-protocol regeneration) for user review.
+
+STAGING ONLY. Writes nothing under ``paper/`` or the sibling paper repo; every
+output path is checked by ``guard_output_path`` against the staging directory
+``results/humaneval_regen_2026_11_stripped/analysis/`` and a fixed set of names:
+
+    table_ii_staging.{md,tex}         n=1 rows (greedy, beam@4): "—" for pass@3/5/10,
+                                      cov@0.3, cov@0.7, cb_div + a footnote
+    table_ii_staging_nodash.{md,tex}  n=1 rows as the default headline_table renders
+                                      them (pass@k copies pass@1, cb_div 0), like MBPP Table I
+
+Every number comes from a metrics JSON via ``bench.eval.headline_table.headline_row``.
+Each file is checked before use: it must exist, have num_tasks == 164, and its
+recorded method / temperature / top_p / num_samples_per_task must match the config
+it is filed under (fail loudly otherwise; no row is silently dropped).
+
+Style (column set, group-header rows, \\resizebox, label convention
+greedy / beam@4 / T@0.7 / "<decoder> with T=<T>") mirrors the paper's merged
+tables written by ``scripts/paper/make_llm4code_tables.py``; that script is
+NOT imported or run here.
+
+Usage:
+    uv run python scripts/paper/stage_humaneval_regen_table.py
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as _dt
+import json
+import shlex
+import subprocess
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+
+from bench.eval.headline_table import headline_row  # noqa: E402
+
+RESULTS_ROOT = REPO_ROOT / "results" / "humaneval_regen_2026_11_stripped"
+STAGING_DIR = RESULTS_ROOT / "analysis"
+OUTPUT_NAMES = (
+    "table_ii_staging.md",
+    "table_ii_staging.tex",
+    "table_ii_staging_nodash.md",
+    "table_ii_staging_nodash.tex",
+)
+EXPECTED_NUM_TASKS = 164
+
+PAPER_COLUMNS = ["pass@1", "pass@3", "pass@5", "pass@10", "cov@0.3", "cov@0.7", "cb_div"]
+_TEX_HEADER = {c: c for c in PAPER_COLUMNS} | {"cb_div": r"cb\_div"}
+# Columns rendered "—" for n=1 configs in the dash variant (subset of
+# bench.eval.headline_table.SINGLE_SAMPLE_NA_COLUMNS restricted to PAPER_COLUMNS).
+NA_COLUMNS = ("pass@3", "pass@5", "pass@10", "cov@0.3", "cov@0.7", "cb_div")
+FOOTNOTE = "single sample per problem; not applicable"
+
+LABEL = "3b_humaneval"
+CAPTION = (r"Performance of eight code models on HumanEval (164 problems; $n{=}10$ samples for "
+           r"sampling decoders, one for greedy and beam)")
+DRAFT_CAPTION = (
+    r"HumanEval (164 problems). Sampling decoders draw $n{=}10$ samples per problem; "
+    r"greedy and beam@4 draw one. The first six models are prompted with the raw "
+    r"(stripped) HumanEval prompt; CodeLlama-7B-Instruct and Llama-2-7B-Chat use their "
+    r"chat template. top-p@0.95 with T=0.2 is the configuration of Hasan et al.~\cite{hasan2025slm} "
+    r"and is run only for the four models they evaluated."
+)
+GROUP_HSPACE_MM = -1.5  # matches the Overleaf hand-edit of Table I (make_llm4code_tables.py)
+
+
+@dataclass(frozen=True)
+class Model:
+    display: str
+    model_dir: str
+    prompt: str  # "stripped" (raw prompt, Amendment A1) or "chat" (chat template)
+    hasan: bool  # gets the top-p@0.95 T=0.2 row
+
+
+@dataclass(frozen=True)
+class Config:
+    key: str  # filename stem
+    label: str  # paper display label
+    method: str
+    temperature: float
+    top_p: float
+    n: int
+    hasan_only: bool = False
+
+
+MODELS: list[Model] = [
+    Model("OpenCodeInterpreter-DS-1.3B", "m-a-p--OpenCodeInterpreter-DS-1.3B", "stripped", True),
+    Model("Qwen2.5-Coder-1.5B", "Qwen--Qwen2.5-Coder-1.5B", "stripped", True),
+    Model("Qwen2.5-Coder-3B", "Qwen--Qwen2.5-Coder-3B", "stripped", True),
+    Model("Qwen2.5-Coder-7B", "Qwen--Qwen2.5-Coder-7B", "stripped", True),
+    Model("CodeLlama-7B", "codellama--CodeLlama-7b-hf", "stripped", False),
+    Model("Llama-2-7B", "meta-llama--Llama-2-7b-hf", "stripped", False),
+    Model("CodeLlama-7B-Instruct", "codellama--CodeLlama-7b-Instruct-hf", "chat", False),
+    Model("Llama-2-7B-Chat", "meta-llama--Llama-2-7b-chat-hf", "chat", False),
+]
+
+CONFIGS: list[Config] = [
+    Config("greedy", "greedy", "greedy", 0.0, 1.0, 1),
+    Config("beam4", "beam@4", "beam4", 1.0, 1.0, 1),
+    Config("temp_t0.7", "T@0.7", "temp", 0.7, 1.0, 10),
+    Config("top_p0.9_t1.0", "top-p@0.9 with T=1.0", "top_p", 1.0, 0.9, 10),
+    Config("top_p0.95_t0.2", "top-p@0.95 with T=0.2", "top_p", 0.2, 0.95, 10, hasan_only=True),
+    Config("pless_t0.7", "p-less with T=0.7", "pless", 0.7, 1.0, 10),
+    Config("pless_norm_t0.7", "p-less-norm with T=0.7", "pless_norm", 0.7, 1.0, 10),
+]
+
+
+@dataclass
+class Group:
+    model: Model
+    rows: list[tuple[Config, Path, dict]]  # (config, metrics path, parsed JSON)
+
+
+def configs_for(model: Model) -> list[Config]:
+    return [c for c in CONFIGS if model.hasan or not c.hasan_only]
+
+
+def metrics_filename(model: Model, config_key: str) -> str:
+    if model.prompt == "stripped":
+        return f"{config_key}__prompt_stripped_metrics.json"
+    if model.prompt == "chat":
+        return f"{config_key}_metrics.json"
+    raise ValueError(f"unknown prompt kind {model.prompt!r} for {model.display}")
+
+
+def load_checked(path: Path, config: Config) -> dict:
+    """Load a metrics JSON; raise unless it exists, has 164 tasks and matches ``config``."""
+    if not path.is_file():
+        raise FileNotFoundError(f"missing metrics file for {config.key}: {path}")
+    d = json.loads(path.read_text())
+    if d.get("num_tasks") != EXPECTED_NUM_TASKS:
+        raise ValueError(f"num_tasks={d.get('num_tasks')} (expected {EXPECTED_NUM_TASKS}) in {path}")
+    checks = {
+        "method": (d.get("method"), config.method),
+        "temperature": (d.get("temperature"), config.temperature),
+        "top_p": (d.get("top_p"), config.top_p),
+        "num_samples_per_task": (d.get("num_samples_per_task"), config.n),
+    }
+    for field, (got, want) in checks.items():
+        if got != want:
+            raise ValueError(f"{field}={got!r} but config {config.key} expects {want!r}: {path}")
+    return d
+
+
+def build_groups(results_root: Path = RESULTS_ROOT) -> list[Group]:
+    groups = []
+    for m in MODELS:
+        rows = []
+        for c in configs_for(m):
+            p = Path(results_root) / m.model_dir / "metrics" / metrics_filename(m, c.key)
+            rows.append((c, p, load_checked(p, c)))
+        groups.append(Group(m, rows))
+    return groups
+
+
+def _cells(config: Config, path: Path, na_single_sample: bool) -> list[str]:
+    row = headline_row(path, config.label)
+    cells = [row[c] for c in PAPER_COLUMNS]
+    if na_single_sample and config.n == 1:
+        cells = ["—" if c in NA_COLUMNS else v for c, v in zip(PAPER_COLUMNS, cells)]
+    return cells
+
+
+def _tex_escape(s: str) -> str:
+    return (
+        s.replace("\\", r"\textbackslash{}")
+        .replace("&", r"\&")
+        .replace("%", r"\%")
+        .replace("_", r"\_")
+        .replace("—", "---")
+    )
+
+
+def render_md(groups: list[Group], *, na_single_sample: bool, provenance: str | None = None) -> str:
+    variant = "n=1 cells shown as —" if na_single_sample else "n=1 cells as computed (nodash)"
+    lines = [f"# Table II (STAGING) — HumanEval (164 problems; n=10 sampling, n=1 greedy/beam) — {variant}", ""]
+    lines.append("Not for the paper until the user reviews it. Every value from "
+                 "`bench.eval.headline_table.headline_row` on the metrics JSONs under "
+                 "`results/humaneval_regen_2026_11_stripped/<model>/metrics/`.")
+    if provenance:
+        lines += ["", provenance]
+    lines += ["", f"Draft caption (user to review): {DRAFT_CAPTION}", ""]
+    lines.append("| Decoder | " + " | ".join(PAPER_COLUMNS) + " |")
+    lines.append("|:---|" + "---:|" * len(PAPER_COLUMNS))
+    for g in groups:
+        lines.append(f"| *{g.model.display}* |" + " |" * len(PAPER_COLUMNS))
+        for c, p, _ in g.rows:
+            lines.append("| " + c.label + " | " + " | ".join(_cells(c, p, na_single_sample)) + " |")
+    if na_single_sample:
+        lines += ["", f"— : {FOOTNOTE} (greedy, beam@4)."]
+    return "\n".join(lines) + "\n"
+
+
+def render_tex(groups: list[Group], *, na_single_sample: bool, provenance: str | None = None) -> str:
+    ncols = 1 + len(PAPER_COLUMNS)
+    body: list[str] = []
+    for i, g in enumerate(groups):
+        if i:
+            body.append(r"\midrule")
+        body.append(rf"    \multicolumn{{{ncols}}}{{l}}{{\hspace{{{GROUP_HSPACE_MM}mm}}\textit{{{_tex_escape(g.model.display)}}}}} \\")
+        for c, p, _ in g.rows:
+            cells = [_tex_escape(c.label)] + [_tex_escape(v) for v in _cells(c, p, na_single_sample)]
+            body.append("    " + " & ".join(cells) + r" \\")
+    head = [
+        "% Table II (STAGING) — HumanEval (164 problems; n=10 sampling, n=1 greedy/beam)",
+        "% Written by scripts/paper/stage_humaneval_regen_table.py — staging copy for user review, not the paper.",
+    ]
+    if provenance:
+        head += [f"% {l}" for l in provenance.splitlines()]
+    lines = head + [
+        "",
+        r"\begin{table}[t]",
+        r"\centering",
+        f"% DRAFT CAPTION — user to review: {DRAFT_CAPTION}",
+        rf"\caption{{{CAPTION}}}",
+        rf"\label{{tab:{LABEL}}}",
+        r"\resizebox{\columnwidth}{!}{%",
+        rf"\begin{{tabular}}{{l{'r' * len(PAPER_COLUMNS)}}}",
+        r"\toprule",
+        " & ".join(["Decoder"] + [_TEX_HEADER[c] for c in PAPER_COLUMNS]) + r" \\",
+        r"\midrule",
+        *body,
+        r"\bottomrule",
+        r"\end{tabular}",
+        r"}",
+    ]
+    if na_single_sample:
+        lines.append(rf"\par\smallskip{{\footnotesize ---: {FOOTNOTE} (greedy, beam@4).}}")
+    lines += [r"\end{table}", ""]
+    return "\n".join(lines)
+
+
+def guard_output_path(path: Path | str, staging_dir: Path = STAGING_DIR) -> Path:
+    """Return the resolved path iff it is one of OUTPUT_NAMES directly inside ``staging_dir``."""
+    p = Path(path).resolve()
+    if p.parent != Path(staging_dir).resolve():
+        raise ValueError(f"refusing to write outside the staging dir {staging_dir}: {p}")
+    if p.name not in OUTPUT_NAMES:
+        raise ValueError(f"refusing to write {p.name!r}: allowed staging names are {OUTPUT_NAMES}")
+    return p
+
+
+def write_outputs(groups: list[Group], out_dir: Path = STAGING_DIR, staging_dir: Path = STAGING_DIR,
+                  provenance: str | None = None) -> list[Path]:
+    targets = {name: guard_output_path(Path(out_dir) / name, staging_dir) for name in OUTPUT_NAMES}
+    content = {
+        "table_ii_staging.md": render_md(groups, na_single_sample=True, provenance=provenance),
+        "table_ii_staging.tex": render_tex(groups, na_single_sample=True, provenance=provenance),
+        "table_ii_staging_nodash.md": render_md(groups, na_single_sample=False, provenance=provenance),
+        "table_ii_staging_nodash.tex": render_tex(groups, na_single_sample=False, provenance=provenance),
+    }
+    for name, p in targets.items():
+        p.write_text(content[name])
+    return list(targets.values())
+
+
+def _provenance(argv: list[str]) -> str:
+    try:
+        commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=REPO_ROOT,
+                                capture_output=True, text=True, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=REPO_ROOT,
+                               capture_output=True, text=True, check=True).stdout.strip()
+        commit += " (working tree dirty)" if dirty else ""
+    except (OSError, subprocess.CalledProcessError):
+        commit = "unknown"
+    ist = _dt.datetime.now(_dt.timezone(_dt.timedelta(hours=5, minutes=30))).strftime("%Y-%m-%d %H:%M:%S IST")
+    cmd = "uv run python " + " ".join(shlex.quote(a) for a in argv)
+    return f"Generated {ist}; git {commit}; command: `{cmd}`"
+
+
+def main(argv: list[str] | None = None) -> None:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--results-root", type=Path, default=RESULTS_ROOT)
+    ap.add_argument("--out-dir", type=Path, default=STAGING_DIR,
+                    help="must be the staging dir; anything else is refused")
+    args = ap.parse_args(argv)
+    groups = build_groups(args.results_root)
+    written = write_outputs(groups, out_dir=args.out_dir, provenance=_provenance(sys.argv))
+    for p in written:
+        print(f"wrote {p.relative_to(REPO_ROOT)}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
