@@ -31,6 +31,36 @@ def load_completed_ids(path: Path) -> set:
     return completed
 
 
+def check_resume_compatible(path: Path, requested: dict) -> None:
+    """Refuse to resume into a file whose records were generated under different opt-in settings.
+
+    ``requested`` maps record keys to the values this run will write; ``None`` means "key absent" (the default runs,
+    i.e. every historical file). E.g. ``{"seed": None, "single_bos": None}`` for a default run. Raises SystemExit
+    naming the conflicting values and the fix (``--no-resume`` or another ``--results-dir``). Missing file: OK.
+    """
+    if not path.exists():
+        return
+    found = {k: set() for k in requested}
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            for k in requested:
+                found[k].add(json.dumps(record.get(k)))
+    bad = {k: sorted(v) for k, v in found.items() if v and v != {json.dumps(requested[k])}}
+    if bad:
+        details = "; ".join(f"{k}: file has {', '.join(v)}, this run would write {json.dumps(requested[k])}"
+                            for k, v in bad.items())
+        raise SystemExit(
+            f"Refusing to resume {path}: its records were generated with different settings ({details}; "
+            f"null = key absent). Use --no-resume to overwrite it, or a different --results-dir.")
+
+
 def append_result(path: Path, record: dict) -> None:
     """Append a single JSON record to the JSONL file and flush.
 

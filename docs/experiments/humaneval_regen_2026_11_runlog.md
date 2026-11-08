@@ -794,6 +794,63 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
   - Then code-reviewer, then queued after the current runs on each GPU (pull only after they finish).
   - Estimate [Likely]: GPU0 about 40 min; GPU1 about 15 + 40 min.
   - Naming note: "Qwen2.5-Coder-7B(-Instruct)" throughout; plain "Qwen-7B" in this project means `Qwen/Qwen-7B` (Appendix A1).
+- **2026-11-08 15:21 IST: GPU1 queue FAILED, by design.**
+  - HE instruct7b DONE (6 configs × 164). MBPP-instruct greedy/beam4 DONE (500 each).
+  - MBPP-instruct temp_t0.7: **CUDA OOM on task_id 493** (22.3 GB in use on 24 GB). The runner swallowed it → 499 rows. Our
+    per-task-error check stopped the queue (the D14-style silent gap was avoided).
+  - Extras change reviewed, committed and pushed (`06a5441`); pulled on GPU2. GPU0's running job is unaffected (default commands identical).
+- **2026-11-08 15:23 IST: GPU1 queue restarted** with `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` (allocator only):
+  - MBPP-instruct resume (task 493 + top_p0.9/pless/pless_norm) → HE `instruct7b-extra` → MBPP-instruct `EXTRA_PLESS_TEMPS=1`.
+  - GPU0: an on-machine waiter starts MBPP-base `EXTRA_PLESS_TEMPS=1` after `logs/full_gpu0.done`. Markers `logs/q1.*`, `logs/q0x.*`.
+  - If task 493 OOMs again: stop and ask the user. Don't drop it.
+- **2026-11-08 16:34 IST**: GPU0 MBPP base main 7 configs DONE (500 each; the script verified 500 unique ids).
+- **2026-11-08 17:38:38 IST: ALL GPU2 analysis runs DONE** (`q0x.done`, `q1.done`; 0 OOM in the restarted logs).
+  - MBPP base: 11 files × 500 (7 main + 4 extras).
+  - MBPP instruct: 10 × 500. Task 493 regenerated OK with `expandable_segments`.
+  - HE instruct7b: 6 × 164; HE instruct7b_extra: 4 × 164.
+  - Copy + integrity handed to data-wrangler. Then: local grading (MBPP `bench.eval --dataset mbpp`; HE official grader) on a
+    quiet machine → results-validator → staging tables.
+- **2026-11-08**: Qwen2.5-Coder-7B copy **DONE** (data-wrangler).
+  - 81 files sha256 match (31 JSONL + manifests + 46 GPU2 logs in `results/mbpp_qwen25coder7b_2026_11/gpu2_logs/`).
+  - MBPP: 21 × 500, prompts identical to the 3B rows, 0 empty. Task 493 present (regenerated 15:24 IST).
+  - HE: 10 × 164, chat prompts identical across files; smoke checker PASS ×2.
+  - p-less ≡ p-less-norm byte-identical tasks:
+    - HE instruct: 164/164 at every T (seeded vLLM);
+    - MBPP base: 167 / 114 / 28 (T0.6 / 0.7 / 1.0); MBPP instruct: 363 / 344 / 257 (unseeded HF runner, so identity ≈ tasks that
+      collapsed to one output).
+- **2026-11-08 17:44 IST**: Grading started (experiment-harness; load 2.42; analysis-only, not the pre-declared paper pass).
+  - MBPP via `bench.eval --dataset mbpp`, same settings as the old MBPP metrics; HE via the official grader; cb_div only.
+  - Output: `results/mbpp_qwen25coder7b_2026_11/analysis/qwen25coder7b_tables.md`.
+- **2026-11-08 18:11 IST: grading DONE** (experiment-harness).
+  - 21 MBPP (500 each, `--dataset mbpp --skip-structural-diversity`, 5.0 s / 4 workers) + 10 HE (164, official grader). HE
+    cross-check 400/400.
+  - Load 2.88 at the start (target about 2, below 3), up to 6.9 from our own workers.
+  - MBPP timeout% is null from the grader; a separate probe re-ran all failures (0 flipped; max 0.32%).
+  - MBPP programs run under the system `python3` (Homebrew 3.14.4), as for the old rows.
+  - Main session spot-checked 5 values (MBPP base greedy 64.00; base p-less-norm T0.7 64.28/71.80; instruct top-p 74.80/90.20;
+    HE instruct greedy 87.20; HE p-less T1.0 87.87/89.63): all match.
+  - pass@1 headline: MBPP base greedy 64.00, p-less T0.7 63.82, T@0.7 50.38; MBPP instruct greedy 78.00, p-less 77.58, T@0.7 74.92;
+    HE instruct greedy 87.20, p-less 88.29, T@0.7 86.40. NOT VALIDATED; results-validator running.
+- **2026-11-08: Qwen2.5-Coder-7B analysis VALIDATED** ("trustworthy: yes").
+  - Summary + paired tests in `results/mbpp_qwen25coder7b_2026_11/analysis/validated_qwen25coder7b_comparisons.md`;
+    scripts saved from /tmp.
+  - The new rows fit the 9 reference MBPP models' pattern.
+  - New caveats:
+    - MBPP-instruct p-less gives a deterministic non-greedy output in 201/500 tasks (hypothesis: bf16 batch-size numerics in
+      the custom loop vs `generate`; unverified);
+    - instruct MBPP prompts show all 3 graded asserts;
+    - the HE p@1 edge over greedy rests on 4 tasks.
+  - **Analysis work DONE (staging only).**
+- **2026-11-08: NEXT analysis (user): MBPP for ALL HE models with today's code, SEEDED.**
+  - User decision: add a fixed seed to the MBPP runner and rerun the two Qwen2.5-Coder-7B MBPP jobs too, so all MBPP rows are on one
+    protocol.
+  - The 7 Table II models besides Qwen-7B will be regenerated (their April MBPP rows used older code).
+  - **E28 double BOS CONFIRMED** with the runner's own code (`format_prompt_instruct` + `generator.py:214`
+    `tokenizer.encode`), transformers 5.3.0: CodeLlama-7b-Instruct-hf and Llama-2-7b-chat-hf receive `[1, 1, …]` (2 BOS).
+    Qwen2.5-Coder-7B-Instruct is unaffected (no BOS). The HE regeneration is single-BOS (smoke-checked).
+  - **User: analyse whether it matters before fixing.** Plan: greedy on all 500 MBPP tasks, double vs single BOS, both
+    chat models (about 30 min on GPU2) → changed outputs + paired pass@1 CI.
+  - Research-coder is adding opt-in `--seed` and `--single-bos` (default byte-identical) + a BOS-check script.
 - **2026-11-07**: AI-use acknowledgment (D15 item 6):
   - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
     subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).

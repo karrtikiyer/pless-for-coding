@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 from datasets import load_dataset
 from tqdm import tqdm
 
-from bench.checkpointing import append_result, get_output_path, load_completed_ids
+from bench.checkpointing import (append_result, check_resume_compatible, get_output_path,
+                                 load_completed_ids)
 from bench.generator import (generate_samples, generate_samples_standard,
                               generate_samples_greedy, generate_samples_beam,
                               generate_samples_split, _strip_think_content,
@@ -14,7 +15,8 @@ from bench.humaneval.prompts import HUMANEVAL_STOP_SEQUENCES
 from bench.prompts import (format_prompt_base, format_prompt_base_hybrid,
                            format_prompt_base_begin_scaffold,
                            format_prompt_base_bigcode,
-                           format_prompt_instruct, is_instruct_model)
+                           format_prompt_instruct, is_instruct_model, encode_single_bos)
+from bench.seeding import seed_task
 
 # MBPP 3-shot prompt ends with "[BEGIN]\n", so the model starts generating "def func(...".
 # HumanEval stop strings like "\ndef " would fire immediately (prompt trailing \n + generated "def ").
@@ -87,7 +89,21 @@ def parse_args():
                         help="Sampler for think phase (--method split only)")
     parser.add_argument("--sampler-code", choices=list(SPLIT_SAMPLERS.keys()), default=None,
                         help="Sampler for code phase (--method split only)")
+    parser.add_argument("--seed", type=int, default=None,
+                        help="Opt-in reproducibility (default: unseeded, as all historical runs). Before each task, "
+                             "reseed python/numpy/torch(+CUDA) with bench.seeding.task_seed(seed, task_id), so a "
+                             "task's samples do not depend on task order or resume. Recorded as 'seed' in each "
+                             "record; resuming a file generated with a different seed is refused. HF backend only.")
+    parser.add_argument("--single-bos", action="store_true",
+                        help="Opt-in: if the prompt string already starts with tokenizer.bos_token (chat templates "
+                             "of CodeLlama-Instruct / Llama-2-chat), encode it with add_special_tokens=False so the "
+                             "model sees one BOS, not two. No-op for prompts without a leading BOS (base prompts, "
+                             "Qwen). Recorded as 'single_bos': true. HF backend only.")
     args = parser.parse_args()
+    if args.seed is not None and args.seed < 0:
+        parser.error("--seed must be >= 0")
+    if args.backend == "vllm" and (args.seed is not None or args.single_bos):
+        parser.error("--seed / --single-bos are implemented for --backend hf only")
     if args.method == "top_p" and args.top_p is None:
         parser.error("--top-p is required when --method is top_p")
     if args.method == "top_k" and args.top_k is None:
@@ -152,6 +168,10 @@ def main():
     # Handle --no-resume
     if args.no_resume and out_path.exists():
         out_path.unlink()
+
+    # Never mix records generated under different opt-in settings in one file (None = key absent = default run,
+    # so every historical file passes silently for a default run).
+    check_resume_compatible(out_path, {"seed": args.seed, "single_bos": True if args.single_bos else None})
 
     # Load checkpoint
     completed_ids = load_completed_ids(out_path)
@@ -226,6 +246,11 @@ def main():
                 prompt_text, code_prefix = format_prompt_base_bigcode(task)
             else:
                 prompt_text, code_prefix = format_prompt_base(task, n_shots=args.n_shots)
+
+            if args.single_bos:
+                prompt_text = encode_single_bos(prompt_text, tokenizer)
+            if args.seed is not None:
+                seed_task(args.seed, task_id)
 
             if args.backend == "vllm":
                 from bench.generator_vllm import (
@@ -348,6 +373,10 @@ def main():
                 record["temp_code"] = args.temp_code
             if args.post_temperature is not None:
                 record["post_temperature"] = args.post_temperature
+            if args.seed is not None:
+                record["seed"] = args.seed
+            if args.single_bos:
+                record["single_bos"] = True
             if task.get("test_setup_code"):
                 record["test_setup_code"] = task["test_setup_code"]
             append_result(out_path, record)

@@ -11,11 +11,14 @@
 #   DRY_RUN=1 ./run_bigcode_mbpp_qwen25coder7b.sh                             # print commands only
 #   EXTRA_PLESS_TEMPS=1 CUDA_VISIBLE_DEVICES=0 ./run_bigcode_mbpp_qwen25coder7b.sh   # ONLY p-less / p-less-norm at T=1.0 and T=0.6
 #     (user request 2026-11-08; same flags as the T=0.7 configs; see scripts/mbpp_staging_common.sh)
+#   SEED=1234 / SINGLE_BOS=1 (opt-in, 2026-11-08): append --seed 1234 / --single-bos to every config; same
+#     file names; put seeded reruns in a NEW root, e.g. RESULTS_DIR=results/mbpp_seeded_2026_11 SEED=1234 ./<this script>
+#     (the runner refuses to resume a file generated with other settings)
 set -euo pipefail
 cd "$(dirname "$0")"
 
 MODEL_ID="Qwen/Qwen2.5-Coder-7B"
-RESULTS_DIR="results/mbpp_qwen25coder7b_2026_11"
+RESULTS_DIR="${RESULTS_DIR:-results/mbpp_qwen25coder7b_2026_11}"   # env override: see scripts/mbpp_staging_common.sh
 LOG_TAG="mbpp_qwen25coder7b"
 PROMPT_ARGS=(--prompt-style bigcode)
 CONFIGS=(   # "<output file stem>|<bench args>"

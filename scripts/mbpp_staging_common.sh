@@ -15,6 +15,14 @@
 #                         the caller's pless / pless_norm T=0.7 configs by changing --temperature and the stem's
 #                         _t0.7 suffix only (same flags, same root, the runner's standard file names). Unset / 0 /
 #                         empty: the caller's CONFIGS unchanged.
+#   SEED=N                passthrough: append --seed N (N a non-negative integer; per-task reseeding, see
+#                         bench/seeding.py). Unset / empty: unseeded, as all historical runs. Same file names: the
+#                         runner refuses to resume a file generated with a different seed (use a new RESULTS_DIR).
+#   RESULTS_DIR=PATH      output root override, honoured by the run_*_mbpp_qwen25coder7b*.sh callers (they assign
+#                         RESULTS_DIR="${RESULTS_DIR:-<their default root>}"). Unset / empty: the caller's root.
+#                         Seeded / single-BOS reruns must use a NEW root, never the old unseeded files.
+#   SINGLE_BOS=1          passthrough: append --single-bos (one BOS for chat templates that start with it). Unset / 0 /
+#                         empty: unchanged. Same file-name / resume rule as SEED.
 #
 # Stops on the first failing config (set -euo pipefail + pipefail through tee). bench/runner.py catches
 # per-task exceptions and keeps going ("Error on task_id=..."); this helper turns any such line, or a file
@@ -27,6 +35,8 @@ set -euo pipefail
 MAX_PROBLEMS="${MAX_PROBLEMS:-}"
 DRY_RUN="${DRY_RUN:-0}"
 EXTRA_PLESS_TEMPS="${EXTRA_PLESS_TEMPS:-}"
+SEED="${SEED:-}"
+SINGLE_BOS="${SINGLE_BOS:-}"
 LOG_DIR="logs"
 MODEL_DIR="${MODEL_ID//\//--}"
 EXPECTED_TASKS=500
@@ -39,6 +49,16 @@ fi
 case "$EXTRA_PLESS_TEMPS" in
   ""|0|1) ;;
   *) echo "EXTRA_PLESS_TEMPS must be 1, 0 or unset; got '$EXTRA_PLESS_TEMPS'" >&2; exit 2 ;;
+esac
+
+if [[ -n "$SEED" && ! "$SEED" =~ ^(0|[1-9][0-9]*)$ ]]; then
+  echo "SEED must be a non-negative integer; got '$SEED'" >&2
+  exit 2
+fi
+
+case "$SINGLE_BOS" in
+  ""|0|1) ;;
+  *) echo "SINGLE_BOS must be 1, 0 or unset; got '$SINGLE_BOS'" >&2; exit 2 ;;
 esac
 
 ist() { TZ=Asia/Kolkata date '+%F %T IST'; }
@@ -96,12 +116,16 @@ run_configs() {
   echo "[$(ist)] $MODEL_ID -> ${RESULTS_DIR}/${MODEL_DIR}/  (CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-<unset>}," \
        "MAX_PROBLEMS=${MAX_PROBLEMS:-<all 500>}, commit $(git rev-parse --short HEAD 2>/dev/null || echo ?))"
   [[ "$EXTRA_PLESS_TEMPS" == 1 ]] && echo "    EXTRA_PLESS_TEMPS=1: only p-less / p-less-norm at T=1.0 and T=0.6"
+  [[ -n "$SEED" ]] && echo "    SEED=$SEED: --seed $SEED"
+  [[ "$SINGLE_BOS" == 1 ]] && echo "    SINGLE_BOS=1: --single-bos"
   local cfg stem args
   for cfg in "${CONFIGS[@]}"; do
     stem="${cfg%%|*}"
     read -ra args <<< "${cfg#*|}"
     local cmd=(uv run python -m bench --model "$MODEL_ID" "${args[@]}" ${PROMPT_ARGS[@]+"${PROMPT_ARGS[@]}"}
                --mbpp-config full --results-dir "$RESULTS_DIR")
+    [[ -n "$SEED" ]] && cmd+=(--seed "$SEED")
+    [[ "$SINGLE_BOS" == 1 ]] && cmd+=(--single-bos)
     [[ -n "$MAX_PROBLEMS" ]] && cmd+=(--max-problems "$MAX_PROBLEMS")
     local out="${RESULTS_DIR}/${MODEL_DIR}/${stem}.jsonl"
     local log="${LOG_DIR}/${LOG_TAG}_${stem}_$(date +%Y%m%d_%H%M%S).log"

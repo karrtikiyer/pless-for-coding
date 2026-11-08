@@ -206,6 +206,28 @@ def format_prompt_instruct(task: dict, tokenizer, enable_thinking: bool = False)
     return prompt, ""
 
 
+def encode_single_bos(prompt, tokenizer):
+    """Opt-in ``--single-bos``: encode a prompt that already starts with the BOS string with exactly one BOS.
+
+    The HF generators encode a str prompt with ``tokenizer.encode(prompt_text)``, which prepends BOS again for
+    Llama-style tokenizers, so a chat-template string that begins with ``<s>`` (CodeLlama-Instruct, Llama-2-chat)
+    yields ``[1, 1, ...]``. If ``prompt`` is a str starting with ``tokenizer.bos_token``, return
+    ``tokenizer.encode(prompt, add_special_tokens=False)`` (list[int]; the generators accept token ids as-is).
+    Otherwise (no BOS token, e.g. Qwen; a base-model prompt; an already-tokenised list) return ``prompt`` unchanged.
+    """
+    bos = getattr(tokenizer, "bos_token", None)
+    if isinstance(prompt, str) and bos and prompt.startswith(bos):
+        single = tokenizer.encode(prompt, add_special_tokens=False)
+        # Guarantee for ANY tokenizer (incl. gated ones not testable offline, e.g. Llama-2-chat): the only change vs
+        # the default encoding is the dropped extra leading BOS. Refuse rather than send a different prompt.
+        default = tokenizer.encode(prompt)
+        if single != default[1:]:
+            raise ValueError(f"single-BOS encoding is not the default encoding minus one leading BOS for "
+                             f"{type(tokenizer).__name__}: default head {default[:4]}, single head {single[:4]}")
+        return single
+    return prompt
+
+
 def is_instruct_model(model_id: str) -> bool:
     """Check if a model ID indicates an instruct/chat model."""
     lower = model_id.lower()
