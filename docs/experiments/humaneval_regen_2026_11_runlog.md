@@ -720,6 +720,31 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
   - Fix in the staging script: the header's first cell is `\rlap{Decoder}\phantom{<MBPP widest label>}`. Test-first; 23 tests.
   - Measured after the fix: **both 5.169 pt** (pdfplumber, tectonic build in /tmp; still 7 pages). MBPP files untouched.
   - Paper repo Table II restored from the new staging file (data rows identical). Code-reviewer pending.
+- **2026-11-08**: Font fix reviewed and committed (`c6da222`); paper repo Table II committed (`a9dab94`).
+- **2026-11-08: Overleaf export `pless_for_coding_paper_8_Nov_2026.zip` (12:31 IST) merged into the paper repo**, file by file:
+  - Taken from the zip: `main.tex`, `main.pdf` and the `.tex` tables 3a/3b/a1/a2. These are the user's Overleaf edits:
+    - captions on 3a/3b/a1/a2; `\hspace` on the a1/a2 headers;
+    - in main.tex: the Acknowledgment section, the Appendix A rewrite, the peakedness-figure appendix, and §II-D wording.
+  - Kept from the repo: the `.md` tables (the zip's were stale), `refs.bib` (EOF newline only), `fig6b` (unused).
+  - Table II data rows unchanged vs `a9dab94`.
+  - **TODO:** the code-repo generators still carry the OLD captions, so a rerun would revert the user's caption edits:
+    - staging `CAPTION` → "Performance of eight code models on HumanEval";
+    - make_llm4code_tables 3a/a1/a2 captions.
+
+    Fold this into the make_llm4code safeguard work.
+- **2026-11-08**: Overleaf merge committed in the paper repo (`01bce0a`).
+  - Merged paper compiles (tectonic): 7 pages; Table I and II both 5.169 pt; all 8 `\input` tables present and identical to the zip.
+  - **make_llm4code safeguard + caption sync restarted** with ENFORCED protection: the 4 output dirs (both repos'
+    tables/figures) are `chmod -R a-w`, checksum snapshot in `/tmp/paperdirs_snapshot.sha` (50 files); a write test was refused.
+  - **Restore write permission (`chmod -R u+w`) after the work and its review.**
+  - Then commit and push both repos (user request).
+- **2026-11-08: make_llm4code_tables safeguard DONE** (research-coder; code-reviewer: safe; main session added the review's
+  should-fix, a loud warning when `--mirror-only` overwrites an Overleaf-edited table).
+  - Default `--humaneval-table regen` reproduces all 8 paper-repo files (3a/3b/a1/a2 .tex+.md) byte-identically.
+  - `legacy` writes the old Table II only to `paper/llm4code/tables/legacy/` unless `--allow-legacy-paper-overwrite`.
+  - The mirror skips the Overleaf-edited 5a/a3 by default.
+  - 57 tests. Locked dirs verified 50/50 unchanged throughout, then unlocked.
+  - D16 added (A2 on the old protocol).
 - **2026-11-07**: AI-use acknowledgment (D15 item 6):
   - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
     subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).

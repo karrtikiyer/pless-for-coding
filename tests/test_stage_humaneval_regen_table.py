@@ -303,8 +303,9 @@ def test_tex_style(tmp_path):
     tex = st.render_tex(st.build_groups(_make_fake_root(tmp_path)), na_single_sample=True)
     assert r"\label{tab:3b_humaneval}" in tex
     # n=10 applies to sampling decoders only; greedy and beam produce one sample per problem (review 2026-11-08).
-    assert (r"\caption{Performance of eight code models on HumanEval (164 problems; $n{=}10$ samples for "
-            r"sampling decoders, one for greedy and beam)}") in tex
+    # Caption = the user's Overleaf edit (paper repo 01bce0a, 2026-11-08).
+    assert r"\caption{Performance of eight code models on HumanEval}" in tex
+    assert st.CAPTION == "Performance of eight code models on HumanEval"
     assert "n{=}10$)}" not in tex
     assert "% DRAFT CAPTION — user to review" in tex
     assert r"\resizebox{\columnwidth}{!}{%" in tex
@@ -380,3 +381,38 @@ def test_first_column_width_matches_mbpp_table_i(tmp_path):
     assert header.startswith(rf"\rlap{{Decoder}}\phantom{{{st._tex_escape(widest)}}} & ")
     # every Table II label is no wider (in characters) than the reference, so the phantom sets the column width
     assert all(len(c.label) <= len(widest) for c in st.CONFIGS)
+
+
+# ---------------------------------------------------------------- paper variant (used by make_llm4code_tables.py)
+
+PAPER_TABLE_II = REPO_ROOT.parent / "pless-for-coding-paper" / "tables"  # read only
+
+
+def _paper_file(name: str) -> bytes:
+    p = PAPER_TABLE_II / name
+    if not p.is_file():
+        pytest.skip(f"paper repo file not available: {p}")
+    return p.read_bytes()
+
+
+def test_paper_tex_is_byte_identical_to_paper_repo():
+    tex = st.render_paper_tex(st.build_groups(REAL_ROOT))
+    assert tex.encode() == _paper_file("table_3b_humaneval.tex")
+
+
+def test_paper_md_is_byte_identical_to_paper_repo():
+    md = st.render_paper_md(st.build_groups(REAL_ROOT))
+    assert md.encode() == _paper_file("table_3b_humaneval.md")
+
+
+def test_paper_variant_is_nodash_without_staging_text(tmp_path):
+    groups = st.build_groups(_make_fake_root(tmp_path))
+    tex, md = st.render_paper_tex(groups), st.render_paper_md(groups)
+    for s in (tex, md):
+        assert "STAGING" not in s and "DRAFT" not in s and "Draft caption" not in s
+        assert "not applicable" not in s
+    assert tex.splitlines()[:4] == list(st.PAPER_HEADER_TEX)
+    # body (rows) identical to the nodash staging variant
+    rows = lambda s: [l for l in s.splitlines() if "&" in l or l.startswith("| ")]
+    assert rows(tex) == rows(st.render_tex(groups, na_single_sample=False))
+    assert rows(md) == rows(st.render_md(groups, na_single_sample=False))

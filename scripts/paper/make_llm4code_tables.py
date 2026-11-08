@@ -6,11 +6,36 @@ paper's 7-column format (pass@{1,3,5,10}, cov@{0.3,0.7}, cb_div) via
 PAPER_COLUMNS defined here (decoupled from CANONICAL_COLUMNS).
 
 Usage:
-    uv run python scripts/paper/make_llm4code_tables.py
+    uv run python scripts/paper/make_llm4code_tables.py                      # regen (default)
+    uv run python scripts/paper/make_llm4code_tables.py --humaneval-table legacy
+    uv run python scripts/paper/make_llm4code_tables.py --humaneval-table legacy --allow-legacy-paper-overwrite
+    # dry run / tests: never touch the real dirs
+    uv run python scripts/paper/make_llm4code_tables.py --out-dir /tmp/t --paper-out-dir /tmp/p
 
-Writes markdown tables under `paper/llm4code/tables/`. Prints a gap report
-to stderr listing any (model, benchmark, config) cells where the metrics
-JSON is missing — those are the experiments still to run.
+Writes .md + .tex tables into --out-dir (default `paper/llm4code/tables/`), then mirrors the
+files written by this run into --paper-out-dir (default `../pless-for-coding-paper/tables/`)
+if that dir exists. The mirror skips OVERLEAF_EDITED tables (table_5a_apps_renyi,
+table_a3_cf748_qwen: hand-edited in Overleaf, not reproduced here) unless they are named in
+--mirror-only. Prints a gap report to stderr listing any (model, benchmark, config) cells
+where the metrics JSON is missing.
+
+Table II (table_3b_humaneval) modes, --humaneval-table:
+  regen (default)  The paper's current Table II: the stripped-protocol HumanEval regeneration
+                   (results/humaneval_regen_2026_11_stripped/), built by importing
+                   scripts/paper/stage_humaneval_regen_table.py (render_paper_tex /
+                   render_paper_md: nodash rows + the paper header). Written to --out-dir
+                   and mirrored.
+  legacy           The OLD Table II from the HUMANEVAL dict below (mixed pipeline, three
+                   models), exactly as before the regen switch. Written to
+                   --out-dir/legacy/table_3b_humaneval.{md,tex} only, with a warning; the
+                   table_3b_humaneval.* files in --out-dir and --paper-out-dir are left
+                   untouched. With --allow-legacy-paper-overwrite it is written as
+                   --out-dir/table_3b_humaneval.* and mirrored into --paper-out-dir.
+
+The 3a / a1 / a2 captions and a1/a2 group-header \\hspace follow the user's Overleaf
+edits (paper repo 01bce0a). Note: the HumanEval appendix Table A2 (HUMANEVAL_APPENDIX)
+still uses the OLD mixed-pipeline sources (temprature_results / full_precision_results),
+not the stripped-protocol regeneration.
 """
 
 from __future__ import annotations
@@ -236,12 +261,8 @@ HUMANEVAL: dict[str, list[tuple[str, str]]] = {
         ("p-less@0.6", "results/pless_human_eval_results/full_precision_results/codellama--CodeLlama-7b-Instruct-hf/metrics/pless_t0.6_metrics.json"),
         ("p-less-norm@0.6", "results/pless_human_eval_results/full_precision_results/codellama--CodeLlama-7b-Instruct-hf/metrics/pless_norm_t0.6_metrics.json"),
     ],
-    "OpenCodeInterpreter-DS-1.3B": [
-        # No non-p-less baselines on HE for this model — see MISSING_EXPERIMENTS.md.
-        # pless_alpha at a=2.0 is mathematically identical to p-less (both threshold
-        # at the collision probability Σpᵢ²), so it renders as p-less@1.0.
-        ("p-less@1.0", "results/pless_alpha_full_humaneval/m-a-p--OpenCodeInterpreter-DS-1.3B/humaneval/metrics/pless_alpha_a2.0_t1.0_metrics.json"),
-    ],
+    # OpenCodeInterpreter-DS-1.3B intentionally omitted from HumanEval: only a single
+    # p-less@1.0 run exists (no greedy/T/top-p baselines) — see MISSING_EXPERIMENTS.md.
     "Qwen2.5-Coder-7B-Instruct": [
         ("greedy", "results/pless_human_eval_results/full_precision_results/Qwen--Qwen2.5-Coder-7B-Instruct/metrics/greedy_metrics.json"),
         ("temp@0.2", "results/pless_human_eval_results/full_precision_results/Qwen--Qwen2.5-Coder-7B-Instruct/metrics/temp_0.2_metrics.json"),
@@ -353,6 +374,39 @@ _EXPECTED_NUM_TASKS: dict[str, int] = {
     "table_5a_apps_renyi": 252,
     "table_a3_cf748_qwen": 748,
 }
+
+
+
+def reasoning_display_label(label: str, rel: str, recommended_suffix: str = "recommended") -> str:
+    """Display label for reasoning-model rows/legends, following the paper convention
+    ``<decoder> with T=<T>``. Every value is read from the metrics/JSONL FILE NAME, not typed:
+      temp_p0.95_k20_think_t0.6_t0.6* -> "top-p@0.95, top-k@20 with T=0.6 (recommended)"
+      temp_p0.95_think_t0.6_t0.6*     -> "top-p@0.95 with T=0.6 (recommended)"
+      temp_p0.9_think_t1.0_t1.0*      -> "top-p@0.9 with T=1.0"
+      pless_think_t1.0* / pless_norm_think_t1.0* -> "p-less with T=1.0" / "p-less-norm with T=1.0"
+    Only labels in {recommended, top-p @X, p-less, p-less-norm} are rewritten; others pass through.
+    """
+    import re as _re
+    name = rel.rsplit("/", 1)[-1]
+    if label == "recommended" or label.startswith("top-p @") or label.startswith("top-p@"):
+        m = _re.search(r"temp_p([0-9.]+?)(?:_k(\d+))?_think_t([0-9.]+)_t", name)
+        assert m, f"cannot parse sampler from {name}"
+        p, k, t = m.groups()
+        core = f"top-p@{p}" + (f", top-k@{k}" if k else "") + f" with T={t}"
+        return f"{core} ({recommended_suffix})" if label == "recommended" else core
+    if label in ("p-less", "p-less-norm"):
+        m = _re.search(r"pless(_norm)?_think_t([0-9.]+)_t", name)
+        assert m, f"cannot parse sampler from {name}"
+        return f"{label} with T={m.group(2)}"
+    return label
+
+
+def _relabel_reasoning(cfgs: dict[str, list[tuple[str, str]]]) -> dict[str, list[tuple[str, str]]]:
+    return {m: [(reasoning_display_label(l, r, recommended_suffix="Recommended"), r) for l, r in rows] for m, rows in cfgs.items()}
+
+
+APPS_RENYI = _relabel_reasoning(APPS_RENYI)
+APPS_RENYI_CF748_QWEN = _relabel_reasoning(APPS_RENYI_CF748_QWEN)
 
 
 def _filter_present(rows: Iterable[tuple[str, str]], label: str, expected_num_tasks: int | None = None) -> list[tuple[Path, str]]:
@@ -470,40 +524,283 @@ def _render_model_section_tex(model: str, rows: list[tuple[str, str]], table_id:
     return "\n".join(lines)
 
 
-def main() -> None:
-    TABLES_DIR.mkdir(parents=True, exist_ok=True)
+def _merged_row_label(label: str) -> str:
+    """Display text for rows of the merged Table 3A/3B (LaTeX tables only).
 
-    def _write_both(configs: dict[str, list[tuple[str, str]]], slug: str, md_heading: str, table_id_prefix: str) -> None:
+    beam4 -> beam@4; temp@X -> T@X; top-p@0.9 -> top-p@0.9 with T=1.0;
+    p-less@X -> p-less with T=X; p-less-norm@X -> p-less-norm with T=X.
+    top-p@0.95 -> top-p@0.95 with T=1.0.
+    The top-p@0.9 and p-less temperatures were checked against each source JSON
+    (top_p0.9 rows record T=1.0; p-less rows record their own T). The HumanEval
+    top_p_0.95 JSONs record NO temperature, so T=1.0 there is the user's
+    statement of how those runs were configured, not something read from data.
+    """
+    import re
+    if m := re.fullmatch(r"beam(\d+)", label):
+        return f"beam@{m.group(1)}"
+    if m := re.fullmatch(r"temp@(.+)", label):
+        return f"T@{m.group(1)}"
+    if label in ("top-p@0.9", "top-p@0.95"):
+        return f"{label} with T=1.0"
+    if m := re.fullmatch(r"p-less-norm@(.+)", label):
+        return f"p-less-norm with T={m.group(1)}"
+    if m := re.fullmatch(r"p-less@(.+)", label):
+        return f"p-less with T={m.group(1)}"
+    return label
+
+
+HASAN_ROW_LABEL = "top-p@0.95 with T=0.2 (Hasan)"
+
+
+def _render_merged_models_tex(configs: dict[str, list[tuple[str, str]]], table_id: str, caption: str, expected_num_tasks: int | None = None,
+                              hasan_pass_at_1: dict[str, float] | None = None, placement: str = "t", commented_caption: str | None = None,
+                              group_hspace_mm: float | None = None) -> str:
+    """Render ONE LaTeX table covering every model in ``configs``.
+
+    Same layout as Table 4 (truncation): an italic model-name header row spans
+    the table, with a \\midrule between model groups. Used for Table 3A so the
+    seven MBPP models share one table and one label instead of seven.
+
+    ``hasan_pass_at_1``: model -> pass@1 (%) reported by Hasan et al. When given,
+    each listed model gets one extra last row, pass@1 only (all other columns
+    ``---``). This replaces the separate Hasan comparison tables (3C).
+    """
+    ncols = 1 + len(PAPER_COLUMNS)
+    col_spec = "l" + "r" * len(PAPER_COLUMNS)
+    header_row = " & ".join(["Decoder"] + [_TEX_LABEL_MAP[c] for c in PAPER_COLUMNS]) + r" \\"
+
+    body_lines: list[str] = []
+    for model, rows in configs.items():
+        present = _filter_present(rows, model, expected_num_tasks=expected_num_tasks)
+        if not present:
+            body_lines.append(f"% {model}: no metrics on disk (or all rows dropped by num_tasks guard) — group skipped")
+            continue
+        if any(not l.startswith("%") for l in body_lines):
+            body_lines.append(r"\midrule")
+        hs = rf"\hspace{{{group_hspace_mm}mm}}" if group_hspace_mm is not None else ""
+        body_lines.append(rf"    \multicolumn{{{ncols}}}{{l}}{{{hs}\textit{{{_tex_escape(model)}}}}} \\")
+        for path, row_label in present:
+            row = headline_row(path, row_label)
+            cells = [_tex_escape(_merged_row_label(row["label"]))] + [_tex_escape(row[c]) for c in PAPER_COLUMNS]
+            body_lines.append("    " + " & ".join(cells) + r" \\")
+        if hasan_pass_at_1 and model in hasan_pass_at_1:
+            hcells = [_tex_escape(HASAN_ROW_LABEL)] + [
+                (f"{hasan_pass_at_1[model]:.2f}\\%" if c == "pass@1" else "---") for c in PAPER_COLUMNS
+            ]
+            body_lines.append("    " + " & ".join(hcells) + r" \\")
+
+    lines = [
+        rf"\begin{{table}}[{placement}]",
+        r"\centering",
+        *([rf"% \caption{{{commented_caption}}}"] if commented_caption else []),
+        rf"\caption{{{caption}}}",
+        rf"\label{{tab:{table_id}}}",
+        r"\resizebox{\columnwidth}{!}{%",
+        rf"\begin{{tabular}}{{{col_spec}}}",
+        r"\toprule",
+        header_row,
+        r"\midrule",
+        *body_lines,
+        r"\bottomrule",
+        r"\end{tabular}",
+        r"}",
+        r"\end{table}",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _render_merged_models_md(configs: dict[str, list[tuple[str, str]]], expected_num_tasks: int | None = None,
+                             hasan_pass_at_1: dict[str, float] | None = None) -> str:
+    """Markdown twin of _render_merged_models_tex: ONE table, an italic model-name
+    row per model, the same relabeled decoder names (_merged_row_label), and the
+    same extra Hasan pass@1-only row for the models in ``hasan_pass_at_1``."""
+    ncols = len(PAPER_COLUMNS)
+    lines = [
+        "| Decoder | " + " | ".join(PAPER_COLUMNS) + " |",
+        "|:---|" + "---:|" * ncols,
+    ]
+    for model, rows in configs.items():
+        present = _filter_present(rows, model, expected_num_tasks=expected_num_tasks)
+        if not present:
+            lines.append(f"<!-- {model}: no metrics on disk (or all rows dropped by num_tasks guard) — group skipped -->")
+            continue
+        lines.append(f"| *{model}* |" + " |" * ncols)
+        for path, row_label in present:
+            row = headline_row(path, row_label)
+            lines.append("| " + _merged_row_label(row["label"]) + " | " + " | ".join(row[c] for c in PAPER_COLUMNS) + " |")
+        if hasan_pass_at_1 and model in hasan_pass_at_1:
+            lines.append("| " + HASAN_ROW_LABEL + " | " + " | ".join(
+                (f"{hasan_pass_at_1[model]:.2f}%" if c == "pass@1" else "—") for c in PAPER_COLUMNS) + " |")
+    out = "\n".join(lines) + "\n"
+    if hasan_pass_at_1:
+        out += ("\nRows labeled \"Hasan\" are pass@1 values reported by Hasan et al. (arXiv:2507.03160, Table 4; "
+                "T=0.2, top-p=0.95, top-k disabled, n=10); all other rows are this work.\n")
+    return out
+
+
+# Tables the user hand-edited in Overleaf whose paper-repo .tex this script does NOT reproduce (captions,
+# row order, commented-out rows; checked 2026-11-08 against paper repo 01bce0a). The mirror skips them
+# unless they are named explicitly in --mirror-only. (table_4_truncation is written by
+# make_llm4code_truncation_table.py, not here, and is never mirrored by this script.)
+OVERLEAF_EDITED: tuple[str, ...] = ("table_5a_apps_renyi", "table_a3_cf748_qwen")
+
+SLUG_3B = "table_3b_humaneval"
+LEGACY_SUBDIR = "legacy"
+STAGE_SCRIPT = REPO_ROOT / "scripts" / "paper" / "stage_humaneval_regen_table.py"
+
+
+def _load_stage_module():
+    """Import scripts/paper/stage_humaneval_regen_table.py (the Table II builder) by path."""
+    import importlib.util
+    name = "stage_humaneval_regen_table"
+    if name in sys.modules and getattr(sys.modules[name], "__file__", None) == str(STAGE_SCRIPT):
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, STAGE_SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod  # dataclasses need the module registered
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def parse_args(argv: list[str] | None = None):
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--out-dir", type=Path, default=TABLES_DIR,
+                    help="where the .md/.tex tables are written (default: paper/llm4code/tables/)")
+    ap.add_argument("--paper-out-dir", type=Path, default=TABLES_DIR_PAPER,
+                    help="sibling paper repo tables dir the files are mirrored into, if it exists "
+                         "(default: ../pless-for-coding-paper/tables/)")
+    ap.add_argument("--humaneval-table", choices=("regen", "legacy"), default="regen",
+                    help="Table II source: regen = stripped-protocol regeneration via stage_humaneval_regen_table.py "
+                         "(the paper's current table); legacy = the old HUMANEVAL dict (default: regen)")
+    ap.add_argument("--allow-legacy-paper-overwrite", action="store_true",
+                    help="legacy mode only: write the legacy Table II as table_3b_humaneval.* in --out-dir and mirror "
+                         "it into --paper-out-dir. Without it the legacy table goes to --out-dir/legacy/ only.")
+    ap.add_argument("--humaneval-regen-root", type=Path, default=None,
+                    help="regen mode: results root for Table II (default: the staging script's RESULTS_ROOT)")
+    ap.add_argument("--mirror-only", nargs="+", metavar="SLUG",
+                    help="copy only these tables (e.g. table_3a_mbpp table_3b_humaneval) into the paper dir; "
+                         f"default copies every table written by this run except {', '.join(OVERLEAF_EDITED)}")
+    args = ap.parse_args(argv)
+    if args.allow_legacy_paper_overwrite and args.humaneval_table != "legacy":
+        ap.error("--allow-legacy-paper-overwrite requires --humaneval-table legacy")
+    return args
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
+    out_dir: Path = args.out_dir
+    paper_dir: Path = args.paper_out_dir
+    mirror_only = set(args.mirror_only) if args.mirror_only else None
+    out_dir.mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []  # every file written by this run
+    mirrorable: list[Path] = []  # files written by THIS run that may be copied into the paper dir
+
+    def _write_both(configs: dict[str, list[tuple[str, str]]], slug: str, md_heading: str, table_id_prefix: str,
+                    merged_caption: str | None = None, merged_label: str | None = None,
+                    hasan_pass_at_1: dict[str, float] | None = None, placement: str = "t", commented_caption: str | None = None,
+                    group_hspace_mm: float | None = None, dest: Path | None = None, mirror: bool = True) -> None:
+        """merged_caption/merged_label: when set, BOTH the .tex and the .md are ONE table for all
+        models (see _render_merged_models_tex / _render_merged_models_md); otherwise one per model.
+        dest: output dir (default out_dir). mirror: whether the files may be copied to the paper dir."""
         expected = _EXPECTED_NUM_TASKS.get(slug)
         md = f"# {md_heading}\n\nCanonical headline metrics from `bench.eval.headline_table`. Auto-generated by `scripts/paper/make_llm4code_tables.py`. Rows with num_tasks != {expected} are DROPPED (see stderr WRONG_NUM_TASKS warnings).\n\n"
         tex_parts = [f"% {md_heading}\n% Auto-generated by scripts/paper/make_llm4code_tables.py — do not hand-edit.\n% Rows with num_tasks != {expected} are DROPPED.\n"]
         for model, rows in configs.items():
-            md += _render_model_section(model, slug, rows, expected_num_tasks=expected) + "\n"
-            # Sanitize model name to LaTeX-safe label: strip . / - / space / ( / ) / ,
-            safe = model.replace('.', '').replace('-', '_').replace(' ', '_').replace('(', '').replace(')', '').replace(',', '')
-            tex_parts.append(_render_model_section_tex(model, rows, f"{table_id_prefix}_{safe}", expected_num_tasks=expected))
-        (TABLES_DIR / f"{slug}.md").write_text(md)
-        (TABLES_DIR / f"{slug}.tex").write_text("\n".join(tex_parts))
+            if merged_caption is None:
+                md += _render_model_section(model, slug, rows, expected_num_tasks=expected) + "\n"
+                # Sanitize model name to LaTeX-safe label: strip . / - / space / ( / ) / ,
+                safe = model.replace('.', '').replace('-', '_').replace(' ', '_').replace('(', '').replace(')', '').replace(',', '')
+                tex_parts.append(_render_model_section_tex(model, rows, f"{table_id_prefix}_{safe}", expected_num_tasks=expected))
+        if merged_caption is not None:
+            md += _render_merged_models_md(configs, expected_num_tasks=expected, hasan_pass_at_1=hasan_pass_at_1)
+            tex_parts.append(_render_merged_models_tex(configs, merged_label or f"{table_id_prefix}_merged", merged_caption,
+                                                       expected_num_tasks=expected, hasan_pass_at_1=hasan_pass_at_1,
+                                                       placement=placement, commented_caption=commented_caption,
+                                                       group_hspace_mm=group_hspace_mm))
+        _emit(slug, md, "\n".join(tex_parts), dest=dest, mirror=mirror)
 
-    _write_both(MBPP, "table_3a_mbpp", "Table 3A — MBPP-full (500 tasks, n=10)", "3a")
-    _write_both(HUMANEVAL, "table_3b_humaneval", "Table 3B — HumanEval (164 tasks, n=10)", "3b")
+    def _emit(slug: str, md: str, tex: str, dest: Path | None = None, mirror: bool = True) -> None:
+        d = dest or out_dir
+        d.mkdir(parents=True, exist_ok=True)
+        for ext, text in (("md", md), ("tex", tex)):
+            path = d / f"{slug}.{ext}"
+            path.write_text(text)
+            written.append(path)
+            if mirror:
+                mirrorable.append(path)
+
+    # \texorpdfstring{...} in the caption preserves Runyan's hand edit to the old per-model captions.
+    _write_both(MBPP, "table_3a_mbpp", "Table 3A — MBPP-full (500 tasks, n=10)", "3a",
+                # Matches the user's Overleaf caption (paper repo 01bce0a, 2026-11-08); old one kept as a comment,
+                # model-name rows nudged left. Table I intentionally has no Hasan note in the caption.
+                merged_caption=r"Performance of seven code models on MBPP",
+                commented_caption=r"MBPP-full (500 tasks, \texorpdfstring{$n{=}10$}{n=10}), all seven models.",
+                group_hspace_mm=-1.5,
+                merged_label="3a_mbpp",
+                hasan_pass_at_1=HASAN_REPORTED_PASS_AT_1)
+
+    def _write_legacy_3b(dest: Path | None, mirror: bool) -> None:
+        _write_both(HUMANEVAL, SLUG_3B, "Table 3B — HumanEval (164 tasks, n=10)", "3b",
+                    merged_caption=r"HumanEval (164 tasks, $n{=}10$), all three models.",
+                    merged_label="3b_humaneval", dest=dest, mirror=mirror)
+
+    if args.humaneval_table == "regen":
+        st = _load_stage_module()
+        groups = st.build_groups(args.humaneval_regen_root or st.RESULTS_ROOT)
+        _emit(SLUG_3B, st.render_paper_md(groups), st.render_paper_tex(groups))
+    elif args.allow_legacy_paper_overwrite:
+        print("WARNING: --humaneval-table legacy --allow-legacy-paper-overwrite: writing the OLD Table II as "
+              f"{SLUG_3B}.* and mirroring it into {paper_dir} (replaces the regenerated Table II).", file=sys.stderr)
+        _write_legacy_3b(dest=None, mirror=True)
+    else:
+        legacy_dir = out_dir / LEGACY_SUBDIR
+        print(f"WARNING: --humaneval-table legacy: the OLD Table II goes to {legacy_dir}/ only; {SLUG_3B}.* in "
+              f"{out_dir} and {paper_dir} are left untouched. Pass --allow-legacy-paper-overwrite to replace them.",
+              file=sys.stderr)
+        _write_legacy_3b(dest=legacy_dir, mirror=False)
+
     _write_both(SMALL_MODELS_2507, "table_3c_small_models_2507", "Table 3C — Small-model MBPP vs Hasan et al. arXiv:2507.03160 baseline", "3c")
     _write_both(APPS_RENYI, "table_5a_apps_renyi", "Table 5A — APPS-252 (ATCODER-interview, n=10, thinking-ON)", "5a")
-    _write_both(MBPP_APPENDIX, "table_a1_mbpp_appendix", "Table A1 — MBPP appendix (additional base/instruct models)", "a1")
-    _write_both(HUMANEVAL_APPENDIX, "table_a2_humaneval_appendix", "Table A2 — HumanEval appendix (additional base/instruct models)", "a2")
+    # A1/A2 captions and \hspace on the group headers: the user's Overleaf edit (paper repo 01bce0a, 2026-11-08).
+    _write_both(MBPP_APPENDIX, "table_a1_mbpp_appendix", "Table A1 — MBPP appendix (additional base/instruct models)", "a1",
+                merged_caption=r"pass@$k$, cov@$\tau$ and CodeBLEU diversity on MBPP --- Additional models",
+                commented_caption=r"MBPP-full (500 tasks, \texorpdfstring{$n{=}10$}{n=10}), additional models.",
+                group_hspace_mm=-1.5,
+                merged_label="a1_mbpp", placement="H")  # H (needs \usepackage{float}): keep after the Appendix B heading
+    _write_both(HUMANEVAL_APPENDIX, "table_a2_humaneval_appendix", "Table A2 — HumanEval appendix (additional base/instruct models)", "a2",
+                merged_caption=r"pass@$k$, cov@$\tau$ and CodeBLEU diversity on HumanEval --- Additional models",
+                commented_caption=r"HumanEval (164 tasks, $n{=}10$), additional models.",
+                group_hspace_mm=-1.5,
+                merged_label="a2_humaneval", placement="H")
     _write_both(APPS_RENYI_CF748_QWEN, "table_a3_cf748_qwen", "Table A3 — Qwen3-8B APPS-CODEFORCES-748 robustness check (n=10, thinking-ON)", "a3")
 
-
-    # Mirror .tex + .md tables into sibling paper repo (Overleaf-linked) if it exists.
-    # .tex is what main.tex \input's; .md is kept for repo-side markdown viewing.
-    if TABLES_DIR_PAPER.exists():
-        n = 0
-        for src in list(TABLES_DIR.glob("*.tex")) + list(TABLES_DIR.glob("*.md")):
-            (TABLES_DIR_PAPER / src.name).write_text(src.read_text())
+    # Mirror the .tex + .md tables written by THIS run into the sibling paper repo (Overleaf-linked) if it
+    # exists. .tex is what main.tex \input's; .md is kept for repo-side markdown viewing.
+    # mirror_only: restrict the copy to these slugs. Without it, every table written above is copied EXCEPT
+    # OVERLEAF_EDITED (hand-edited in Overleaf; copying would revert those edits).
+    if paper_dir.exists():
+        n, skipped = 0, set()
+        forced = sorted(set(mirror_only or ()) & set(OVERLEAF_EDITED))
+        if forced:
+            print(f"WARNING: overwriting Overleaf-edited paper table(s) because --mirror-only named them: "
+                  f"{', '.join(forced)} (their Overleaf edits will be lost)", file=sys.stderr)
+        for src in mirrorable:
+            if mirror_only is not None:
+                if src.stem not in mirror_only:
+                    continue
+            elif src.stem in OVERLEAF_EDITED:
+                skipped.add(src.stem)
+                continue
+            (paper_dir / src.name).write_bytes(src.read_bytes())
             n += 1
-        print(f"mirrored {n} table files to {TABLES_DIR_PAPER}", file=sys.stderr)
+        if skipped:
+            print(f"WARNING: not mirrored (Overleaf-edited in the paper repo; name them in --mirror-only to "
+                  f"overwrite): {', '.join(sorted(skipped))}", file=sys.stderr)
+        print(f"mirrored {n} table files to {paper_dir}", file=sys.stderr)
 
-    print(f"Wrote {len(MBPP) + len(HUMANEVAL) + len(SMALL_MODELS_2507) + len(APPS_RENYI) + len(MBPP_APPENDIX) + len(HUMANEVAL_APPENDIX) + len(APPS_RENYI_CF748_QWEN)} per-model sections across 7 md + 7 tex files in {TABLES_DIR.relative_to(REPO_ROOT)}/", file=sys.stderr)
+    print(f"Wrote {len(written)} table files under {out_dir}/ (Table II: {args.humaneval_table})", file=sys.stderr)
 
 
 if __name__ == "__main__":
