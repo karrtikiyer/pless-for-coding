@@ -13,6 +13,12 @@
 #   ./run_regen_humaneval_8models.sh diag           # greedy diagnostics, models 1-3, 164 tasks, writes
 #                                                   results/humaneval_regen_2026_11_diag: HF greedy (greedy_hf.jsonl)
 #                                                   and vLLM greedy on prompt.strip() (greedy__prompt_stripped.jsonl)
+#   PROMPT_VARIANT=stripped ./run_regen_humaneval_8models.sh extra [IDS..]
+#                                                   extra comparison configs (NOT for the paper; user request
+#                                                   2026-11-08): p-less / p-less-norm at T=1.0 and T=0.6
+#                                                   (regen.EXTRA_CONFIGS), one vLLM process per model, resumable;
+#                                                   default all eight models in order; writes
+#                                                   results/humaneval_regen_2026_11_stripped_extra
 #
 # PROMPT_VARIANT=stripped (smoke / smoke-rerun / fit / small / large; user decision 2026-11-07, run log):
 #   prompt.strip() (BigCode task `humaneval`) for the raw-prompted models; chat models keep their chat template
@@ -98,11 +104,20 @@ case "${1:-}" in
       run "$m" "$(vllm_configs "$m")" "$ROOT" --resume $va
       run "$m" "beam4" "$ROOT" --resume $va
     done ;;
+  extra)   # companion of the stripped main run: same settings, only the temperature of p-less / p-less-norm differs
+    [[ "$PROMPT_VARIANT" == stripped ]] || { echo "extra runs with the stripped protocol only; set PROMPT_VARIANT=stripped"; exit 2; }
+    shift; models=("$@"); [[ ${#models[@]} -eq 0 ]] && models=("${SMALL[@]}" "${LARGE[@]}")
+    for m in "${models[@]}"; do [[ "$m" == meta-llama/* ]] && require_hf_login; done
+    cfgs=$("$PY" -c "from bench.humaneval.regen import EXTRA_CONFIGS; print(','.join(EXTRA_CONFIGS))")
+    for m in "${models[@]}"; do
+      va=$(variant_args "$m")
+      run "$m" "$cfgs" "${ROOT}_extra" --resume $va
+    done ;;
   diag)   # (a) backend effect: HF greedy, unstripped prompt; (b) prompt effect: vLLM greedy, stripped prompt
     [[ "$PROMPT_VARIANT" == unstripped ]] || { echo "diag fixes its own prompt variants; unset PROMPT_VARIANT"; exit 2; }
     for m in "${SMALL[@]}"; do
       run "$m" "greedy_hf" "results/humaneval_regen_2026_11_diag" --resume
       run "$m" "greedy" "results/humaneval_regen_2026_11_diag" --prompt-variant stripped --resume
     done ;;
-  *) sed -n '2,24p' "$0"; exit 2 ;;
+  *) sed -n '2,30p' "$0"; exit 2 ;;
 esac

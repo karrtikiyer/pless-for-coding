@@ -27,6 +27,11 @@ Diagnostics (not part of the default config sets; see run_regen_humaneval_8model
 Stripped-prompt protocol (user decision 2026-11-07, run log): ``PROMPT_VARIANT=stripped
 ./run_regen_humaneval_8models.sh <mode>`` passes ``--prompt-variant stripped`` to the raw-prompted models only
 (``prompt_variant_args``) and writes to ``results/humaneval_regen_2026_11_stripped*``.
+
+Extra comparison configs (user request 2026-11-08, NOT for the paper): ``EXTRA_CONFIGS`` (p-less / p-less-norm
+at T=1.0 and T=0.6, otherwise identical to ``pless_t0.7`` / ``pless_norm_t0.7``). Never in a default set; only
+accepted with an ``*_extra`` out-root. ``PROMPT_VARIANT=stripped ./run_regen_humaneval_8models.sh extra [IDS...]``
+writes them to ``results/humaneval_regen_2026_11_stripped_extra``.
 """
 from __future__ import annotations
 
@@ -102,10 +107,18 @@ CONFIGS = {
     "top_p0.95_t0.2":  Config("vllm", "top_p", 10, 0.2, 0.95),   # Hasan et al.'s configuration
     # Diagnostic only: HF greedy through the beam4 code path (generate(num_beams=1, do_sample=False)).
     "greedy_hf":       Config("hf", "greedy", 1, 0.0, num_beams=1),
+    # Extra comparison configs (user request 2026-11-08, NOT for the paper): identical to pless_t0.7 /
+    # pless_norm_t0.7 except temperature. Written only to an ``*_extra`` root (check_configs_for_root).
+    "pless_t1.0":      Config("vllm", "pless", 10, 1.0, sampler="pless"),
+    "pless_norm_t1.0": Config("vllm", "pless_norm", 10, 1.0, sampler="pless_norm"),
+    "pless_t0.6":      Config("vllm", "pless", 10, 0.6, sampler="pless"),
+    "pless_norm_t0.6": Config("vllm", "pless_norm", 10, 0.6, sampler="pless_norm"),
 }
 COMMON_CONFIGS = ["greedy", "temp_t0.7", "top_p0.9_t1.0", "pless_t0.7", "pless_norm_t0.7", "beam4"]
 HASAN_CONFIGS = ["top_p0.95_t0.2"]
 DIAG_CONFIGS = ["greedy_hf"]   # accepted via --configs, never in the default (small / large) sets
+EXTRA_CONFIGS = ["pless_t1.0", "pless_norm_t1.0", "pless_t0.6", "pless_norm_t0.6"]   # `extra` mode only
+EXTRA_ROOT_SUFFIX = "_extra"
 
 
 def configs_for(model_id: str) -> list[str]:
@@ -114,8 +127,24 @@ def configs_for(model_id: str) -> list[str]:
 
 
 def allowed_configs(model_id: str) -> list[str]:
-    """Configs accepted by ``--configs``: the plan's configs plus the diagnostic ones."""
-    return configs_for(model_id) + DIAG_CONFIGS
+    """Configs accepted by ``--configs``: the plan's configs plus the diagnostic and extra ones."""
+    return configs_for(model_id) + DIAG_CONFIGS + EXTRA_CONFIGS
+
+
+def check_configs_for_root(names: list[str], out_root: Path) -> None:
+    """Keep the extra comparison configs out of the paper roots, and only them in an ``*_extra`` root.
+
+    SystemExit if an extra config targets a root whose name does not end in ``_extra``, or if a non-extra
+    config targets an ``*_extra`` root."""
+    is_extra_root = Path(out_root).name.endswith(EXTRA_ROOT_SUFFIX)
+    extra = [n for n in names if n in EXTRA_CONFIGS]
+    other = [n for n in names if n not in EXTRA_CONFIGS]
+    if extra and not is_extra_root:
+        raise SystemExit(f"configs {extra} are extra comparison configs; write them to a *{EXTRA_ROOT_SUFFIX} root "
+                         f"(run_regen_humaneval_8models.sh extra), not {out_root}")
+    if other and is_extra_root:
+        raise SystemExit(f"the *{EXTRA_ROOT_SUFFIX} root {out_root} holds only the extra configs {EXTRA_CONFIGS}; "
+                         f"got {other}")
 
 
 def resolve_configs(model_id: str, configs_arg: str | None) -> tuple[list[str], str]:
@@ -508,6 +537,7 @@ def main(argv=None) -> None:
     _check_out_root(args.out_root)
     spec = get_model(args.model)
     names, backend = resolve_configs(args.model, args.configs)
+    check_configs_for_root(names, args.out_root)
     variant = args.prompt_variant
     try:
         apply_prompt_variant("", spec.prompt_style, variant)   # refuse e.g. stripped + chat before loading anything

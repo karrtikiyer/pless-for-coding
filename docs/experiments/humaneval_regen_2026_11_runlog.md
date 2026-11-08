@@ -65,7 +65,10 @@ after a context loss. Every entry carries an IST timestamp. Append to the log; d
 | 3 Smoke test | DONE | smoke3 + rerun: `HARD CHECKS: PASS`; official cross-check 330/330 and 600/600 agree |
 | — Regression check of `generator_vllm.py` | DONE | `395ea36`: old (`eda858c`) vs new, both venvs, `compared 12 calls x 4 samples: IDENTICAL` |
 | 4 Budget gate | DONE | user: "no need of any time budget"; estimate from smoke2 about 1h35 for the 3 small models |
-| 5 Full runs, small models | DONE | 20:00:38 → 22:13:35 IST 2026-11-06; 21 files × 164 lines |
+| 5 Full runs, small models | DONE, then SUPERSEDED by A1 | Unstripped 2026-11-06 (kept, out of tables). Stripped: MSI 2026-11-07 16:57 → 19:07 IST |
+| 5b Stripped full runs, 7B (GPU2) | DONE | 2026-11-07 18:19 → 20:47 IST; 31 files |
+| 7 Final grading + validation | DONE | Final pass 21:20–21:45 IST; results-validator: safe for Table II |
+| 8 Table II rebuild (staging) → user review | NEXT | No paper edits until the user's review |
 | 6 7B fit test → full runs | TODO | needs the user's HF login on the MSI for both Llama-2 models; Qwen2.5-Coder-7B-Instruct last (15.2 GB bf16, likely does not fit 16 GB) |
 | 7 Evaluate locally + results-validator | TODO | |
 | 8 Write-up (Table II, paper text) | TODO | user edits `main.tex` on Overleaf; give exact text/lines |
@@ -516,6 +519,131 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
   - The lock fix is done (research-coder: 5 new tests, all failing on HEAD; 87 targeted and 946 full tests pass).
     Code-reviewer running. Don't `git pull` on GPU2 until the fit loop finishes, since its `bash -c` loop
     re-invokes the script per model.
+- **2026-11-07**: Lock fix reviewed (no blockers, no should-fix; nits only: file mode, `--configs` dedupe,
+  dir fsync). Committed `8919d00`, pushed.
+- **2026-11-07 18:18:11 IST: 7B fit tests DONE**, 5/5 models, 0 tracebacks.
+  - Smoke checker on `results/humaneval_regen_2026_11_stripped_fit`: **HARD CHECKS: PASS**.
+  - All raw-prompted 7B stripped starts are new-line with a 4-space body: 5/5 per file, 0 `"""`-line, 0 empty.
+    CodeLlama-7b-hf is at 100%, so the old 3-space bug is not back.
+  - s/task (greedy / beam4):
+
+    | model | greedy | beam4 |
+    |---|---|---|
+    | Qwen-7B | 0.5 | 2.1 |
+    | CodeLlama-7b-hf | 0.4 | 1.2 |
+    | CodeLlama-7b-Instruct | 1.1 | 1.8 |
+    | Llama-2-7b-hf | 4.2 (2/5 at cap) | 6.6 |
+    | Llama-2-7b-chat | 0.8 | 1.6 |
+
+- **2026-11-07 18:19:51 IST: FULL 7B QUEUES STARTED on GPU2** (code `8919d00`, `PROMPT_VARIANT=stripped`).
+  - GPU0: Qwen2.5-Coder-7B → CodeLlama-7b-hf → Llama-2-7b-hf.
+  - GPU1: CodeLlama-7b-Instruct → Llama-2-7b-chat.
+  - Markers: `logs/regen_stripped_large_gpu{0,1}.done/.failed`. Disk free 52 GB after the model downloads.
+  - Time estimate [guess]: GPU0 about 3 h (Llama-2-7b-hf dominates), GPU1 about 1 h.
+    - Basis: fit s/task above × 164 tasks, with sampled n=10 configs assumed at 2–3× greedy s/task (the MSI
+      small run showed about 2×).
+    - Range 2–5 h.
+- **2026-11-07 19:07:00 IST: STRIPPED SMALL RUN DONE (MSI)**: 21 files × 164 lines, 3444 total, 0 tracebacks;
+  about 2 h 10 min.
+  - Copy + integrity handed to data-wrangler. The MSI MANIFEST/README are saved locally as `MANIFEST.msi.json` /
+    `README.msi.md`, because GPU2 writes a root with the same name.
+  - Grading waits for the single final pass after GPU2 finishes (grading-load protocol).
+- **2026-11-07**: Small stripped copy **DONE** (data-wrangler).
+  - 23 sha256 match; 3444 rows before and after. All integrity checks pass: prompt_variant stripped everywhere,
+    task_prompt == `.strip()` 164/164, versions identical across 21 files (`c8994d0`, not dirty).
+  - **Main session re-ran the smoke checker: HARD CHECKS: PASS.** 4sp 100% everywhere, 0 nl-other.
+    - `"""`-line continuations: Q1.5B 1–17 per file, Q3B 8–80, OCI 0.
+    - Empty samples: up to 98/1640 (Q3B top_p0.9 T1.0), 66 (Q1.5B top_p0.9), 37 (OCI top_p0.9); more at higher T.
+  - pless ≡ pless_norm raw samples: Q1.5B 164/164 tasks, Q3B 164/164, OCI 162/164.
+  - Diag vs full run (same prompt and seed): greedy identical 164/164 ×3. top_p0.95_t0.2 is identical for OCI
+    (1640/1640) but not for the Qwen models (1394/1640, 1371/1640).
+    - Cause unverified. Candidates: engine state from the earlier configs in the same process (e.g. prefix
+      caching) or batch-shape numerics (no batch invariance on cc 8.9).
+    - Not a validity issue: same decoder and seed, different draws. But **do not claim bit-reproducibility across
+      different invocations** for sampled configs. Only "the same invocation rerun is identical" was tested
+      (smoke rerun).
+- **2026-11-07 20:47:57 IST: BOTH 7B QUEUES DONE (GPU2)**: 31 files × 164 lines (5084 total in GPU2's root),
+  0 tracebacks; about 2 h 28 min wall-clock (estimate was 2–5 h).
+  - **All 8 models are now generated.**
+  - Copy + integrity handed to data-wrangler. GPU2's MANIFEST/README are saved locally as `*.gpu2.*`.
+  - Next: the final grading pass (all 8 models, quiet machine) → official cross-check → results-validator.
+- **2026-11-07**: 7B copy **DONE** (data-wrangler).
+  - 31 sha256 match; 5084 rows before and after. All integrity checks pass, including one BOS for the chat models.
+    Versions are identical across the 31 files (`8919d00`, not dirty).
+  - vs the MSI: identical except **Python 3.12.3 (GPU2) vs 3.12.14 (MSI)**. vllm/torch/transformers/datasets/cuda/env
+    are identical. No effect on generation expected; disclose.
+  - Smoke checker on the 5 models, run on GPU2 (the gated Llama-2 tokenizers need the HF login; the checker doesn't use
+    bench.eval):
+    - 4sp 100% on every raw-prompted file; 0 `"""`-line for CodeLlama/Llama-2;
+    - Qwen-7B empty samples up to 177/1640 (top_p0.9 T1.0) and `"""`-line up to 41.
+  - **Hard-check failure WAIVED (documented):** "vLLM text differs from reference" on 9 samples (CodeLlama-7b-hf pless/pless_norm
+    1+1; Llama-2-7b-hf pless/pless_norm 3+3, temp 1).
+    - Main session inspected all 9: finish_reason `length` at 512 tokens, **no stop sequence anywhere in the text** (cut == raw),
+      text ending mid-CJK.
+    - So vLLM's stop strings had nothing to act on. The mismatch is [Likely] a multi-byte character cut at the token cap,
+      decoded differently by vLLM and HF. At most 1 sample per 1640 per file; runaway completions.
+  - Also noted for the analysis: at-cap counts are high for p-less on Llama-2-7b-hf (253/1640) and CodeLlama-7b-hf (120/1640)
+    vs temp (52, 34).
+  - pless ≡ pless_norm: 1640/1640 on four models; Llama-2-7b-hf 1639/1640.
+- **2026-11-07 20:58 IST**: Final grading pass **waiting for a quiet machine**: load 6.0; another session's Ministral
+  LiveCodeBench `bench.eval` series holds `/tmp/pless_cpu_heavy.lock`. A background watcher fires after 3
+  consecutive minutes with no `bench.eval` process and 1-min load < 2.
+- **2026-11-07 21:20:02 IST**: Quiet (the user stopped the Ministral evals). Load 1.63 / 2.48 / 3.74.
+  - **FINAL GRADING PASS started** (experiment-harness): 52 files, one at a time via the `bench.eval` CLI,
+    official grader, `--skip-structural-diversity`, no cache.
+  - Load logged per model; the pass pauses if foreign load is above 3. Then the cross-check per model.
+  - Tables are staged at `results/humaneval_regen_2026_11_stripped/analysis/final_pass_tables.md` (not paper).
+  - Correction: the earlier "59 files" mentioned to the user also counted diag files; the reported set is 52.
+- **2026-11-07 21:45 IST: FINAL GRADING PASS DONE** (experiment-harness; commit `8919d00`).
+  - 52/52 graded: num_tasks 164, grader `humaneval-official-v1`, timeout 3.0 s, cb_div hashseed 0.
+  - Official cross-check 400/400 agree for each of the 8 models.
+  - Load:
+    - 2.43 at the start: slightly above the "about 2" target, below the pause threshold 3, no foreign `bench.eval`;
+    - 4.3–5.8 during grading, all from this pass's own 4 workers (WindowServer about 42% of a core was the only
+      foreign process).
+  - Timeouts above 1% (4 files: CL-Instruct beam4 2/164, CL-hf top_p0.9 19/1640, L2-chat beam4 3/164, L2-hf top_p0.9
+    26/1640). All 50 timed-out programs, re-run one at a time with a 20 s limit, time out again (13 have a literal
+    `while True`). They are genuinely non-terminating, not load-induced.
+  - Tables are staged at `results/humaneval_regen_2026_11_stripped/analysis/final_pass_tables.md`. Main session
+    spot-checked 9 pass@1 values from the metrics JSONs: all match.
+  - Hasan models, our top_p0.95_t0.2 stripped vs Hasan: OCI 61.40 vs .59; Q1.5B 43.54 vs .44; Q3B 51.34 vs .51; Q7B 61.16 vs .62.
+  - pless ≡ pless_norm per-task pass_results in all 8 models.
+  - **NOT VALIDATED yet**: results-validator running.
+- **2026-11-07: FINAL RESULTS VALIDATED (results-validator): "safe to build Table II: yes".**
+  - All 52 metrics recomputed (0 mismatches). Independent re-execution 315/320 agree; the 5 differences are
+    CodeLlama-Instruct samples repaired by the pre-registered indent fix.
+  - Paired comparisons + sign tests: `results/humaneval_regen_2026_11_stripped/analysis/validated_comparisons.md`
+    (staging). Main session re-checked 2 cells.
+  - p-less-norm was validated separately: per-task results identical to p-less in all 8 models.
+  - Disclosures needed: OCI +2.4 pp vs Hasan (unexplained); the CodeLlama-Instruct indent repair is uneven across
+    configs; p-less ≈ greedy on the chat models; some bootstrap-significant gains are not sign-test supported;
+    hardware split; Python patch versions; Amendment A1.
+  - Scripts were preserved from /tmp into `analysis/validator_scripts/` and `analysis/grading_scripts/` (results/,
+    not committed).
+  - **Next: Table II rebuild into STAGING** (research-coder + code-reviewer), then the user's final review. No paper
+    edits until then.
+- **2026-11-08**: User asked for two things.
+  1. **Table II rebuild in staging.** A new script, `scripts/paper/stage_humaneval_regen_table.py`, writes only into
+     `results/humaneval_regen_2026_11_stripped/analysis/table_ii_staging{,_nodash}.{md,tex}`.
+     - It covers 8 models × 7 configs (p-less-norm as its own row) and the columns pass@1/3/5/10, cov@0.3/0.7, cb_div.
+     - n=1 cells come in both renderings. The caption is a draft.
+     - The existing paper scripts are not run or modified.
+  2. **Extra comparison configs, NOT for the paper:** p-less and p-less-norm at T=1.0 and T=0.6, all 8 models.
+     - Everything else is identical: stripped/chat prompt rules, seed 42, n=10, 512, stop list, the same machines (small → MSI,
+       7B → GPU2 two queues, Llama last).
+     - New mode `extra`, root `results/humaneval_regen_2026_11_stripped_extra/`.
+     - Estimate [Likely]: about 65 min on the MSI, about 35–45 min on GPU2.
+
+  Both code changes are with research-coders in parallel (separate files); code-reviewer next.
+- **2026-11-08: Table II STAGED** (`results/humaneval_regen_2026_11_stripped/analysis/table_ii_staging{,_nodash}.{md,tex}`).
+  - Code-reviewer: **0/1456 cell mismatches** vs independent recomputation; both .tex compile (tectonic, IEEEtran);
+    guards OK.
+  - Should-fix applied: the caption no longer claims n=10 for greedy/beam.
+  - Notes for the user's review:
+    - p-less-norm rows equal p-less in all 8 models; this needs one sentence in the caption or text;
+    - the group headers use `\hspace{-1.5mm}` to match Table I;
+    - nodash cb_div 0.0000 for n=1 reads as "zero diversity".
+  - Script committed; outputs not committed (results/). **Awaiting the user's review; no paper edits.**
 - **2026-11-07**: AI-use acknowledgment (D15 item 6):
   - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
     subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).

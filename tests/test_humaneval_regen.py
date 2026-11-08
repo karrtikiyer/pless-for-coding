@@ -45,7 +45,7 @@ def test_unknown_model_is_rejected():
 def test_config_table():
     c = regen.CONFIGS
     assert set(c) == {"greedy", "beam4", "temp_t0.7", "top_p0.9_t1.0", "pless_t0.7", "pless_norm_t0.7", "top_p0.95_t0.2",
-                      "greedy_hf"}
+                      "greedy_hf", "pless_t1.0", "pless_norm_t1.0", "pless_t0.6", "pless_norm_t0.6"}
     assert (c["greedy"].backend, c["greedy"].n, c["greedy"].temperature) == ("vllm", 1, 0.0)
     g = c["greedy_hf"]
     assert (g.backend, g.method, g.n, g.temperature, g.num_beams, g.sampler) == ("hf", "greedy", 1, 0.0, 1, None)
@@ -851,3 +851,109 @@ def test_second_queue_on_the_same_output_exits_before_loading(tmp_path):
     assert p.returncode not in (0, 97), p.stdout + p.stderr
     assert "already being generated" in p.stderr and str(out) in p.stderr, p.stderr
     assert not (root / "MANIFEST.json").exists()   # nothing written before refusing
+
+
+# ---------- extra comparison configs (user request 2026-11-08; NOT for the paper) ----------
+
+EXTRA = ["pless_t1.0", "pless_norm_t1.0", "pless_t0.6", "pless_norm_t0.6"]
+EXTRA_ROOT = "results/humaneval_regen_2026_11_stripped_extra"
+ALL_IDS = [m.model_id for m in regen.MODELS]
+
+
+def test_extra_configs_equal_the_t07_ones_except_temperature():
+    from dataclasses import replace
+    assert regen.EXTRA_CONFIGS == EXTRA
+    for name, ref, t in [("pless_t1.0", "pless_t0.7", 1.0), ("pless_norm_t1.0", "pless_norm_t0.7", 1.0),
+                         ("pless_t0.6", "pless_t0.7", 0.6), ("pless_norm_t0.6", "pless_norm_t0.7", 0.6)]:
+        assert regen.CONFIGS[name] == replace(regen.CONFIGS[ref], temperature=t), name
+        assert regen.CONFIGS[name].temperature == t and regen.CONFIGS[name].backend == "vllm"
+
+
+@pytest.mark.parametrize("name", EXTRA)
+def test_extra_configs_dispatch_like_pless(fake, name):
+    regen.generate(regen.CONFIGS[name], "e", "t", [1], style="base", seed=42, max_new_tokens=512)
+    (kind, _, kw), = fake.calls
+    assert kind == "pless"
+    assert (kw["sampler_name"], kw["n_samples"], kw["seed"], kw["max_new_tokens"]) == \
+        (name.rsplit("_t", 1)[0], 10, 42, 512)
+    assert kw["temperature"] == float(name.rsplit("_t", 1)[1])
+    assert kw["stop_strings"] == BIGCODE_HUMANEVAL_STOP_SEQUENCES
+
+
+def test_extra_configs_are_outside_every_default_set():
+    for m in ALL_IDS:
+        assert not set(EXTRA) & set(regen.configs_for(m)), m
+        assert set(EXTRA) <= set(regen.allowed_configs(m)), m
+        assert regen.resolve_configs(m, ",".join(EXTRA)) == (EXTRA, "vllm")
+    assert not set(EXTRA) & set(regen.DIAG_CONFIGS)
+
+
+def test_extra_configs_only_go_to_an_extra_root():
+    from pathlib import Path
+    regen._check_out_root(Path(EXTRA_ROOT))
+    assert EXTRA_ROOT != "results/humaneval_regen_2026_11_stripped"
+    regen.check_configs_for_root(EXTRA, Path(EXTRA_ROOT))
+    for bad in ["results/humaneval_regen_2026_11_stripped", "results/humaneval_regen_2026_11",
+                "results/humaneval_regen_2026_11_stripped_smoke", "results/humaneval_regen_2026_11_diag"]:
+        with pytest.raises(SystemExit, match="extra"):
+            regen.check_configs_for_root(["pless_t1.0"], Path(bad))
+        with pytest.raises(SystemExit, match="extra"):   # one extra config in a mixed list is enough
+            regen.check_configs_for_root(["pless_t0.7", "pless_norm_t0.6"], Path(bad))
+        regen.check_configs_for_root(["greedy", "pless_t0.7"], Path(bad))   # default configs unaffected
+    with pytest.raises(SystemExit, match="extra"):   # and the extra root holds only the extra configs
+        regen.check_configs_for_root(["pless_t0.7"], Path(EXTRA_ROOT))
+
+
+def test_main_refuses_extra_configs_outside_the_extra_root_before_loading():
+    with pytest.raises(SystemExit, match="extra"):
+        regen.main(["--model", "Qwen/Qwen2.5-Coder-1.5B", "--configs", "pless_t1.0",
+                    "--out-root", "results/humaneval_regen_2026_11_stripped"])
+
+
+def test_extra_mode_default_runs_all_eight_models_in_order(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["extra"], STRIPPED)
+    assert rc == 0 and len(calls) == 8, out
+    assert [c.split()[1] for c in calls] == ALL_IDS
+    for c in calls:   # one vLLM invocation per model, resumable, extra configs only
+        assert c.split()[3] == ",".join(EXTRA)
+        assert f"--out-root {EXTRA_ROOT} --resume" in c
+        assert "beam4" not in c
+    for c, m in zip(calls, ALL_IDS):
+        flagged = c.endswith(" --prompt-variant stripped")
+        assert flagged == (m not in CHAT_IDS), c
+
+
+def test_extra_mode_commands_for_a_raw_and_a_chat_model(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["extra", "Qwen/Qwen2.5-Coder-7B", "meta-llama/Llama-2-7b-chat-hf"],
+                                 STRIPPED)
+    assert rc == 0, out
+    assert calls == [
+        f"--model Qwen/Qwen2.5-Coder-7B --configs {','.join(EXTRA)} --out-root {EXTRA_ROOT} --resume "
+        "--prompt-variant stripped",
+        f"--model meta-llama/Llama-2-7b-chat-hf --configs {','.join(EXTRA)} --out-root {EXTRA_ROOT} --resume",
+    ]
+    log_names = [ln for ln in out.splitlines() if "regen_humaneval_humaneval_regen_2026_11_stripped_extra_" in ln]
+    assert len(log_names) == 2, out   # the shared run() helper names the logs after the root
+
+
+def test_extra_mode_id_subset(tmp_path):
+    rc, calls, out = _run_script(tmp_path, ["extra", "m-a-p/OpenCodeInterpreter-DS-1.3B"], STRIPPED)
+    assert rc == 0, out
+    assert calls == [f"--model m-a-p/OpenCodeInterpreter-DS-1.3B --configs {','.join(EXTRA)} --out-root {EXTRA_ROOT} "
+                     "--resume --prompt-variant stripped"]
+
+
+def test_extra_mode_requires_the_stripped_protocol(tmp_path):
+    # The extra root is defined as the stripped run's companion; an unstripped extra run is not part of the request.
+    rc, calls, _ = _run_script(tmp_path, ["extra"])
+    assert rc != 0 and calls == []
+
+
+def test_default_modes_never_pass_the_extra_configs(tmp_path):
+    for args, env in [(["smoke"], None), (["small"], None), (["large"], None), (["diag"], None),
+                      (["fit", "codellama/CodeLlama-7b-hf"], None), (["smoke"], STRIPPED), (["small"], STRIPPED),
+                      (["large"], STRIPPED), (["fit", "codellama/CodeLlama-7b-hf"], STRIPPED)]:
+        rc, calls, out = _run_script(tmp_path, args, env)
+        assert rc == 0 and calls, out
+        assert not any(e in c.split()[3].split(",") for c in calls for e in EXTRA), (args, env)
+        assert not any("_extra" in c for c in calls), (args, env)
