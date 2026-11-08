@@ -44,6 +44,12 @@ def _mbpp_table_i() -> tuple[list[str], dict[str, list[str]]]:
             labels[models[-1]].append(line.strip().split(" & ")[0])
     return models, labels
 
+
+def _visible_tex(tex: str) -> str:
+    """The .tex without the invisible first-column width reference (\\phantom{...}), i.e. what can render."""
+    return (tex.replace(r"\phantom{" + st._tex_escape(st.WIDTH_REFERENCE_LABEL) + "}", "")
+               .replace(r"\rlap{Decoder}", "Decoder"))
+
 # config key -> (method, temperature, top_p, n)
 _META = {
     "greedy": ("greedy", 0.0, 1.0, 1),
@@ -126,11 +132,11 @@ def test_real_table_has_48_rows_and_no_top_p095():
     for na in (True, False):
         md = st.render_md(groups, na_single_sample=na)
         tex = st.render_tex(groups, na_single_sample=na)
-        assert "0.95" not in md and "0.95" not in tex
+        assert "0.95" not in md and "0.95" not in _visible_tex(tex)
         rows = [l for l in md.splitlines() if l.startswith("| ") and not l.startswith("| Decoder")
                 and not l.startswith("| *")]
         assert len(rows) == 48
-        assert sum(1 for l in tex.splitlines() if "&" in l and not l.startswith("Decoder")) == 48
+        assert sum(1 for l in _visible_tex(tex).splitlines() if "&" in l and not l.startswith("Decoder")) == 48
 
 
 def test_draft_caption_has_no_hasan_and_new_prompting_sentence(tmp_path):
@@ -140,7 +146,7 @@ def test_draft_caption_has_no_hasan_and_new_prompting_sentence(tmp_path):
     assert st.DRAFT_CAPTION.startswith(r"HumanEval (164 problems). Sampling decoders draw $n{=}10$ samples "
                                        r"per problem; greedy and beam@4 draw one.")
     tex = st.render_tex(st.build_groups(_make_fake_root(tmp_path)), na_single_sample=True)
-    assert "Hasan" not in tex
+    assert "Hasan" not in _visible_tex(tex)
 
 
 def test_filename_pattern_stripped_vs_chat():
@@ -303,7 +309,7 @@ def test_tex_style(tmp_path):
     assert "% DRAFT CAPTION — user to review" in tex
     assert r"\resizebox{\columnwidth}{!}{%" in tex
     assert r"\begin{tabular}{lrrrrrrr}" in tex
-    assert r"Decoder & pass@1 & pass@3 & pass@5 & pass@10 & cov@0.3 & cov@0.7 & cb\_div \\" in tex
+    assert r"Decoder & pass@1 & pass@3 & pass@5 & pass@10 & cov@0.3 & cov@0.7 & cb\_div \\" in _visible_tex(tex)
     assert r"\multicolumn{8}{l}{\hspace{-1.5mm}\textit{Llama-2-7b-chat-hf}} \\" in tex
     assert r"\multicolumn{8}{l}{\hspace{-1.5mm}\textit{CodeLlama-7b-hf}} \\" in tex
     assert r"\textbf" not in tex and "\\cellcolor" not in tex
@@ -360,3 +366,17 @@ def test_md_numbers_equal_metrics_json():
     d = j("m-a-p--OpenCodeInterpreter-DS-1.3B", "beam4__prompt_stripped_metrics.json")
     assert _row(md, "OpenCodeInterpreter-DS-1.3B", "beam@4")[cols.index("pass@1")] == \
         f"{100 * d['pass_at_k']['1']:.2f}%"
+
+
+def test_first_column_width_matches_mbpp_table_i(tmp_path):
+    """Same rendered font/row spacing as MBPP Table I (user, 2026-11-08): both tables go through
+    \\resizebox{\\columnwidth}{!}, so the scale factor depends on the tabular's natural width, which is set by the
+    widest first-column label. Table II pads its first column with an invisible copy of MBPP's widest label."""
+    _, mbpp_labels = _mbpp_table_i()
+    widest = max((l for ls in mbpp_labels.values() for l in ls), key=len)
+    assert st.WIDTH_REFERENCE_LABEL == widest
+    tex = st.render_tex(st.build_groups(REAL_ROOT), na_single_sample=False)
+    header = next(l for l in tex.splitlines() if l.startswith(r"\rlap{Decoder}"))
+    assert header.startswith(rf"\rlap{{Decoder}}\phantom{{{st._tex_escape(widest)}}} & ")
+    # every Table II label is no wider (in characters) than the reference, so the phantom sets the column width
+    assert all(len(c.label) <= len(widest) for c in st.CONFIGS)

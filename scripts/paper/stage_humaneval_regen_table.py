@@ -104,6 +104,10 @@ MODELS: list[Model] = [
     Model("Qwen2.5-Coder-7B", "Qwen--Qwen2.5-Coder-7B", "stripped", True),
 ]
 
+# Widest first-column label of the paper's MBPP Table I (tables/table_3a_mbpp.tex). Table II pads its first column
+# to this width so both tables get the same \resizebox scale factor, i.e. the same rendered font and row spacing.
+WIDTH_REFERENCE_LABEL = "top-p@0.95 with T=0.2 (Hasan)"
+
 CONFIGS: list[Config] = [
     Config("greedy", "greedy", "greedy", 0.0, 1.0, 1),
     Config("beam4", "beam@4", "beam4", 1.0, 1.0, 1),
@@ -227,7 +231,10 @@ def render_tex(groups: list[Group], *, na_single_sample: bool, provenance: str |
         r"\resizebox{\columnwidth}{!}{%",
         rf"\begin{{tabular}}{{l{'r' * len(PAPER_COLUMNS)}}}",
         r"\toprule",
-        " & ".join(["Decoder"] + [_TEX_HEADER[c] for c in PAPER_COLUMNS]) + r" \\",
+        # First-column width pinned to MBPP Table I's widest label, so \resizebox scales both tables by the same
+        # factor (same font size and row spacing). \rlap has zero width; the \phantom sets the width.
+        " & ".join([rf"\rlap{{Decoder}}\phantom{{{_tex_escape(WIDTH_REFERENCE_LABEL)}}}"]
+                   + [_TEX_HEADER[c] for c in PAPER_COLUMNS]) + r" \\",
         r"\midrule",
         *body,
         r"\bottomrule",

@@ -644,6 +644,82 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
     - the group headers use `\hspace{-1.5mm}` to match Table I;
     - nodash cb_div 0.0000 for n=1 reads as "zero diversity".
   - Script committed; outputs not committed (results/). **Awaiting the user's review; no paper edits.**
+- **2026-11-08**: Extra-config change reviewed (safe; differs from T=0.7 only in temperature; defaults unchanged).
+  Committed `7a6b852`.
+  - **MSI `extra` (OCI, Q1.5B, Q3B) started 06:03:21 IST; DONE before 09:06 IST**: 12 files × 164. Copy handed to
+    data-wrangler (`MANIFEST.msi.json`).
+  - GPU2 launch failed at 06:03: the local 1Password SSH agent offered no identities (locked). Nothing changed on
+    GPU2. **The user unlocked it; GPU2 `extra` started 09:06:17 IST** (GPU0: Qwen-7B → CodeLlama-7b → Llama-2-7b;
+    GPU1: CodeLlama-7b-Instruct → Llama-2-7b-chat). Markers: `logs/regen_extra_gpu{0,1}.done/.failed`.
+  - Note: GPU2 SSH goes through the 1Password agent (`IdentityAgent` in `~/.ssh/config`). If it's locked,
+    connections fail with "signing failed … communication with agent failed".
+- **2026-11-08**: MSI extra copy **DONE** (data-wrangler).
+  - 14 sha256 match; 1968 rows before and after. Integrity OK (`7a6b852`). HARD CHECKS: PASS.
+  - **p-less vs p-less-norm are NOT identical at T=1.0.** Byte-identical tasks:
+    - Q1.5B: **100/164** at T=1.0 vs 164 at T=0.6 and T=0.7;
+    - Q3B: **82/164** at T=1.0 vs 164 at T=0.6 and T=0.7;
+    - OCI: 162/164 at all T.
+  - [Likely] Mechanism: a flatter distribution at T=1.0 puts more tokens inside the ≤(1−L)/(|V|−1) gap between the two
+    cutoffs, and one differing token changes the rest of the sample.
+  - This confirms the user's rule: always treat p-less-norm as its own config
+    ([[feedback_never_drop_configs_from_tables]]).
+  - Empty samples: Q3B 23/27 (p-less / norm) at T=1.0, 9 at T=0.6; Q1.5B 15–16.
+- **2026-11-08 10:43:03 IST: GPU2 extra DONE**: 20 files × 164 (3280 rows), 0 tracebacks; about 1 h 37 min (the estimate
+  of 35–45 min was too low). Copy handed to data-wrangler (`MANIFEST.gpu2.json`). Then one grading pass for all
+  32 extra files, on a quiet machine.
+- **2026-11-08**: GPU2 extra copy **DONE** (data-wrangler).
+  - 22 sha256 match; 3280 rows before and after. Integrity OK (`7a6b852`).
+  - p-less vs p-less-norm byte-identical tasks (T=1.0 / T=0.6): Q7B 164/164, CL-hf 163/164, L2-hf 162/163, CL-Inst 164/164,
+    L2-chat 164/164.
+  - Smoke checker (on GPU2): FAIL only on 8 samples with the known waivable signature (512 cap, no stop sequence,
+    cut == raw). **Waived**, as on 2026-11-07. 4sp 100%.
+  - at-cap: L2-hf 212–272/1640, CL-hf 102–124. Empty: Q7B 10–14.
+- **2026-11-08 10:47 IST**: Quiet (load 1.76, no bench.eval; the lock file only shows a stale label). **Extra grading
+  pass started** (experiment-harness). Output: `results/humaneval_regen_2026_11_stripped_extra/analysis/extra_pass_tables.md`.
+- **2026-11-08 11:11 IST: extra grading DONE.**
+  - 32/32: 164 tasks, official grader, hashseed 0. Max timeout 0.85%. Cross-check 400/400 ×8.
+  - Load 2.50 at the start (above the ~2 target, below 3, no foreign eval); 4.4–6.1 during, from our own workers.
+  - Per-task pass_results identical p-less vs p-less-norm: 164/164 at T=0.6 and T=0.7 for all 8 models; at T=1.0 all
+    except **Q1.5B 148** and **Q3B 142**.
+  - Main session spot-checked 6 cells (e.g. Q1.5B T1.0 p-less 44.15 vs norm 44.27 pass@1, 60.98 vs 62.80 pass@10;
+    Q7B T1.0 pass@10 77.44): all match.
+  - NOT VALIDATED yet; results-validator running (recompute, paired T and p-less vs norm comparisons).
+- **2026-11-08: extra results VALIDATED** ("trustworthy: yes"). Summary in
+  `results/humaneval_regen_2026_11_stripped_extra/analysis/validated_temperature_comparisons.md`; scripts saved from /tmp.
+  - T=1.0 vs T=0.7: pass@10 up on all 8 models (significant on most) and cb_div up on all 8, but **pass@1 not improved**
+    (Q7B −1.8 pp, sign p=0.037).
+  - p-less vs p-less-norm at T=1.0: no detectable difference anywhere.
+  - The chat models stay near-greedy at every T.
+  - 112 uncorrected tests, one seed: wording must be cautious.
+  - **Extra-config work DONE. Not for the paper unless the user decides otherwise.**
+- **2026-11-08: Table II reordered and put into the paper repo** (user: match the MBPP order, drop the Hasan config, update the paper
+  once the review passes).
+  - Staging script `e15b370`: MBPP model and config order and labels, Qwen2.5-Coder-7B last, 6 configs. Code-reviewer:
+    0/1344 cell mismatches; .tex compiles.
+  - Paper repo `tables/table_3b_humaneval.{tex,md}` ← the nodash variant (computed values for greedy/beam, as in MBPP
+    Table I), with staging/draft comments stripped and the body byte-identical. Caption "Performance of eight code models on
+    HumanEval (164 problems; n=10 samples for sampling decoders, one for greedy and beam)"; label unchanged.
+  - A temp-copy compile with tectonic builds: 7 pages, references start p.6. Not committed yet.
+  - **Stale (not edited):**
+    - main.tex HumanEval text: l.39/64 ranges, l.99 "7B-Instruct", l.119 "ten … experiments", l.121
+      p-less@0.6 / −7.87 pp;
+    - the code repo's `paper/llm4code/tables/table_3b_humaneval.*`;
+    - `make_llm4code_tables.py` would regenerate the OLD Table II if run.
+- **2026-11-08 ~12:12 IST: INCIDENT.** The research-coder fixing `make_llm4code_tables.py` ran the unmodified script against
+  the REAL output dirs, against its brief.
+  - The paper repo `tables/table_3b_humaneval.*` reverted to the old committed Table II. `table_3a_mbpp.*` was rewritten
+    but is byte-identical to HEAD.
+  - The code repo `paper/llm4code/tables/*` was rewritten by the same (current, uncommitted) script version.
+  - The agent was stopped. `make_llm4code_tables.py` itself is unedited (197-line uncommitted diff intact).
+  - Leftover untracked files: `tests/fixtures/make_llm4code_tables_prechange.py` (copy of the script) and
+    `tests/test_make_llm4code_tables_humaneval_mode.py` (unfinished).
+  - **The make_llm4code fix is NOT done.**
+- **2026-11-08: Table II font fix + restore.**
+  - Cause: both tables use `\resizebox{\columnwidth}{!}`. Table II's widest label (23 chars) is shorter than MBPP's
+    (`top-p@0.95 with T=0.2 (Hasan)`, 30), so it was scaled up: measured 5.573 pt vs 5.169 pt.
+  - Fix in the staging script: the header's first cell is `\rlap{Decoder}\phantom{<MBPP widest label>}`. Test-first; 23 tests.
+  - Measured after the fix: **both 5.169 pt** (pdfplumber, tectonic build in /tmp; still 7 pages). MBPP files untouched.
+  - Paper repo Table II restored from the new staging file (data rows identical). Code-reviewer pending.
 - **2026-11-07**: AI-use acknowledgment (D15 item 6):
   - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
     subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).
