@@ -17,7 +17,9 @@ it is filed under (fail loudly otherwise; no row is silently dropped).
 Style (column set, group-header rows, \\resizebox, label convention
 greedy / beam@4 / T@0.7 / "<decoder> with T=<T>") mirrors the paper's merged
 tables written by ``scripts/paper/make_llm4code_tables.py``; that script is
-NOT imported or run here.
+NOT imported or run here. Model order, display names and config order/labels
+match MBPP Table I (table_3a_mbpp.tex); the top-p@0.95 / T=0.2 (Hasan) rows are
+excluded unless ``INCLUDE_HASAN`` is set.
 
 Usage:
     uv run python scripts/paper/stage_humaneval_regen_table.py
@@ -61,11 +63,12 @@ CAPTION = (r"Performance of eight code models on HumanEval (164 problems; $n{=}1
            r"sampling decoders, one for greedy and beam)")
 DRAFT_CAPTION = (
     r"HumanEval (164 problems). Sampling decoders draw $n{=}10$ samples per problem; "
-    r"greedy and beam@4 draw one. The first six models are prompted with the raw "
-    r"(stripped) HumanEval prompt; CodeLlama-7B-Instruct and Llama-2-7B-Chat use their "
-    r"chat template. top-p@0.95 with T=0.2 is the configuration of Hasan et al.~\cite{hasan2025slm} "
-    r"and is run only for the four models they evaluated."
+    r"greedy and beam@4 draw one. CodeLlama-7b-Instruct-hf and Llama-2-7b-chat-hf use their "
+    r"chat template; all other models receive the raw (stripped) HumanEval prompt."
 )
+# The top-p@0.95 / T=0.2 config (Hasan et al.) is excluded from Table II for now
+# (user decision 2026-11-08). Set True to re-add it for the four models flagged hasan=True.
+INCLUDE_HASAN = False
 GROUP_HSPACE_MM = -1.5  # matches the Overleaf hand-edit of Table I (make_llm4code_tables.py)
 
 
@@ -88,15 +91,17 @@ class Config:
     hasan_only: bool = False
 
 
+# Order and display names follow MBPP Table I (table_3a_mbpp.tex); Qwen2.5-Coder-7B
+# (HumanEval only) is appended last.
 MODELS: list[Model] = [
+    Model("CodeLlama-7b-hf", "codellama--CodeLlama-7b-hf", "stripped", False),
+    Model("CodeLlama-7b-Instruct-hf", "codellama--CodeLlama-7b-Instruct-hf", "chat", False),
     Model("OpenCodeInterpreter-DS-1.3B", "m-a-p--OpenCodeInterpreter-DS-1.3B", "stripped", True),
+    Model("Llama-2-7b-hf", "meta-llama--Llama-2-7b-hf", "stripped", False),
+    Model("Llama-2-7b-chat-hf", "meta-llama--Llama-2-7b-chat-hf", "chat", False),
     Model("Qwen2.5-Coder-1.5B", "Qwen--Qwen2.5-Coder-1.5B", "stripped", True),
     Model("Qwen2.5-Coder-3B", "Qwen--Qwen2.5-Coder-3B", "stripped", True),
     Model("Qwen2.5-Coder-7B", "Qwen--Qwen2.5-Coder-7B", "stripped", True),
-    Model("CodeLlama-7B", "codellama--CodeLlama-7b-hf", "stripped", False),
-    Model("Llama-2-7B", "meta-llama--Llama-2-7b-hf", "stripped", False),
-    Model("CodeLlama-7B-Instruct", "codellama--CodeLlama-7b-Instruct-hf", "chat", False),
-    Model("Llama-2-7B-Chat", "meta-llama--Llama-2-7b-chat-hf", "chat", False),
 ]
 
 CONFIGS: list[Config] = [
@@ -117,7 +122,7 @@ class Group:
 
 
 def configs_for(model: Model) -> list[Config]:
-    return [c for c in CONFIGS if model.hasan or not c.hasan_only]
+    return [c for c in CONFIGS if not c.hasan_only or (INCLUDE_HASAN and model.hasan)]
 
 
 def metrics_filename(model: Model, config_key: str) -> str:

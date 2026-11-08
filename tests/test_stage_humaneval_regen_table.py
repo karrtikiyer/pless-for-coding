@@ -17,6 +17,32 @@ sys.modules[_spec.name] = st  # dataclasses need the module registered
 _spec.loader.exec_module(st)
 
 REAL_ROOT = REPO_ROOT / "results" / "humaneval_regen_2026_11_stripped"
+MBPP_TABLE_I = REPO_ROOT.parent / "pless-for-coding-paper" / "tables" / "table_3a_mbpp.tex"  # read only
+
+EXPECTED_DISPLAY = [
+    "CodeLlama-7b-hf", "CodeLlama-7b-Instruct-hf", "OpenCodeInterpreter-DS-1.3B", "Llama-2-7b-hf",
+    "Llama-2-7b-chat-hf", "Qwen2.5-Coder-1.5B", "Qwen2.5-Coder-3B", "Qwen2.5-Coder-7B",
+]
+EXPECTED_LABELS = [
+    "greedy", "beam@4", "T@0.7", "top-p@0.9 with T=1.0", "p-less with T=0.7", "p-less-norm with T=0.7",
+]
+
+
+def _mbpp_table_i() -> tuple[list[str], dict[str, list[str]]]:
+    """(model group names in order, model -> decoder labels) parsed from MBPP Table I."""
+    import re
+    if not MBPP_TABLE_I.is_file():
+        pytest.skip(f"MBPP Table I not available: {MBPP_TABLE_I}")
+    models: list[str] = []
+    labels: dict[str, list[str]] = {}
+    for line in MBPP_TABLE_I.read_text().splitlines():
+        m = re.search(r"\\textit\{(.+?)\}\}", line)
+        if m:
+            models.append(m.group(1))
+            labels[m.group(1)] = []
+        elif models and "&" in line and not line.startswith("Decoder"):
+            labels[models[-1]].append(line.strip().split(" & ")[0])
+    return models, labels
 
 # config key -> (method, temperature, top_p, n)
 _META = {
@@ -64,22 +90,69 @@ def _make_fake_root(tmp_path: Path, p_less_equal_norm: bool = True) -> Path:
 # ---------------------------------------------------------------- file resolution
 
 def test_model_order_and_display_names():
-    assert [m.display for m in st.MODELS] == [
-        "OpenCodeInterpreter-DS-1.3B", "Qwen2.5-Coder-1.5B", "Qwen2.5-Coder-3B", "Qwen2.5-Coder-7B",
-        "CodeLlama-7B", "Llama-2-7B", "CodeLlama-7B-Instruct", "Llama-2-7B-Chat",
-    ]
+    assert [m.display for m in st.MODELS] == EXPECTED_DISPLAY
+
+
+def test_display_names_and_order_equal_mbpp_table_i():
+    mbpp_models, _ = _mbpp_table_i()
+    assert len(mbpp_models) == 7
+    assert [m.display for m in st.MODELS][:7] == mbpp_models
+    assert st.MODELS[-1].display == "Qwen2.5-Coder-7B"
+
+
+def test_config_order_and_labels_equal_mbpp_table_i():
+    _, mbpp_labels = _mbpp_table_i()
+    for model, ls in mbpp_labels.items():
+        shared = [l for l in ls if "(Hasan)" not in l]
+        assert shared == EXPECTED_LABELS, model
+    for m in st.MODELS:
+        assert [c.label for c in st.configs_for(m)] == EXPECTED_LABELS
+
+
+def test_hasan_excluded_by_default_and_reenableable(monkeypatch):
+    assert st.INCLUDE_HASAN is False
+    assert all("0.95" not in c.key for m in st.MODELS for c in st.configs_for(m))
+    monkeypatch.setattr(st, "INCLUDE_HASAN", True)
+    have = {m.display for m in st.MODELS if any(c.hasan_only for c in st.configs_for(m))}
+    assert have == {"OpenCodeInterpreter-DS-1.3B", "Qwen2.5-Coder-1.5B", "Qwen2.5-Coder-3B", "Qwen2.5-Coder-7B"}
+
+
+def test_real_table_has_48_rows_and_no_top_p095():
+    groups = st.build_groups(REAL_ROOT)
+    assert [g.model.display for g in groups] == EXPECTED_DISPLAY
+    assert sum(len(g.rows) for g in groups) == 48
+    for g in groups:
+        assert [c.label for c, _, _ in g.rows] == EXPECTED_LABELS
+    for na in (True, False):
+        md = st.render_md(groups, na_single_sample=na)
+        tex = st.render_tex(groups, na_single_sample=na)
+        assert "0.95" not in md and "0.95" not in tex
+        rows = [l for l in md.splitlines() if l.startswith("| ") and not l.startswith("| Decoder")
+                and not l.startswith("| *")]
+        assert len(rows) == 48
+        assert sum(1 for l in tex.splitlines() if "&" in l and not l.startswith("Decoder")) == 48
+
+
+def test_draft_caption_has_no_hasan_and_new_prompting_sentence(tmp_path):
+    assert "Hasan" not in st.DRAFT_CAPTION and "0.95" not in st.DRAFT_CAPTION and "cite" not in st.DRAFT_CAPTION
+    assert ("CodeLlama-7b-Instruct-hf and Llama-2-7b-chat-hf use their chat template; all other models "
+            "receive the raw (stripped) HumanEval prompt") in st.DRAFT_CAPTION
+    assert st.DRAFT_CAPTION.startswith(r"HumanEval (164 problems). Sampling decoders draw $n{=}10$ samples "
+                                       r"per problem; greedy and beam@4 draw one.")
+    tex = st.render_tex(st.build_groups(_make_fake_root(tmp_path)), na_single_sample=True)
+    assert "Hasan" not in tex
 
 
 def test_filename_pattern_stripped_vs_chat():
     by = {m.display: m for m in st.MODELS}
     assert st.metrics_filename(by["Qwen2.5-Coder-7B"], "greedy") == "greedy__prompt_stripped_metrics.json"
-    assert st.metrics_filename(by["Llama-2-7B"], "pless_t0.7") == "pless_t0.7__prompt_stripped_metrics.json"
-    assert st.metrics_filename(by["CodeLlama-7B-Instruct"], "greedy") == "greedy_metrics.json"
-    assert st.metrics_filename(by["Llama-2-7B-Chat"], "beam4") == "beam4_metrics.json"
+    assert st.metrics_filename(by["Llama-2-7b-hf"], "pless_t0.7") == "pless_t0.7__prompt_stripped_metrics.json"
+    assert st.metrics_filename(by["CodeLlama-7b-Instruct-hf"], "greedy") == "greedy_metrics.json"
+    assert st.metrics_filename(by["Llama-2-7b-chat-hf"], "beam4") == "beam4_metrics.json"
     for name in ("OpenCodeInterpreter-DS-1.3B", "Qwen2.5-Coder-1.5B", "Qwen2.5-Coder-3B", "Qwen2.5-Coder-7B",
-                 "CodeLlama-7B", "Llama-2-7B"):
+                 "CodeLlama-7b-hf", "Llama-2-7b-hf"):
         assert by[name].prompt == "stripped"
-    for name in ("CodeLlama-7B-Instruct", "Llama-2-7B-Chat"):
+    for name in ("CodeLlama-7b-Instruct-hf", "Llama-2-7b-chat-hf"):
         assert by[name].prompt == "chat"
 
 
@@ -87,9 +160,9 @@ def test_real_paths_resolve_to_expected_files():
     paths = {(g.model.display, c.key): p for g in st.build_groups(REAL_ROOT) for c, p, _ in g.rows}
     assert paths[("Qwen2.5-Coder-1.5B", "temp_t0.7")] == \
         REAL_ROOT / "Qwen--Qwen2.5-Coder-1.5B/metrics/temp_t0.7__prompt_stripped_metrics.json"
-    assert paths[("Llama-2-7B-Chat", "pless_norm_t0.7")] == \
+    assert paths[("Llama-2-7b-chat-hf", "pless_norm_t0.7")] == \
         REAL_ROOT / "meta-llama--Llama-2-7b-chat-hf/metrics/pless_norm_t0.7_metrics.json"
-    assert paths[("CodeLlama-7B", "beam4")] == \
+    assert paths[("CodeLlama-7b-hf", "beam4")] == \
         REAL_ROOT / "codellama--CodeLlama-7b-hf/metrics/beam4__prompt_stripped_metrics.json"
 
 
@@ -97,7 +170,7 @@ def test_real_paths_resolve_to_expected_files():
 
 def test_missing_file_raises(tmp_path):
     root = _make_fake_root(tmp_path)
-    m = st.MODELS[4]  # CodeLlama-7B
+    m = next(m for m in st.MODELS if m.display == "CodeLlama-7b-hf")
     (root / m.model_dir / "metrics" / st.metrics_filename(m, "temp_t0.7")).unlink()
     with pytest.raises(FileNotFoundError, match="temp_t0.7"):
         st.build_groups(root)
@@ -105,7 +178,7 @@ def test_missing_file_raises(tmp_path):
 
 def test_wrong_num_tasks_raises(tmp_path):
     root = _make_fake_root(tmp_path)
-    m = st.MODELS[6]  # CodeLlama-7B-Instruct
+    m = next(m for m in st.MODELS if m.display == "CodeLlama-7b-Instruct-hf")
     f = root / m.model_dir / "metrics" / st.metrics_filename(m, "greedy")
     f.write_text(json.dumps(_metrics("greedy", 0.4, num_tasks=163)))
     with pytest.raises(ValueError, match="num_tasks"):
@@ -147,26 +220,31 @@ def test_pless_norm_has_own_row_even_when_equal(tmp_path):
         assert labels[m.display].count("p-less-norm with T=0.7") == 1
 
 
-def test_hasan_rows_only_for_four_models(tmp_path):
+def test_no_hasan_rows_by_default(tmp_path):
+    root = _make_fake_root(tmp_path)
+    md = st.render_md(st.build_groups(root), na_single_sample=True)
+    labels = _labels_by_model(md)
+    assert list(labels) == EXPECTED_DISPLAY
+    for m in EXPECTED_DISPLAY:
+        assert labels[m] == EXPECTED_LABELS
+    assert "top-p@0.95" not in md
+
+
+def test_hasan_rows_only_for_four_models_when_enabled(tmp_path, monkeypatch):
+    monkeypatch.setattr(st, "INCLUDE_HASAN", True)
     root = _make_fake_root(tmp_path)
     md = st.render_md(st.build_groups(root), na_single_sample=True)
     labels = _labels_by_model(md)
     have = {m for m, ls in labels.items() if "top-p@0.95 with T=0.2" in ls}
     assert have == {"OpenCodeInterpreter-DS-1.3B", "Qwen2.5-Coder-1.5B", "Qwen2.5-Coder-3B", "Qwen2.5-Coder-7B"}
-    assert labels["Qwen2.5-Coder-7B"] == [
-        "greedy", "beam@4", "T@0.7", "top-p@0.9 with T=1.0", "top-p@0.95 with T=0.2",
-        "p-less with T=0.7", "p-less-norm with T=0.7",
-    ]
-    assert labels["Llama-2-7B-Chat"] == [
-        "greedy", "beam@4", "T@0.7", "top-p@0.9 with T=1.0", "p-less with T=0.7", "p-less-norm with T=0.7",
-    ]
+    assert labels["Llama-2-7b-chat-hf"] == EXPECTED_LABELS
 
 
-def test_hasan_config_missing_for_non_hasan_model_is_not_required(tmp_path):
-    # non-Hasan models must not even look for the top_p0.95 file
+def test_hasan_config_missing_is_not_required(tmp_path):
+    # with Hasan excluded no model looks for the top_p0.95 file
     root = _make_fake_root(tmp_path)
-    m = st.MODELS[5]  # Llama-2-7B
-    assert not (root / m.model_dir / "metrics" / st.metrics_filename(m, "top_p0.95_t0.2")).exists()
+    for m in st.MODELS:
+        assert not (root / m.model_dir / "metrics" / st.metrics_filename(m, "top_p0.95_t0.2")).exists()
     st.build_groups(root)  # no raise
 
 
@@ -226,7 +304,8 @@ def test_tex_style(tmp_path):
     assert r"\resizebox{\columnwidth}{!}{%" in tex
     assert r"\begin{tabular}{lrrrrrrr}" in tex
     assert r"Decoder & pass@1 & pass@3 & pass@5 & pass@10 & cov@0.3 & cov@0.7 & cb\_div \\" in tex
-    assert r"\multicolumn{8}{l}{\hspace{-1.5mm}\textit{Llama-2-7B-Chat}} \\" in tex
+    assert r"\multicolumn{8}{l}{\hspace{-1.5mm}\textit{Llama-2-7b-chat-hf}} \\" in tex
+    assert r"\multicolumn{8}{l}{\hspace{-1.5mm}\textit{CodeLlama-7b-hf}} \\" in tex
     assert r"\textbf" not in tex and "\\cellcolor" not in tex
     assert tex.count(r"\midrule") == 1 + len(st.MODELS) - 1
 
@@ -270,14 +349,14 @@ def test_md_numbers_equal_metrics_json():
     def j(model_dir, fname):
         return json.loads((REAL_ROOT / model_dir / "metrics" / fname).read_text())
 
-    d = j("Qwen--Qwen2.5-Coder-7B", "top_p0.95_t0.2__prompt_stripped_metrics.json")
-    assert _row(md, "Qwen2.5-Coder-7B", "top-p@0.95 with T=0.2")[cols.index("pass@1")] == \
+    d = j("Qwen--Qwen2.5-Coder-7B", "pless_t0.7__prompt_stripped_metrics.json")
+    assert _row(md, "Qwen2.5-Coder-7B", "p-less with T=0.7")[cols.index("pass@1")] == \
         f"{100 * d['pass_at_k']['1']:.2f}%"
     d = j("meta-llama--Llama-2-7b-chat-hf", "pless_norm_t0.7_metrics.json")
-    assert _row(md, "Llama-2-7B-Chat", "p-less-norm with T=0.7")[cols.index("cov@0.7")] == \
+    assert _row(md, "Llama-2-7b-chat-hf", "p-less-norm with T=0.7")[cols.index("cov@0.7")] == \
         f"{d['cover_at_t']['0.7']:.1f}%"
     d = j("codellama--CodeLlama-7b-hf", "temp_t0.7__prompt_stripped_metrics.json")
-    assert _row(md, "CodeLlama-7B", "T@0.7")[cols.index("cb_div")] == f"{d['codebleu_diversity']:.4f}"
+    assert _row(md, "CodeLlama-7b-hf", "T@0.7")[cols.index("cb_div")] == f"{d['codebleu_diversity']:.4f}"
     d = j("m-a-p--OpenCodeInterpreter-DS-1.3B", "beam4__prompt_stripped_metrics.json")
     assert _row(md, "OpenCodeInterpreter-DS-1.3B", "beam@4")[cols.index("pass@1")] == \
         f"{100 * d['pass_at_k']['1']:.2f}%"
