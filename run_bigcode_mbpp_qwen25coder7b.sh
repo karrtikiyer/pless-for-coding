@@ -21,15 +21,8 @@ MODEL_ID="Qwen/Qwen2.5-Coder-7B"
 RESULTS_DIR="${RESULTS_DIR:-results/mbpp_qwen25coder7b_2026_11}"   # env override: see scripts/mbpp_staging_common.sh
 LOG_TAG="mbpp_qwen25coder7b"
 PROMPT_ARGS=(--prompt-style bigcode)
-CONFIGS=(   # "<output file stem>|<bench args>"
-  "greedy_bigcode_t1.0|--method greedy --temperature 1.0 --n-samples 1"
-  "beam4_bigcode_t1.0|--method beam --num-beams 4 --temperature 1.0 --n-samples 1"
-  "temp_bigcode_t0.7|--method temp --temperature 0.7"
-  "top_p0.9_bigcode_t1.0|--method top_p --top-p 0.9 --temperature 1.0"
-  "pless_bigcode_t0.7|--method pless --temperature 0.7"
-  "pless_norm_bigcode_t0.7|--method pless_norm --temperature 0.7"
-  "top_p0.95_bigcode_t0.2|--method top_p --top-p 0.95 --temperature 0.2"   # Hasan et al. config
-)
 
 source scripts/mbpp_staging_common.sh
+# "<output file stem>|<bench args>": the 6 MBPP Table I configs + the Hasan et al. config (tables in the helper)
+CONFIGS=("${MBPP_TABLE1_BIGCODE[@]}" "$MBPP_HASAN_BIGCODE")
 run_configs

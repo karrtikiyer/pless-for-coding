@@ -24,14 +24,8 @@ MODEL_ID="Qwen/Qwen2.5-Coder-7B-Instruct"
 RESULTS_DIR="${RESULTS_DIR:-results/mbpp_qwen25coder7binstruct_2026_11}"   # env override: see scripts/mbpp_staging_common.sh
 LOG_TAG="mbpp_qwen25coder7binstruct"
 PROMPT_ARGS=()
-CONFIGS=(   # "<output file stem>|<bench args>"
-  "greedy_t1.0|--method greedy --temperature 1.0 --n-samples 1"
-  "beam4_t1.0|--method beam --num-beams 4 --temperature 1.0 --n-samples 1"
-  "temp_t0.7|--method temp --temperature 0.7"
-  "top_p0.9_t1.0|--method top_p --top-p 0.9 --temperature 1.0"
-  "pless_t0.7|--method pless --temperature 0.7"
-  "pless_norm_t0.7|--method pless_norm --temperature 0.7"
-)
 
 source scripts/mbpp_staging_common.sh
+# "<output file stem>|<bench args>": the 6 MBPP Table I configs (table in the helper)
+CONFIGS=("${MBPP_TABLE1_DEFAULT_PROMPT[@]}")
 run_configs

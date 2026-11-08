@@ -851,6 +851,79 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
   - **User: analyse whether it matters before fixing.** Plan: greedy on all 500 MBPP tasks, double vs single BOS, both
     chat models (about 30 min on GPU2) → changed outputs + paired pass@1 CI.
   - Research-coder is adding opt-in `--seed` and `--single-bos` (default byte-identical) + a BOS-check script.
+- **2026-11-08**: `--seed` / `--single-bos` / `RESULTS_DIR` reviewed (no blockers).
+  - Main session applied should-fix 1: a runtime check in `encode_single_bos` that single == default[1:], so Llama-2-chat
+    (gated, untestable offline) is covered. 106 tests.
+  - Committed `0ac4830`, pushed, pulled on GPU2.
+  - **Open (should-fix 2):** GPU reproducibility of `--seed` is unverified. Run a 2-task n=10 seeded job twice on GPU2 and
+    diff, before calling seeded runs reproducible.
+- **2026-11-08 20:51:58 IST: BOS CHECK started on GPU2.** Greedy, 500 MBPP tasks, double vs single BOS.
+  - GPU0: CodeLlama-7b-Instruct-hf; GPU1: Llama-2-7b-chat-hf. Root `results/bos_check_2026_11/`.
+  - Markers `logs/bos_gpu{0,1}.*`.
+- **2026-11-08 21:30 IST: BOS check DONE** (4 × 500, 0 tracebacks/OOM). Copy + grade + compare handed to experiment-harness.
+- **2026-11-08 21:31 IST: seed GPU repeat check started on GPU2.**
+  - CodeLlama-7b-hf base, `--seed 42`, 3 tasks, n=10, pless and temp T0.7.
+  - Run A and run B on GPU0, run C on GPU1, into `results/seed_check_2026_11/`. Marker `logs/seedchk.*`.
+- **2026-11-08: BOS check RESULT (E28)** (experiment-harness; main session re-checked the 4 pass@1 values).
+  - Greedy over 500 MBPP tasks, double vs single BOS:
+
+    | model | outputs differ | pass@1 double / single | Δ single − double [95% CI] | sign p |
+    |---|---|---|---|---|
+    | CodeLlama-7b-Instruct | 189/500 | 42.20 / 42.00 | −0.20 [−2.00, +1.60] | 1 |
+    | Llama-2-7b-chat | 351/500 | 20.40 / 20.80 | +0.40 [−1.40, +2.20] | 0.82 |
+
+  - **The double BOS changes many greedy outputs (38% / 70% of tasks) but has no detectable effect on pass@1** (CIs about
+    ±2 pp). The April chat rows' pass@1 stands, within that precision.
+  - Today's double arm reproduces April: pass@1 42.2 = 42.2 and 20.4 vs 20.6; identical text in 450/500 and 371/500 tasks
+    (software drift since April).
+  - The cov@td oddity at n=1 is the known chat-indent fingerprint issue; not relevant here.
+- **2026-11-08 21:35 IST: seed GPU repeat check PASSED.**
+  - CodeLlama-7b-hf, `--seed 42`, 3 tasks n=10. pless and temp: runA == runB (same GPU) 3/3 and runA == runC (other GPU2
+    card) 3/3; samples are diverse (distinct per task 4/9/10 and 10/10/10).
+  - Seeded runs on GPU2 are reproducible; other machines were not tested.
+- **2026-11-08: Seeded MBPP regeneration plan (user: GPU2 only).**
+  - 9 models: CodeLlama-7b-hf, CodeLlama-7b-Instruct-hf, OCI-1.3B, Llama-2-7b-hf, Llama-2-7b-chat-hf, Qwen2.5-Coder-1.5B/3B/7B,
+    Qwen2.5-Coder-7B-Instruct.
+  - Configs: MBPP's 6 + top-p@0.95 T0.2 (Hasan models) + pless/pless_norm T1.0/T0.6.
+  - Flags: `--seed 42`; `--single-bos` for chat models (E28 result: no detectable pass@1 effect; the correct encoding).
+  - Root `results/mbpp_seeded_2026_11/`.
+  - Queues: GPU0 Qwen-7B → OCI → Q1.5B → CodeLlama-7b-hf → Llama-2-7b-hf; GPU1 Qwen-7B-Instruct → Q3B → CodeLlama-Instruct →
+    Llama-2-chat.
+  - Estimate ~13–15 h [guess]. Research-coder is writing the generic `run_seeded_mbpp_all_models.sh`; review → smoke → launch.
+- **2026-11-08 CORRECTION (caught by research-coder): MBPP Table I mixes base-model prompt formats.**
+  - OCI and Qwen2.5-Coder-1.5B/3B use **BigCode zero-shot** (`--prompt-style bigcode`, `*_bigcode_*`; the Hasan protocol).
+  - **CodeLlama-7b-hf and Llama-2-7b-hf (and Qwen-7B in A1) use the runner's default 3-shot "paper" format**:
+    `format_prompt_base`, 3 solved MBPP train examples with `[BEGIN]`/`[DONE]`, the Shi et al. protocol [Likely].
+    Introduced in `f1f4917` (2026-03-20) "to match paper's 3-shot format (Llama2_input.jsonl)", which fixed a 10.5 pp gap to
+    the paper's Qwen-7B base score.
+  - Earlier main-session statements were wrong and are retracted:
+    - "the other 7 MBPP models were generated with `--prompt-style bigcode`";
+    - "our 7 existing MBPP models used exactly this prompt".
+  - No generated data is affected: Qwen2.5-Coder-7B correctly used BigCode, like its Hasan/Qwen group.
+  - The seeded-script spec ("bigcode for all base models") would have silently switched those two to zero-shot.
+    **Pending user decision.**
+  - **Verified against Shi et al.'s repo** (`github.com/DavidFanzz/llm_decoding`, fetched 2026-11-08):
+    - `data/mbpp/Llama2_input.jsonl` (unaligned) is 3-shot: 3 solved examples with `[BEGIN]`/`[DONE]`, the target ending
+      `[BEGIN]\n`. This matches the paper's "3-shot prompt for unaligned models".
+    - `Llama2_chat_input.jsonl` (aligned) is 0-shot `[INST] …`.
+    - Our `format_prompt_base` for task 11 equals Shi's first line except ONE trailing space (`return (res) ` in an
+      example).
+    - Side notes:
+      - Shi's base file has 499 lines (cf. D14);
+      - our chat MBPP prompt is our own wording, not Shi's `[INST] You are an expert Python programmer…`.
+  - **USER DECISION: keep each base model's Table I prompt.** CodeLlama-7b-hf and Llama-2-7b-hf get the 3-shot Shi format;
+    OCI and the Qwen base models get BigCode zero-shot; chat models are unchanged. Research-coder updating the script.
+- **2026-11-08: `run_seeded_mbpp_all_models.sh` reviewed** (safe to smoke and launch).
+  - Every model × config equals its April command (`run_bench.sh` / `run_new_samplers_mbpp.sh` /
+    `run_top_p_mbpp_all_models.sh` / `run_bigcode_*`) plus `--seed 42` (+ `--single-bos` chat).
+  - The task-11 Llama-2-7b-hf prompt equals Shi's except one trailing space. 157 tests.
+  - **Comparison caveat (should-fix): seeded vs April differences mix the seed with CODE changes. Never attribute them to
+    seeding.** Many April rows predate:
+    - `b256b0c` (stop-sequence fix, 2026-03-27): the chat rows (03-06 to 03-17) and base temp/top-p/pless T0.6/T1.0 (03-23);
+    - `2c3a55c` (pless NaN fix);
+    - `118292e` (pless argmax fallback, June): ALL April pless rows.
+  - `--seed` fixes the RNG streams, not GPU kernel determinism. Verified identical on GPU2 for 3 tasks; don't promise bit-exact
+    reruns elsewhere.
 - **2026-11-07**: AI-use acknowledgment (D15 item 6):
   - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
     subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).

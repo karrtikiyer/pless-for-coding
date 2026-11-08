@@ -1,5 +1,8 @@
 # scripts/mbpp_staging_common.sh — sourced (not executed) by the 2026-11 MBPP staging scripts:
-#   run_bigcode_mbpp_qwen25coder7b.sh, run_chat_mbpp_qwen25coder7binstruct.sh
+#   run_bigcode_mbpp_qwen25coder7b.sh, run_chat_mbpp_qwen25coder7binstruct.sh, run_bos_check_mbpp_chat.sh,
+#   run_seeded_mbpp_all_models.sh (several models per invocation: sets MODEL_ID / CONFIGS / SINGLE_BOS per run_configs)
+# Provides the shared config tables MBPP_TABLE1_BIGCODE / MBPP_HASAN_BIGCODE / MBPP_TABLE1_DEFAULT_PROMPT (assign CONFIGS after
+# sourcing) and append_extra_pless_configs.
 #
 # Runs `uv run python -m bench` (main uv env, HF backend, runner defaults: n-samples 10, max-new-tokens 512,
 # resume ON) once per config, exactly like the historical MBPP-full runs (run_new_samplers_mbpp.sh,
@@ -63,6 +66,30 @@ esac
 
 ist() { TZ=Asia/Kolkata date '+%F %T IST'; }
 
+# Shared config tables ("<runner file stem>|<bench args>"; the stem is the runner's own file name). Used by
+# run_bigcode_mbpp_qwen25coder7b.sh, run_chat_mbpp_qwen25coder7binstruct.sh and run_seeded_mbpp_all_models.sh.
+# MBPP Table I configs, base models with --prompt-style bigcode (runner appends "_bigcode" to the stem):
+MBPP_TABLE1_BIGCODE=(
+  "greedy_bigcode_t1.0|--method greedy --temperature 1.0 --n-samples 1"
+  "beam4_bigcode_t1.0|--method beam --num-beams 4 --temperature 1.0 --n-samples 1"
+  "temp_bigcode_t0.7|--method temp --temperature 0.7"
+  "top_p0.9_bigcode_t1.0|--method top_p --top-p 0.9 --temperature 1.0"
+  "pless_bigcode_t0.7|--method pless --temperature 0.7"
+  "pless_norm_bigcode_t0.7|--method pless_norm --temperature 0.7"
+)
+MBPP_HASAN_BIGCODE="top_p0.95_bigcode_t0.2|--method top_p --top-p 0.95 --temperature 0.2"   # Hasan et al. config
+# MBPP Table I configs with the runner's default prompt (no --prompt-style, no stem suffix): chat/instruct models
+# (chat template) and the 3-shot "paper"-prompt base models (CodeLlama-7b-hf, Llama-2-7b-hf; same flags as their April
+# rows from run_bench.sh / run_new_samplers_mbpp.sh / run_top_p_mbpp_all_models.sh):
+MBPP_TABLE1_DEFAULT_PROMPT=(
+  "greedy_t1.0|--method greedy --temperature 1.0 --n-samples 1"
+  "beam4_t1.0|--method beam --num-beams 4 --temperature 1.0 --n-samples 1"
+  "temp_t0.7|--method temp --temperature 0.7"
+  "top_p0.9_t1.0|--method top_p --top-p 0.9 --temperature 1.0"
+  "pless_t0.7|--method pless --temperature 0.7"
+  "pless_norm_t0.7|--method pless_norm --temperature 0.7"
+)
+
 extra_pless_configs() {   # print the four extra configs, one per line, derived from CONFIGS' T=0.7 p-less entries
   local t m cfg stem args found
   for t in 1.0 0.6; do
@@ -79,6 +106,12 @@ extra_pless_configs() {   # print the four extra configs, one per line, derived 
       echo "$found"
     done
   done
+}
+
+append_extra_pless_configs() {   # CONFIGS += the four extra p-less configs (T=1.0 / T=0.6), same builder as above
+  local extra line
+  extra=$(extra_pless_configs) || exit 7
+  while IFS= read -r line; do CONFIGS+=("$line"); done <<< "$extra"
 }
 
 check_env() {   # transformers>=5 in the main uv env (Qwen2.5); never mutates pyproject/uv.lock
@@ -105,6 +138,7 @@ sys.exit(0 if ok else 1)" "$out" "$EXPECTED_TASKS" || { echo "FAIL: $out incompl
 }
 
 run_configs() {
+  MODEL_DIR="${MODEL_ID//\//--}"   # recomputed per call: run_seeded_mbpp_all_models.sh changes MODEL_ID between calls
   if [[ "$EXTRA_PLESS_TEMPS" == 1 ]]; then
     local extra line
     extra=$(extra_pless_configs) || exit 7
