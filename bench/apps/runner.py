@@ -190,6 +190,10 @@ def _build_argparser() -> argparse.ArgumentParser:
                         "available KV cache memory for long-context models "
                         "(e.g. Ministral-3's 262144 needs 26GiB; pass e.g. "
                         "37500 to fit a 16GB GPU).")
+    p.add_argument("--gpu-memory-utilization", type=float, default=None,
+                   help="vLLM backend only. Fraction of GPU memory the engine may use, in (0, 1]. "
+                        "Omitted (default) keeps load_engine's own default (0.90). Memory/scheduling "
+                        "only; it does not change the sampler.")
     p.add_argument("--attn-impl", choices=["sdpa", "eager"], default=None)
     p.add_argument("--enable-thinking", action="store_true")
     p.add_argument("--seed", type=int, default=None,
@@ -284,6 +288,8 @@ def parse_args():
     """
     p = _build_argparser()
     args = p.parse_args()
+    if args.gpu_memory_utilization is not None and not 0 < args.gpu_memory_utilization <= 1:
+        p.error("--gpu-memory-utilization must be in (0, 1]")
     if args.method == "split":
         for name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
             if getattr(args, name) is None:
@@ -354,8 +360,11 @@ def main():
         # Deferred import — only happens when --backend vllm is requested,
         # so the apps runner is still importable in the main .venv (no vLLM).
         from bench.generator_vllm import load_engine
+        engine_kw = {}
+        if args.gpu_memory_utilization is not None:
+            engine_kw["gpu_memory_utilization"] = args.gpu_memory_utilization
         engine = load_engine(args.model, dtype=args.dtype,
-                              max_model_len=args.max_model_len)
+                              max_model_len=args.max_model_len, **engine_kw)
         model = engine          # alias for downstream code that holds it
         # Prefer the safe tokenizer when vLLM's default mangles whitespace
         # (DeepSeek-R1-Distill / #45488) so prompt FORMATTING matches the HF

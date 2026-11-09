@@ -21,7 +21,8 @@
 #   MULTI_ARM=1 GPUS=0 ./run_cf748_apps_qwen3.sh                                             # one process, shared prefix cache (opt-in)
 # Env: MODEL, SOURCE, DIFFICULTY, RESULTS_DIR, N_SAMPLES(10), MAX_TOKENS(32768),
 #   MAX_PROBLEMS(unset=full 748 via TASK_IDS_FILE), TASK_IDS_FILE, VLLM_VENV, WORKERS(32),
-#   TOKENIZER, GPUS, ARMS, MULTI_ARM(0), SKIP_EVAL(0; 1 = generation only, no eval/cot-efficiency).
+#   TOKENIZER, GPUS, ARMS, MULTI_ARM(0), SKIP_EVAL(0; 1 = generation only, no eval/cot-efficiency),
+#   MAX_MODEL_LEN / GPU_MEM_UTIL (unset = vLLM defaults; single-arm path only — e.g. 24GB 4090 at a 32768 cap).
 #
 # MULTI_ARM=1 opt-in: all arms run in ONE Python process with ONE vLLM engine so
 # vLLM's prefix cache is reused across arms sharing the same prompt. ~10-20%
@@ -92,6 +93,8 @@ gen_arm() {
     --enable-thinking \
     --n-samples "$N_SAMPLES" --max-new-tokens "$MAX_TOKENS" \
     ${MAX_PROBLEMS:+--max-problems "$MAX_PROBLEMS"} \
+    ${MAX_MODEL_LEN:+--max-model-len "$MAX_MODEL_LEN"} \
+    ${GPU_MEM_UTIL:+--gpu-memory-utilization "$GPU_MEM_UTIL"} \
     --results-dir "$RESULTS_DIR" \
     $(arm_args "$arm")
 }

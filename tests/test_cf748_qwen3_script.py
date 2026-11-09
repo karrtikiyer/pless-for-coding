@@ -17,7 +17,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "run_cf748_apps_qwen3.sh"
 SCRIPT_VARS = ("ARMS", "MULTI_ARM", "MAX_PROBLEMS", "MODEL", "SOURCE", "DIFFICULTY", "RESULTS_DIR",
                "TASK_IDS_FILE", "N_SAMPLES", "MAX_TOKENS", "VLLM_VENV", "WORKERS", "TOKENIZER", "GPUS",
-               "CUDA_VISIBLE_DEVICES", "VLLM_USE_FLASHINFER_SAMPLER", "VLLM_USE_V2_MODEL_RUNNER", "SKIP_EVAL")
+               "CUDA_VISIBLE_DEVICES", "VLLM_USE_FLASHINFER_SAMPLER", "VLLM_USE_V2_MODEL_RUNNER", "SKIP_EVAL",
+               "MAX_MODEL_LEN", "GPU_MEM_UTIL")
 
 
 def _exe(path: Path, body: str) -> None:
@@ -69,3 +70,14 @@ def test_skip_eval_with_gpus_pins_and_skips(tmp_path):
     py, uv, _ = _run(tmp_path, SKIP_EVAL="1", GPUS="1")
     assert len(py) == 1 and "-m bench.apps" in py[0]
     assert uv == []
+
+
+def test_engine_memory_flags_absent_by_default(tmp_path):
+    py, _, _ = _run(tmp_path, SKIP_EVAL="1")
+    assert "--max-model-len" not in py[0] and "--gpu-memory-utilization" not in py[0]
+
+
+def test_engine_memory_flags_passed_through(tmp_path):
+    py, _, _ = _run(tmp_path, SKIP_EVAL="1", MAX_MODEL_LEN="36000", GPU_MEM_UTIL="0.95")
+    assert "--max-model-len 36000" in py[0]
+    assert "--gpu-memory-utilization 0.95" in py[0]
