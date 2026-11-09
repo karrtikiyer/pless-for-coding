@@ -1,7 +1,9 @@
 import argparse
+import gc
 import json
 from datetime import datetime, timezone
 
+import torch
 from datasets import load_dataset
 from tqdm import tqdm
 
@@ -27,6 +29,82 @@ MBPP_BIGCODE_STOP_SEQUENCES = ["\nassert", "\nclass", "\nprint", '\n"""', "\nif 
 from bench.sampler_bridge import (SAMPLERS, SPLIT_SAMPLERS,
                                    make_pless_alpha_sampler,
                                    make_pless_post_temp_sampler)
+
+# CUDA-OOM fallback (HF backend, multi-sample paths only): retry the task generating its n samples in chunks of these
+# sizes (only sizes < n_samples), reseeding per task before each retry. Chunked draws are reproducible given
+# (seed, task_id, chunk size) but are NOT identical to the unchunked draw; such records carry hf_batch_size + oom_retry.
+OOM_RETRY_BATCH_SIZES = (5, 2, 1)
+
+
+def _is_cuda_oom(exc: BaseException) -> bool:
+    """True for torch.cuda.OutOfMemoryError, or any RuntimeError whose message contains 'out of memory'."""
+    oom_cls = getattr(getattr(torch, "cuda", None), "OutOfMemoryError", None)
+    if oom_cls is not None and isinstance(exc, oom_cls):
+        return True
+    return isinstance(exc, RuntimeError) and "out of memory" in str(exc).lower()
+
+
+def _free_cuda_memory() -> None:
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+
+def _sample_hf(args, model, tokenizer, prompt_text, sampler_fn, stop_strings, entropy_log, **batch_kw):
+    """One HF multi-sample generation call. ``batch_kw`` is empty for the default call (the exact historical kwargs)
+    and ``{"hf_batch_size": c}`` for an OOM retry."""
+    if args.method in ("temp", "top_p", "top_k"):
+        return generate_samples_standard(
+            model=model,
+            tokenizer=tokenizer,
+            prompt_text=prompt_text,
+            n_samples=args.n_samples,
+            max_new_tokens=args.max_new_tokens,
+            temperature=args.temperature,
+            stop_strings=stop_strings,
+            top_p=args.top_p if args.method == "top_p" else 1.0,
+            top_k=args.top_k if args.method == "top_k" else 0,
+            **batch_kw,
+        )
+    return generate_samples(
+        model=model,
+        tokenizer=tokenizer,
+        prompt_text=prompt_text,
+        sampler_fn=sampler_fn,
+        n_samples=args.n_samples,
+        max_new_tokens=args.max_new_tokens,
+        temperature=args.temperature,
+        stop_strings=stop_strings,
+        entropy_log=entropy_log,
+        **batch_kw,
+    )
+
+
+def _retry_after_oom(args, task_id, oom_msg, model, tokenizer, prompt_text, sampler_fn, stop_strings, entropy_log):
+    """CUDA-OOM fallback: retry the task in chunks of OOM_RETRY_BATCH_SIZES (< n_samples), reseeding before each try.
+
+    Returns (raw_samples, chunk_size, entropy_log). If every size runs out of memory, raises RuntimeError with the last
+    OOM message, which the caller logs as "Error on task_id=..." exactly as before. Non-OOM errors propagate.
+    """
+    for bs in [s for s in OOM_RETRY_BATCH_SIZES if s < args.n_samples]:
+        _free_cuda_memory()
+        if args.seed is not None:
+            seed_task(args.seed, task_id)
+        log = [] if entropy_log is not None else None   # drop any rows the failed attempt appended
+        err = None
+        try:
+            raw = _sample_hf(args, model, tokenizer, prompt_text, sampler_fn, stop_strings, log, hf_batch_size=bs)
+        except Exception as e:
+            if not _is_cuda_oom(e):
+                raise
+            err = str(e)
+        if err is None:
+            tqdm.write(f"OOM on task_id={task_id}: retried with batch size {bs} (ok)")
+            return raw, bs, log
+        tqdm.write(f"OOM on task_id={task_id}: batch size {bs} also ran out of memory")
+        oom_msg = err
+    _free_cuda_memory()
+    raise RuntimeError(oom_msg)
 
 
 def parse_args():
@@ -234,6 +312,7 @@ def main():
         # Always defined for the sidecar code below; populated only for the
         # generate_samples path when --log-entropy is set.
         entropy_log = None
+        oom_retry_bs = None   # set only when the CUDA-OOM fallback succeeded with a smaller chunk size
         try:
             if instruct:
                 prompt_text, code_prefix = format_prompt_instruct(
@@ -301,18 +380,6 @@ def main():
                     max_new_tokens=args.max_new_tokens,
                     stop_strings=stop_strings,
                 )
-            elif args.method in ("temp", "top_p", "top_k"):
-                raw_samples = generate_samples_standard(
-                    model=model,
-                    tokenizer=tokenizer,
-                    prompt_text=prompt_text,
-                    n_samples=args.n_samples,
-                    max_new_tokens=args.max_new_tokens,
-                    temperature=args.temperature,
-                    stop_strings=stop_strings,
-                    top_p=args.top_p if args.method == "top_p" else 1.0,
-                    top_k=args.top_k if args.method == "top_k" else 0,
-                )
             elif args.method == "split":
                 raw_samples = generate_samples_split(
                     model=model,
@@ -327,18 +394,22 @@ def main():
                     stop_strings=stop_strings,
                 )
             else:
-                entropy_log = [] if args.log_entropy else None
-                raw_samples = generate_samples(
-                    model=model,
-                    tokenizer=tokenizer,
-                    prompt_text=prompt_text,
-                    sampler_fn=sampler_fn,
-                    n_samples=args.n_samples,
-                    max_new_tokens=args.max_new_tokens,
-                    temperature=args.temperature,
-                    stop_strings=stop_strings,
-                    entropy_log=entropy_log,
-                )
+                # temp / top_p / top_k (HF generate) and pless / pless_norm / pless_alpha (custom loop):
+                # the multi-sample paths, which get the CUDA-OOM chunked-retry fallback.
+                if args.method not in ("temp", "top_p", "top_k"):
+                    entropy_log = [] if args.log_entropy else None
+                oom_msg = None
+                try:
+                    raw_samples = _sample_hf(args, model, tokenizer, prompt_text, sampler_fn, stop_strings,
+                                             entropy_log)
+                except Exception as e:
+                    if not _is_cuda_oom(e):
+                        raise
+                    oom_msg = str(e)   # leave the except block so the traceback (and its tensors) can be freed
+                if oom_msg is not None:
+                    raw_samples, oom_retry_bs, entropy_log = _retry_after_oom(
+                        args, task_id, oom_msg, model, tokenizer, prompt_text, sampler_fn, stop_strings,
+                        entropy_log)
 
             # Prepend the code prefix so each sample is complete, executable code
             samples_with_think = [code_prefix + s for s in raw_samples]
@@ -377,6 +448,9 @@ def main():
                 record["seed"] = args.seed
             if args.single_bos:
                 record["single_bos"] = True
+            if oom_retry_bs is not None:
+                record["hf_batch_size"] = oom_retry_bs
+                record["oom_retry"] = True
             if task.get("test_setup_code"):
                 record["test_setup_code"] = task["test_setup_code"]
             append_result(out_path, record)

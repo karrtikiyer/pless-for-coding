@@ -924,6 +924,33 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
     - `118292e` (pless argmax fallback, June): ALL April pless rows.
   - `--seed` fixes the RNG streams, not GPU kernel determinism. Verified identical on GPU2 for 3 tasks; don't promise bit-exact
     reruns elsewhere.
+- **2026-11-08 22:15–22:21 IST: seeded MBPP smoke PASSED** (code `5f8defe`).
+  - Qwen2.5-Coder-1.5B (bigcode, 11 configs), CodeLlama-7b-hf (3-shot, 10), Llama-2-7b-chat (chat + single_bos, 10); 2 tasks each.
+  - All carry seed 42; single_bos only on chat; 0 errors.
+- **2026-11-08: SEEDED MBPP FULL RUN started on GPU2** (user: start once smoke passes).
+  - GPU0: Qwen2.5-Coder-7B → OCI → Qwen2.5-Coder-1.5B → CodeLlama-7b-hf → Llama-2-7b-hf.
+  - GPU1: Qwen2.5-Coder-7B-Instruct → Qwen2.5-Coder-3B → CodeLlama-7b-Instruct-hf → Llama-2-7b-chat-hf.
+  - Root `results/mbpp_seeded_2026_11/`; markers `logs/seeded_full_gpu{0,1}.*`. Estimate 13–15 h [guess].
+  - The smoke files resume (same settings).
+- **2026-11-09 10:40 IST: status check (user asked). Both queues were stopped.**
+  - GPU0 FAILED by design:
+    - DONE: Qwen2.5-Coder-7B, OCI, Qwen2.5-Coder-1.5B (11 × 500 each).
+    - **CodeLlama-7b-hf temp_t0.7: CUDA OOM on task_id 493** (22.3 GB of 23.5 GB, even with `expandable_segments`).
+      Task 493's 3 asserts total 4,145 chars, so the 3-shot prompt is very long × n=10.
+    - The April run completed 493 (different hardware, unknown). Llama-2-7b-hf not started.
+  - GPU1 HUNG about 10 h: Qwen2.5-Coder-7B-Instruct DONE (10 × 500); then stuck from 00:21 IST in the HF download of
+    Qwen2.5-Coder-3B (hf_transfer; 4.9 GB, the progress bar frozen at 1/2 files).
+  - Fix: stopped the stuck processes (an over-broad `pkill -f` pattern killed my own ssh session once; use PIDs).
+    Re-downloaded with `HF_HUB_ENABLE_HF_TRANSFER=0`: 12/12 files in 45 s.
+  - **10:55 IST: GPU1 restarted for Qwen2.5-Coder-3B only** (marker `logs/q3b_seeded.*`).
+  - CodeLlama-7b-Instruct and Llama-2-chat are held, since their chat prompts also contain all 3 asserts, so task 493 may
+    OOM there too.
+  - **Pending user decision: how to handle task 493 OOM.**
+  - **USER DECISION: auto-retry OOM tasks in smaller batches** (chunks of 5 → 2 → 1, still seeded; record `hf_batch_size` +
+    `oom_retry` on that task only; disclose).
+    - Research-coder implementing (all MBPP sampling paths incl. the pless custom loop); then review.
+    - Then resume: CodeLlama-7b-hf (from temp T0.7) → Llama-2-7b-hf on GPU0; CodeLlama-7b-Instruct → Llama-2-chat on GPU1
+      after Qwen2.5-Coder-3B.
 - **2026-11-07**: AI-use acknowledgment (D15 item 6):
   - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
     subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).
