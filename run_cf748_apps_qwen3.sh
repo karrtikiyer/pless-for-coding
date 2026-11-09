@@ -21,7 +21,7 @@
 #   MULTI_ARM=1 GPUS=0 ./run_cf748_apps_qwen3.sh                                             # one process, shared prefix cache (opt-in)
 # Env: MODEL, SOURCE, DIFFICULTY, RESULTS_DIR, N_SAMPLES(10), MAX_TOKENS(32768),
 #   MAX_PROBLEMS(unset=full 748 via TASK_IDS_FILE), TASK_IDS_FILE, VLLM_VENV, WORKERS(32),
-#   TOKENIZER, GPUS, ARMS, MULTI_ARM(0).
+#   TOKENIZER, GPUS, ARMS, MULTI_ARM(0), SKIP_EVAL(0; 1 = generation only, no eval/cot-efficiency).
 #
 # MULTI_ARM=1 opt-in: all arms run in ONE Python process with ONE vLLM engine so
 # vLLM's prefix cache is reused across arms sharing the same prompt. ~10-20%
@@ -142,6 +142,13 @@ elif [ -n "${GPUS:-}" ]; then
   [ $fail -ne 0 ] && { echo "a GPU worker failed — see $OUT_DIR/cf748_gpu*.log" >&2; exit 4; }
 else
   for a in "${ARMS_ARR[@]}"; do gen_arm "$a"; done
+fi
+
+# SKIP_EVAL=1: generation only. Use on gpu2 (bench.eval must run locally, CLAUDE.md gotcha #9) and whenever
+# two single-GPU invocations share one output dir (each would otherwise eval the other's still-growing file).
+if [ "${SKIP_EVAL:-0}" = "1" ]; then
+  echo "SKIP_EVAL=1: generation done; skipping eval + cot-efficiency (run bench.eval locally)."
+  exit 0
 fi
 
 echo "---- eval (re-execute against APPS/CodeForces tests) ----"
