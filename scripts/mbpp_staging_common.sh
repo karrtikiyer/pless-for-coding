@@ -24,6 +24,9 @@
 #   RESULTS_DIR=PATH      output root override, honoured by the run_*_mbpp_qwen25coder7b*.sh callers (they assign
 #                         RESULTS_DIR="${RESULTS_DIR:-<their default root>}"). Unset / empty: the caller's root.
 #                         Seeded / single-BOS reruns must use a NEW root, never the old unseeded files.
+#                         Never inside results/regen_2026_11/ (frozen archive, sha256 in its path_mapping.tsv): a
+#                         RESULTS_DIR that RESOLVES there (`..`, `.`, `//`, symlinks, absolute; case-insensitive) is
+#                         refused with exit 8 at source time and again at the start of run_configs, before any command.
 #   SINGLE_BOS=1          passthrough: append --single-bos (one BOS for chat templates that start with it). Unset / 0 /
 #                         empty: unchanged. Same file-name / resume rule as SEED.
 #
@@ -65,6 +68,39 @@ case "$SINGLE_BOS" in
 esac
 
 ist() { TZ=Asia/Kolkata date '+%F %T IST'; }
+
+ARCHIVE_ROOT="results/regen_2026_11"   # frozen archive (scripts/consolidate_regen_2026_11.py); never written
+
+resolve_path() {   # print the absolute, resolved form of $1 (like `realpath -m`: `..`/`.`/`//`, symlinks of the existing
+                   # prefix; missing components kept lexically). Relative paths are taken relative to $PWD. bash 3.2-safe.
+  local p="$1" cur="/" seg next
+  local -a segs
+  [[ "$p" == /* ]] || p="$PWD/$p"
+  IFS=/ read -ra segs <<< "$p"
+  for seg in ${segs[@]+"${segs[@]}"}; do
+    case "$seg" in
+      ""|.) continue ;;
+      ..) cur=$(dirname "$cur") ;;
+      *) next="${cur%/}/$seg"
+         if [[ -d "$next" ]]; then cur=$(cd -P "$next" && pwd -P); else cur="$next"; fi ;;
+    esac
+  done
+  printf '%s\n' "$cur"
+}
+
+refuse_archive_results_dir() {   # exit 8 if RESULTS_DIR resolves to ARCHIVE_ROOT or inside it
+  local r a lr
+  r=$(resolve_path "$RESULTS_DIR")
+  a=$(resolve_path "$ARCHIVE_ROOT")
+  lr=$(printf '%s' "$r" | tr '[:upper:]' '[:lower:]')
+  # the resolved archive, or any ".../results/regen_2026_11" component pair (case-insensitive: macOS APFS)
+  if [[ "$r" == "$a" || "$r" == "$a"/* || "$lr/" == */results/regen_2026_11/* ]]; then
+    echo "refusing RESULTS_DIR='$RESULTS_DIR' (resolves to $r): inside the frozen archive $ARCHIVE_ROOT/" \
+         "(see $ARCHIVE_ROOT/path_mapping.tsv). Use a fresh root outside it." >&2
+    exit 8
+  fi
+}
+refuse_archive_results_dir
 
 # Shared config tables ("<runner file stem>|<bench args>"; the stem is the runner's own file name). Used by
 # run_bigcode_mbpp_qwen25coder7b.sh, run_chat_mbpp_qwen25coder7binstruct.sh and run_seeded_mbpp_all_models.sh.
@@ -138,6 +174,7 @@ sys.exit(0 if ok else 1)" "$out" "$EXPECTED_TASKS" || { echo "FAIL: $out incompl
 }
 
 run_configs() {
+  refuse_archive_results_dir   # RESULTS_DIR may have changed since sourcing (run_bos_check_mbpp_chat.sh arm 2)
   MODEL_DIR="${MODEL_ID//\//--}"   # recomputed per call: run_seeded_mbpp_all_models.sh changes MODEL_ID between calls
   if [[ "$EXTRA_PLESS_TEMPS" == 1 ]]; then
     local extra line

@@ -4,6 +4,7 @@ Spec: docs/experiments/humaneval_regen_2026_11_plan.md §3-§6. CPU only: genera
 tokenizer tests download tokenizer files only and skip when offline.
 """
 import json
+from pathlib import Path
 
 import pytest
 
@@ -904,7 +905,10 @@ def test_extra_configs_only_go_to_an_extra_root():
         regen.check_configs_for_root(["pless_t0.7"], Path(EXTRA_ROOT))
 
 
-def test_main_refuses_extra_configs_outside_the_extra_root_before_loading():
+def test_main_refuses_extra_configs_outside_the_extra_root_before_loading(tmp_path, monkeypatch):
+    # REPO_ROOT -> empty tmp dir: no path_mapping.tsv, so the consolidated-root refusal (which fires first on the real
+    # repo since the 2026-11-10 move) does not mask the check under test
+    monkeypatch.setattr(regen, "REPO_ROOT", tmp_path)
     with pytest.raises(SystemExit, match="extra"):
         regen.main(["--model", "Qwen/Qwen2.5-Coder-1.5B", "--configs", "pless_t1.0",
                     "--out-root", "results/humaneval_regen_2026_11_stripped"])
@@ -1012,7 +1016,10 @@ def test_instruct7b_model_is_refused_outside_its_root():
             regen.check_model_for_root(m, Path(I7_ROOT))
 
 
-def test_main_refuses_the_instruct7b_model_in_the_stripped_root_before_loading():
+def test_main_refuses_the_instruct7b_model_in_the_stripped_root_before_loading(tmp_path, monkeypatch):
+    # REPO_ROOT -> empty tmp dir: no path_mapping.tsv, so the consolidated-root refusal (which fires first on the real
+    # repo since the 2026-11-10 move) does not mask the check under test
+    monkeypatch.setattr(regen, "REPO_ROOT", tmp_path)
     with pytest.raises(SystemExit, match="instruct7b"):
         regen.main(["--model", Q7I, "--configs", "greedy", "--out-root", "results/humaneval_regen_2026_11_stripped"])
     with pytest.raises(SystemExit, match="only"):   # stripped prompt refused for a chat model
@@ -1135,3 +1142,160 @@ def test_instruct7b_extra_never_in_other_modes(tmp_path):
         rc, calls, out = _run_script(tmp_path, args, env)
         assert rc == 0 and calls, out
         assert not any("instruct7b_extra" in c for c in calls), (args, env)
+
+
+# ---- Consolidation (2026-11-10): the FULL roots are moved into results/regen_2026_11/ by
+# scripts/consolidate_regen_2026_11.py. The consolidated tree is an archive (it mixes the main, extra and instruct7b
+# protocols by design, with distinct MANIFEST names), so the runner never writes into it, and it refuses to
+# re-create a root that was consolidated (a resume there would silently regenerate everything from scratch).
+
+def _write_mapping(repo, olds):
+    tsv = repo / "results" / "regen_2026_11" / "path_mapping.tsv"
+    tsv.parent.mkdir(parents=True, exist_ok=True)
+    tsv.write_text("old_path\tnew_path\tsha256\tbytes\n"
+                   + "".join(f"{o}\tresults/regen_2026_11/x/{i}\t0\t0\n" for i, o in enumerate(olds)))
+    return tsv
+
+
+@pytest.mark.parametrize("root", [
+    "results/regen_2026_11/humaneval/main",
+    "results/regen_2026_11/humaneval/humaneval_regen_2026_11_stripped",   # prefix-named folder inside the archive
+    "results/regen_2026_11/humaneval_regen_2026_11_x",
+])
+def test_out_root_inside_consolidated_tree_is_refused(root, tmp_path):
+    with pytest.raises((ValueError, SystemExit), match="regen_2026_11"):
+        regen._check_out_root(Path(root))
+    with pytest.raises((ValueError, SystemExit), match="regen_2026_11"):
+        regen._check_out_root(tmp_path / root)
+
+
+def test_consolidated_source_root_is_refused_only_after_consolidation(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)   # relative --out-root resolves against the cwd (where writes go)
+    stripped = "results/humaneval_regen_2026_11_stripped"
+    regen.check_root_not_consolidated(Path(stripped), repo_root=tmp_path)   # no mapping yet: allowed
+    _write_mapping(tmp_path, [f"{stripped}/Qwen--Qwen2.5-Coder-3B/greedy__prompt_stripped.jsonl",
+                              "results/humaneval_regen_2026_11_instruct7b/MANIFEST.gpu2.json"])
+    for root in [stripped, "results/humaneval_regen_2026_11_instruct7b", tmp_path / stripped]:
+        with pytest.raises(SystemExit, match="path_mapping.tsv"):
+            regen.check_root_not_consolidated(Path(root), repo_root=tmp_path)
+    for ok in ["results/humaneval_regen_2026_11_smoke", "results/humaneval_regen_2026_11_stripped_fit",
+               "results/humaneval_regen_2026_11_instruct7b_smoke", "results/humaneval_regen_2026_11_diag",
+               "results/humaneval_regen_2026_11_stripped_extra"]:   # not in this (synthetic) mapping
+        regen.check_root_not_consolidated(Path(ok), repo_root=tmp_path)
+
+
+def test_main_refuses_consolidated_root_before_loading_anything(tmp_path, monkeypatch):
+    _write_mapping(tmp_path, ["results/humaneval_regen_2026_11_stripped/MANIFEST.gpu2.json"])
+    monkeypatch.setattr(regen, "REPO_ROOT", tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(regen, "load_tokenizer", lambda *a, **k: pytest.fail("loaded a tokenizer"))
+    with pytest.raises(SystemExit, match="consolidated"):
+        regen.main(["--model", "Qwen/Qwen2.5-Coder-1.5B", "--configs", "greedy", "--prompt-variant", "stripped",
+                    "--out-root", "results/humaneval_regen_2026_11_stripped", "--resume"])
+
+
+def test_consolidated_mapping_path_constant():
+    assert regen.CONSOLIDATED_ROOT == Path("results/regen_2026_11")
+    assert regen.CONSOLIDATED_MAPPING == Path("results/regen_2026_11/path_mapping.tsv")
+
+
+# ---- Guard hardening (2026-11-10, reviewer): both guards compare the RESOLVED path (realpath: `..`, `.`, symlinks),
+# so `results/../results/regen_2026_11/...`, `results/x/../regen_2026_11/...` or a symlink into the archive are
+# refused too, not only the literal spelling.
+@pytest.mark.parametrize("root", [
+    "results/../results/regen_2026_11/humaneval/humaneval_regen_2026_11_x",
+    "results/foo/../regen_2026_11/humaneval_regen_2026_11_x",
+    "results/./regen_2026_11/humaneval/humaneval_regen_2026_11_x",
+    "results//regen_2026_11/humaneval_regen_2026_11_x",
+    "results/humaneval_regen_2026_11_smoke/../regen_2026_11/humaneval_regen_2026_11_x",
+])
+def test_out_root_inside_archive_via_dotdot_is_refused(root, tmp_path, monkeypatch):
+    with pytest.raises((ValueError, SystemExit), match="regen_2026_11"):
+        regen._check_out_root(Path(root))
+    monkeypatch.chdir(tmp_path)   # cwd-relative, archive absent: still refused (the spelling resolves inside it)
+    with pytest.raises((ValueError, SystemExit), match="regen_2026_11"):
+        regen._check_out_root(Path(root))
+
+
+def test_out_root_symlinked_into_archive_is_refused(tmp_path, monkeypatch):
+    archive = tmp_path / "results" / "regen_2026_11" / "humaneval"
+    archive.mkdir(parents=True)
+    (tmp_path / "results" / "humaneval_regen_2026_11_link").symlink_to(archive / "humaneval_regen_2026_11_y",
+                                                                       target_is_directory=True)
+    (archive / "humaneval_regen_2026_11_y").mkdir()
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises((ValueError, SystemExit), match="regen_2026_11"):
+        regen._check_out_root(Path("results/humaneval_regen_2026_11_link"))
+
+
+@pytest.mark.parametrize("ok", ["results/humaneval_regen_2026_11_smoke", "results/../results/humaneval_regen_2026_11_x",
+                                "results/regen_2026_11_other/humaneval_regen_2026_11_x"])
+def test_out_root_outside_archive_still_allowed(ok):
+    regen._check_out_root(Path(ok))
+
+
+def test_consolidated_source_root_via_dotdot_is_refused(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    stripped = "results/humaneval_regen_2026_11_stripped"
+    _write_mapping(tmp_path, [f"{stripped}/MANIFEST.gpu2.json"])
+    for root in ["results/../results/humaneval_regen_2026_11_stripped", "results/x/../humaneval_regen_2026_11_stripped",
+                 "results/./humaneval_regen_2026_11_stripped", "./results/humaneval_regen_2026_11_stripped",
+                 f"{stripped}/", tmp_path / "results" / ".." / "results" / "humaneval_regen_2026_11_stripped"]:
+        with pytest.raises(SystemExit, match="path_mapping.tsv"):
+            regen.check_root_not_consolidated(Path(root), repo_root=tmp_path)
+    regen.check_root_not_consolidated(Path("results/../results/humaneval_regen_2026_11_smoke"), repo_root=tmp_path)
+
+
+# ---- Guard hardening 2 (2026-11-10, reviewer): check_root_not_consolidated resolves a relative --out-root against
+# the CWD (where the writes go, same base as _inside_archive), not REPO_ROOT; and compares case-folded parts (macOS
+# APFS is case-insensitive, so `Results/...` is the same directory).
+def _consolidated_repo(tmp_path):
+    (tmp_path / "results").mkdir(exist_ok=True)
+    _write_mapping(tmp_path, ["results/humaneval_regen_2026_11_stripped/MANIFEST.gpu2.json"])
+
+
+def test_consolidated_root_relative_to_cwd_subdir_is_refused(tmp_path, monkeypatch):
+    _consolidated_repo(tmp_path)
+    monkeypatch.chdir(tmp_path / "results")
+    with pytest.raises(SystemExit, match="path_mapping.tsv"):
+        regen.check_root_not_consolidated(Path("../results/humaneval_regen_2026_11_stripped"), repo_root=tmp_path)
+    with pytest.raises(SystemExit, match="path_mapping.tsv"):
+        regen.check_root_not_consolidated(Path("humaneval_regen_2026_11_stripped"), repo_root=tmp_path)
+    # the same spelling that would be the root from REPO_ROOT is a different directory from here: allowed
+    regen.check_root_not_consolidated(Path("results/humaneval_regen_2026_11_stripped"), repo_root=tmp_path)
+
+
+@pytest.mark.parametrize("root", ["Results/humaneval_regen_2026_11_stripped",
+                                  "RESULTS/HumanEval_Regen_2026_11_Stripped",
+                                  "results/humaneval_regen_2026_11_STRIPPED/"])
+def test_consolidated_root_case_variant_is_refused(root, tmp_path, monkeypatch):
+    _consolidated_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit, match="path_mapping.tsv"):
+        regen.check_root_not_consolidated(Path(root), repo_root=tmp_path)
+
+
+def test_consolidated_root_absolute_is_refused(tmp_path, monkeypatch):
+    _consolidated_repo(tmp_path)
+    monkeypatch.chdir("/")
+    with pytest.raises(SystemExit, match="path_mapping.tsv"):
+        regen.check_root_not_consolidated(tmp_path / "results" / "humaneval_regen_2026_11_stripped",
+                                          repo_root=tmp_path)
+
+
+@pytest.mark.parametrize("ok", ["results/humaneval_regen_rerun", "results/humaneval_regen_2026_11_stripped_v2",
+                                "Results/humaneval_regen_2026_11_stripped_v2", "humaneval_regen_2026_11_stripped"])
+def test_new_and_sibling_prefix_roots_still_allowed(ok, tmp_path, monkeypatch):
+    _consolidated_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    regen.check_root_not_consolidated(Path(ok), repo_root=tmp_path)
+
+
+def test_root_outside_repo_is_not_consolidated(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _consolidated_repo(repo)
+    other = tmp_path / "elsewhere"
+    (other / "results").mkdir(parents=True)
+    monkeypatch.chdir(other)   # same relative spelling, but outside REPO_ROOT: not a consolidated root
+    regen.check_root_not_consolidated(Path("results/humaneval_regen_2026_11_stripped"), repo_root=repo)

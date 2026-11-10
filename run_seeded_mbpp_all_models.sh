@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # run_seeded_mbpp_all_models.sh MODEL_ID [MODEL_ID ...] — SEEDED MBPP-full (500 tasks) regeneration, models run in the
-# given order. Analysis only (2026-11-08), NOT for the paper. Output root: results/mbpp_seeded_2026_11/<model dir>/
+# given order. Analysis only (2026-11-08), NOT for the paper. Default root (2026-11-10): results/mbpp_seeded_rerun/<model dir>/
+#   The completed seed-42 run (results/mbpp_seeded_2026_11/) now lives in the frozen archive results/regen_2026_11/mbpp/main/
+#   (old -> new: results/regen_2026_11/path_mapping.tsv); any RESULTS_DIR resolving inside results/regen_2026_11/ is
+#   refused (exit 8, scripts/mbpp_staging_common.sh).
 #
 # Per model, every config with --seed 42 (per-task reseeding, bench/seeding.py):
 #   base (bench/prompts.py:is_instruct_model False), each with the prompt of its MBPP Table I rows (user, 2026-11-08):
@@ -20,7 +23,7 @@
 #   CUDA_VISIBLE_DEVICES=0 ./run_seeded_mbpp_all_models.sh Qwen/Qwen2.5-Coder-7B m-a-p/OpenCodeInterpreter-DS-1.3B ...
 #   MAX_PROBLEMS=3 CUDA_VISIBLE_DEVICES=0 ./run_seeded_mbpp_all_models.sh <models>   # smoke (resumes into the same files)
 #   DRY_RUN=1 ./run_seeded_mbpp_all_models.sh <models>                              # print commands only
-# Environment: RESULTS_DIR (default results/mbpp_seeded_2026_11); PYTORCH_CUDA_ALLOC_CONF (default
+# Environment: RESULTS_DIR (default results/mbpp_seeded_rerun; never inside results/regen_2026_11/); PYTORCH_CUDA_ALLOC_CONF (default
 #   expandable_segments:True, an allocator setting only; set it, even to empty, to override); CUDA_VISIBLE_DEVICES
 #   is the caller's. SEED / SINGLE_BOS / EXTRA_PLESS_TEMPS are fixed by this script and refused if set.
 # Evaluation is NOT run here: run `python -m bench.eval` locally (project CLAUDE.md gotcha 9).
@@ -67,7 +70,7 @@ for m in "$@"; do   # validate the whole queue before anything runs
 done
 
 export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF-expandable_segments:True}"
-RESULTS_DIR="${RESULTS_DIR:-results/mbpp_seeded_2026_11}"
+RESULTS_DIR="${RESULTS_DIR:-results/mbpp_seeded_rerun}"
 SEED=42
 SINGLE_BOS=""
 MODEL_ID="$1"; LOG_TAG="mbpp_seeded"   # placeholders for the helper's source-time checks; set per model below

@@ -39,6 +39,12 @@ Analysis-only extra model (user request 2026-11-08, NOT for the paper): ``Qwen/Q
 is refused in every other root and other models are refused in that one (``check_model_for_root``).
 ``./run_regen_humaneval_8models.sh instruct7b-extra`` runs its four ``EXTRA_CONFIGS`` into
 ``results/humaneval_regen_2026_11_instruct7b_extra`` (passes both root checks above).
+
+Consolidation (2026-11-10): the FULL roots named above (and the superseded unstripped
+``results/humaneval_regen_2026_11``) are moved by ``scripts/consolidate_regen_2026_11.py`` into
+``results/regen_2026_11/humaneval/{main,superseded_unstripped}/``; old -> new paths in
+``results/regen_2026_11/path_mapping.tsv``. The runner refuses to write inside ``results/regen_2026_11/`` and to
+re-create a consolidated root (``check_root_not_consolidated``); the root names here are generation staging names.
 """
 from __future__ import annotations
 
@@ -60,6 +66,13 @@ from bench.humaneval.prompts import BIGCODE_HUMANEVAL_STOP_SEQUENCES, instruct_m
 
 DEFAULT_OUT_ROOT = Path("results/humaneval_regen_2026_11")
 _ALLOWED_ROOT_PREFIX = "humaneval_regen_2026_11"   # also allows e.g. results/humaneval_regen_2026_11_smoke
+# Consolidation (2026-11-10, scripts/consolidate_regen_2026_11.py): the FULL roots move into CONSOLIDATED_ROOT,
+# an archive that mixes the main / extra / instruct7b protocols by design (distinct MANIFEST.<source>.<host>.json
+# names). The runner never writes there (_check_out_root) and refuses to re-create a root listed as a source in
+# CONSOLIDATED_MAPPING (check_root_not_consolidated); smoke / diag / fit roots are not sources and stay writable.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+CONSOLIDATED_ROOT = Path("results/regen_2026_11")
+CONSOLIDATED_MAPPING = CONSOLIDATED_ROOT / "path_mapping.tsv"
 DEFAULT_SEED = 42
 DEFAULT_MAX_NEW_TOKENS = 512
 DATASET = ("openai/openai_humaneval", "test")
@@ -413,9 +426,57 @@ def completed_task_ids(path: Path, resume: bool, expected: dict | None = None) -
     return {r["task_id"] for r in recs}
 
 
+def _inside_archive(path: Path) -> bool:
+    """True if ``path`` RESOLVES (os.path.realpath: ``..``, ``.``, symlinks; cwd-relative like the writes) to a
+    location inside a ``results/regen_2026_11`` tree (any parent dir, case-insensitive) or inside the repo's archive."""
+    resolved = Path(os.path.realpath(path))
+    parts = tuple(x.lower() for x in resolved.parts)
+    target = tuple(x.lower() for x in CONSOLIDATED_ROOT.parts)
+    n = len(target)
+    if any(parts[i:i + n] == target for i in range(len(parts) - n + 1)):
+        return True
+    archive = Path(os.path.realpath(REPO_ROOT / CONSOLIDATED_ROOT))
+    return resolved == archive or archive in resolved.parents
+
+
 def _check_out_root(out_root: Path) -> None:
+    if _inside_archive(Path(out_root)):
+        raise ValueError(f"--out-root {out_root} is inside the consolidated archive {CONSOLIDATED_ROOT}/; "
+                         f"generate into a new {_ALLOWED_ROOT_PREFIX}* root instead")
     if not Path(out_root).name.startswith(_ALLOWED_ROOT_PREFIX):
         raise ValueError(f"--out-root must be a folder named {_ALLOWED_ROOT_PREFIX}*; got {out_root}")
+
+
+def _repo_rel(p: Path, repo_root: Path) -> tuple[str, ...] | None:
+    """Case-folded parts of ``p`` resolved (realpath; relative paths are taken relative to the CWD, where the writes
+    go -- the same base as ``_inside_archive``) and made relative to ``repo_root``; None if it lies outside the repo.
+    Case-folded because macOS APFS is case-insensitive (``Results/x`` is ``results/x``)."""
+    p = Path(p)
+    if not p.is_absolute():
+        p = Path.cwd() / p
+    parts = tuple(x.casefold() for x in Path(os.path.realpath(p)).parts)
+    base = tuple(x.casefold() for x in Path(os.path.realpath(repo_root)).parts)
+    if parts[:len(base)] != base:
+        return None
+    return parts[len(base):]
+
+
+def check_root_not_consolidated(out_root: Path, repo_root: Path | None = None) -> None:
+    """SystemExit if ``out_root`` is a source root already moved by scripts/consolidate_regen_2026_11.py (listed
+    in CONSOLIDATED_MAPPING). No mapping file (before the move): no-op."""
+    repo_root = Path(repo_root) if repo_root is not None else REPO_ROOT
+    mapping = repo_root / CONSOLIDATED_MAPPING
+    if not mapping.is_file():
+        return
+    roots = set()
+    for line in mapping.read_text().splitlines()[1:]:
+        old = line.split("\t", 1)[0]
+        if old:
+            roots.add(tuple(x.casefold() for x in Path(old).parts[:2]))
+    rel = _repo_rel(Path(out_root), repo_root)
+    if rel is not None and rel in roots:
+        raise SystemExit(f"--out-root {out_root} was consolidated into {CONSOLIDATED_ROOT}/ (see {CONSOLIDATED_MAPPING}); "
+                         f"resuming here would regenerate it from scratch. Use a new {_ALLOWED_ROOT_PREFIX}* root.")
 
 
 def collect_versions(device_name: str | None = None) -> dict:
@@ -566,6 +627,7 @@ def parse_args(argv=None):
 def main(argv=None) -> None:
     args = parse_args(argv)
     _check_out_root(args.out_root)
+    check_root_not_consolidated(args.out_root)
     spec = get_model(args.model)
     names, backend = resolve_configs(args.model, args.configs)
     check_configs_for_root(names, args.out_root)

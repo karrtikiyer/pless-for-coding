@@ -3,6 +3,8 @@
 Status: **PLAN — not started.** Written 2026-11-06. Nothing runs until the user approves this plan and the
 GPU time budget (standing rule: no self-picked budgets). Tracked as TODO **D13** in `docs/theory/todos.md`.
 
+> **Paths (2026-11-10):** a consolidation of the FULL roots into `results/regen_2026_11/` was executed on 2026-11-10 (`scripts/consolidate_regen_2026_11.py`; 719 files, sha256-verified). Old -> new paths are in `results/regen_2026_11/path_mapping.tsv`; paths in dated entries below are left as written.
+
 ## 1. Why
 
 The paper's HumanEval table (Table II, `table_3b_humaneval`) cannot be trusted as it stands (D13):

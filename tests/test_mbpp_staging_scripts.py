@@ -15,8 +15,10 @@ import pytest
 REPO = Path(__file__).resolve().parents[1]
 BASE = "run_bigcode_mbpp_qwen25coder7b.sh"
 CHAT = "run_chat_mbpp_qwen25coder7binstruct.sh"
-BASE_ROOT = "results/mbpp_qwen25coder7b_2026_11"
-CHAT_ROOT = "results/mbpp_qwen25coder7binstruct_2026_11"
+# Default roots (2026-11-10): fresh, one per script. The earlier runs were moved into the frozen archive
+# results/regen_2026_11/ (scripts/consolidate_regen_2026_11.py), which the shared helper refuses as RESULTS_DIR.
+BASE_ROOT = "results/mbpp_qwen25coder7b_rerun"
+CHAT_ROOT = "results/mbpp_qwen25coder7binstruct_rerun"
 B = "uv run python -m bench --model Qwen/Qwen2.5-Coder-7B"
 C = "uv run python -m bench --model Qwen/Qwen2.5-Coder-7B-Instruct"
 BT = f"--prompt-style bigcode --mbpp-config full --results-dir {BASE_ROOT}"
@@ -208,7 +210,7 @@ def test_bos_check_refuses_caller_overrides(tmp_path, env):
 # ---- RESULTS_DIR override (2026-11-08): seeded reruns go to a NEW root, never into the old unseeded files
 @pytest.mark.parametrize("script,default,root", [(BASE, BASE_DEFAULT, BASE_ROOT), (CHAT, CHAT_DEFAULT, CHAT_ROOT)])
 def test_results_dir_override(tmp_path, script, default, root):
-    new = "results/mbpp_seeded_2026_11"
+    new = "results/mbpp_seeded_1234"
     rc, cmds, out = _dry_run(tmp_path, script, {"RESULTS_DIR": new, "SEED": "1234"})
     assert rc == 0, out
     assert cmds == [(s, c.replace(f"--results-dir {root}", f"--results-dir {new}") + " --seed 1234") for s, c in default]
@@ -220,3 +222,40 @@ def test_results_dir_override(tmp_path, script, default, root):
 def test_bos_check_refuses_results_dir_env(tmp_path):
     rc, _, cmds, out = _bos_dry_run(tmp_path, ["codellama/CodeLlama-7b-Instruct-hf", "r"], {"RESULTS_DIR": "x"})
     assert rc == 2 and cmds == [], out
+
+
+# ---- Frozen archive (2026-11-10): RESULTS_DIR / OUT_ROOT resolving inside results/regen_2026_11/ is refused (exit 8)
+ARCHIVE_SPELLINGS = ["results/regen_2026_11", "results/regen_2026_11/mbpp/unseeded_qwen25coder7b",
+                     "results/../results/regen_2026_11/mbpp/main", "results/foo/../regen_2026_11/x",
+                     "./results/./regen_2026_11/x/", "results//regen_2026_11/x"]
+
+
+@pytest.mark.parametrize("script", [BASE, CHAT])
+@pytest.mark.parametrize("bad", ARCHIVE_SPELLINGS)
+@pytest.mark.parametrize("extra", [{}, {"SEED": "1234"}, {"EXTRA_PLESS_TEMPS": "1"}])
+def test_archive_results_dir_refused(tmp_path, script, bad, extra):
+    rc, cmds, out = _dry_run(tmp_path, script, {"RESULTS_DIR": bad, **extra})
+    assert rc == 8 and cmds == [], out
+    assert "frozen archive" in out and "results/regen_2026_11" in out
+
+
+@pytest.mark.parametrize("script", [BASE, CHAT])
+def test_archive_results_dir_refused_absolute(tmp_path, script):
+    rc, cmds, out = _dry_run(tmp_path, script,
+                             {"RESULTS_DIR": str(tmp_path / "work" / "results" / "x" / ".." / "regen_2026_11")})
+    assert rc == 8 and cmds == [], out
+
+
+@pytest.mark.parametrize("bad", ["results/regen_2026_11/bos", "results/../results/regen_2026_11/bos"])
+def test_bos_check_refuses_archive_out_root(tmp_path, bad):
+    rc, _, cmds, out = _bos_dry_run(tmp_path, ["codellama/CodeLlama-7b-Instruct-hf", bad])
+    assert rc == 8 and cmds == [], out
+
+
+@pytest.mark.parametrize("script,root", [(BASE, BASE_ROOT), (CHAT, CHAT_ROOT)])
+def test_default_roots_fresh_and_comments_point_outside_archive(script, root):
+    assert not root.startswith("results/regen_2026_11")
+    text = (REPO / script).read_text()
+    assert f'RESULTS_DIR="${{RESULTS_DIR:-{root}}}"' in text
+    assert "RESULTS_DIR=results/regen_2026_11" not in text   # no comment suggests the archive as a "new root"
+    assert BASE_ROOT != CHAT_ROOT

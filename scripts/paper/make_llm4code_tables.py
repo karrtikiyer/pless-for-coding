@@ -21,7 +21,8 @@ where the metrics JSON is missing.
 
 Table II (table_3b_humaneval) modes, --humaneval-table:
   regen (default)  The paper's current Table II: the stripped-protocol HumanEval regeneration
-                   (results/humaneval_regen_2026_11_stripped/), built by importing
+                   (results/regen_2026_11/humaneval/main/; before the 2026-11-10 consolidation
+                   results/humaneval_regen_2026_11_stripped/), built by importing
                    scripts/paper/stage_humaneval_regen_table.py (render_paper_tex /
                    render_paper_md: nodash rows + the paper header). Written to --out-dir
                    and mirrored.

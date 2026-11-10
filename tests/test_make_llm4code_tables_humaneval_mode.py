@@ -52,6 +52,13 @@ def _load(name: str, path: Path):
 
 mlt = _load("make_llm4code_tables_under_test", SCRIPT)
 
+# Table II data root: the consolidated root (results/regen_2026_11/humaneval/main, the staging script's RESULTS_ROOT)
+# after scripts/consolidate_regen_2026_11.py --execute, the pre-consolidation root before it. Exactly one must exist.
+_ST = mlt._load_stage_module()
+_HE_ROOTS = [p for p in (_ST.RESULTS_ROOT, REPO_ROOT / "results" / "humaneval_regen_2026_11_stripped") if p.is_dir()]
+assert len(_HE_ROOTS) == 1, f"expected exactly one HumanEval regen root, found {_HE_ROOTS}"
+HE_ROOT = _HE_ROOTS[0]
+
 
 def _sha_tree(d: Path) -> dict[str, str]:
     if not d.is_dir():
@@ -120,7 +127,8 @@ def _build(tmp_path: Path, *args: str, seed_paper: dict[str, bytes] | None = Non
     for d, seed in ((pdir, seed_paper), (tdir, seed_tables)):
         for name, data in (seed or {}).items():
             (d / name).write_bytes(data)
-    mlt.main(["--out-dir", str(tdir), "--paper-out-dir", str(pdir), *args])
+    regen_root = [] if "--humaneval-regen-root" in args else ["--humaneval-regen-root", str(HE_ROOT)]
+    mlt.main(["--out-dir", str(tdir), "--paper-out-dir", str(pdir), *regen_root, *args])
     return tdir, pdir
 
 
@@ -188,7 +196,7 @@ def test_regen_other_tables_identical_to_prechange(tmp_path, golden):
 def test_regen_3b_uses_staging_builder(tmp_path):
     st = mlt._load_stage_module()
     tdir, _ = _build(tmp_path)
-    assert (tdir / f"{SLUG_3B}.tex").read_text() == st.render_paper_tex(st.build_groups(st.RESULTS_ROOT))
+    assert (tdir / f"{SLUG_3B}.tex").read_text() == st.render_paper_tex(st.build_groups(HE_ROOT))
 
 
 # ---------------------------------------------------------------- mirroring into the paper dir

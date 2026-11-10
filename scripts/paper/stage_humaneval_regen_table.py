@@ -2,7 +2,7 @@
 
 STAGING ONLY. Writes nothing under ``paper/`` or the sibling paper repo; every
 output path is checked by ``guard_output_path`` against the staging directory
-``results/humaneval_regen_2026_11_stripped/analysis/`` and a fixed set of names:
+``results/regen_2026_11/humaneval/main/analysis/main/`` and a fixed set of names:
 
     table_ii_staging.{md,tex}         n=1 rows (greedy, beam@4): "—" for pass@3/5/10,
                                       cov@0.3, cov@0.7, cb_div + a footnote
@@ -26,8 +26,14 @@ staging or draft comments) is rendered by ``render_paper_tex`` / ``render_paper_
 This script never writes it; ``scripts/paper/make_llm4code_tables.py`` imports those
 two functions (``--humaneval-table regen``, its default) and writes the paper table.
 
+Results root (``--results-root``, default ``RESULTS_ROOT``): the consolidated HumanEval main root
+``results/regen_2026_11/humaneval/main/`` (scripts/consolidate_regen_2026_11.py; before that move the same files
+were in ``results/humaneval_regen_2026_11_stripped/``, see ``results/regen_2026_11/path_mapping.tsv``).
+
 Usage:
     uv run python scripts/paper/stage_humaneval_regen_table.py
+    # read-only check: paper copy rendered from --results-root vs DIR/table_3b_humaneval.{tex,md}; exit 1 on diff
+    uv run python scripts/paper/stage_humaneval_regen_table.py --check-paper-dir ../pless-for-coding-paper/tables
 """
 
 from __future__ import annotations
@@ -46,8 +52,9 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from bench.eval.headline_table import headline_row  # noqa: E402
 
-RESULTS_ROOT = REPO_ROOT / "results" / "humaneval_regen_2026_11_stripped"
-STAGING_DIR = RESULTS_ROOT / "analysis"
+RESULTS_ROOT = REPO_ROOT / "results" / "regen_2026_11" / "humaneval" / "main"
+STAGING_DIR = RESULTS_ROOT / "analysis" / "main"
+PAPER_TABLE_NAMES = ("table_3b_humaneval.tex", "table_3b_humaneval.md")
 OUTPUT_NAMES = (
     "table_ii_staging.md",
     "table_ii_staging.tex",
@@ -215,7 +222,7 @@ def render_md(groups: list[Group], *, na_single_sample: bool, provenance: str | 
     lines = [f"# Table II (STAGING) — HumanEval (164 problems; n=10 sampling, n=1 greedy/beam) — {variant}", ""]
     lines.append("Not for the paper until the user reviews it. Every value from "
                  "`bench.eval.headline_table.headline_row` on the metrics JSONs under "
-                 "`results/humaneval_regen_2026_11_stripped/<model>/metrics/`.")
+                 "`results/regen_2026_11/humaneval/main/<model>/metrics/`.")
     if provenance:
         lines += ["", provenance]
     lines += ["", f"Draft caption (user to review): {DRAFT_CAPTION}", ""]
@@ -319,17 +326,43 @@ def _provenance(argv: list[str]) -> str:
     return f"Generated {ist}; git {commit}; command: `{cmd}`"
 
 
-def main(argv: list[str] | None = None) -> None:
+def check_paper_table(groups: list[Group], paper_dir: Path) -> list[str]:
+    """Read-only: compare render_paper_tex / render_paper_md byte-for-byte with ``paper_dir``'s Table II files.
+    Returns one message per missing or differing file (empty list = identical)."""
+    rendered = {"table_3b_humaneval.tex": render_paper_tex(groups), "table_3b_humaneval.md": render_paper_md(groups)}
+    problems = []
+    for name in PAPER_TABLE_NAMES:
+        p = Path(paper_dir) / name
+        if not p.is_file():
+            problems.append(f"missing: {p}")
+        elif p.read_bytes() != rendered[name].encode():
+            problems.append(f"DIFFERS: {p}")
+    return problems
+
+
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results-root", type=Path, default=RESULTS_ROOT)
     ap.add_argument("--out-dir", type=Path, default=STAGING_DIR,
                     help="must be the staging dir; anything else is refused")
+    ap.add_argument("--check-paper-dir", type=Path, default=None,
+                    help="read-only: compare the paper copy of Table II rendered from --results-root with "
+                         "DIR/table_3b_humaneval.{tex,md}; writes nothing; exit 1 if any file differs or is missing")
     args = ap.parse_args(argv)
     groups = build_groups(args.results_root)
+    if args.check_paper_dir is not None:
+        problems = check_paper_table(groups, args.check_paper_dir)
+        for msg in problems:
+            print(msg)
+        if not problems:
+            print(f"IDENTICAL: {', '.join(PAPER_TABLE_NAMES)} in {args.check_paper_dir} "
+                  f"== render from {args.results_root}")
+        return 1 if problems else 0
     written = write_outputs(groups, out_dir=args.out_dir, provenance=_provenance(sys.argv))
     for p in written:
         print(f"wrote {p.relative_to(REPO_ROOT)}", file=sys.stderr)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

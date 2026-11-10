@@ -20,6 +20,8 @@ after a context loss. Every entry carries an IST timestamp. Append to the log; d
 
 ## Fixed facts
 
+> **Paths (2026-11-10):** a consolidation of the FULL roots into `results/regen_2026_11/` was executed on 2026-11-10 (`scripts/consolidate_regen_2026_11.py`; 719 files, sha256-verified). Old -> new paths are in `results/regen_2026_11/path_mapping.tsv`; paths in dated entries below are left as written.
+
 | Item | Value |
 |---|---|
 | Branch | `feat/humaneval-regen` (local and MSI) |
@@ -951,6 +953,211 @@ coordinates, monitors the MSI, briefs the agents, checks their hand-backs and up
     - Research-coder implementing (all MBPP sampling paths incl. the pless custom loop); then review.
     - Then resume: CodeLlama-7b-hf (from temp T0.7) → Llama-2-7b-hf on GPU0; CodeLlama-7b-Instruct → Llama-2-chat on GPU1
       after Qwen2.5-Coder-3B.
+- **2026-11-09: OOM auto-retry reviewed** (no blockers: the retry runs outside the except scope, so memory is freed).
+  - Committed `c911492`, pushed, pulled on GPU2.
+- **2026-11-09 11:21:47 IST: seeded MBPP RESUMED.**
+  - GPU0: CodeLlama-7b-hf → Llama-2-7b-hf.
+  - GPU1: an on-machine waiter runs CodeLlama-7b-Instruct → Llama-2-chat after Qwen2.5-Coder-3B (`logs/q3b_seeded.done`).
+  - Markers `logs/resume_gpu{0,1}.*`.
+  - **First real retry, 11:23 IST:** "OOM on task_id=493: retried with batch size 2 (ok)" (batch 5 also OOM'd). The record has
+    seed 42, hf_batch_size 2, oom_retry true, 10 samples.
+  - Disclose: the retried tasks are a different (still seeded) draw than an unchunked run.
+- **2026-11-09 14:05 IST**: seeded Qwen2.5-Coder-3B MBPP DONE on GPU1 (11 × 500). The on-machine waiter then starts
+  CodeLlama-7b-Instruct → Llama-2-chat.
+- **2026-11-09: user questions on old vs new HE rows** (main session, measured).
+  - **CodeLlama-7b-hf T@0.7, 4.21% → 25.73%:** the old file (2026-03-02) predates the decode fix `d872d45` (2026-03-04).
+    - 1,271/1,640 old bodies start with 3 spaces under a 4-space docstring (SentencePiece leading-space strip when
+      decoding new tokens alone), so they hit IndentationError.
+    - The +1-space diagnostic gives 25.24%.
+    - MBPP is unaffected: its rows were generated 03-23..03-31, after the fix, and MBPP completions start a column-0 `def`, so
+      nothing can be stripped (old decode == fixed decode).
+  - **CodeLlama-7b-Instruct greedy, HE 35.98% → 43.29%** (note: 42.20% is the MBPP value).
+    - The old Dec-2025 extracted code re-graded with the new official grader gives 59/164 = 35.98%: the grader is NOT the cause.
+    - New replies give 71/164; without the indent repair 70; without the indent repair AND the [PYTHON]/fence normalisation 66.
+      So about 5 tasks come from the new grader's reply-format handling and about 7 from different generated replies.
+    - [Likely] the old double BOS (not verified for this file), HF vs vLLM, and code/stop changes. Greedy is deterministic, so
+      this is a different stack, not sampling noise.
+- **2026-11-09: PLANNED (user), after the seeded MBPP run finishes: consolidate FULL regeneration results only** into
+  `results/regen_2026_11/`, with a README index:
+  - `humaneval/main` ← `humaneval_regen_2026_11_stripped`;
+  - `humaneval/extra_temps` ← `_stripped_extra`;
+  - `humaneval/qwen25coder7b_instruct` ← `_instruct7b`, with `extra_temps/` ← `_instruct7b_extra`;
+  - `humaneval/superseded_unstripped` ← `humaneval_regen_2026_11`;
+  - `mbpp/seeded` ← `mbpp_seeded_2026_11`;
+  - `mbpp/unseeded_qwen25coder7b` ← `mbpp_qwen25coder7b_2026_11` + `mbpp_qwen25coder7binstruct_2026_11`.
+
+  **Smoke/fit/diag/bos_check/seed_check folders stay where they are** (user).
+  - Steps:
+    1. Code paths first (19 files reference the old roots; research-coder + code-reviewer), with Table II rebuilt
+       byte-identical from the new path.
+    2. Then a checksummed move (data-wrangler).
+    3. Then an old→new mapping table here and in the README.
+  - GPU2 keeps the old names until its jobs finish.
+  - **Layout REVISED (user, same day): HumanEval arranged like MBPP**, with all configs, including the T=0.6/T=1.0 extras,
+    together in each model folder. Qwen2.5-Coder-7B-Instruct also goes under `humaneval/main` (as in `mbpp/seeded`). Final:
+    - `humaneval/main/` (9 models) ← `_stripped` + `_stripped_extra` + `_instruct7b` + `_instruct7b_extra`;
+    - `humaneval/superseded_unstripped/` ← `humaneval_regen_2026_11`;
+    - `mbpp/main/` (9 models) ← `mbpp_seeded_2026_11`. Renamed from `seeded` (user: both benchmarks named `main`; every HE
+      run is seeded too, so "seeded" would not distinguish anything there);
+    - `mbpp/unseeded_qwen25coder7b/` ← both unseeded Qwen-7B MBPP roots.
+  - Handling:
+    - no file-name collisions;
+    - keep each source's MANIFEST/README under distinct names;
+    - `analysis/` split into `analysis/main` and `analysis/extra_temps` (same-named validator scripts);
+    - relax the regen.py root/model guards (`check_configs_for_root`, `check_model_for_root`) for the merged layout, with tests;
+    - Table II builder keeps its explicit 8-model list, with a byte-identical test with the 9th model present;
+    - README marks which 8 models feed Table II.
+- **2026-11-09 18:22 / 20:14 IST: status.**
+  - GPU0 queue DONE at 19:37 (`resume_gpu0.done`): CodeLlama-7b-hf, Llama-2-7b-hf (10 × 500 each).
+  - GPU1: CodeLlama-7b-Instruct done; Llama-2-7b-chat at 3,041/5,000 rows (pless T1.0 running); 0 FAIL.
+  - **22 OOM auto-retries, all ok:** task 493 in every sampled config of CodeLlama-7b-hf, CodeLlama-7b-Instruct and
+    Llama-2-7b-hf (batch 2) plus Llama-2-chat temp (batch 2); task 462 at batch 5 in CodeLlama-7b-hf pless/pless_norm T1.0.
+  - 20:15 IST: data-wrangler copying the 8 finished models (Llama-2-chat excluded). Grading in one pass after the 9th model.
+- **2026-11-09: 8-model copy DONE** (data-wrangler).
+  - 84 JSONL sha256 match; 42,000 rows before and after; 131 logs in `results/mbpp_seeded_2026_11/gpu2_logs/` (2 of them
+    were partial because still being written).
+  - All integrity checks pass:
+    - 500 ids; n; config fields; seed 42; single_bos only on the 2 chat models; `_bigcode_` names only on OCI/Qwen base;
+    - prompts identical to April (or to the unseeded Nov roots for Qwen-7B/-Instruct).
+  - 3-shot models start at column 0: 99.96% / 99.92%; no leading-space stripping.
+  - OCI has 85 empty samples (84 on task 367, as in April's 81).
+  - **CORRECTION: OOM retries = 26 in these 8 models, not 22**, all ok, all 10 samples:
+    - task 493 at batch 2 in every sampled config of CodeLlama-7b-hf, CodeLlama-7b-Instruct and Llama-2-7b-hf (24);
+    - task 462 at batch 5 in CodeLlama-7b-hf pless/pless_norm T1.0 (2).
+
+    The earlier figure counted log lines (some held 2 retries) before Llama-2-7b-hf had finished. Llama-2-chat adds more.
+  - The MBPP runner writes no MANIFEST/README (only the HE runner does). The consolidation README will document the MBPP
+    protocol.
+- **2026-11-09 20:41 IST: Llama-2-7b-chat's remaining configs split across both GPUs** (user request; GPU0 had been idle
+  since 19:37).
+  - Stopped only the queue drivers (PIDs 2802480, 3333245). The running pless_t1.0 job (PID 369410) and its tee kept going.
+    No `resume_gpu1.*` marker will be written.
+  - Configs per GPU are disjoint, because resume reads completed ids only at start, so two processes on one file would
+    duplicate tasks:
+    - GPU0: pless_norm_t1.0 → pless_t0.6;
+    - GPU1: wait for 369410 → check 500/500 pless_t1.0 → pless_norm_t0.6.
+  - The command is identical to the queue's CMD (`--seed 42 --single-bos`, `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`),
+    run inline over ssh (no script copied).
+  - Each config is checked for 500 rows and 500 unique ids.
+  - Markers `logs/split_gpu{0,1}.{done,failed}`; logs `*_split.log`, `split_gpu*_driver.log`.
+  - The cross-GPU seed check (3/3 identical) supports moving configs between cards.
+  - A first launch attempt at 20:38 started nothing: the script was read in the backgrounded part of the command, so it was
+    empty. Relaunched at 20:41 and verified running.
+- **2026-11-09 21:46 IST: seeded MBPP generation COMPLETE for all 9 models.**
+  - `split_gpu0.done` and `split_gpu1.done`.
+  - Llama-2-7b-chat: 10/10 configs at 500 rows and 500 unique ids. GPU0 finished pless_norm_t1.0 at 21:14 and pless_t0.6 at
+    21:46; GPU1 finished pless_t1.0 at about 20:46 and pless_norm_t0.6 at about 21:16.
+  - Next: data-wrangler copy and check of Llama-2-chat → one local grading pass for all 9 (load-logged) → results-validator
+    → consolidation into `results/regen_2026_11/`.
+- **2026-11-09 21:50 IST: Llama-2-7b-chat copy DONE** (data-wrangler).
+  - 10 JSONL, sha256 match; 500 rows on both sides each; all 500 ids.
+  - seed 42 and single_bos True in all 5,000 records; method and temperature match the filenames.
+  - The 2 kept smoke rows (tasks 11 and 12) are consistent; no duplicate ids.
+  - prompt_text is identical to April for 500/500 tasks in every config. This covers the raw MBPP text only, because the
+    chat-template rendering is not stored.
+  - 0 empty samples.
+  - **OOM retries: 8** (task 493, batch 2, in all 8 sampled configs; 10 samples each). **Final total for the seeded MBPP
+    run: 34 = 26 + 8.**
+  - 2 local logs had been truncated copies (exact prefixes) and were replaced with the full GPU2 files.
+- **2026-11-09 21:52 IST: grading started** (experiment-harness). One sequential pass over all 94 files with
+  `bench.eval --dataset mbpp --skip-structural-diversity`, gated on 1-min load < 2.
+  - Per-file load log: `results/mbpp_seeded_2026_11/grading_log_2026_11.tsv`.
+  - The local load was 2.61 at the start. `/tmp/pless_cpu_heavy.lock` existed but was not held (stale content from an
+    LCB session).
+- **2026-11-09 22:26 IST: GPU2 disk cleanup** (user approved options 1 and 2).
+  - Removed `~/.cache/pip` (26G).
+  - Ran `uv cache prune`: removed 337,818 files (14.4 GiB); `~/.cache/uv` went from 77G to 43G by du.
+  - Free space on `/` went from 27G to 67G (97% → 93% used). No processes were running.
+  - **PENDING (user approved, gated on the results-validator passing the seeded-MBPP grading):** delete this paper's 9 regen
+    models from GPU2's HF cache (~93G) with `hf cache delete`, not rm, because `hub/blobs` is shared:
+    - CodeLlama-7b-hf, CodeLlama-7b-Instruct-hf, Llama-2-7b-hf, Llama-2-7b-chat-hf, Qwen2.5-Coder-7B,
+      Qwen2.5-Coder-7B-Instruct, Qwen2.5-Coder-3B, Qwen2.5-Coder-1.5B, OpenCodeInterpreter-DS-1.3B.
+    - Keep Qwen3-8B, DeepSeek-R1-Distill-Llama-8B and Ministral-3-3B/8B.
+    - Do not touch third-party models (owner unknown).
+- **2026-11-09 22:32 IST: GPU2: user-requested removal of 9 non-project HF models** with `hf cache rm --yes` (huggingface_hub
+  1.6.0), after a dry run.
+  - Removed: Qwen2.5-7B-Instruct, Llama-3.1-Nemotron-Nano-8B-v1, Llama-3.1-Storm-8B, Llama-SEA-LION-v3.5-8B-R,
+    stable-diffusion-xl-base-1.0, FLUX.1-Fill-dev (about 11G of it was `.incomplete` blobs from a download that stopped on
+    2026-05-06), FLUX.2-klein-9B, Qwen3-TTS-12Hz-1.7B-Base and Qwen3-TTS-12Hz-0.6B-Base.
+  - The tool reported freeing 97.3G; no leftover directories.
+  - Free space on `/` went from 67G to 168G (81% used); the HF hub went from 247G to 146G; 23 model repos remain.
+- **2026-11-10 02:06 IST: seeded MBPP grading DONE** (experiment-harness), 21:52 → 02:06 (about 4h14m; about 1h of it was
+  bench.eval itself).
+  - 94/94 exit code 0, and all 94 metrics JSONs written to `<model>/metrics/`.
+  - 3 files re-graded after foreign load > 3; attempt 2 is final:
+    - Coder-1.5B pless_norm_bigcode_t0.7 (unidentified python3);
+    - Coder-7B pless_norm_bigcode_t0.6 (Spotlight mds, load 8.54);
+    - Llama-2-chat top_p0.9_t1.0 (Brave).
+  - load1 at start was < 2 for every final file; the max during final files was 4.81, mostly from bench.eval's own workers.
+  - The grading code did not change during the run: HEAD moved to 43687e4 via another session (CF748 script only), and the
+    `bench/eval` diff is empty.
+  - Log: `results/mbpp_seeded_2026_11/grading_log_2026_11.tsv` (97 rows). Driver: `/tmp/mbpp_grade/`.
+  - Next: results-validator (recompute pass@k, seeded vs unseeded paired CIs, timeout vs load, OOM-task disclosure, p-less
+    vs p-less-norm separately) → staging tables in `results/mbpp_seeded_2026_11/analysis/`.
+- **2026-11-10 04:33 IST: results-validator PASS** (no leakage or stop condition).
+  - **Recompute:** pass@k and cov@t recomputed for all 94 files, max |diff| = 0.
+    - All 389,000 samples were re-executed; 30 flips, all from PYTHONHASHSEED (≤0.12pp per file) → **E30**.
+  - **Completeness:** OK.
+  - **Seeded vs prior:** 5/94 CIs exclude 0, about the 4.7 expected by chance; min BH q = 0.69; mean Δ −0.07pp.
+    - Nov-env priors match 500/500 on greedy.
+    - April greedy/beam text matches only 287–439/500 for the non-chat models, with no protocol change. Unverified
+      hypothesis: environment drift → **E31**.
+    - BOS: seeded chat greedy is identical to the single-BOS check run.
+  - **Timeouts:** 716 timeouts, all genuine (0 pass at 15/30 s). Load-induced flips: 0 measured.
+    - Spearman(load, flips) = 0.12, p = 0.26. The load/timeout correlation goes from the timeouts to the load.
+  - **OOM:** tasks 462 and 493 are 0/10 in every affected config, both seeded and prior → 0pp.
+    - Per-task reseed before each chunked retry was verified in code.
+    - Disclosure draft: "34 records (task 493 at batch 2 in the sampled configs of four 7B Llama-family models; task 462 at
+      batch 5 in CodeLlama-7b-hf p-less/p-less-norm T1.0) were regenerated in smaller chunks after CUDA OOM, which
+      changes the random draw for that task only; all such tasks scored 0/10 in both seeded and unseeded runs."
+  - **p-less vs p-less-norm:** ≥4995/5000 identical samples under the shared seed; Δ = 0 in 24/27 pairs. Not merged: each
+    arm comes from its own file, and Δ = 0 does not show equal expected pass@1.
+  - My own spot check (Llama-2-chat): greedy 20.80, pless_t0.7 20.36 (recomputed from per_task, matching the table);
+    pless vs pless_norm T0.7 5000/5000 identical.
+  - Outputs: `results/mbpp_seeded_2026_11/analysis/{seeded_mbpp_tables.md, validated_seeded_comparisons.md}`, plus
+    scripts and raw json.
+  - The GPU2 model deletion is now unblocked, but SSH failed at about 04:40 IST because the 1Password agent was locked.
+- **2026-11-10 ~04:45 IST:** the consolidation research-coder was killed mid-task by an API budget 429 (workspace monthly
+  budget). No data had moved. Resumed via SendMessage at about 06:10 IST.
+- **2026-11-10 06:10–06:20 IST: GPU2: deleted this paper's 9 regen models** (approved, gated on validation).
+  - A live Qwen3-8B APPS job from another session (vllm032_env) was running throughout and was still running afterwards.
+  - Pre-check: the 108 blob files of the deleted models share no file with the 99 of the kept models.
+  - `hf cache rm --yes`: the tool said "freed 96.4G", but df only gained 11G. The model dirs were symlinks into the shared
+    `hub/blobs/`, and `hf cache rm` left those blobs behind.
+  - Unreferenced blobs: 63 (79G). Removed only the 48 dated 2026-11-07, the download date of the 6 deleted 7B models (65G).
+  - **Left in place:** 15 unreferenced blobs (about 14G) dated 2026-09-28/29, 10-08 and 10-14. These dates match the kept
+    Ministral-8B/DeepSeek-R1-Distill/Ministral-3B downloads; they may be old revisions. Not removed.
+  - Result: `/` has 244G free (72% used); HF hub is at 71G. The kept models' blobs are all present, and the APPS job is still
+    running.
+- **2026-11-10: CONSOLIDATION DONE → `results/regen_2026_11/`.**
+  - The research-coder prepared `scripts/consolidate_regen_2026_11.py` and repointed the code paths. The code-reviewer
+    said GO (no blocking issues). The data-wrangler executed the move.
+  - 719 files moved with os.rename, sha256 checked before and after; the hash multiset equals the pre-move manifest.
+  - The 8 old roots are gone; the 22 smoke/diag/fit/bos_check entries are unchanged.
+  - `path_mapping.tsv` (720 lines, including the header) and `README.md` are in `results/regen_2026_11/`.
+  - Table II `--check-paper-dir` reports IDENTICAL from the new root; 70 tests pass; a re-run of the script refuses.
+  - Paper dirs: checksums unchanged, write access restored.
+  - Pre-move snapshot: `~/backups/pless_regen_2026_11/regen_2026_11_premove_snapshot.tar` (sha256 2ec2cef9…), plus
+    `regen_2026_11_premove.sha`.
+  - **Open (from the review, non-blocking):**
+    - (1) The MBPP run scripts' default RESULTS_DIR now points inside the archive. Add the same refusal regen.py has, and
+      fix the "new root" comment example. Do this before any MBPP rerun.
+    - (2) 32 archived analysis scripts/JSONs inside the moved `analysis/` dirs hardcode the old roots; the README should
+      note this.
+    - (3) README: add a single_bos column; say the prompt formats are inferred from the stems and the runner; give the logs
+      dirs consistent names.
+    - (4) No `--rollback` in the consolidation script; recovery is the snapshot.
+  - **Follow-up fixes DONE (research-coder); code-reviewer GO.** Items (1)–(3) are addressed: MBPP defaults are
+    `results/*_rerun`, there is an archive refusal (exit 8) using realpath, regen.py's guards use realpath, and the README
+    has single_bos plus the notes.
+    - Reviewer checks: all 719 `path_mapping.tsv` rows match the pre-move sha file; single_bos matches every MBPP record; the
+      2 modified tests still exercise their original guards; tests 116/116 and 199/199.
+    - **Remaining holes (non-blocking):**
+      - (a) regen.py `_repo_rel` resolves a relative `--out-root` against REPO_ROOT instead of cwd, so a run from cwd=results/
+        can reach an old source root.
+      - (b) That check is case-sensitive, which matters on macOS APFS.
+      - (c) The MBPP shell guard blocks the archive tree but not the 3 moved source-root names.
+      - All three need unusual invocations; fix (a) and (b) before the next HumanEval run.
 - **2026-11-07**: AI-use acknowledgment (D15 item 6):
   - A revised draft was given to the user, with placement: `\section*{Acknowledgment}` after the Limitations
     subsection, before `\bibliographystyle`. No paper edits by Claude (user rule).

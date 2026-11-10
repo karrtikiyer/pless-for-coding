@@ -20,7 +20,7 @@ from bench.prompts import is_instruct_model
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = "run_seeded_mbpp_all_models.sh"
-ROOT = "results/mbpp_seeded_2026_11"
+ROOT = "results/mbpp_seeded_rerun"   # 2026-11-10: fresh root; results/regen_2026_11/ is a frozen archive (refused)
 
 HASAN_BASE = ["m-a-p/OpenCodeInterpreter-DS-1.3B", "Qwen/Qwen2.5-Coder-1.5B", "Qwen/Qwen2.5-Coder-3B",
               "Qwen/Qwen2.5-Coder-7B"]
@@ -392,3 +392,50 @@ def test_llama2_base_prompt_equals_shi_llama2_input_task11(monkeypatch, tmp_path
     assert ours.replace("    return (res) \n", "    return (res)\n") == shi.replace("    return (res) \n", "    return (res)\n")
     diff = [(i, a, b) for i, (a, b) in enumerate(zip(ours.splitlines(True), shi.splitlines(True))) if a != b]
     assert len(ours.splitlines()) == len(shi.splitlines()) and len(diff) == 1, diff   # ... exactly one line differs
+
+
+# ---- Frozen archive (2026-11-10): results/regen_2026_11/ (scripts/consolidate_regen_2026_11.py, sha256 in its
+# path_mapping.tsv) is never a RESULTS_DIR. The shared helper resolves RESULTS_DIR (`..`, `.`, `//`, symlinks) and
+# exits 8 before any command (no CMD line, no uv call), also without DRY_RUN.
+ARCHIVE_SPELLINGS = ["results/regen_2026_11", "results/regen_2026_11/mbpp/main", "results/regen_2026_11/",
+                     "results/../results/regen_2026_11/mbpp/main", "results/foo/../regen_2026_11/mbpp/x",
+                     "./results/./regen_2026_11/x", "results//regen_2026_11/x", "results/Regen_2026_11/x"]
+
+
+@pytest.mark.parametrize("bad", ARCHIVE_SPELLINGS)
+def test_refuses_archive_results_dir(tmp_path, bad):
+    rc, cmds, _, out = _dry_run(tmp_path, ["Qwen/Qwen2.5-Coder-7B"], {"RESULTS_DIR": bad})
+    assert rc == 8 and cmds == [], out
+    assert "results/regen_2026_11" in out and "frozen archive" in out
+
+
+def test_refuses_archive_results_dir_absolute_and_symlink(tmp_path):
+    work = _work(tmp_path)
+    rc, cmds, _, out = _dry_run(tmp_path, ["Qwen/Qwen2.5-Coder-7B"],
+                                {"RESULTS_DIR": str(work / "results" / "regen_2026_11" / "mbpp" / "main")})
+    assert rc == 8 and cmds == [], out
+    (work / "results" / "regen_2026_11" / "mbpp").mkdir(parents=True)
+    (work / "results" / "innocent").symlink_to(work / "results" / "regen_2026_11" / "mbpp", target_is_directory=True)
+    rc, cmds, _, out = _dry_run(tmp_path, ["Qwen/Qwen2.5-Coder-7B"], {"RESULTS_DIR": "results/innocent/main"})
+    assert rc == 8 and cmds == [], out
+
+
+def test_refuses_archive_results_dir_without_dry_run_before_any_uv_call(tmp_path):
+    rc, rows, work, out = _fake_run(tmp_path, ["Qwen/Qwen2.5-Coder-7B"],
+                                    {"RESULTS_DIR": "results/../results/regen_2026_11/mbpp/main"})
+    assert rc == 8 and rows == [], out
+    assert "transformers" not in out   # the env check did not run either
+    assert not (work / "results").exists()
+
+
+@pytest.mark.parametrize("ok", ["results/regen_2026_11_other", "results/x/../mbpp_new", "results/mbpp_regen_2026_11"])
+def test_non_archive_results_dir_allowed(tmp_path, ok):
+    rc, cmds, _, out = _dry_run(tmp_path, ["Qwen/Qwen2.5-Coder-7B"], {"RESULTS_DIR": ok})
+    assert rc == 0 and cmds == expected("Qwen/Qwen2.5-Coder-7B", root=ok), out
+
+
+def test_default_root_is_not_in_archive():
+    assert not ROOT.startswith("results/regen_2026_11")
+    text = (REPO / SCRIPT).read_text()
+    assert f'RESULTS_DIR="${{RESULTS_DIR:-{ROOT}}}"' in text
+    assert "RESULTS_DIR=results/regen_2026_11" not in text

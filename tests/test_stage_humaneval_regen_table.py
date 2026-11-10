@@ -16,7 +16,19 @@ st = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = st  # dataclasses need the module registered
 _spec.loader.exec_module(st)
 
-REAL_ROOT = REPO_ROOT / "results" / "humaneval_regen_2026_11_stripped"
+# Real data: the consolidated root (results/regen_2026_11/humaneval/main, st.RESULTS_ROOT) after
+# scripts/consolidate_regen_2026_11.py --execute; the pre-consolidation root before it. Exactly one must exist
+# (both = a partial move, neither = data missing): fail loudly rather than pick one silently.
+LEGACY_REAL_ROOT = REPO_ROOT / "results" / "humaneval_regen_2026_11_stripped"
+
+
+def _real_root() -> Path:
+    have = [p for p in (st.RESULTS_ROOT, LEGACY_REAL_ROOT) if p.is_dir()]
+    assert len(have) == 1, f"expected exactly one of {st.RESULTS_ROOT}, {LEGACY_REAL_ROOT}; found {have}"
+    return have[0]
+
+
+REAL_ROOT = _real_root()
 MBPP_TABLE_I = REPO_ROOT.parent / "pless-for-coding-paper" / "tables" / "table_3a_mbpp.tex"  # read only
 
 EXPECTED_DISPLAY = [
@@ -416,3 +428,55 @@ def test_paper_variant_is_nodash_without_staging_text(tmp_path):
     rows = lambda s: [l for l in s.splitlines() if "&" in l or l.startswith("| ")]
     assert rows(tex) == rows(st.render_tex(groups, na_single_sample=False))
     assert rows(md) == rows(st.render_md(groups, na_single_sample=False))
+
+
+# ---------------------------------------------------------------- consolidation (2026-11-10)
+
+def test_default_roots_point_at_consolidated_layout():
+    assert st.RESULTS_ROOT == REPO_ROOT / "results" / "regen_2026_11" / "humaneval" / "main"
+    assert st.STAGING_DIR == st.RESULTS_ROOT / "analysis" / "main"
+
+
+def test_staging_md_names_the_consolidated_metrics_path(tmp_path):
+    md = st.render_md(st.build_groups(_make_fake_root(tmp_path)), na_single_sample=True)
+    assert "results/regen_2026_11/humaneval/main/<model>/metrics/" in md
+    assert "humaneval_regen_2026_11_stripped" not in md
+
+
+def _paper_dir_with(tmp_path, groups, tex=None, md=None):
+    d = tmp_path / "paper_tables"
+    d.mkdir()
+    (d / "table_3b_humaneval.tex").write_text(st.render_paper_tex(groups) if tex is None else tex)
+    (d / "table_3b_humaneval.md").write_text(st.render_paper_md(groups) if md is None else md)
+    return d
+
+
+def test_check_paper_table_identical_and_mismatch(tmp_path):
+    root = _make_fake_root(tmp_path)
+    groups = st.build_groups(root)
+    good = _paper_dir_with(tmp_path, groups)
+    assert st.check_paper_table(groups, good) == []
+    (good / "table_3b_humaneval.md").write_text(st.render_paper_md(groups) + " ")
+    bad = st.check_paper_table(groups, good)
+    assert len(bad) == 1 and "table_3b_humaneval.md" in bad[0]
+    (good / "table_3b_humaneval.tex").unlink()
+    assert any("missing" in b for b in st.check_paper_table(groups, good))
+
+
+def test_cli_check_paper_dir_writes_nothing_and_sets_exit_code(tmp_path, monkeypatch, capsys):
+    root = _make_fake_root(tmp_path)
+    paper = _paper_dir_with(tmp_path, st.build_groups(root))
+    monkeypatch.setattr(st, "write_outputs", lambda *a, **k: pytest.fail("check mode wrote outputs"))
+    before = {p: p.read_bytes() for p in paper.iterdir()}
+    assert st.main(["--results-root", str(root), "--check-paper-dir", str(paper)]) == 0
+    assert "IDENTICAL" in capsys.readouterr().out
+    assert {p: p.read_bytes() for p in paper.iterdir()} == before
+    (paper / "table_3b_humaneval.tex").write_text("changed\n")
+    assert st.main(["--results-root", str(root), "--check-paper-dir", str(paper)]) == 1
+    assert "DIFFERS" in capsys.readouterr().out
+
+
+def test_real_data_paper_check_passes():
+    if not (PAPER_TABLE_II / "table_3b_humaneval.tex").is_file():
+        pytest.skip("paper repo not available")
+    assert st.check_paper_table(st.build_groups(REAL_ROOT), PAPER_TABLE_II) == []

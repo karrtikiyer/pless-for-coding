@@ -38,6 +38,11 @@
 #
 # Full runs need the user's approved time budget first (standing rule). Nothing here deletes files:
 # the runner refuses to touch an existing output unless resuming it.
+#
+# Consolidated 2026-11-10 (scripts/consolidate_regen_2026_11.py): the FULL roots above (unstripped, stripped,
+# stripped_extra, instruct7b, instruct7b_extra) now live in results/regen_2026_11/humaneval/ (old -> new:
+# results/regen_2026_11/path_mapping.tsv). The root names here are generation staging names; the runner refuses
+# to re-create a consolidated root or to write inside results/regen_2026_11/. Smoke / fit / diag roots unchanged.
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -154,5 +159,5 @@ case "${1:-}" in
       run "$m" "greedy_hf" "results/humaneval_regen_2026_11_diag" --resume
       run "$m" "greedy" "results/humaneval_regen_2026_11_diag" --prompt-variant stripped --resume
     done ;;
-  *) sed -n '2,41p' "$0"; exit 2 ;;
+  *) sed -n '2,46p' "$0"; exit 2 ;;
 esac
