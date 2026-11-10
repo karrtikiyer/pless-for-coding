@@ -57,14 +57,15 @@ a results JSONL must be single-platform — ``records[0]["source"]`` picks which
 test map loads. Since our stratified task set spans AtCoder + LeetCode, this
 runner writes ONE FILE PER (config, platform) pair, not one file per config.
 
-22 configs, mirroring the Qwen3 run's exact config list (11 base incl.
-pless_min2 + 4 temp-before-pless sweep + 7-point top-p sweep), with
-``qwen_recipe`` swapped for ``ministral_recipe`` — the only intended
-difference from Qwen3's list:
+Config list: the authoritative list (and count) is ``CONFIGS`` below. It is
+based on the Qwen3 run's config list, with ``qwen_recipe`` swapped for
+``ministral_recipe``, and includes:
   top_nsigma (n=1.0), top_nsigma_1.5, G_k=0.1, G_k=0.35, ministral_recipe
   (T=0.7/top_p=0.95), pless_default (canonical, "pless" sampler), pless_effk,
   pless_min2, pless_topmass, pless_gini, pless_top1half,
   pless_default_t1_5/t2_0/t2_5/t3_0, top_p_1_0/0_95/0_9/0_85/0_8/0_75/0_7.
+Plus Ministral-only extras: G_k 0.025/0.0325/0.05/0.075/0.2/0.4/0.8/1.6 and
+pure top-k baselines top_k_25/20/15 (T=1.0, top_p=1.0, native vLLM top_k).
 
 Example::
 
@@ -195,6 +196,12 @@ CONFIGS: list[tuple[str, str, float, float | None]] = [
     ("top_p_0_8",  "top_p_0_8",   1.0, None),
     ("top_p_0_75", "top_p_0_75",  1.0, None),
     ("top_p_0_7",  "top_p_0_7",   1.0, None),
+    # Pure top-k (top_p=1.0, no nucleus truncation, T=1.0) baselines --
+    # Ministral-only, native vLLM SamplingParams(top_k=) via
+    # _NATIVE_TOP_P_TOP_K below (CLAUDE.md Known Gotchas #8).
+    ("top_k_25",   "top_k_25",    1.0, None),
+    ("top_k_20",   "top_k_20",    1.0, None),
+    ("top_k_15",   "top_k_15",    1.0, None),
 ]
 CONFIG_NAMES = [c[0] for c in CONFIGS]
 
@@ -217,7 +224,18 @@ _NATIVE_TOP_P_TOP_K: dict[str, tuple[float, int]] = {
     "top_p_0_8":        (0.8, 0),
     "top_p_0_75":       (0.75, 0),
     "top_p_0_7":        (0.7, 0),
+    "top_k_25":         (1.0, 25),
+    "top_k_20":         (1.0, 20),
+    "top_k_15":         (1.0, 15),
 }
+
+
+def _record_top_k(sampler_name: str) -> int:
+    """top_k value written to the per-task record: the native top_k for
+    native-dispatch samplers, else 0. Every pre-top-k config's native top_k
+    is 0, so their records are unchanged (the field used to be hard-coded 0).
+    """
+    return _NATIVE_TOP_P_TOP_K.get(sampler_name, (1.0, 0))[1]
 
 
 def _all_configs_native(configs: list[str], config_by_name: dict) -> bool:
@@ -316,7 +334,7 @@ def _run_config_on_platform(
         record = {
             "model": model_id, "backend": "vllm", "method": config_name,
             "sampler_name": sampler_name, "renyi_k": renyi_k,
-            "temperature": temperature, "top_p": 1.0, "top_k": 0,
+            "temperature": temperature, "top_p": 1.0, "top_k": _record_top_k(sampler_name),
             "task_id": problem.task_id, "source": problem.platform,
             "difficulty": problem.difficulty, "contest_date": problem.contest_date,
             "prompt_text": problem.question,
