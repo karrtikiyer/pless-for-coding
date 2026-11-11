@@ -63,7 +63,7 @@ def test_rows_qwen3_order_and_membership(mod):
         "recommended",
         "top-p @0.7", "top-p @0.75", "top-p @0.8", "top-p @0.85", "top-p @0.9",
         "p-less baseline (k=2)",
-        "G_k=0.05", "G_k=0.1", "G_k=0.2", "G_k=0.4", "G_k=0.45", "G_k=0.8", "G_k=1.6",
+        "G_k=0.05", "G_k=0.1", "G_k=0.2", "G_k=0.25", "G_k=0.4", "G_k=0.45", "G_k=0.8", "G_k=1.6",
     ]
     assert "pless_norm" not in " ".join(s for _, s in rows)
     assert dict(rows)["recommended"] == "temp_p0.95_k20_think_t0.6_t0.6"
@@ -121,17 +121,20 @@ def test_deepseek_grid_includes_the_035_arm_in_ascending_position(mod):
     assert dict(mod.build_rows("deepseek"))["G_k=0.35"] == "pless_renyi_think_t1.0_k0.35_t1.0"
 
 
-def test_qwen_grid_includes_the_045_arm_and_not_the_deepseek_035_arm(mod):
+def test_qwen_grid_includes_the_025_and_045_arms_and_not_the_035_arm(mod):
     gk = [l for l, _ in mod.build_rows("qwen3") if l.startswith("G_k=")]
-    assert gk == ["G_k=0.05", "G_k=0.1", "G_k=0.2", "G_k=0.4", "G_k=0.45", "G_k=0.8", "G_k=1.6"]
+    assert gk == ["G_k=0.05", "G_k=0.1", "G_k=0.2", "G_k=0.25", "G_k=0.4", "G_k=0.45", "G_k=0.8", "G_k=1.6"]
 
 
-def test_qwen_045_sits_between_04_and_08_and_deepseek_rows_unchanged(mod):
+def test_qwen_025_and_045_in_ascending_position_and_deepseek_rows_unchanged(mod):
     labels = [l for l, _ in mod.build_rows("qwen3")]
+    i = labels.index("G_k=0.25")
+    assert labels[i - 1] == "G_k=0.2" and labels[i + 1] == "G_k=0.4"
+    assert dict(mod.build_rows("qwen3"))["G_k=0.25"] == "pless_renyi_think_t1.0_k0.25_t1.0"
     i = labels.index("G_k=0.45")
     assert labels[i - 1] == "G_k=0.4" and labels[i + 1] == "G_k=0.8"
     assert dict(mod.build_rows("qwen3"))["G_k=0.45"] == "pless_renyi_think_t1.0_k0.45_t1.0"
-    assert "G_k=0.25" not in labels and "G_k=0.35" not in labels
+    assert "G_k=0.35" not in labels  # Qwen CF k=0.35 run not finished
     assert mod.build_rows("deepseek") == [
         ("recommended", "temp_p0.95_think_t0.6_t0.6"),
         ("top-p @0.7", "temp_p0.7_think_t1.0_t1.0"),

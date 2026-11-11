@@ -40,8 +40,8 @@ MODELS = {
         "title": "Qwen3-8B",
         "dir": "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview",
         "rec": "temp_p0.95_k20_think_t0.6_t0.6",
-        # Qwen CF also ran the k=0.45 arm; included in ascending position (0.25/0.35 not yet scored).
-        "g_k": ("0.05", "0.1", "0.2", "0.4", "0.45", "0.8", "1.6"),
+        # Qwen CF also ran the k=0.25 and k=0.45 arms; included in ascending position (0.35 not yet scored).
+        "g_k": ("0.05", "0.1", "0.2", "0.25", "0.4", "0.45", "0.8", "1.6"),
     },
     "deepseek": {
         "title": "DeepSeek-R1-Distill-Llama-8B",
