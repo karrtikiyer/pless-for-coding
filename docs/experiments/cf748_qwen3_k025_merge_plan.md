@@ -70,6 +70,10 @@ The arm was generated on several machines. **Three files make up the complete ar
 This arm mixes hardware and possibly software stacks. **Per the user (2026-11-11), all machines ran vLLM 0.32.0.** That was not verified from the outputs (the records carry no version fields), and torch/transformers/flashinfer were not recorded on the pod or the A100:
 - tasks from the original pod (vLLM 0.32.0 per user; GPU type and other versions not recorded);
 - gpu2 2× RTX 4090: vLLM 0.32.0, torch 2.13.0+cu130, transformers 5.19.0, flashinfer 0.7.0.post1, `GPU_MEM_UTIL=0.96`; freeze at `gpu2:~/vllm032_env/freeze_vllm032.txt`;
-- RunPod A100-SXM4-80GB: vLLM 0.32.0 per user; torch/transformers/flashinfer not recorded.
+- RunPod A100-SXM4-80GB: **vLLM 0.33.0** (from its engine log, `V1 LLM engine (v0.33.0)`; corrects the earlier "0.32.0 per user"), `gpu_memory_utilization` 0.90; torch/transformers/flashinfer not recorded. The user accepted this mix on 2026-11-11.
 
-All machines used the same sampler, flags (`VLLM_USE_V2_MODEL_RUNNER=0`, `VLLM_USE_FLASHINFER_SAMPLER=1`), prompts and cap. Runs are unseeded. Label the arm as **same vLLM version, mixed hardware (and possibly mixed torch/transformers)**.
+All machines used the same sampler, flags (`VLLM_USE_V2_MODEL_RUNNER=0`, `VLLM_USE_FLASHINFER_SAMPLER=1`), prompts and cap. Runs are unseeded. Label the arm as **mixed vLLM (0.32.0 for 681 tasks, 0.33.0 for the A100's 67) and mixed hardware**.
+
+## Status (2026-11-11)
+
+Merged and installed: 748 tasks, sha256 `ef15f111...`; the 451-line local copy is backed up in `.../CODEFORCES_interview/pre_merge_20261111/`. Scored with the A69 flags. Added to `analysis/apps_cf748_paper_table_qwen3.md`. results-validator checked the numbers and every merge segment byte for byte.
