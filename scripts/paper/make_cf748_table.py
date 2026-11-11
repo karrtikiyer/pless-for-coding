@@ -40,13 +40,15 @@ MODELS = {
         "title": "Qwen3-8B",
         "dir": "results/_cf_interview_748/Qwen--Qwen3-8B/CODEFORCES_interview",
         "rec": "temp_p0.95_k20_think_t0.6_t0.6",
+        # Qwen CF also ran the k=0.45 arm; included in ascending position (0.25/0.35 not yet scored).
+        "g_k": ("0.05", "0.1", "0.2", "0.4", "0.45", "0.8", "1.6"),
     },
     "deepseek": {
         "title": "DeepSeek-R1-Distill-Llama-8B",
         "dir": "results/_cf_interview_748/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/CODEFORCES_interview",
         "rec": "temp_p0.95_think_t0.6_t0.6",
         # DeepSeek CF also ran the densification arm k=0.35 (in the 252 DeepSeek grid); the table
-        # includes it, in ascending position. Qwen keeps the default 6-point grid (G_K).
+        # includes it, in ascending position.
         "g_k": ("0.05", "0.1", "0.2", "0.35", "0.4", "0.8", "1.6"),
     },
 }

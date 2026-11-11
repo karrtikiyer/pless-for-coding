@@ -63,7 +63,7 @@ def test_rows_qwen3_order_and_membership(mod):
         "recommended",
         "top-p @0.7", "top-p @0.75", "top-p @0.8", "top-p @0.85", "top-p @0.9",
         "p-less baseline (k=2)",
-        "G_k=0.05", "G_k=0.1", "G_k=0.2", "G_k=0.4", "G_k=0.8", "G_k=1.6",
+        "G_k=0.05", "G_k=0.1", "G_k=0.2", "G_k=0.4", "G_k=0.45", "G_k=0.8", "G_k=1.6",
     ]
     assert "pless_norm" not in " ".join(s for _, s in rows)
     assert dict(rows)["recommended"] == "temp_p0.95_k20_think_t0.6_t0.6"
@@ -121,9 +121,34 @@ def test_deepseek_grid_includes_the_035_arm_in_ascending_position(mod):
     assert dict(mod.build_rows("deepseek"))["G_k=0.35"] == "pless_renyi_think_t1.0_k0.35_t1.0"
 
 
-def test_qwen_grid_is_unchanged_by_the_deepseek_grid(mod):
+def test_qwen_grid_includes_the_045_arm_and_not_the_deepseek_035_arm(mod):
     gk = [l for l, _ in mod.build_rows("qwen3") if l.startswith("G_k=")]
-    assert gk == ["G_k=0.05", "G_k=0.1", "G_k=0.2", "G_k=0.4", "G_k=0.8", "G_k=1.6"]
+    assert gk == ["G_k=0.05", "G_k=0.1", "G_k=0.2", "G_k=0.4", "G_k=0.45", "G_k=0.8", "G_k=1.6"]
+
+
+def test_qwen_045_sits_between_04_and_08_and_deepseek_rows_unchanged(mod):
+    labels = [l for l, _ in mod.build_rows("qwen3")]
+    i = labels.index("G_k=0.45")
+    assert labels[i - 1] == "G_k=0.4" and labels[i + 1] == "G_k=0.8"
+    assert dict(mod.build_rows("qwen3"))["G_k=0.45"] == "pless_renyi_think_t1.0_k0.45_t1.0"
+    assert "G_k=0.25" not in labels and "G_k=0.35" not in labels
+    assert mod.build_rows("deepseek") == [
+        ("recommended", "temp_p0.95_think_t0.6_t0.6"),
+        ("top-p @0.7", "temp_p0.7_think_t1.0_t1.0"),
+        ("top-p @0.75", "temp_p0.75_think_t1.0_t1.0"),
+        ("top-p @0.8", "temp_p0.8_think_t1.0_t1.0"),
+        ("top-p @0.85", "temp_p0.85_think_t1.0_t1.0"),
+        ("top-p @0.9", "temp_p0.9_think_t1.0_t1.0"),
+        ("p-less baseline (k=2)", "pless_think_t1.0_t1.0"),
+        ("G_k=0.05", "pless_renyi_think_t1.0_k0.05_t1.0"),
+        ("G_k=0.1", "pless_renyi_think_t1.0_k0.1_t1.0"),
+        ("G_k=0.2", "pless_renyi_think_t1.0_k0.2_t1.0"),
+        ("G_k=0.35", "pless_renyi_think_t1.0_k0.35_t1.0"),
+        ("G_k=0.4", "pless_renyi_think_t1.0_k0.4_t1.0"),
+        ("G_k=0.8", "pless_renyi_think_t1.0_k0.8_t1.0"),
+        ("G_k=1.6", "pless_renyi_think_t1.0_k1.6_t1.0"),
+    ]
+    assert mod.G_K == ("0.05", "0.1", "0.2", "0.4", "0.8", "1.6")  # module default unchanged
 
 
 def test_strict_mode_is_still_the_default(mod, tmp_path):
