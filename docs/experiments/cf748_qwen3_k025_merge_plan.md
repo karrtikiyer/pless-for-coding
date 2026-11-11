@@ -67,9 +67,9 @@ The arm was generated on several machines. **Three files make up the complete ar
 
 ## Engine / hardware caveat (must travel with any number from this arm)
 
-This arm mixes engines and hardware:
-- tasks from the original pod (engine versions not recorded);
+This arm mixes hardware and possibly software stacks. **Per the user (2026-11-11), all machines ran vLLM 0.32.0.** That was not verified from the outputs (the records carry no version fields), and torch/transformers/flashinfer were not recorded on the pod or the A100:
+- tasks from the original pod (vLLM 0.32.0 per user; GPU type and other versions not recorded);
 - gpu2 2× RTX 4090: vLLM 0.32.0, torch 2.13.0+cu130, transformers 5.19.0, flashinfer 0.7.0.post1, `GPU_MEM_UTIL=0.96`; freeze at `gpu2:~/vllm032_env/freeze_vllm032.txt`;
-- RunPod A100-SXM4-80GB: vLLM version to be recorded.
+- RunPod A100-SXM4-80GB: vLLM 0.32.0 per user; torch/transformers/flashinfer not recorded.
 
-All machines used the same sampler, flags (`VLLM_USE_V2_MODEL_RUNNER=0`, `VLLM_USE_FLASHINFER_SAMPLER=1`), prompts and cap. Runs are unseeded. Label the arm as mixed-engine.
+All machines used the same sampler, flags (`VLLM_USE_V2_MODEL_RUNNER=0`, `VLLM_USE_FLASHINFER_SAMPLER=1`), prompts and cap. Runs are unseeded. Label the arm as **same vLLM version, mixed hardware (and possibly mixed torch/transformers)**.
