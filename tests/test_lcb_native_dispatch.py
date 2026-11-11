@@ -186,10 +186,11 @@ def test_ministral_top_k_not_custom_processor(ministral):
 
 def test_ministral_pre_topk_configs_unchanged(ministral):
     """Existing configs are all still present, in the same order, unchanged
-    count (only the 3 top-k rows appended)."""
-    assert tuple(n for n in ministral.CONFIG_NAMES if n not in _TOP_K_CONFIGS) \
+    count (only the 3 top-k rows + the gk_0_45 row added)."""
+    added = set(_TOP_K_CONFIGS) | {"gk_0_45"}
+    assert tuple(n for n in ministral.CONFIG_NAMES if n not in added) \
         == _PRE_TOPK_MINISTRAL_CONFIGS
-    assert len(ministral.CONFIG_NAMES) == len(_PRE_TOPK_MINISTRAL_CONFIGS) + 3
+    assert len(ministral.CONFIG_NAMES) == len(_PRE_TOPK_MINISTRAL_CONFIGS) + 4
     assert len(set(ministral.CONFIG_NAMES)) == len(ministral.CONFIG_NAMES)
 
 
@@ -256,3 +257,99 @@ def test_ministral_top_k_run_takes_native_branch(ministral, monkeypatch, tmp_pat
     rec = json.loads(out.read_text().splitlines()[0])
     assert rec["top_k"] == k and rec["top_p"] == 1.0 and rec["method"] == name
     assert out.name == f"{name}_atcoder_think_t1.0.jsonl"
+
+
+# ---------------------------------------------------------------------------
+# Ministral G_k k=0.45 (custom pless_renyi path, full1046 batches 1-2 on GPU2,
+# run alongside gk_0_35). Must stay on the custom PlessSplitLogitsProcessor --
+# there is no vLLM-native Renyi threshold.
+# ---------------------------------------------------------------------------
+def test_ministral_gk_0_45_config_row(ministral):
+    rows = {c[0]: c for c in ministral.CONFIGS}
+    assert rows["gk_0_45"] == ("gk_0_45", "pless_renyi", 1.0, 0.45)
+    assert rows["gk_0_35"] == ("gk_0_35", "pless_renyi", 1.0, 0.35)
+    names = ministral.CONFIG_NAMES
+    # placed with the Ministral-only G_k block, right after gk_0_4
+    assert names.index("gk_0_45") == names.index("gk_0_4") + 1
+
+
+def test_ministral_gk_0_45_not_native(ministral):
+    assert "gk_0_45" not in ministral._NATIVE_TOP_P_TOP_K
+    assert "pless_renyi" not in ministral._NATIVE_TOP_P_TOP_K
+    config_by_name = {c[0]: c for c in ministral.CONFIGS}
+    assert ministral._all_configs_native(["gk_0_45", "gk_0_35"], config_by_name) is False
+    assert ministral._all_configs_native(["gk_0_45"], config_by_name) is False
+    assert ministral._record_top_k("pless_renyi") == 0
+
+
+def test_ministral_gk_0_45_output_path(ministral, tmp_path):
+    for plat in ("atcoder", "leetcode"):
+        assert ministral._output_path(tmp_path, "gk_0_45", plat, 1.0).name \
+            == f"gk_0_45_{plat}_think_t1.0.jsonl"
+        assert ministral._output_path(tmp_path, "gk_0_35", plat, 1.0).name \
+            == f"gk_0_35_{plat}_think_t1.0.jsonl"
+    assert ministral._output_path(tmp_path, "gk_0_45", "atcoder", 1.0) \
+        != ministral._output_path(tmp_path, "gk_0_4", "atcoder", 1.0)
+
+
+@pytest.mark.parametrize("name,k", [("gk_0_45", 0.45), ("gk_0_35", 0.35)])
+def test_ministral_gk_run_takes_custom_branch(ministral, monkeypatch, tmp_path, name, k):
+    """End-to-end (no vLLM): G_k configs call generate_samples_vllm with
+    sampler_name='pless_renyi', renyi_k=k, T=1.0 and never the native path;
+    the record carries renyi_k=k, top_k=0, top_p=1.0."""
+    import json
+    import time
+    from types import SimpleNamespace
+
+    calls = {"standard": [], "custom": []}
+
+    def fake_standard(**kw):
+        calls["standard"].append(kw)
+        return ["print(1)"] * kw["n_samples"]
+
+    def fake_custom(**kw):
+        calls["custom"].append(kw)
+        return ["print(1)"] * kw["n_samples"]
+
+    monkeypatch.setattr(ministral, "generate_samples_standard_vllm", fake_standard)
+    monkeypatch.setattr(ministral, "generate_samples_vllm", fake_custom)
+    monkeypatch.setattr(ministral, "format_prompt_lcb_instruct",
+                        lambda problem, tok, **kw: ("PROMPT", ""))
+    monkeypatch.setattr(ministral, "encode_prompt_for_vllm", lambda text, tok: text)
+
+    row = {c[0]: c for c in ministral.CONFIGS}[name]
+    problem = SimpleNamespace(task_id="t1", platform="leetcode", difficulty="easy",
+                              contest_date="2024-01-01", question="q")
+    far = time.time() + 3600
+    out = ministral._run_config_on_platform(
+        config_name=name, sampler_name=row[1], temperature=row[2], renyi_k=row[3],
+        platform="leetcode", problems=[problem], engine=SimpleNamespace(),
+        tokenizer=SimpleNamespace(), n_samples=2, max_new_tokens=8,
+        out_root=tmp_path, model_id="m", seed=42, per_config_deadline=far,
+        global_deadline=far, think_end_marker="[/THINK]",
+    )
+    assert calls["standard"] == []
+    assert len(calls["custom"]) == 1
+    kw = calls["custom"][0]
+    assert (kw["sampler_name"], kw["renyi_k"], kw["temperature"]) == ("pless_renyi", k, 1.0)
+    rec = json.loads(out.read_text().splitlines()[0])
+    assert rec["renyi_k"] == k and rec["top_k"] == 0 and rec["top_p"] == 1.0
+    assert rec["method"] == name and rec["sampler_name"] == "pless_renyi"
+    assert out.name == f"{name}_leetcode_think_t1.0.jsonl"
+
+
+def test_pless_renyi_mask_accepts_k_0_45():
+    """bench.generator_vllm._pless_renyi_mask_logits has no k whitelist: k=0.45
+    takes the generic (sum p^k)^(1/(k-1)) branch and matches it exactly."""
+    torch = pytest.importorskip("torch")
+    from bench.generator_vllm import _pless_renyi_mask_logits
+
+    g = torch.Generator().manual_seed(0)
+    logits = torch.randn(3, 50, generator=g) * 3
+    probs = torch.softmax(logits.float(), dim=-1)
+    k = 0.45
+    thr = probs.pow(k).sum(dim=-1, keepdim=True).pow(1.0 / (k - 1.0))
+    out = _pless_renyi_mask_logits(logits.clone(), k=k)
+    expected_keep = probs >= thr
+    expected_keep[torch.arange(3), probs.argmax(-1)] = True
+    assert torch.equal(torch.isfinite(out), expected_keep)

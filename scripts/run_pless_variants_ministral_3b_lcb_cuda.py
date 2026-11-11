@@ -64,7 +64,7 @@ based on the Qwen3 run's config list, with ``qwen_recipe`` swapped for
   (T=0.7/top_p=0.95), pless_default (canonical, "pless" sampler), pless_effk,
   pless_min2, pless_topmass, pless_gini, pless_top1half,
   pless_default_t1_5/t2_0/t2_5/t3_0, top_p_1_0/0_95/0_9/0_85/0_8/0_75/0_7.
-Plus Ministral-only extras: G_k 0.025/0.0325/0.05/0.075/0.2/0.4/0.8/1.6 and
+Plus Ministral-only extras: G_k 0.025/0.0325/0.05/0.075/0.2/0.4/0.45/0.8/1.6 and
 pure top-k baselines top_k_25/20/15 (T=1.0, top_p=1.0, native vLLM top_k).
 
 Example::
@@ -159,6 +159,9 @@ CONFIGS: list[tuple[str, str, float, float | None]] = [
     ("gk_0_075",         "pless_renyi",      1.0, 0.075),
     ("gk_0_2",           "pless_renyi",      1.0, 0.2),
     ("gk_0_4",           "pless_renyi",      1.0, 0.4),
+    # k=0.45: full1046 batches 1-2 follow-up (run alongside gk_0_35 via
+    # --configs gk_0_45 gk_0_35); custom pless_renyi path, not native.
+    ("gk_0_45",          "pless_renyi",      1.0, 0.45),
     ("gk_0_8",           "pless_renyi",      1.0, 0.8),
     ("gk_1_6",           "pless_renyi",      1.0, 1.6),
     ("ministral_recipe", "ministral_recipe", 0.7, None),
