@@ -101,7 +101,7 @@ def test_common_rows_qwen3(mod):
         "recommended",
         "top-p @0.7", "top-p @0.75", "top-p @0.8", "top-p @0.85", "top-p @0.9",
         "p-less baseline (k=2)",
-        "G_k=0.05", "G_k=0.1", "G_k=0.2", "G_k=0.25", "G_k=0.4", "G_k=0.45", "G_k=0.8", "G_k=1.6",
+        "G_k=0.05", "G_k=0.1", "G_k=0.2", "G_k=0.25", "G_k=0.35", "G_k=0.4", "G_k=0.45", "G_k=0.8", "G_k=1.6",
     ]
     assert all("ATCODER_interview" in str(r[1]) for r in rows)
     assert all(str(r[2]).endswith("_metrics.json") for r in rows)
