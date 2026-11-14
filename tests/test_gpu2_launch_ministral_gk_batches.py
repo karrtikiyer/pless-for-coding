@@ -102,6 +102,7 @@ def env(tmp_path: Path):
         e.pop(k, None)
     yield {"repo": repo, "env": e, "full": full, "tmp": tmp_path, "stubs": stubs}
     subprocess.run(["pkill", "-f", f"{repo}/logs/gk045_launch_"], check=False)  # chains first
+    subprocess.run(["pkill", "-f", f"{repo}/logs/gk_launch_"], check=False)     # non-default GK_CONFIGS
     subprocess.run(["pkill", "-f", f"{stubs}/python"], check=False)
     subprocess.run(["pkill", "-f", f"{tmp_path}/FAKE_GK_MARKER"], check=False)
 
@@ -601,3 +602,278 @@ def test_flock_lock_held_stops(env):
         _assert_stopped(env, _run(env["env"]), "holds")
     finally:
         holder.kill()
+
+
+# ================================================================ GK_CONFIGS generalisation
+EXPECTED_DEFAULT_DRY = Path(__file__).resolve().parent / "data/gpu2_launch_gk_default_dry_expected.txt"
+NEW_ROWS = ('    ("gk_0_25",          "pless_renyi",      1.0, 0.25),\n'
+            '    ("gk_0_15",          "pless_renyi",      1.0, 0.15),\n')
+
+
+def _add_rows(env, rows: str = NEW_ROWS) -> dict:
+    """Commit a runner with extra CONFIGS rows; return env with the matching sha pin."""
+    runner = env["repo"] / RUNNER_REL
+    runner.write_text(RUNNER_TXT.replace("]\n", rows + "]\n"))
+    _git(env["repo"], "commit", "-qam", "runner + rows")
+    return {**env["env"], "EXPECT_RUNNER_SHA256": _sha(runner)}
+
+
+def _blog(env, b: int, tag: str) -> str:
+    p = env["repo"] / f"logs/ministral_fulldataset_batch{b}_{tag}.log"
+    return p.read_text() if p.exists() else ""
+
+
+def _wait_tag(env, b: int, tag: str, needle: str, secs: float = 60) -> str:
+    t0 = time.time()
+    while time.time() - t0 < secs:
+        txt = _blog(env, b, tag)
+        if needle in txt:
+            return txt
+        time.sleep(0.3)
+    raise AssertionError(f"'{needle}' not in batch {b} log ({tag}):\n{_blog(env, b, tag)}")
+
+
+def _norm_dry(env, log: str) -> list[str]:
+    out = []
+    for l in log.splitlines():
+        m = re.match(r"^\[[^\]]+ IST\] (DRY: .*)$", l)
+        if m:
+            s = m.group(1).replace(str(env["tmp"]), "<TMP>").replace(sys.executable, "<PY>")
+            out.append(re.sub(r"_launch_\d{8}_\d{6}", "_launch_<TS>", s))
+    return out
+
+
+def _assert_nothing_launched_any(env) -> None:
+    _assert_nothing_launched(env)
+    assert not list(env["repo"].glob("logs/gk_launch_*/batch*"))
+    assert not [p for p in env["repo"].glob("logs/ministral_fulldataset_batch*.log")]
+
+
+def test_default_dry_run_commands_match_recorded_pre_change_output(env):
+    """Recorded from the launcher BEFORE GK_CONFIGS existed. The only allowed
+    differences: the two NEW final-gate lines, and the check-script description
+    line gains a suffix. Every printed command line is byte-identical."""
+    expected = EXPECTED_DEFAULT_DRY.read_text().splitlines()
+    r = _run(env["env"], DRY_RUN="1")
+    assert r.returncode == 0, _qlog(env["repo"])
+    got = _norm_dry(env, _qlog(env["repo"]))
+    finals = [l for l in got if "final completeness gate" in l]
+    rest = [l for l in got if "final completeness gate" not in l]
+    assert len(rest) == len(expected)
+    assert rest[0].startswith(expected[0][:-1]) and rest[0].endswith(")")
+    assert rest[1:] == expected[1:]
+    assert len(finals) == 2
+    for b, l in zip((1, 2), finals):
+        assert l == (f"DRY: batch {b} final completeness gate would run (only if step 2/2 exits 0; chain exits 3 if incomplete): "
+                     f"<PY> -I <TMP>/repo/logs/gk045_launch_<TS>/check_step_complete.py "
+                     f"<TMP>/repo/results/lcb_v6_full1046/batch_assignment.csv {b} gk_0_35 - --step=2/2 "
+                     f"atcoder=<TMP>/repo/results/pless_variants_cuda/{SLUG}/LCB_v6_full1046/gk_0_35_atcoder_think_t1.0.jsonl "
+                     f"leetcode=<TMP>/repo/results/pless_variants_cuda/{SLUG}/LCB_v6_full1046/gk_0_35_leetcode_think_t1.0.jsonl")
+    # the final line sits between step 2/2 and "would write chain" for its batch
+    i_s2 = got.index(next(l for l in got if l.startswith("DRY: batch 1 step 2/2")))
+    assert got[i_s2 + 1] == finals[0] and got[i_s2 + 2].startswith("DRY: batch 1 would write ")
+
+
+def test_explicit_default_list_equals_default(env):
+    r = _run(env["env"], DRY_RUN="1", GK_CONFIGS="  gk_0_45   gk_0_35 ")
+    assert r.returncode == 0, _qlog(env["repo"])
+    log = _qlog(env["repo"])
+    assert "/logs/gk045_launch_" in log and "/logs/gk_launch_" not in log
+    assert "ministral_fulldataset_batch1_gk045_gk035.log" in log
+
+
+def test_default_chain_runs_final_gate_after_gk035(env):
+    r = _run(env["env"], STUB_SLEEP="1")
+    assert r.returncode == 0, _qlog(env["repo"])
+    for b, counts in ((1, "2/1"), (2, "1/1")):
+        txt = _wait_for(env, b, f"[gk-chain batch {b}] STEP 2/2 (gk_0_35) finished rc=0; CHAIN DONE")
+        order = [txt.index(s) for s in (
+            f"STUB DONE gk_0_35 batch {b}",
+            f"[gk-chain batch {b}] STEP 2/2 (gk_0_35) runner exited rc=0; FINAL check",
+            f"[gk-chain batch {b}] FINAL COMPLETE verified ({counts})",
+            f"[gk-chain batch {b}] STEP 2/2 (gk_0_35) finished rc=0; CHAIN DONE")]
+        assert order == sorted(order)
+
+
+def test_single_config_gk_0_25(env):
+    e = _add_rows(env)
+    r = _run(e, GK_CONFIGS="gk_0_25", STUB_SLEEP="1")
+    log = _qlog(env["repo"])
+    assert r.returncode == 0, log
+    assert "GK_CONFIGS: gk_0_25 (1 config(s)); launch dir prefix gk_launch_; batch log tag gk025" in log
+    assert "launch verified (step 1/1, gk_0_25): 'Engine ready in 1s'" in log
+    assert not list(env["repo"].glob("logs/gk045_launch_*"))
+    assert not list(env["repo"].glob("logs/*gk045_gk035.log"))
+    ldirs = list(env["repo"].glob("logs/gk_launch_*"))
+    assert len(ldirs) == 1
+    for b, gpu, counts in ((1, 0, "2/1"), (2, 1, "1/1")):
+        txt = _wait_tag(env, b, "gk025", f"[gk-chain batch {b}] STEP 1/1 (gk_0_25) finished rc=0; CHAIN DONE")
+        order = [txt.index(s) for s in (
+            f"[gk-chain batch {b}] CHAIN START", "step 1/1: --configs gk_0_25",
+            "--configs gk_0_25 --full-dataset", f"STUB DONE gk_0_25 batch {b}",
+            f"[gk-chain batch {b}] STEP 1/1 (gk_0_25) runner exited rc=0; FINAL check: verifying batch-{b} completeness of gk_0_25",
+            f"[gk-chain batch {b}] atcoder: gk_0_25 batch{b}_expected=",
+            f"[gk-chain batch {b}] FINAL COMPLETE verified ({counts})",
+            f"[gk-chain batch {b}] STEP 1/1 (gk_0_25) finished rc=0; CHAIN DONE")]
+        assert order == sorted(order)
+        assert txt.count("ARGS: ") == 1 and SAMPLE_SENTINEL not in txt
+        assert f"CVD={gpu} " in txt and "FI=unset CUDA_HOME=unset" in txt
+        d = ldirs[0] / f"batch{b}"
+        ch = (d / f"chain_batch{b}.sh").read_text()
+        assert ch.count("--configs gk_0_25 ") == 1 and "--configs gk_0_45" not in ch
+        assert "gk_0_25 - --step=1/1" in ch and "NOT started" not in ch
+        rs = (d / f"resume_batch{b}.sh").read_text()
+        assert "Chain configs, in order" in rs and "gk_0_25" in rs and f"chain_batch{b}.sh" in rs
+        assert "(gk045|gk)_launch_" in rs and f"_gk025.log" in rs
+        cl = (d / "cmdline.txt").read_text()
+        assert "step 1: " in cl and "final gate (after step 1): " in cl and "\ngate: " not in cl
+        for s in (f"resume_batch{b}.sh", f"chain_batch{b}.sh"):
+            subprocess.run(["bash", "-n", str(d / s)], check=True)
+    ic = (ldirs[0] / "integrity_check.sh").read_text()
+    assert "gk_0_25_atcoder_think_t1.0.jsonl" in ic and "gk_0_25_leetcode_think_t1.0.jsonl" in ic
+    assert "gk_0_45" not in ic and "gk_0_35" not in ic
+    ok = subprocess.run(["bash", str(ldirs[0] / "integrity_check.sh")], capture_output=True, text=True, timeout=30)
+    assert ok.returncode == 0, ok.stdout
+    assert "After the last config (gk_0_25) exits 0, a FINAL completeness check runs" in log
+
+
+def test_single_config_final_incomplete_exit3(env):
+    e = _add_rows(env)
+    r = _run(e, GK_CONFIGS="gk_0_25", STUB_SLEEP="1", STUB_SKIP_TASK="abc1_b")
+    assert r.returncode == 0, _qlog(env["repo"])
+    txt = _wait_tag(env, 1, "gk025", "[gk-chain batch 1] FINAL INCOMPLETE: missing=1 dup=0 bad=0 -- gk_0_25 batch 1 NOT complete")
+    assert "atcoder: missing (<=10): ['abc1_b']" in txt
+    _wait_tag(env, 2, "gk025", "[gk-chain batch 2] FINAL COMPLETE verified (1/1)")
+    time.sleep(1)
+    assert "CHAIN DONE" not in _blog(env, 1, "gk025")
+    # chain exit code is 3 when the final check fails (re-run the chain directly)
+    chain = next(env["repo"].glob("logs/gk_launch_*")) / "batch1/chain_batch1.sh"
+    rr = subprocess.run(["bash", str(chain)], env={**e, "STUB_SLEEP": "0", "STUB_SKIP_TASK": "abc1_b"},
+                        capture_output=True, text=True, timeout=60)
+    assert rr.returncode == 3, rr.stdout
+    assert "FINAL INCOMPLETE" in rr.stdout
+
+
+def test_single_config_dry_run(env):
+    e = _add_rows(env)
+    r = _run(e, GK_CONFIGS="gk_0_25", DRY_RUN="1")
+    log = _qlog(env["repo"])
+    assert r.returncode == 0, log
+    got = _norm_dry(env, log)
+    for b in (1, 2):
+        mine = [l for l in got if l.startswith(f"DRY: batch {b} ")]
+        assert [l.split(" would")[0] for l in mine] == [
+            f"DRY: batch {b} (GPU {b - 1}) env: -u VLLM_USE_FLASHINFER_SAMPLER -u CUDA_HOME CUDA_VISIBLE_DEVICES={b - 1} PYTHONPATH=<TMP>/repo PATH=<TMP>/repo/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin PYTHONUNBUFFERED=1",
+            f"DRY: batch {b} step 1/1", f"DRY: batch {b} final completeness gate",
+            f"DRY: batch {b}", f"DRY: batch {b}"]
+        assert f"--configs gk_0_25 --full-dataset --batch {b} " in mine[1]
+        assert f" {b} gk_0_25 - --step=1/1 atcoder=" in mine[2] and "gk_0_25_leetcode_think_t1.0.jsonl" in mine[2]
+        assert f"logs/gk_launch_<TS>/batch{b}/chain_batch{b}.sh >> <TMP>/repo/logs/ministral_fulldataset_batch{b}_gk025.log 2>&1 < /dev/null &" in mine[3]
+    assert not any("completeness gate would run:" in l or "step 2/" in l for l in got)
+    _assert_nothing_launched_any(env)
+
+
+def test_three_config_chain_order(env):
+    e = _add_rows(env)
+    cfgs = "gk_0_25 gk_0_15 gk_0_35"
+    r = _run(e, GK_CONFIGS=cfgs, STUB_SLEEP="1")
+    assert r.returncode == 0, _qlog(env["repo"])
+    tag = "gk025_gk015_gk035"
+    for b, counts in ((1, "2/1"), (2, "1/1")):
+        txt = _wait_tag(env, b, tag, f"[gk-chain batch {b}] STEP 3/3 (gk_0_35) finished rc=0; CHAIN DONE", secs=90)
+        order = [txt.index(s) for s in (
+            "CHAIN START", "step 1/3: --configs gk_0_25", f"STUB DONE gk_0_25 batch {b}",
+            "STEP 1/3 (gk_0_25) finished rc=0; verifying", f"STEP 1 COMPLETE verified ({counts})",
+            "starting step 2/3: --configs gk_0_15", f"STUB DONE gk_0_15 batch {b}",
+            "STEP 2/3 (gk_0_15) finished rc=0; verifying", f"STEP 2 COMPLETE verified ({counts})",
+            "starting step 3/3: --configs gk_0_35", f"STUB DONE gk_0_35 batch {b}",
+            "STEP 3/3 (gk_0_35) runner exited rc=0; FINAL check", f"FINAL COMPLETE verified ({counts})",
+            "STEP 3/3 (gk_0_35) finished rc=0; CHAIN DONE")]
+        assert order == sorted(order)
+        assert txt.count("ARGS: ") == 3
+
+
+def test_three_config_step2_failure_stops_step3(env):
+    e = _add_rows(env)
+    r = _run(e, GK_CONFIGS="gk_0_25 gk_0_15 gk_0_35", STUB_SLEEP="1", STUB_FAIL_CONFIG="gk_0_15")
+    assert r.returncode == 0
+    txt = _wait_tag(env, 1, "gk025_gk015_gk035", "STEP 2/3 (gk_0_15) FAILED rc=5 -- step 3/3 (gk_0_35) NOT started")
+    time.sleep(1)
+    assert "--configs gk_0_35" not in _blog(env, 1, "gk025_gk015_gk035") and "FINAL" not in txt
+
+
+def test_three_config_dry_run_gates(env):
+    e = _add_rows(env)
+    r = _run(e, GK_CONFIGS="gk_0_25 gk_0_15 gk_0_35", DRY_RUN="1")
+    log = _qlog(env["repo"])
+    assert r.returncode == 0, log
+    got = [l for l in _norm_dry(env, log) if l.startswith("DRY: batch 1 ")]
+    heads = ["DRY: " + l[5:].split(": ", 1)[0] if " env:" not in l else "env" for l in got]
+    assert heads[:7] == ["env", "DRY: batch 1 step 1/3 would run",
+                         "DRY: batch 1 completeness gate would run",
+                         "DRY: batch 1 step 2/3 would run (only if step 1 exits 0 and the gate passes)",
+                         "DRY: batch 1 completeness gate after step 2/3 would run",
+                         "DRY: batch 1 step 3/3 would run (only if step 2 exits 0 and the gate passes)",
+                         "DRY: batch 1 final completeness gate would run (only if step 3/3 exits 0; chain exits 3 if incomplete)"]
+    assert " 1 gk_0_25 gk_0_15 --step=1/3 atcoder=" in got[2] and "/gk_0_25_atcoder" in got[2]
+    assert " 1 gk_0_15 gk_0_35 --step=2/3 atcoder=" in got[4] and "/gk_0_15_leetcode" in got[4]
+    assert " 1 gk_0_35 - --step=3/3 atcoder=" in got[6]
+    assert "--configs gk_0_25 " in got[1] and "--configs gk_0_15 " in got[3] and "--configs gk_0_35 " in got[5]
+    _assert_nothing_launched_any(env)
+
+
+@pytest.mark.parametrize("bad", ["gk_0_25x", "GK_0_25", "gk_", "gk_0__25", "gk0_25", "top_p_0_95",
+                                 "gk_0_25;id", "gk_0_.25", "gk_0_45 gk_0_3-5"])
+def test_invalid_gk_config_names_stop(env, bad):
+    e = _add_rows(env)
+    r = _run(e, GK_CONFIGS=bad, DRY_RUN="1")
+    assert r.returncode != 0
+    assert "is not a valid name (must match ^gk_[0-9]+(_[0-9]+)*$)" in _qlog(env["repo"])
+    _assert_nothing_launched_any(env)
+
+
+def test_invalid_name_stops_before_detaching(env):
+    e = {k: v for k, v in _add_rows(env).items() if k != "GPU2_LAUNCHER_DETACHED"}
+    r = _run(e, GK_CONFIGS="gk_x")
+    assert r.returncode != 0 and "launcher detached" not in r.stdout
+    assert "STOP: GK_CONFIGS entry 'gk_x' is not a valid name" in r.stdout
+
+
+def test_blank_gk_configs_stops(env):
+    r = _run(env["env"], GK_CONFIGS="   ", DRY_RUN="1")
+    assert r.returncode != 0 and "STOP: GK_CONFIGS is empty/blank" in _qlog(env["repo"])
+
+
+def test_duplicate_gk_configs_stop(env):
+    e = _add_rows(env)
+    for dup in ("gk_0_25 gk_0_25", "gk_0_45 gk_0_25 gk_0_45"):
+        r = _run(e, GK_CONFIGS=dup, DRY_RUN="1")
+        assert r.returncode != 0
+        assert "lists 'gk_0_" in _qlog(env["repo"]) and "more than once" in _qlog(env["repo"])
+    _assert_nothing_launched_any(env)
+
+
+def test_missing_runner_row_for_new_config_stops(env):
+    # default fake runner has only gk_0_35 / gk_0_45 rows; a comment mention does not count
+    runner = env["repo"] / RUNNER_REL
+    runner.write_text(RUNNER_TXT + '# "gk_0_25" planned\n')
+    _git(env["repo"], "commit", "-qam", "comment only")
+    r = _run(env["env"], GK_CONFIGS="gk_0_25", EXPECT_RUNNER_SHA256=_sha(runner))
+    log = _qlog(env["repo"])
+    assert r.returncode != 0 and 'STOP: runner lacks a CONFIGS row for "gk_0_25"' in log
+    _assert_nothing_launched_any(env)
+    # second config missing also stops (checked per config)
+    r = _run(env["env"], GK_CONFIGS="gk_0_45 gk_0_25", EXPECT_RUNNER_SHA256=_sha(runner))
+    assert r.returncode != 0 and _qlog(env["repo"]).count('lacks a CONFIGS row for "gk_0_25"') == 2
+
+
+def test_new_prefix_chain_blocks_any_launch(env):
+    _fake_proc(env, "bash /x/logs/gk_launch_1/batch1/chain_batch1.sh")
+    _assert_stopped(env, _run(env["env"]), "STOP: a gk chain wrapper is already running")
+
+
+def test_non_default_still_requires_runner_pin(env):
+    e = dict(_add_rows(env)); e.pop("EXPECT_RUNNER_SHA256")
+    r = _run(e, GK_CONFIGS="gk_0_25")
+    assert r.returncode != 0 and "STOP: EXPECT_RUNNER_SHA256 is REQUIRED" in _qlog(env["repo"])
+    _assert_nothing_launched_any(env)

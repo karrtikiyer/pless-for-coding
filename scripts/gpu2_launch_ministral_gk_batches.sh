@@ -3,28 +3,44 @@
 #
 # Launches, in parallel (one per GPU), the Ministral-3-3B-Reasoning-2512 LCB
 # full1046 generation for batch 1 (CUDA_VISIBLE_DEVICES=0) and batch 2
-# (CUDA_VISIBLE_DEVICES=1) for gk_0_45 then gk_0_35 (custom pless_renyi,
-# k=0.45 / 0.35), no time limit. Mirrors the 2026-10-14 batch1/2 launch
+# (CUDA_VISIBLE_DEVICES=1) for the configs in GK_CONFIGS (default gk_0_45 then
+# gk_0_35, custom pless_renyi k=0.45 / 0.35), no time limit. Mirrors the 2026-10-14 batch1/2 launch
 # recorded in docs/theory/gpu2_batch1_batch2_pause_checkpoint.md (same env
 # vars: CUDA_VISIBLE_DEVICES, PYTHONPATH, PATH; VLLM_USE_FLASHINFER_SAMPLER and
 # CUDA_HOME explicitly REMOVED via `env -u`) plus PYTHONUNBUFFERED=1 so the
 # runner's "Engine ready in" line reaches the log promptly (I/O only; set
 # UNBUFFERED=0 to drop it).
 #
+# Config list: GK_CONFIGS (space-separated, default "gk_0_45 gk_0_35"; order =
+# run order). Each name must match ^gk_[0-9]+(_[0-9]+)*$, appear once, and have
+# a ("<name>", row in the runner. Examples: GK_CONFIGS=gk_0_25 (single config),
+# GK_CONFIGS="gk_0_25 gk_0_15" (chain).
+#
 # Config order: the runner loops `for platform in (atcoder, leetcode): for
-# config in --configs`, so a single `--configs gk_0_45 gk_0_35` would
-# interleave per platform. To finish gk_0_45 on BOTH platforms first, each
-# batch runs a generated chain (logs/gk045_launch_<IST>/batch<N>/chain_batchN.sh):
-#   1) --configs gk_0_45  (atcoder, then leetcode)
+# config in --configs`, so a single `--configs A B` would interleave per
+# platform. To finish each config on BOTH platforms first, each batch runs a
+# generated chain (logs/<prefix><IST>/batch<N>/chain_batchN.sh):
+#   1) --configs <cfg 1>  (atcoder, then leetcode)
 #   2) read-only completeness check: every batch-N task_id present exactly
-#      once in the gk_0_45 atcoder+leetcode files, no unparseable lines
-#   3) --configs gk_0_35  (atcoder, then leetcode) -- ONLY if 1) exited 0 AND 2) passed.
+#      once in the <cfg 1> atcoder+leetcode files, no unparseable lines
+#   3) --configs <cfg 2>  -- ONLY if 1) exited 0 AND 2) passed; and so on.
+#   last) after the LAST config exits 0, the same check runs once more
+#      ("FINAL COMPLETE verified (a/l)" or "FINAL INCOMPLETE ..."; chain exit 3
+#      if incomplete), so a single-config run is verified too.
 # Marker lines "[gk-chain batch N] ..." go to the per-batch log either way.
-# Batches are independent: batch 1 may start gk_0_35 while batch 2 is still on gk_0_45.
+# Batches are independent: batch 1 may start config 2 while batch 2 is still on config 1.
+#
+# Names derived from GK_CONFIGS (the default keeps the original names):
+#   launch dir  logs/gk045_launch_<IST>/ when GK_CONFIGS is the default,
+#               logs/gk_launch_<IST>/ otherwise (the "no chain running" gate
+#               looks for BOTH prefixes);
+#   batch log   logs/ministral_fulldataset_batch<N>_<tags>.log, tag = config
+#               name with "_" removed, joined by "_" (gk_0_45 gk_0_35 ->
+#               gk045_gk035, the original name; gk_0_25 -> gk025).
 #
 # Gates (any failure -> "STOP" in the log, non-zero exit, nothing launched):
-#   lock; no runner/chain process; both GPUs < GPU_FREE_MIB; branch + clean
-#   tracked tree; runner has "gk_0_45"/"gk_0_35" rows; REQUIRED runner sha256
+#   valid GK_CONFIGS; lock; no runner/chain process; both GPUs < GPU_FREE_MIB;
+#   branch + clean tracked tree; runner has a row per config; REQUIRED runner sha256
 #   pin (EXPECT_RUNNER_SHA256, 'any' = loud warning); optional
 #   generator_vllm.py pin; vllm version == EXPECT_VLLM_VERSION (0.21.0);
 #   batch_assignment.csv has batch 1 and 2 rows. No git pull (pull manually).
@@ -33,6 +49,7 @@
 # ssh session cannot kill it; it prints the log path and returns at once):
 #   cd /home/karrtik/pless-for-coding
 #   EXPECT_RUNNER_SHA256=<sha256 of the reviewed runner> bash scripts/gpu2_launch_ministral_gk_batches.sh
+#   GK_CONFIGS=gk_0_25 EXPECT_RUNNER_SHA256=<sha256> bash scripts/gpu2_launch_ministral_gk_batches.sh
 #   tail -f logs/gpu2_launch_gk.log
 # Dry run (stays in the foreground; read-only gates run, mutating actions
 # printed): prefix DRY_RUN=1.
@@ -42,6 +59,7 @@
 #   JSON_PYTHON GIT_BIN NVIDIA_SMI_BIN PGREP_BIN FLOCK_BIN TIMEOUT_BIN SETSID_BIN
 #   NVSMI_TIMEOUT_SECONDS GPU_FREE_MIB LAUNCH_VERIFY_MINUTES STAGGER
 #   EXPECT_RUNNER_SHA256 EXPECT_GENVLLM_SHA256 EXPECT_VLLM_VERSION UNBUFFERED
+#   GK_CONFIGS
 # Test hooks: GPU2_LAUNCHER_DETACHED=1 (stay in foreground),
 #   LAUNCH_VERIFY_SECONDS (overrides the minutes value), PGREP_SCOPE (regex
 #   prefix prepended to every pgrep pattern; empty = production patterns).
@@ -78,20 +96,48 @@ MODEL="mistralai/Ministral-3-3B-Reasoning-2512"
 MODEL_SLUG="mistralai--Ministral-3-3B-Reasoning-2512"
 RUNNER="scripts/run_pless_variants_ministral_3b_lcb_cuda.py"
 GENVLLM="bench/generator_vllm.py"
-CONFIGS=( gk_0_45 gk_0_35 )   # user's order: one SEQUENTIAL runner invocation per config (see header)
-ORDER_MSG="Config order per batch (1 on GPU0, 2 on GPU1): invocation 1 --configs gk_0_45 (atcoder then leetcode) to completion, THEN invocation 2 --configs gk_0_35 (atcoder then leetcode), started only if invocation 1 exits 0 AND that batch's gk_0_45 atcoder+leetcode files pass the completeness check. Batches are independent: batch 1 may start gk_0_35 while batch 2 is still on gk_0_45 (both GPUs stay busy)."
+DEFAULT_GK_CONFIGS="gk_0_45 gk_0_35"
+GK_CONFIGS="${GK_CONFIGS:-$DEFAULT_GK_CONFIGS}"   # one SEQUENTIAL runner invocation per config (see header)
+local -a CONFIGS=()
+read -r -a CONFIGS <<< "$GK_CONFIGS"
+NCFG=${#CONFIGS[@]}
 BATCHES=( 1 2 )
 FULL_DIR="$REPO/results/pless_variants_cuda/$MODEL_SLUG/LCB_v6_full1046"
 BATCH_CSV="$REPO/results/lcb_v6_full1046/batch_assignment.csv"  # cols: task_id,platform,difficulty,batch
 QLOG="$LOG_DIR/gpu2_launch_gk.log"
 LOCKFILE="$LOG_DIR/gpu2_launch_gk.lock"
 ANY_RUNNER_PAT="$(scoped "run_pless_variants_ministral_3b_lcb_cuda.py")"
-ANY_CHAIN_PAT="$(scoped 'gk045_launch_.*/chain_batch[0-9]+\.sh')"
+ANY_CHAIN_PAT="$(scoped 'gk045_launch_.*/chain_batch[0-9]+\.sh')"   # default-config launches
+ANY_CHAIN_PAT2="$(scoped 'gk_launch_.*/chain_batch[0-9]+\.sh')"     # any other GK_CONFIGS
 LAUNCH_PATH="$REPO/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
 ENV_UNSET=( -u VLLM_USE_FLASHINFER_SAMPLER -u CUDA_HOME )
 LAUNCHED_NOTE=""
 
 mkdir -p "$LOG_DIR" || { echo "cannot create $LOG_DIR" >&2; exit 2; }
+
+# ---------------------------------------------------------------- GK_CONFIGS (validated before detaching)
+(( NCFG > 0 )) || stop "GK_CONFIGS is empty/blank (got '$GK_CONFIGS'); give space-separated config names, e.g. GK_CONFIGS=gk_0_25"
+local ci cj
+for (( ci = 0; ci < NCFG; ci++ )); do
+  [[ "${CONFIGS[$ci]}" =~ ^gk_[0-9]+(_[0-9]+)*$ ]] \
+    || stop "GK_CONFIGS entry '${CONFIGS[$ci]}' is not a valid name (must match ^gk_[0-9]+(_[0-9]+)*\$); GK_CONFIGS='$GK_CONFIGS'"
+  for (( cj = 0; cj < ci; cj++ )); do
+    [[ "${CONFIGS[$ci]}" != "${CONFIGS[$cj]}" ]] || stop "GK_CONFIGS lists '${CONFIGS[$ci]}' more than once; GK_CONFIGS='$GK_CONFIGS'"
+  done
+done
+if [[ "${CONFIGS[*]}" == "$DEFAULT_GK_CONFIGS" ]]; then IS_DEFAULT=1; LAUNCH_PREFIX="gk045_launch_"
+else IS_DEFAULT=0; LAUNCH_PREFIX="gk_launch_"; fi
+RUNLOG_TAG=""
+for (( ci = 0; ci < NCFG; ci++ )); do RUNLOG_TAG+="${RUNLOG_TAG:+_}${CONFIGS[$ci]//_/}"; done
+local LAST_CFG="${CONFIGS[$((NCFG-1))]}"
+if (( IS_DEFAULT )); then
+  ORDER_MSG="Config order per batch (1 on GPU0, 2 on GPU1): invocation 1 --configs gk_0_45 (atcoder then leetcode) to completion, THEN invocation 2 --configs gk_0_35 (atcoder then leetcode), started only if invocation 1 exits 0 AND that batch's gk_0_45 atcoder+leetcode files pass the completeness check. Batches are independent: batch 1 may start gk_0_35 while batch 2 is still on gk_0_45 (both GPUs stay busy)."
+else
+  ORDER_MSG="Config order per batch (1 on GPU0, 2 on GPU1): $NCFG sequential invocation(s):"
+  for (( ci = 0; ci < NCFG; ci++ )); do ORDER_MSG+=" $((ci+1))) --configs ${CONFIGS[$ci]} (atcoder then leetcode)"; done
+  ORDER_MSG+="; each invocation after the first starts only if the previous one exits 0 AND that batch's previous-config atcoder+leetcode files pass the completeness check. Batches are independent (both GPUs stay busy)."
+fi
+ORDER_MSG+=" After the last config ($LAST_CFG) exits 0, a FINAL completeness check runs (chain exits 3 if incomplete)."
 
 # ---------------------------------------------------------------- 0. detach (survive ssh drop)
 # The lock is taken below, i.e. in the detached child, never in this parent.
@@ -125,7 +171,8 @@ else
 fi
 
 log "==== launcher start pid=$$ REPO=$REPO BRANCH=$BRANCH DRY_RUN=$DRY_RUN STAGGER=$STAGGER LAUNCH_VERIFY_MINUTES=$LAUNCH_VERIFY_MINUTES lock=${FLOCK_BIN:+flock}${FLOCK_BIN:-pidfile} detached=${GPU2_LAUNCHER_DETACHED:-0}"
-log "pgrep patterns: runner='$ANY_RUNNER_PAT' chain='$ANY_CHAIN_PAT'"
+log "pgrep patterns: runner='$ANY_RUNNER_PAT' chain='$ANY_CHAIN_PAT' chain2='$ANY_CHAIN_PAT2'"
+log "GK_CONFIGS: ${CONFIGS[*]} ($NCFG config(s)$([[ $IS_DEFAULT == 1 ]] && printf ', default')); launch dir prefix $LAUNCH_PREFIX; batch log tag $RUNLOG_TAG"
 [[ -n "${VLLM_USE_FLASHINFER_SAMPLER+x}" ]] && log "WARNING: VLLM_USE_FLASHINFER_SAMPLER='$VLLM_USE_FLASHINFER_SAMPLER' is set in the launcher env; it is REMOVED (env -u) from every runner command"
 [[ -n "${CUDA_HOME+x}" ]] && log "WARNING: CUDA_HOME='$CUDA_HOME' is set in the launcher env; it is REMOVED (env -u) from every runner command"
 [[ "$LAUNCH_VERIFY_MINUTES" =~ ^[0-9]+$ ]] || stop "LAUNCH_VERIFY_MINUTES must be a whole number of minutes (got '$LAUNCH_VERIFY_MINUTES')"
@@ -141,9 +188,12 @@ cd "$REPO" || stop "cannot cd to REPO=$REPO"
 if "$PGREP_BIN" -f "$ANY_RUNNER_PAT" >/dev/null 2>&1; then
   stop "a runner process is already running ($(proc_list "$ANY_RUNNER_PAT")) -- refusing to launch"
 fi
-if "$PGREP_BIN" -f "$ANY_CHAIN_PAT" >/dev/null 2>&1; then
-  stop "a gk chain wrapper is already running ($(proc_list "$ANY_CHAIN_PAT")) -- refusing to launch"
-fi
+local pat
+for pat in "$ANY_CHAIN_PAT" "$ANY_CHAIN_PAT2"; do
+  if "$PGREP_BIN" -f "$pat" >/dev/null 2>&1; then
+    stop "a gk chain wrapper is already running ($(proc_list "$pat")) -- refusing to launch"
+  fi
+done
 log "no runner process and no gk chain wrapper running"
 
 # ---------------------------------------------------------------- 3. both GPUs free
@@ -207,10 +257,14 @@ log_existing_results
 # ---------------------------------------------------------------- 8. launch
 local TS LROOT
 TS="$(TZ=Asia/Kolkata date +%Y%m%d_%H%M%S)"
-LROOT="$LOG_DIR/gk045_launch_$TS"
+LROOT="$LOG_DIR/$LAUNCH_PREFIX$TS"
 CHECK_PY="$LROOT/check_step_complete.py"
 if [[ "$DRY_RUN" == "1" ]]; then
-  log "DRY: would write $CHECK_PY (read-only gk_0_45 completeness check run by each chain before step 2)"
+  if (( IS_DEFAULT )); then
+    log "DRY: would write $CHECK_PY (read-only gk_0_45 completeness check run by each chain before step 2; also run after the last step as the FINAL check)"
+  else
+    log "DRY: would write $CHECK_PY (read-only completeness check run by each chain after each of: ${CONFIGS[*]}; the one after $LAST_CFG is the FINAL check)"
+  fi
 else
   mkdir -p "$LROOT" || stop "cannot create $LROOT"
   write_check_py "$CHECK_PY" || stop "cannot write $CHECK_PY"
@@ -258,7 +312,7 @@ for i in 0 1; do
   elif (( STATUS[i] == 2 )); then
     msg+="batch $b FAILED: no 'Engine ready' within ${VERIFY_SECS}s (chain PID ${PIDS[$i]} still alive, NOT killed); "
   else
-    msg+="batch $b FAILED: chain PID ${PIDS[$i]} exited before 'Engine ready' (gk_0_35 NOT started); "
+    msg+="batch $b FAILED: chain PID ${PIDS[$i]} exited before 'Engine ready' ($(rest_msg)); "
   fi
 done
 log "==== launch incomplete: $msg resume scripts under $LROOT/batch<N>/; exit 1. $ORDER_MSG"
@@ -283,7 +337,13 @@ scoped() {  # prepend the PGREP_SCOPE test hook (empty in production = pattern u
 }
 pid_alive() { kill -0 "$1" 2>/dev/null || return 1; [[ "$(ps -o stat= -p "$1" 2>/dev/null)" != Z* ]]; }
 batch_pat() { printf '%s' "$ANY_RUNNER_PAT.*--batch $1( |\$)"; }
-chain_pat() { scoped "gk045_launch_.*/chain_batch$1\\.sh"; }
+chain_pat() { scoped "(gk045|gk)_launch_.*/chain_batch$1\\.sh"; }   # both launch-dir prefixes
+runlog_of() { printf '%s' "$LOG_DIR/ministral_fulldataset_batch${1}_${RUNLOG_TAG}.log"; }
+rest_msg() {  # configs after the first (never started if step 1 died)
+  local k out=""
+  for (( k = 1; k < NCFG; k++ )); do out+="${out:+ }${CONFIGS[$k]}"; done
+  if [[ -n "$out" ]]; then printf '%s NOT started' "$out"; else printf 'single config %s; no further step' "${CONFIGS[0]}"; fi
+}
 batch_running() {  # a runner OR a chain wrapper for batch $1
   "$PGREP_BIN" -f "$(batch_pat "$1")" >/dev/null 2>&1 || "$PGREP_BIN" -f "$(chain_pat "$1")" >/dev/null 2>&1
 }
@@ -368,15 +428,25 @@ print("lines=%d batch1=%d batch2=%d other_batches=%d unparseable=%d" % (lines, n
     done
   done
 }
-# write_check_py PATH: read-only completeness check run by each chain between
-# step 1 and step 2. Streams the jsonl line by line; prints only task_ids/counts.
-# argv: batch_csv batch done_config next_config platform=path...
+# write_check_py PATH: read-only completeness check run by each chain after
+# every step (between steps, and once more after the last step = FINAL check).
+# Streams the jsonl line by line; prints only task_ids/counts.
+# argv: batch_csv batch done_config next_config [--step=K/N] platform=path...
+#   next_config "-" = FINAL check after the last step (labels "FINAL ...").
+#   --step=K/N (default 1/2, omitted then) numbers the "STEP K ..." lines.
 # exit 0 = complete, 3 = incomplete (missing / duplicated / unparseable).
 write_check_py() {
   cat > "$1" <<'PY'
 import csv, json, sys
 csv_path, batch, done_cfg, next_cfg = sys.argv[1:5]
-files = [a.split("=", 1) for a in sys.argv[5:]]
+step, nsteps = 1, 2
+files = []
+for a in sys.argv[5:]:
+    if a.startswith("--step="):
+        step, nsteps = (int(x) for x in a[len("--step="):].split("/", 1))
+    else:
+        files.append(a.split("=", 1))
+final = next_cfg == "-"
 want = {plat: set() for plat, _ in files}
 with open(csv_path, newline="") as fh:          # csv module handles CRLF
     for row in csv.DictReader(fh):
@@ -419,10 +489,13 @@ for plat, path in files:
     if dups:
         print(f"{plat}: duplicated (<=10): {sorted(dups)[:10]}")
     tot_missing += len(missing); tot_dup += len(dups); tot_bad += bad
+label = "FINAL" if final else f"STEP {step}"
 if tot_missing or tot_dup or tot_bad:
-    print(f"STEP 1 INCOMPLETE: missing={tot_missing} dup={tot_dup} bad={tot_bad} -- step 2/2 ({next_cfg}) NOT started")
+    tail = (f" -- {done_cfg} batch {batch} NOT complete" if final
+            else f" -- step {step + 1}/{nsteps} ({next_cfg}) NOT started")
+    print(f"{label} INCOMPLETE: missing={tot_missing} dup={tot_dup} bad={tot_bad}{tail}")
     sys.exit(3)
-print("STEP 1 COMPLETE verified (" + "/".join(str(n) for n in present) + ")")
+print(f"{label} COMPLETE verified (" + "/".join(str(n) for n in present) + ")")
 sys.exit(0)
 PY
 }
@@ -437,7 +510,7 @@ write_integrity_check() {
   local body
   body="$(cat <<EOF
 #!/usr/bin/env bash
-# Post-run integrity check of the shared gk_0_45/gk_0_35 full1046 jsonl files:
+# Post-run integrity check of the shared ${CONFIGS[*]} full1046 jsonl files:
 # every non-blank line must parse as JSON with a task_id, and no task_id may repeat.
 cd $(printf '%q' "$REPO") && $(printf '%q' "$JSON_PYTHON") -I -c '
 import json, sys
@@ -474,11 +547,11 @@ launch_batch() {
   local b="$1" lroot="$2" head="$3" ldir runlog gpu chain c k
   gpu=$(( b - 1 ))
   ldir="$lroot/batch$b"
-  runlog="$LOG_DIR/ministral_fulldataset_batch${b}_gk045_gk035.log"
+  runlog="$(runlog_of "$b")"
   chain="$ldir/chain_batch$b.sh"
   local -a ENVV=( CUDA_VISIBLE_DEVICES="$gpu" PYTHONPATH="$REPO" PATH="$LAUNCH_PATH" )
   [[ "$UNBUFFERED" == "1" ]] && ENVV+=( PYTHONUNBUFFERED=1 )
-  local -a CMDS=()
+  local -a CMDS=() GATES=()
   for c in "${CONFIGS[@]}"; do
     local -a CMD=( "$PYTHON_BIN" "$RUNNER" --model "$MODEL" --dtype bfloat16
           --gpu-memory-utilization 0.92 --max-model-len 37500 --n-samples 10
@@ -486,61 +559,104 @@ launch_batch() {
           --budget-minutes inf --per-config-minutes inf --seed 42 )
     CMDS+=( "$( printf 'env'; printf ' %s' "${ENV_UNSET[@]}"; printf ' %q' "${ENVV[@]}" "${CMD[@]}"; printf ' < /dev/null' )" )
   done
-  local check_cmd
-  check_cmd="$( printf 'env'; printf ' %s' "${ENV_UNSET[@]}"; printf ' %q' "$JSON_PYTHON" -I "$CHECK_PY" "$BATCH_CSV" "$b" "${CONFIGS[0]}" "${CONFIGS[1]}" \
-                "atcoder=$FULL_DIR/${CONFIGS[0]}_atcoder_think_t1.0.jsonl" \
-                "leetcode=$FULL_DIR/${CONFIGS[0]}_leetcode_think_t1.0.jsonl" )"
-  # Chain wrapper: step 2 starts only if step 1 exits 0 AND the completeness check passes.
-  local body
-  body="$(cat <<EOF
-#!/usr/bin/env bash
-# gk chain for Ministral LCB full1046 batch $b on GPU $gpu: ${CONFIGS[0]} (both platforms) THEN ${CONFIGS[1]}.
+  # GATES[k-1] = completeness check of config k, run after step k. Between steps
+  # it is prefixed with `env -u ...` (as before); --step=K/N only when K/N != 1/2
+  # (so the default's gate command is unchanged). The FINAL check (after the last
+  # step, next_config "-") calls the stdlib-only check directly: the chain itself
+  # already runs without VLLM_USE_FLASHINFER_SAMPLER/CUDA_HOME (launched via env -u).
+  local -a STEPARG
+  for (( k = 1; k <= NCFG; k++ )); do
+    c="${CONFIGS[$((k-1))]}"
+    if (( k < NCFG )); then
+      STEPARG=(); [[ "$k/$NCFG" == "1/2" ]] || STEPARG=( "--step=$k/$NCFG" )
+      GATES+=( "$( printf 'env'; printf ' %s' "${ENV_UNSET[@]}"; printf ' %q' "$JSON_PYTHON" -I "$CHECK_PY" "$BATCH_CSV" "$b" "$c" "${CONFIGS[$k]}" \
+                   ${STEPARG[@]+"${STEPARG[@]}"} \
+                   "atcoder=$FULL_DIR/${c}_atcoder_think_t1.0.jsonl" "leetcode=$FULL_DIR/${c}_leetcode_think_t1.0.jsonl" )" )
+    else
+      GATES+=( "$( printf '%q' "$JSON_PYTHON"; printf ' %q' -I "$CHECK_PY" "$BATCH_CSV" "$b" "$c" - "--step=$k/$NCFG" \
+                   "atcoder=$FULL_DIR/${c}_atcoder_think_t1.0.jsonl" "leetcode=$FULL_DIR/${c}_leetcode_think_t1.0.jsonl" )" )
+    fi
+  done
+  local check_cmd="${GATES[0]}" final_cmd="${GATES[$((NCFG-1))]}"
+  # Chain wrapper: step k+1 starts only if step k exits 0 AND its completeness
+  # check passes; after the last step the FINAL check runs (exit 3 if incomplete).
+  local body cl
+  body="#!/usr/bin/env bash
+# gk chain for Ministral LCB full1046 batch $b on GPU $gpu: ${CONFIGS[*]} (in this order, each on both platforms), then a FINAL completeness check.
 # Generated by scripts/gpu2_launch_ministral_gk_batches.sh at $(ist); HEAD=$head
 # Runner resumes by task_id, so re-running this chain skips finished tasks.
 set -u
-mark() { printf '[%s] [gk-chain batch $b] %s\n' "\$(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S IST')" "\$*"; }
-cd $(printf '%q' "$REPO") || { mark "CHAIN ABORT: cannot cd to repo"; exit 1; }
-mark "CHAIN START pid=\$\$ step 1/2: --configs ${CONFIGS[0]}"
-${CMDS[0]}
+mark() { printf '[%s] [gk-chain batch $b] %s\n' \"\$(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S IST')\" \"\$*\"; }
+cd $(printf '%q' "$REPO") || { mark \"CHAIN ABORT: cannot cd to repo\"; exit 1; }"
+  for (( k = 1; k <= NCFG; k++ )); do
+    c="${CONFIGS[$((k-1))]}"
+    if (( k == 1 )); then body+="
+mark \"CHAIN START pid=\$\$ step 1/$NCFG: --configs $c\""
+    else body+="
+mark \"starting step $k/$NCFG: --configs $c\""
+    fi
+    if (( k < NCFG )); then
+      body+="
+${CMDS[$((k-1))]}
 rc=\$?
 if (( rc != 0 )); then
-  mark "STEP 1/2 (${CONFIGS[0]}) FAILED rc=\$rc -- step 2/2 (${CONFIGS[1]}) NOT started"
-  exit "\$rc"
+  mark \"STEP $k/$NCFG ($c) FAILED rc=\$rc -- step $((k+1))/$NCFG (${CONFIGS[$k]}) NOT started\"
+  exit \"\$rc\"
 fi
-mark "STEP 1/2 (${CONFIGS[0]}) finished rc=0; verifying batch-$b completeness of ${CONFIGS[0]} atcoder+leetcode"
-chk="\$($check_cmd 2>&1)"
+mark \"STEP $k/$NCFG ($c) finished rc=0; verifying batch-$b completeness of $c atcoder+leetcode\"
+chk=\"\$(${GATES[$((k-1))]} 2>&1)\"
 crc=\$?
-while IFS= read -r l; do mark "\$l"; done <<< "\$chk"
+while IFS= read -r l; do mark \"\$l\"; done <<< \"\$chk\"
 if (( crc == 3 )); then exit 3; fi
-if (( crc != 0 )); then mark "STEP 1 CHECK ERROR rc=\$crc -- step 2/2 (${CONFIGS[1]}) NOT started"; exit 3; fi
-mark "starting step 2/2: --configs ${CONFIGS[1]}"
-${CMDS[1]}
+if (( crc != 0 )); then mark \"STEP $k CHECK ERROR rc=\$crc -- step $((k+1))/$NCFG (${CONFIGS[$k]}) NOT started\"; exit 3; fi"
+    else
+      body+="
+${CMDS[$((k-1))]}
 rc=\$?
-if (( rc != 0 )); then mark "STEP 2/2 (${CONFIGS[1]}) FAILED rc=\$rc"; else mark "STEP 2/2 (${CONFIGS[1]}) finished rc=0; CHAIN DONE"; fi
-exit "\$rc"
-EOF
-)"
+if (( rc != 0 )); then mark \"STEP $k/$NCFG ($c) FAILED rc=\$rc\"; exit \"\$rc\"; fi
+mark \"STEP $k/$NCFG ($c) runner exited rc=0; FINAL check: verifying batch-$b completeness of $c atcoder+leetcode\"
+chk=\"\$($final_cmd 2>&1)\"
+crc=\$?
+while IFS= read -r l; do mark \"\$l\"; done <<< \"\$chk\"
+if (( crc == 3 )); then exit 3; fi
+if (( crc != 0 )); then mark \"FINAL CHECK ERROR rc=\$crc\"; exit 3; fi
+mark \"STEP $k/$NCFG ($c) finished rc=0; CHAIN DONE\"
+exit 0"
+    fi
+  done
   local launch_line
   launch_line="$( printf 'nohup env'; printf ' %s' "${ENV_UNSET[@]}"; printf ' %q' "${ENVV[@]}"
                   printf ' bash %q >> %q 2>&1 < /dev/null &' "$chain" "$runlog" )"
   LAST_PID=""; LAST_OFF=0
   if [[ "$DRY_RUN" == "1" ]]; then
     log "DRY: batch $b (GPU $gpu) env: ${ENV_UNSET[*]} ${ENVV[*]}"
-    log "DRY: batch $b step 1/2 would run: ${CMDS[0]}"
-    log "DRY: batch $b completeness gate would run: $check_cmd"
-    log "DRY: batch $b step 2/2 would run (only if step 1 exits 0 and the gate passes): ${CMDS[1]}"
+    log "DRY: batch $b step 1/$NCFG would run: ${CMDS[0]}"
+    for (( k = 2; k <= NCFG; k++ )); do
+      if (( k == 2 )); then log "DRY: batch $b completeness gate would run: ${GATES[0]}"
+      else log "DRY: batch $b completeness gate after step $((k-1))/$NCFG would run: ${GATES[$((k-2))]}"; fi
+      log "DRY: batch $b step $k/$NCFG would run (only if step $((k-1)) exits 0 and the gate passes): ${CMDS[$((k-1))]}"
+    done
+    log "DRY: batch $b final completeness gate would run (only if step $NCFG/$NCFG exits 0; chain exits 3 if incomplete): $final_cmd"
     log "DRY: batch $b would write $chain, launched as: cd $REPO; $launch_line"
     log "DRY: batch $b would write $ldir/{cmdline.txt,environ.txt,resume_batch$b.sh}"
     return 0
   fi
   mkdir -p "$ldir" || stop "cannot create $ldir"
   { printf '%s\n' "$body" > "$chain" && chmod +x "$chain"; } || stop "cannot write $chain"
-  { echo "launch: cd $REPO; $launch_line"; for k in 0 1; do echo "step $((k+1)): ${CMDS[$k]}"; done
-    echo "gate: $check_cmd"; } > "$ldir/cmdline.txt"
+  { echo "launch: cd $REPO; $launch_line"
+    for (( k = 1; k <= NCFG; k++ )); do
+      echo "step $k: ${CMDS[$((k-1))]}"
+      if (( k < NCFG )); then
+        if (( k == 1 )); then echo "gate: ${GATES[0]}"; else echo "gate after step $k: ${GATES[$((k-1))]}"; fi
+      fi
+    done
+    echo "final gate (after step $NCFG): $final_cmd"; } > "$ldir/cmdline.txt"
   cat > "$ldir/resume_batch$b.sh" <<EOF
 #!/usr/bin/env bash
 # Resume the gk chain for Ministral LCB full1046 batch $b on GPU $gpu (re-runs the whole
 # chain; the runner resumes by task_id, so finished tasks are skipped).
+# Chain configs, in order (each followed by its completeness check; FINAL after the last): ${CONFIGS[*]}
+# Chain: $chain
 # Generated by scripts/gpu2_launch_ministral_gk_batches.sh at $(ist); HEAD=$head
 # Re-applies the full launch environment (CUDA_VISIBLE_DEVICES, PYTHONPATH, PATH;
 # VLLM_USE_FLASHINFER_SAMPLER and CUDA_HOME removed).
@@ -562,9 +678,13 @@ EOF
   chmod +x "$ldir/resume_batch$b.sh"
   [[ -f "$runlog" ]] && LAST_OFF="$(wc -c < "$runlog" | tr -d ' ')"
   log "batch $b launch (GPU $gpu): cd $REPO; $launch_line   (log byte offset before launch: $LAST_OFF)"
-  log "batch $b step 1/2: ${CMDS[0]}"
-  log "batch $b gate:     $check_cmd"
-  log "batch $b step 2/2 (only if step 1 exits 0 and the gate passes): ${CMDS[1]}"
+  log "batch $b step 1/$NCFG: ${CMDS[0]}"
+  for (( k = 2; k <= NCFG; k++ )); do
+    if (( k == 2 )); then log "batch $b gate:     ${GATES[0]}"
+    else log "batch $b gate after step $((k-1))/$NCFG: ${GATES[$((k-2))]}"; fi
+    log "batch $b step $k/$NCFG (only if step $((k-1)) exits 0 and the gate passes): ${CMDS[$((k-1))]}"
+  done
+  log "batch $b final gate (only if step $NCFG/$NCFG exits 0): $final_cmd"
   # 9>&- : the long-running chain/runner must not inherit the flock fd.
   nohup env "${ENV_UNSET[@]}" "${ENVV[@]}" bash "$chain" >>"$runlog" 2>&1 </dev/null 9>&- &
   LAST_PID=$!
@@ -579,13 +699,13 @@ EOF
 # Only step 1 can print 'Engine ready in' first: step 2 starts after step 1 exits.
 verify_batch() {
   local b="$1" pid="$2" t0="$3" off="$4" ldir="$5" runlog ready lp rpid
-  runlog="$LOG_DIR/ministral_fulldataset_batch${b}_gk045_gk035.log"
+  runlog="$(runlog_of "$b")"
   lp=$(( POLL_SECONDS < 10 ? POLL_SECONDS : 10 ))
   while :; do
     # split on \r too: a tqdm progress line may precede the message on the same "line"
     ready="$(tail -c +$((off+1)) "$runlog" 2>/dev/null | tr '\r' '\n' | grep -m1 'Engine ready in' || true)"
     if [[ -n "$ready" ]]; then
-      log "batch $b launch verified (step 1/2, ${CONFIGS[0]}): '$ready' (chain PID=$pid log=$runlog)"
+      log "batch $b launch verified (step 1/$NCFG, ${CONFIGS[0]}): '$ready' (chain PID=$pid log=$runlog)"
       rpid="$(runner_child_of "$pid" "$b" || true)"
       if [[ -z "$rpid" ]]; then
         log "batch $b: could not find the runner python child of chain $pid; kept fallback environ.txt"

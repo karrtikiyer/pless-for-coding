@@ -186,11 +186,11 @@ def test_ministral_top_k_not_custom_processor(ministral):
 
 def test_ministral_pre_topk_configs_unchanged(ministral):
     """Existing configs are all still present, in the same order, unchanged
-    count (only the 3 top-k rows + the gk_0_45 row added)."""
-    added = set(_TOP_K_CONFIGS) | {"gk_0_45"}
+    count (only the 3 top-k rows + the gk_0_45, gk_0_25, gk_0_5 rows added)."""
+    added = set(_TOP_K_CONFIGS) | {"gk_0_45", "gk_0_25", "gk_0_5"}
     assert tuple(n for n in ministral.CONFIG_NAMES if n not in added) \
         == _PRE_TOPK_MINISTRAL_CONFIGS
-    assert len(ministral.CONFIG_NAMES) == len(_PRE_TOPK_MINISTRAL_CONFIGS) + 4
+    assert len(ministral.CONFIG_NAMES) == len(_PRE_TOPK_MINISTRAL_CONFIGS) + 6
     assert len(set(ministral.CONFIG_NAMES)) == len(ministral.CONFIG_NAMES)
 
 
@@ -292,7 +292,8 @@ def test_ministral_gk_0_45_output_path(ministral, tmp_path):
         != ministral._output_path(tmp_path, "gk_0_4", "atcoder", 1.0)
 
 
-@pytest.mark.parametrize("name,k", [("gk_0_45", 0.45), ("gk_0_35", 0.35)])
+@pytest.mark.parametrize("name,k", [("gk_0_45", 0.45), ("gk_0_35", 0.35),
+                                    ("gk_0_25", 0.25), ("gk_0_5", 0.5)])
 def test_ministral_gk_run_takes_custom_branch(ministral, monkeypatch, tmp_path, name, k):
     """End-to-end (no vLLM): G_k configs call generate_samples_vllm with
     sampler_name='pless_renyi', renyi_k=k, T=1.0 and never the native path;
@@ -353,3 +354,132 @@ def test_pless_renyi_mask_accepts_k_0_45():
     expected_keep = probs >= thr
     expected_keep[torch.arange(3), probs.argmax(-1)] = True
     assert torch.equal(torch.isfinite(out), expected_keep)
+
+
+# ---------------------------------------------------------------------------
+# Ministral G_k k=0.25 (custom pless_renyi path). NAMING TRAP: gk_0_025 is
+# k=0.025, gk_0_25 is k=0.25 -- guard both mappings and filename uniqueness.
+# ---------------------------------------------------------------------------
+def test_ministral_gk_0_25_config_row(ministral):
+    rows = {c[0]: c for c in ministral.CONFIGS}
+    assert rows["gk_0_25"] == ("gk_0_25", "pless_renyi", 1.0, 0.25)
+    names = ministral.CONFIG_NAMES
+    # placed with the Ministral-only G_k block, right after gk_0_2
+    assert names.index("gk_0_25") == names.index("gk_0_2") + 1
+
+
+def test_ministral_gk_0_25_vs_gk_0_025_naming_trap(ministral):
+    rows = {c[0]: c for c in ministral.CONFIGS}
+    assert rows["gk_0_025"][3] == 0.025
+    assert rows["gk_0_25"][3] == 0.25
+    assert rows["gk_0_025"][1] == rows["gk_0_25"][1] == "pless_renyi"
+
+
+def test_ministral_config_names_unique_and_filenames_distinct(ministral, tmp_path):
+    names = ministral.CONFIG_NAMES
+    assert len(set(names)) == len(names)
+    for plat in ("atcoder", "leetcode"):
+        paths = [ministral._output_path(tmp_path, c[0], plat, c[2]).name
+                 for c in ministral.CONFIGS]
+        assert len(set(paths)) == len(paths)
+    # every G_k row has a distinct k
+    ks = [c[3] for c in ministral.CONFIGS if c[1] == "pless_renyi"]
+    assert len(set(ks)) == len(ks)
+
+
+def test_ministral_gk_0_25_not_native(ministral):
+    assert "gk_0_25" not in ministral._NATIVE_TOP_P_TOP_K
+    config_by_name = {c[0]: c for c in ministral.CONFIGS}
+    assert ministral._all_configs_native(["gk_0_25"], config_by_name) is False
+    assert ministral._record_top_k("pless_renyi") == 0
+
+
+def test_ministral_gk_0_25_output_path(ministral, tmp_path):
+    for plat in ("atcoder", "leetcode"):
+        p = ministral._output_path(tmp_path, "gk_0_25", plat, 1.0)
+        assert p.name == f"gk_0_25_{plat}_think_t1.0.jsonl"
+        for other in ("gk_0_025", "gk_0_2", "gk_0_4", "gk_0_35", "gk_0_45"):
+            assert p != ministral._output_path(tmp_path, other, plat, 1.0)
+
+
+def test_pless_renyi_mask_accepts_k_0_25():
+    """k=0.25 is not special-cased (only 2, 1, 0 are): generic branch."""
+    torch = pytest.importorskip("torch")
+    from bench.generator_vllm import _pless_renyi_mask_logits
+
+    g = torch.Generator().manual_seed(1)
+    logits = torch.randn(3, 50, generator=g) * 3
+    probs = torch.softmax(logits.float(), dim=-1)
+    k = 0.25
+    thr = probs.pow(k).sum(dim=-1, keepdim=True).pow(1.0 / (k - 1.0))
+    out = _pless_renyi_mask_logits(logits.clone(), k=k)
+    expected_keep = probs >= thr
+    expected_keep[torch.arange(3), probs.argmax(-1)] = True
+    assert torch.equal(torch.isfinite(out), expected_keep)
+
+
+# ---------------------------------------------------------------------------
+# Ministral G_k k=0.5 (custom pless_renyi path; first in the GPU2 queue).
+# NAMING TRAPS: gk_0_05 is k=0.05, gk_0_5 is k=0.5 (and gk_0_025 vs gk_0_25).
+# ---------------------------------------------------------------------------
+def test_ministral_gk_0_5_config_row(ministral):
+    rows = {c[0]: c for c in ministral.CONFIGS}
+    assert rows["gk_0_5"] == ("gk_0_5", "pless_renyi", 1.0, 0.5)
+    names = ministral.CONFIG_NAMES
+    assert names.index("gk_0_5") == names.index("gk_0_45") + 1
+
+
+@pytest.mark.parametrize("name,k", [("gk_0_05", 0.05), ("gk_0_5", 0.5),
+                                    ("gk_0_025", 0.025), ("gk_0_25", 0.25)])
+def test_ministral_gk_naming_traps(ministral, name, k):
+    row = {c[0]: c for c in ministral.CONFIGS}[name]
+    assert row[1] == "pless_renyi" and row[3] == k
+
+
+def test_ministral_gk_0_5_not_native(ministral):
+    assert "gk_0_5" not in ministral._NATIVE_TOP_P_TOP_K
+    config_by_name = {c[0]: c for c in ministral.CONFIGS}
+    assert ministral._all_configs_native(["gk_0_5"], config_by_name) is False
+    assert ministral._record_top_k("pless_renyi") == 0
+
+
+def test_ministral_gk_0_5_output_path(ministral, tmp_path):
+    for plat in ("atcoder", "leetcode"):
+        p = ministral._output_path(tmp_path, "gk_0_5", plat, 1.0)
+        assert p.name == f"gk_0_5_{plat}_think_t1.0.jsonl"
+        assert p != ministral._output_path(tmp_path, "gk_0_05", plat, 1.0)
+        assert ministral._output_path(tmp_path, "gk_0_05", plat, 1.0).name \
+            == f"gk_0_05_{plat}_think_t1.0.jsonl"
+
+
+def test_pless_renyi_mask_accepts_k_0_5():
+    """k=0.5 (exponent 1/(k-1) = -2) takes the generic branch."""
+    torch = pytest.importorskip("torch")
+    from bench.generator_vllm import _pless_renyi_mask_logits
+
+    g = torch.Generator().manual_seed(2)
+    logits = torch.randn(3, 50, generator=g) * 3
+    probs = torch.softmax(logits.float(), dim=-1)
+    k = 0.5
+    thr = probs.sqrt().sum(dim=-1, keepdim=True).pow(-2.0)
+    out = _pless_renyi_mask_logits(logits.clone(), k=k)
+    expected_keep = probs >= thr
+    expected_keep[torch.arange(3), probs.argmax(-1)] = True
+    assert torch.equal(torch.isfinite(out), expected_keep)
+
+
+def test_pless_renyi_k_0_5_large_vocab_finite():
+    """Large vocab, float32: threshold finite and in (1/v, 1]; no overflow."""
+    torch = pytest.importorskip("torch")
+    from bench.generator_vllm import _pless_renyi_mask_logits
+
+    v = 131072
+    g = torch.Generator().manual_seed(3)
+    for scale in (0.0, 1.0, 10.0, 100.0):
+        logits = torch.randn(2, v, generator=g) * scale
+        probs = torch.softmax(logits.float(), dim=-1)
+        thr = probs.pow(0.5).sum(dim=-1).pow(-2.0)
+        assert torch.isfinite(thr).all()
+        assert (thr >= 1.0 / v * (1 - 1e-4)).all() and (thr <= 1.0 + 1e-6).all()
+        out = _pless_renyi_mask_logits(logits.clone(), k=0.5)
+        assert torch.isfinite(out).any(dim=-1).all()
