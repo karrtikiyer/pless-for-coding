@@ -12,8 +12,12 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from print_fonts import set_print_fonts  # noqa: E402
 
 import matplotlib
 matplotlib.use("Agg")
@@ -58,6 +62,30 @@ CONFIG_ORDER = ["p-less", "p-less-norm", "top-p @0.95", "top-k @20"]  # G_k labe
 KS = [1, 3, 5, 10]
 
 
+def _fig6a_display_label(label: str, rel: str) -> str:
+    """Legend text for Fig 6a only (dict keys stay as-is: Fig 6b and the colour map use them).
+
+    Convention "<decoder> with T=<T>"; values parsed from the metrics file name.
+    "G_k=<v>" -> mathtext "$G_{<v>}$".
+    """
+    if label.startswith("G_k="):
+        return f"$G_{{{label[len('G_k='):]}}}$"
+    if label == "best top-p (swept)":
+        label = "top-p @"
+    name = rel.rsplit("/", 1)[-1]
+    if label == "recommended" or label.startswith("top-p @"):
+        m = re.search(r"temp_p([0-9.]+?)(?:_k(\d+))?_think_t([0-9.]+)_t", name)
+        assert m, f"cannot parse sampler from {name}"
+        p, k, t = m.groups()
+        core = f"top-p@{p}" + (f", top-k@{k}" if k else "") + f" with T={t}"
+        return f"{core} (recommended)" if label == "recommended" else core
+    if label in ("p-less", "p-less-norm"):
+        m = re.search(r"pless(?:_norm)?_think_t([0-9.]+)_t", name)
+        assert m, f"cannot parse sampler from {name}"
+        return f"{label} with T={m.group(1)}"
+    return label
+
+
 def _passk(path: Path, k: int) -> float | None:
     if not path.exists():
         return None
@@ -83,8 +111,8 @@ def _make_fig6a() -> None:
             ys = [(_passk(path, k) or 0.0) * 100 for k in KS]
             colour = CONFIG_COLORS.get(label, "#666666")
             marker = "s" if label.startswith("G_k") else "o"
-            ax.plot(KS, ys, marker=marker, label=label, color=colour, linewidth=1.5, markersize=5)
-        ax.set_xscale("log")
+            ax.plot(KS, ys, marker=marker, label=_fig6a_display_label(label, rel), color=colour, linewidth=1.5, markersize=5)
+        # Linear k axis, same as Fig 3a (MBPP pass@k), so the two pass@k figures read alike.
         ax.set_xticks(KS)
         ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
         ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
@@ -96,7 +124,7 @@ def _make_fig6a() -> None:
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=6.5, loc="upper center", bbox_to_anchor=(0.5, -0.22),
                   ncol=2, frameon=True)
-    fig.tight_layout()
+    set_print_fonts(fig, relayout=fig.tight_layout)
     for out in (FIG_DIR_CODE, FIG_DIR_PAPER):
         out.mkdir(parents=True, exist_ok=True)
         fig.savefig(out / "fig6a_reasoning_passk_curves.png", dpi=180, bbox_inches="tight")
@@ -138,7 +166,7 @@ def _make_fig6b() -> None:
     ax.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.25),
               ncol=3, frameon=True)
     ax.axhline(0, color="black", linewidth=0.5)
-    fig.tight_layout()
+    set_print_fonts(fig, relayout=fig.tight_layout)
     for out in (FIG_DIR_CODE, FIG_DIR_PAPER):
         fig.savefig(out / "fig6b_reasoning_lift_bars.png", dpi=180, bbox_inches="tight")
     print("wrote fig6b_reasoning_lift_bars.png", file=sys.stderr)

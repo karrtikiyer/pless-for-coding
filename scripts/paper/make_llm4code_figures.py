@@ -14,6 +14,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from print_fonts import set_print_fonts  # noqa: E402
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
@@ -161,10 +164,13 @@ def main() -> None:
 
     fig5a.legend(loc="lower center", bbox_to_anchor=(0.5, -0.02), ncol=4,
                  fontsize=8, frameon=True)
-    fig5a.tight_layout(rect=[0, 0.08, 1, 1])
+    # Printed sizes matched to Fig 3b (axis names / ticks / legend ~5.8 / 5.6 / 4.0 pt): at the
+    # default 8 / 7 / 7 pt, Fig 5 looked too large next to Figs 3b and 6a (user, 2026-11-13).
+    fig5_pt = dict(axis_name_pt=5.8, tick_pt=5.6, legend_pt=4.0)
+    set_print_fonts(fig5a, relayout=lambda: fig5a.tight_layout(rect=[0, 0.08, 1, 1]), **fig5_pt)
     fig5b.legend(loc="lower center", bbox_to_anchor=(0.5, -0.02), ncol=2,
                  fontsize=8, frameon=True)
-    fig5b.tight_layout(rect=[0, 0.08, 1, 1])
+    set_print_fonts(fig5b, relayout=lambda: fig5b.tight_layout(rect=[0, 0.08, 1, 1]), **fig5_pt)
 
     for fig, name in [(fig5a, "fig5a_renyi_passk.png"), (fig5b, "fig5b_renyi_truncation.png")]:
         fig.savefig(FIG_DIR_CODE / name, dpi=180, bbox_inches="tight")

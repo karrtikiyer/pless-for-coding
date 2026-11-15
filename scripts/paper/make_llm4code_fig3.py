@@ -14,6 +14,9 @@ import sys
 from pathlib import Path
 from statistics import mean
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from print_fonts import set_print_fonts  # noqa: E402
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
@@ -149,11 +152,13 @@ def _make_fig3a(log_scale: bool = False, out_name: str = "fig3a_passk_curves_mbp
     ax.set_xticks(KS)
     ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     ax.set_xlabel("$k$ in pass@$k$")
-    ax.set_ylabel("pass@k (%), mean over 7 MBPP models")
+    # Two lines: the single-line label was longer than the axes height and got
+    # clipped at the top of the saved image.
+    ax.set_ylabel("pass@k (%)\nmean over 7 MBPP models")
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.22),
               ncol=3, frameon=True)
-    fig.tight_layout()
+    set_print_fonts(fig, relayout=fig.tight_layout)
     for out in (FIG_DIR_CODE, FIG_DIR_PAPER):
         out.mkdir(parents=True, exist_ok=True)
         fig.savefig(out / out_name, dpi=180, bbox_inches="tight")
@@ -189,7 +194,7 @@ def _make_fig3b() -> None:
     ax.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.3),
               ncol=4, frameon=True)
     ax.axhline(0, color="black", linewidth=0.5)
-    fig.tight_layout()
+    set_print_fonts(fig, relayout=fig.tight_layout)
     for out in (FIG_DIR_CODE, FIG_DIR_PAPER):
         fig.savefig(out / "fig3b_lift_bars_mbpp.png", dpi=180, bbox_inches="tight")
     print("wrote fig3b_lift_bars_mbpp.png", file=sys.stderr)
