@@ -22,7 +22,11 @@
 # Env: MODEL, SOURCE, DIFFICULTY, RESULTS_DIR, N_SAMPLES(10), MAX_TOKENS(32768),
 #   MAX_PROBLEMS(unset=full 748 via TASK_IDS_FILE), TASK_IDS_FILE, VLLM_VENV, WORKERS(32),
 #   TOKENIZER, GPUS, ARMS, MULTI_ARM(0), SKIP_EVAL(0; 1 = generation only, no eval/cot-efficiency),
-#   MAX_MODEL_LEN / GPU_MEM_UTIL (unset = vLLM defaults; single-arm path only — e.g. 24GB 4090 at a 32768 cap).
+#   MAX_MODEL_LEN / GPU_MEM_UTIL (unset = vLLM defaults; single-arm path only — e.g. 24GB 4090 at a 32768 cap),
+#   SEED (unset/empty = unseeded, the existing behaviour; a non-negative integer appends `--seed $SEED`
+#   to every generation command — the output records do NOT store it, so log it in the run manifest).
+# Extra arm (not in the default set): pless_effk_nofloor (vLLM-only variant from bench.pless_variants_vllm,
+#   single-arm path only; e.g. ARMS=pless_effk_nofloor SEED=42).
 #
 # MULTI_ARM=1 opt-in: all arms run in ONE Python process with ONE vLLM engine so
 # vLLM's prefix cache is reused across arms sharing the same prompt. ~10-20%
@@ -59,6 +63,10 @@ check_vllm() {
     echo "  UV_PROJECT_ENVIRONMENT=$VLLM_VENV uv sync --project pyproject-vllm.toml" >&2; exit 2; }
   "$VLLM_VENV/bin/python" -c "import vllm" 2>/dev/null || { echo "Error: import vllm failed." >&2; exit 3; }
 }
+SEED="${SEED:-}"
+if [ -n "$SEED" ] && ! [[ "$SEED" =~ ^[0-9]+$ ]]; then
+  echo "Error: SEED must be a non-negative integer (got '$SEED')." >&2; exit 6
+fi
 [ -f "$TASK_IDS_FILE" ] || { echo "Error: TASK_IDS_FILE $TASK_IDS_FILE missing (run scripts/select_cf_subset.py)." >&2; exit 5; }
 
 # Qwen recommended config is T0.6 / top-p 0.95 / top-k 20 (the officially recommended preset).
@@ -70,6 +78,7 @@ arm_args() {
     rec)        echo "--method temp --temperature 0.6 --top-p 0.95 --top-k 20" ;;
     topp*)      echo "--method temp --top-p ${1#topp} --top-k 0 --temperature 1.0" ;;
     temp)       echo "--method temp --temperature 1.0" ;;
+    pless_effk_nofloor) echo "--method pless_effk_nofloor --temperature 1.0" ;;
     *) echo "unknown arm '$1'" >&2; return 1 ;;
   esac
 }
@@ -96,7 +105,8 @@ gen_arm() {
     ${MAX_MODEL_LEN:+--max-model-len "$MAX_MODEL_LEN"} \
     ${GPU_MEM_UTIL:+--gpu-memory-utilization "$GPU_MEM_UTIL"} \
     --results-dir "$RESULTS_DIR" \
-    $(arm_args "$arm")
+    $(arm_args "$arm") \
+    ${SEED:+--seed "$SEED"}
 }
 
 check_vllm
@@ -104,6 +114,7 @@ check_vllm
 echo "=================================================================="
 echo " Qwen3-8B CF-interview 748  model=$MODEL  cap=$MAX_TOKENS  arms=${#ARMS_ARR[@]}"
 echo "   subset=$TASK_IDS_FILE  ${MAX_PROBLEMS:+PILOT: first $MAX_PROBLEMS of subset, n=$N_SAMPLES}"
+echo "   seed=${SEED:-unseeded}"
 echo "=================================================================="
 
 if [ "${MULTI_ARM:-0}" = "1" ]; then
@@ -129,6 +140,7 @@ if [ "${MULTI_ARM:-0}" = "1" ]; then
     --n-samples "$N_SAMPLES" --max-new-tokens "$MAX_TOKENS" \
     ${MAX_PROBLEMS:+--max-problems "$MAX_PROBLEMS"} \
     --results-dir "$RESULTS_DIR" \
+    ${SEED:+--seed "$SEED"} \
     --arms "${ARMS_ARR[@]}"
 elif [ -n "${GPUS:-}" ]; then
   IFS=',' read -ra GPULIST <<< "$GPUS"; ngpu=${#GPULIST[@]}

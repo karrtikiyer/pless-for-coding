@@ -18,7 +18,7 @@ SCRIPT = REPO_ROOT / "run_cf748_apps_qwen3.sh"
 SCRIPT_VARS = ("ARMS", "MULTI_ARM", "MAX_PROBLEMS", "MODEL", "SOURCE", "DIFFICULTY", "RESULTS_DIR",
                "TASK_IDS_FILE", "N_SAMPLES", "MAX_TOKENS", "VLLM_VENV", "WORKERS", "TOKENIZER", "GPUS",
                "CUDA_VISIBLE_DEVICES", "VLLM_USE_FLASHINFER_SAMPLER", "VLLM_USE_V2_MODEL_RUNNER", "SKIP_EVAL",
-               "MAX_MODEL_LEN", "GPU_MEM_UTIL")
+               "MAX_MODEL_LEN", "GPU_MEM_UTIL", "SEED")
 
 
 def _exe(path: Path, body: str) -> None:

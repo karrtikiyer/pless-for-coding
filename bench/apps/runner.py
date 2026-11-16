@@ -61,6 +61,12 @@ from bench.sampler_bridge import (
 )
 
 
+# vLLM-only p-less variants from bench.pless_variants_vllm (spliced into the vLLM dispatch table by its
+# register()). Listed by name rather than derived from VARIANTS_VLLM because that module imports torch at
+# import time; only the variant(s) actually run through this pipeline are exposed.
+VLLM_VARIANT_METHODS = ("pless_effk_nofloor",)
+
+
 def _output_path(results_dir: str, model_id: str, source: str,
                  difficulty: str, method_key: str, temperature: float) -> Path:
     model_name = model_id.replace("/", "--")
@@ -132,7 +138,8 @@ def _build_argparser() -> argparse.ArgumentParser:
                    help="APPS difficulty bucket")
     p.add_argument(
         "--method", required=True,
-        choices=list(SAMPLERS.keys()) + ["temp", "split", "pless_alpha", "pless_renyi"],
+        choices=(list(SAMPLERS.keys()) + ["temp", "split", "pless_alpha", "pless_renyi"]
+                 + list(VLLM_VARIANT_METHODS)),
         help="Sampling method",
     )
     p.add_argument("--n-samples", type=int, default=10)
@@ -290,6 +297,10 @@ def parse_args():
     args = p.parse_args()
     if args.gpu_memory_utilization is not None and not 0 < args.gpu_memory_utilization <= 1:
         p.error("--gpu-memory-utilization must be in (0, 1]")
+    if args.method in VLLM_VARIANT_METHODS and args.backend != "vllm":
+        p.error(f"--method {args.method} is a vLLM-only logits-processor variant "
+                "(bench.pless_variants_vllm); it requires --backend vllm "
+                "(the HF backend has no sampler callable for it).")
     if args.method == "split":
         for name in ("temp_think", "temp_code", "sampler_think", "sampler_code"):
             if getattr(args, name) is None:
@@ -360,6 +371,23 @@ def main():
         # Deferred import — only happens when --backend vllm is requested,
         # so the apps runner is still importable in the main .venv (no vLLM).
         from bench.generator_vllm import load_engine
+        if args.method in VLLM_VARIANT_METHODS:
+            # Splice the variant into bench.generator_vllm._SAMPLER_LOGIT_FN BEFORE the engine is
+            # built: the engine-core process sees the dispatch table as it is at construction time
+            # (inherited under fork). Pre-existing methods never call this (zero behavior change).
+            from bench.pless_variants_vllm import register
+            register()
+            from bench.generator_vllm import _SAMPLER_LOGIT_FN
+            fn = _SAMPLER_LOGIT_FN.get(args.method)
+            if fn is None:
+                raise SystemExit(f"--method {args.method} is not registered in "
+                                 "bench.generator_vllm._SAMPLER_LOGIT_FN after register(); refusing "
+                                 "to start the engine.")
+            # Parent-process view of the dispatch table (the engine core's copy is what the
+            # smoke test verifies).
+            print(f"[sampler] method={args.method} -> logits fn "
+                  f"{getattr(fn, '__module__', '?')}.{getattr(fn, '__qualname__', repr(fn))} "
+                  "(vLLM custom logits-processor dispatch, parent process)")
         engine_kw = {}
         if args.gpu_memory_utilization is not None:
             engine_kw["gpu_memory_utilization"] = args.gpu_memory_utilization
@@ -453,6 +481,12 @@ def main():
     print(f"{args.source} / {args.difficulty}: {len(problems)} problems "
           f"({len(remaining)} remaining after resume)")
 
+    # Fail-loud for the vLLM-only variants (pre-existing methods keep the swallow-and-continue
+    # behaviour unchanged): a variant missing from the engine core's dispatch table raises on EVERY
+    # task, which would otherwise end in a zero-record, exit-0 run.
+    fail_loud = args.method in VLLM_VARIANT_METHODS
+    consecutive_errors = 0
+    n_written = 0
     bar = tqdm(remaining,
                desc=f"{_method_key(args)} on {args.source}/{args.difficulty}")
     for problem in bar:
@@ -655,6 +689,8 @@ def main():
                 record["post_temperature"] = args.post_temperature
 
             append_result(out_path, record)
+            n_written += 1
+            consecutive_errors = 0
 
             # Entropy sidecar — mirrors bench/gsm8k/runner.py:174-183 and
             # bench/runner.py MBPP-side pattern. One row per (sample, position).
@@ -673,8 +709,18 @@ def main():
             tqdm.write(f"Completed problem_id={problem.problem_id}")
         except Exception as exc:
             tqdm.write(f"Error on problem_id={problem.problem_id}: {exc}")
+            if fail_loud:
+                consecutive_errors += 1
+                if consecutive_errors >= 3:
+                    raise SystemExit(
+                        f"FAILED: {consecutive_errors} consecutive task errors with --method "
+                        f"{args.method} (last: problem_id={problem.problem_id}: {exc!r}); aborting. "
+                        f"{n_written} records written this session to {out_path}")
             continue
 
+    if fail_loud and remaining and n_written == 0:
+        raise SystemExit(f"FAILED: --method {args.method} attempted {len(remaining)} task(s) but wrote "
+                         f"0 records this session to {out_path}")
     print(f"Done. Results saved to {out_path}")
 
 

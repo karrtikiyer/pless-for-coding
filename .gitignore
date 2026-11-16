@@ -234,3 +234,10 @@ algosim_data/
 # Bimodal-entropy experiment sidecars (~300MB each; regenerable from the
 # main JSONLs via bench.runner --log-entropy on a GPU).
 results/pless_alpha_entropy/**/*.entropy.jsonl
+
+# CF-748 effk_nofloor split run: generated launch artifacts, split id files and per-GPU results
+# (produced by scripts/gpu2_launch_cf748_effk_nofloor.sh / cf748_split_ids.py; regenerable, never commit)
+logs/cf748_effk_launch_*/
+data/cf748_split/
+results/_cf748_effk_nofloor_split/
+results/_cf748_effk_nofloor_smoke/
