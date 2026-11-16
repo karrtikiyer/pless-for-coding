@@ -1,0 +1,24 @@
+PLATFORM leetcode expected b1+b2: 178 Counter({'1': 90, '2': 88})
+(1) line info: {'lines': 178, 'last_byte_hex_0a': 1} dups: 0 [] task_id types: {'str': 178}
+(2) records 178 missing 0 [] extra 0 []
+    difficulty mismatch: 0 source: Counter({'leetcode': 178}) has platform key: 0
+    per batch: Counter({'1': 90, '2': 88})
+(3) cfg: Counter({('gk_0_35', 'pless_renyi', 0.35, 1.0, 1.0, 0, 'vllm', True, 10, 10): 178})
+    keysets 0.35: 1
+    ref gk_0_4: lines=178 recs=178 dups=0 keysets=1 common=178 cfg=[(('gk_0_4', 'pless_renyi', 0.4, 1.0, 1.0, 0, 'vllm', True, 10, 10), 178)]
+    ref gk_0_45: lines=178 recs=178 dups=0 keysets=1 common=178 cfg=[(('gk_0_45', 'pless_renyi', 0.45, 1.0, 1.0, 0, 'vllm', True, 10, 10), 178)]
+    ref top_p_0_95: lines=178 recs=178 dups=0 keysets=1 common=178 cfg=[(('top_p_0_95', 'top_p_0_95', None, 1.0, 1.0, 0, 'vllm', True, 10, 10), 178)]
+    keyset vs gk_0_4: 0.35-only [] 0.4-only []
+(4) ts missing: 0 min 2026-11-13T12:52:02.205137+00:00 max 2026-11-14T00:24:26.398104+00:00 before 2026-11-12T18:44: 0
+    per-hour: [('2026-11-13T12', 2), ('2026-11-13T13', 18), ('2026-11-13T14', 23), ('2026-11-13T15', 14), ('2026-11-13T16', 12), ('2026-11-13T17', 19), ('2026-11-13T18', 16), ('2026-11-13T19', 12), ('2026-11-13T20', 16), ('2026-11-13T21', 14), ('2026-11-13T22', 10), ('2026-11-13T23', 14), ('2026-11-14T00', 8)]
+(5)
+    gk_0_35 all: tasks=178 samples=1780 term[/THINK]=0.8680 </think>=1 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41057.0 maxlen=155922
+    gk_0_35 common(0.35,0.4,0.45): tasks=178 samples=1780 term[/THINK]=0.8680 </think>=1 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41057.0 maxlen=155922
+    gk_0_4 common(0.35,0.4,0.45): tasks=178 samples=1780 term[/THINK]=0.8713 </think>=0 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=40599.0 maxlen=160870
+    gk_0_45 common(0.35,0.4,0.45): tasks=178 samples=1780 term[/THINK]=0.8876 </think>=0 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38502.5 maxlen=138634
+    gk_0_35 common4: tasks=178 samples=1780 term[/THINK]=0.8680 </think>=1 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41057.0 maxlen=155922
+    gk_0_4 common4: tasks=178 samples=1780 term[/THINK]=0.8713 </think>=0 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=40599.0 maxlen=160870
+    gk_0_45 common4: tasks=178 samples=1780 term[/THINK]=0.8876 </think>=0 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38502.5 maxlen=138634
+    top_p_0_95 common4: tasks=178 samples=1780 term[/THINK]=0.8843 </think>=0 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38304.5 maxlen=137615
+(6) prompt hash mismatch vs gk_0_4: 0 of 178 [] ; vs gk_0_45: 0
+(7) ids 0.35 vs 0.45: equal= True 0.35-only 0 [] 0.45-only 0 []

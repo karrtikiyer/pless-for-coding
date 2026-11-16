@@ -1,0 +1,37 @@
+gk_0_5 {'atcoder': {'ok': True, 'corr': 1519, 'p1': np.float64(62.769), 'p10': np.float64(76.86), 'jp1': 62.769, 'jp10': 76.86, 'term': 80.289, 'tok': 16192.381, 'to': 3.43, 'jto': 3.43}, 'leetcode': {'ok': True, 'corr': 1267, 'p1': np.float64(71.18), 'p10': np.float64(87.64), 'jp1': 71.18, 'jp10': 87.64, 'term': 88.764, 'tok': 14505.472, 'to': 4.775, 'jto': 4.775}}
+  pooled correct 2786 /4200 p1=66.333 p10=81.429
+  pooled tok (sample-weighted)=15477.5 term pooled from json=83.88
+gk_0_35 {'atcoder': {'ok': True, 'corr': 1530, 'p1': np.float64(63.223), 'p10': np.float64(77.273), 'jp1': 63.223, 'jp10': 77.273, 'term': 78.802, 'tok': 16799.058, 'to': 3.636, 'jto': 3.636}, 'leetcode': {'ok': True, 'corr': 1259, 'p1': np.float64(70.73), 'p10': np.float64(87.64), 'jp1': 70.73, 'jp10': 87.64, 'term': 86.798, 'tok': 15254.531, 'to': 5.112, 'jto': 5.112}}
+  pooled correct 2789 /4200 p1=66.405 p10=81.667
+gk_0_4 {'atcoder': {'ok': True, 'corr': 1513, 'p1': np.float64(62.521), 'p10': np.float64(76.033), 'jp1': 62.521, 'jp10': 76.033, 'term': 78.306, 'tok': 16491.218, 'to': 3.884, 'jto': 3.884}, 'leetcode': {'ok': True, 'corr': 1276, 'p1': np.float64(71.685), 'p10': np.float64(85.955), 'jp1': 71.685, 'jp10': 85.955, 'term': 87.135, 'tok': 15224.651, 'to': 4.438, 'jto': 4.438}}
+  pooled correct 2789 /4200 p1=66.405 p10=80.238
+gk_0_45 {'atcoder': {'ok': True, 'corr': 1533, 'p1': np.float64(63.347), 'p10': np.float64(76.86), 'jp1': 63.347, 'jp10': 76.86, 'term': 79.959, 'tok': 16265.532, 'to': 3.719, 'jto': 3.719}, 'leetcode': {'ok': True, 'corr': 1275, 'p1': np.float64(71.629), 'p10': np.float64(87.079), 'jp1': 71.629, 'jp10': 87.079, 'term': 88.764, 'tok': 14734.316, 'to': 4.719, 'jto': 4.719}}
+  pooled correct 2808 /4200 p1=66.857 p10=81.190
+top_p_0_9 {'atcoder': {'ok': True, 'corr': 1563, 'p1': np.float64(64.587), 'p10': np.float64(77.273), 'jp1': 64.587, 'jp10': 77.273, 'term': 82.479, 'tok': 16538.138, 'to': 3.43, 'jto': 3.43}, 'leetcode': {'ok': True, 'corr': 1278, 'p1': np.float64(71.798), 'p10': np.float64(88.202), 'jp1': 71.798, 'jp10': 88.202, 'term': 88.876, 'tok': 14761.781, 'to': 5.337, 'jto': 5.337}}
+  pooled correct 2841 /4200 p1=67.643 p10=81.905
+top_p_0_95 {'atcoder': {'ok': True, 'corr': 1536, 'p1': np.float64(63.471), 'p10': np.float64(78.512), 'jp1': 63.471, 'jp10': 78.512, 'term': 80.165, 'tok': 16702.259, 'to': 3.347, 'jto': 3.347}, 'leetcode': {'ok': True, 'corr': 1252, 'p1': np.float64(70.337), 'p10': np.float64(87.64), 'jp1': 70.337, 'jp10': 87.64, 'term': 88.427, 'tok': 14972.67, 'to': 5.674, 'jto': 5.674}}
+  pooled correct 2788 /4200 p1=66.381 p10=82.381
+ministral_recipe {'atcoder': {'ok': True, 'corr': 1546, 'p1': np.float64(63.884), 'p10': np.float64(76.86), 'jp1': 63.884, 'jp10': 76.86, 'term': 81.901, 'tok': 16479.462, 'to': 3.636, 'jto': 3.636}, 'leetcode': {'ok': True, 'corr': 1261, 'p1': np.float64(70.843), 'p10': np.float64(89.888), 'jp1': 70.843, 'jp10': 89.888, 'term': 87.865, 'tok': 15096.605, 'to': 4.663, 'jto': 4.663}}
+  pooled correct 2807 /4200 p1=66.833 p10=82.381
+alignment same order: {'gk_0_5': True, 'gk_0_35': True, 'gk_0_4': True, 'gk_0_45': True, 'top_p_0_9': True, 'top_p_0_95': True, 'ministral_recipe': True} sets: {'gk_0_5': True, 'gk_0_35': True, 'gk_0_4': True, 'gk_0_45': True, 'top_p_0_9': True, 'top_p_0_95': True, 'ministral_recipe': True}
+gk_0_5 - gk_0_35: dcount=-3 obs p1=-0.071 p10=-0.238
+   R=2000 p1 CI[-1.12,1.02] <=0:0.542 | p10 CI[-2.38,1.67] <=0:0.647
+   R=5000 p1 CI[-1.19,1.02] <=0:0.548 | p10 CI[-2.38,1.67] <=0:0.643
+gk_0_5 - gk_0_4: dcount=-3 obs p1=-0.071 p10=1.190
+   R=2000 p1 CI[-1.10,1.02] <=0:0.537 | p10 CI[-0.48,3.10] <=0:0.117
+   R=5000 p1 CI[-1.12,1.02] <=0:0.546 | p10 CI[-0.48,3.10] <=0:0.124
+gk_0_5 - gk_0_45: dcount=-22 obs p1=-0.524 p10=0.238
+   R=2000 p1 CI[-1.52,0.50] <=0:0.850 | p10 CI[-1.67,2.14] <=0:0.461
+   R=5000 p1 CI[-1.55,0.48] <=0:0.850 | p10 CI[-1.67,2.14] <=0:0.464
+gk_0_5 - top_p_0_9: dcount=-55 obs p1=-1.310 p10=-0.476
+   R=2000 p1 CI[-2.36,-0.21] <=0:0.989 | p10 CI[-2.38,1.43] <=0:0.715
+   R=5000 p1 CI[-2.40,-0.21] <=0:0.990 | p10 CI[-2.38,1.43] <=0:0.721
+gk_0_5 - top_p_0_95: dcount=-2 obs p1=-0.048 p10=-0.952
+   R=2000 p1 CI[-1.02,0.95] <=0:0.529 | p10 CI[-2.62,0.71] <=0:0.883
+   R=5000 p1 CI[-1.05,0.93] <=0:0.548 | p10 CI[-2.62,0.71] <=0:0.886
+gk_0_5 - ministral_recipe: dcount=-21 obs p1=-0.500 p10=-0.952
+   R=2000 p1 CI[-1.64,0.67] <=0:0.814 | p10 CI[-2.86,0.95] <=0:0.867
+   R=5000 p1 CI[-1.69,0.64] <=0:0.811 | p10 CI[-2.86,0.95] <=0:0.866
+atcoder records 242 unique 242 samples 2420 closed 1943 term%=80.29
+leetcode records 178 unique 178 samples 1780 closed 1580 term%=88.76
+pooled 3523/4200 = 83.88

@@ -13,16 +13,19 @@ Ranked by pooled pass@1 over all 420 tasks (AtCoder 242 + LeetCode 178); pooled 
 | 7 | pless_effk | p-less variants | 1.0 | 67.10 | 63.02–70.93 | 64.26 | 70.96 | 80.95 | 83.8 | 16143 | 4.2 |
 | 8 | top_p_0_7† | top-p | 1.0 | 67.07 | 63.07–70.93 | 64.30 | 70.84 | 82.14 | 84.0 | 15961 | 4.0 |
 | 9 | top_p_0_85 | top-p | 1.0 | 66.93 | 62.93–70.79 | 64.63 | 70.06 | 80.48 | 84.9 | 15763 | 4.3 |
-| 10 | ministral_recipe | Ministral recipe (T=0.7, top-p 0.95) | 0.7‡ | 66.83 | 62.90–70.69 | 63.88 | 70.84 | 82.38 | 84.4 | 15893 | 4.1 |
-| 11 | gk_0_4 | G_k (Renyi) | 1.0 | 66.40 | 62.40–70.21 | 62.52 | 71.69 | 80.24 | 82.0 | 15954 | 4.1 |
-| 12 | top_p_0_95 | top-p | 1.0 | 66.38 | 62.40–70.17 | 63.47 | 70.34 | 82.38 | 83.7 | 15969 | 4.3 |
-| 13 | top_p_0_75 | top-p | 1.0 | 66.19 | 62.19–70.00 | 64.01 | 69.16 | 80.95 | 85.0 | 15903 | 4.3 |
-| 14 | gk_0_2 | G_k (Renyi) | 1.0 | 66.14 | 62.14–70.02 | 62.85 | 70.62 | 81.67 | 81.3 | 16325 | 4.2 |
-| 15 | gk_0_05 | G_k (Renyi) | 1.0 | 65.76 | 61.81–69.67 | 62.81 | 69.78 | 79.29 | 81.4 | 16423 | 4.4 |
-| 16 | gk_0_1 | G_k (Renyi) | 1.0 | 65.67 | 61.62–69.50 | 62.11 | 70.51 | 79.76 | 81.1 | 16328 | 4.4 |
-| 17 | gk_0_8 | G_k (Renyi) | 1.0 | 63.10 | 59.19–66.88 | 61.07 | 65.84 | 80.48 | 78.6 | 16760 | 3.6 |
-| 18 | gk_1_6 | G_k (Renyi) | 1.0 | 60.57 | 56.76–64.19 | 59.34 | 62.25 | 79.52 | 72.8 | 17484 | 3.0 |
-| 19 | pless_default | p-less variants | 1.0 | 59.64 | 55.64–63.55 | 58.18 | 61.63 | 78.10 | 71.9 | 17588 | 3.0 |
+| 10 | gk_0_45 | G_k (Renyi) | 1.0 | 66.86 | 62.86–70.71 | 63.35 | 71.63 | 81.19 | 83.7 | 15617 | 4.1 |
+| 11 | ministral_recipe | Ministral recipe (T=0.7, top-p 0.95) | 0.7‡ | 66.83 | 62.90–70.69 | 63.88 | 70.84 | 82.38 | 84.4 | 15893 | 4.1 |
+| 12 | gk_0_35 | G_k (Renyi) | 1.0 | 66.40 | 62.43–70.21 | 63.22 | 70.73 | 81.67 | 82.2 | 16144 | 4.3 |
+| 13 | gk_0_4 | G_k (Renyi) | 1.0 | 66.40 | 62.40–70.21 | 62.52 | 71.69 | 80.24 | 82.0 | 15954 | 4.1 |
+| 14 | top_p_0_95 | top-p | 1.0 | 66.38 | 62.40–70.17 | 63.47 | 70.34 | 82.38 | 83.7 | 15969 | 4.3 |
+| 15 | gk_0_5 | G_k (Renyi) | 1.0 | 66.33 | 62.43–70.14 | 62.77 | 71.18 | 81.43 | 83.9 | 15477 | 4.0 |
+| 16 | top_p_0_75 | top-p | 1.0 | 66.19 | 62.19–70.00 | 64.01 | 69.16 | 80.95 | 85.0 | 15903 | 4.3 |
+| 17 | gk_0_2 | G_k (Renyi) | 1.0 | 66.14 | 62.14–70.02 | 62.85 | 70.62 | 81.67 | 81.3 | 16325 | 4.2 |
+| 18 | gk_0_05 | G_k (Renyi) | 1.0 | 65.76 | 61.81–69.67 | 62.81 | 69.78 | 79.29 | 81.4 | 16423 | 4.4 |
+| 19 | gk_0_1 | G_k (Renyi) | 1.0 | 65.67 | 61.62–69.50 | 62.11 | 70.51 | 79.76 | 81.1 | 16328 | 4.4 |
+| 20 | gk_0_8 | G_k (Renyi) | 1.0 | 63.10 | 59.19–66.88 | 61.07 | 65.84 | 80.48 | 78.6 | 16760 | 3.6 |
+| 21 | gk_1_6 | G_k (Renyi) | 1.0 | 60.57 | 56.76–64.19 | 59.34 | 62.25 | 79.52 | 72.8 | 17484 | 3.0 |
+| 22 | pless_default | p-less variants | 1.0 | 59.64 | 55.64–63.55 | 58.18 | 61.63 | 78.10 | 71.9 | 17588 | 3.0 |
 
 Caveat: single generation seed per task; the per-config 95% CIs describe each config alone; differences between configs must be judged with the PAIRED task-bootstrap below.
 
@@ -31,6 +34,7 @@ Caveat: single generation seed per task; the per-config 95% CIs describe each co
 - ‡ ministral_recipe uses T=0.7; all other configs use T=1.0.
 - Sampler parameters such as the top-p cutoff are NOT stored in the run records (the records' `top_p` field reads 1.0 for all top-p configs); the cutoff values in the config names come from the runner configuration (`scripts/run_pless_variants_ministral_3b_lcb_cuda.py`); only T is recorded.
 - Tie on displayed pooled pass@1: top_p_0_8, pless_topmass (ordered by the pass@10 / name tie-break, not by pass@1).
+- Tie on displayed pooled pass@1: gk_0_35, gk_0_4 (ordered by the pass@10 / name tie-break, not by pass@1).
 
 ## Paired difference vs rank 1
 
@@ -46,19 +50,22 @@ delta = pooled pass@1 of rank 1 (top_p_0_9) minus this config, in percentage poi
 | 7 | pless_effk | 0.55 | -0.55–1.62 | no |
 | 8 | top_p_0_7† | 0.57 | -0.60–1.71 | no |
 | 9 | top_p_0_85 | 0.71 | -0.33–1.74 | no |
-| 10 | ministral_recipe | 0.81 | -0.43–1.90 | no |
-| 11 | gk_0_4 | 1.24 | 0.09–2.36 | yes |
-| 12 | top_p_0_95 | 1.26 | 0.26–2.29 | yes |
-| 13 | top_p_0_75 | 1.45 | 0.21–2.64 | yes |
-| 14 | gk_0_2 | 1.50 | 0.24–2.67 | yes |
-| 15 | gk_0_05 | 1.88 | 0.79–3.00 | yes |
-| 16 | gk_0_1 | 1.98 | 0.93–2.98 | yes |
-| 17 | gk_0_8 | 4.55 | 3.19–5.98 | yes |
-| 18 | gk_1_6 | 7.07 | 5.50–8.71 | yes |
-| 19 | pless_default | 8.00 | 6.36–9.79 | yes |
+| 10 | gk_0_45 | 0.79 | -0.36–1.86 | no |
+| 11 | ministral_recipe | 0.81 | -0.43–1.90 | no |
+| 12 | gk_0_35 | 1.24 | 0.26–2.21 | yes |
+| 13 | gk_0_4 | 1.24 | 0.09–2.36 | yes |
+| 14 | top_p_0_95 | 1.26 | 0.26–2.29 | yes |
+| 15 | gk_0_5 | 1.31 | 0.21–2.36 | yes |
+| 16 | top_p_0_75 | 1.45 | 0.21–2.64 | yes |
+| 17 | gk_0_2 | 1.50 | 0.24–2.67 | yes |
+| 18 | gk_0_05 | 1.88 | 0.79–3.00 | yes |
+| 19 | gk_0_1 | 1.98 | 0.93–2.98 | yes |
+| 20 | gk_0_8 | 4.55 | 3.19–5.98 | yes |
+| 21 | gk_1_6 | 7.07 | 5.50–8.71 | yes |
+| 22 | pless_default | 8.00 | 6.36–9.79 | yes |
 
-18 comparisons, no multiplicity correction; borderline cases (a CI bound close to 0) are not solid.
-Ranks not distinguishable from rank 1 (paired 95% CI includes 0): 2 (top_p_0_8), 3 (pless_topmass), 4 (pless_effk_nofloor), 5 (pless_gini), 6 (top_nsigma_1_5), 7 (pless_effk), 8 (top_p_0_7), 9 (top_p_0_85), 10 (ministral_recipe).
+21 comparisons, no multiplicity correction; borderline cases (a CI bound close to 0) are not solid.
+Ranks not distinguishable from rank 1 (paired 95% CI includes 0): 2 (top_p_0_8), 3 (pless_topmass), 4 (pless_effk_nofloor), 5 (pless_gini), 6 (top_nsigma_1_5), 7 (pless_effk), 8 (top_p_0_7), 9 (top_p_0_85), 10 (gk_0_45), 11 (ministral_recipe).
 
 ## Canonical tables (pooled, then per platform)
 
@@ -77,9 +84,12 @@ Generated with `bench.eval.headline_table.headline_table(..., columns=CANONICAL_
 | pless_effk | 420 | 67.10% | 75.59% | 78.27% | 80.24% | 80.95% | 73.8% | 69.3% | 64.8% | 71.7% | 60.2% | 49.3% | 83.8% | 16143 | 4.2% | — | 0.5000 |
 | top_p_0_7† | 420 | 67.07% | 76.62% | 79.52% | 81.52% | 82.14% | 75.0% | 69.3% | 64.3% | 71.4% | 58.1% | 44.5% | 84.0% | 15961 | 4.0% | — | 0.4746 |
 | top_p_0_85 | 420 | 66.93% | 75.72% | 78.23% | 79.86% | 80.48% | 75.7% | 69.0% | 64.8% | 72.1% | 58.6% | 45.7% | 84.9% | 15763 | 4.3% | — | 0.4910 |
+| gk_0_45 | 420 | 66.86% | 75.67% | 78.25% | 80.28% | 81.19% | 74.5% | 69.8% | 64.0% | 72.9% | 61.0% | 46.9% | 83.7% | 15617 | 4.1% | — | 0.5032 |
 | ministral_recipe | 420 | 66.83% | 76.29% | 79.00% | 81.28% | 82.38% | 74.8% | 70.7% | 64.3% | 71.4% | 59.0% | 45.0% | 84.4% | 15893 | 4.1% | — | 0.4877 |
+| gk_0_35 | 420 | 66.40% | 75.84% | 78.52% | 80.66% | 81.67% | 74.5% | 69.8% | 65.0% | 71.9% | 61.2% | 49.0% | 82.2% | 16144 | 4.3% | — | 0.5115 |
 | gk_0_4 | 420 | 66.40% | 74.95% | 77.53% | 79.47% | 80.24% | 74.0% | 68.3% | 64.8% | 72.6% | 59.8% | 49.3% | 82.0% | 15954 | 4.1% | — | 0.5071 |
 | top_p_0_95 | 420 | 66.38% | 76.06% | 79.09% | 81.41% | 82.38% | 74.8% | 69.3% | 63.3% | 73.6% | 61.2% | 46.0% | 83.7% | 15969 | 4.3% | — | 0.5059 |
+| gk_0_5 | 420 | 66.33% | 75.89% | 78.62% | 80.61% | 81.43% | 75.2% | 69.3% | 64.8% | 73.1% | 59.5% | 46.7% | 83.9% | 15477 | 4.0% | — | 0.5017 |
 | top_p_0_75 | 420 | 66.19% | 75.80% | 78.46% | 80.27% | 80.95% | 75.0% | 69.8% | 63.6% | 71.7% | 58.3% | 42.9% | 85.0% | 15903 | 4.3% | — | 0.4782 |
 | gk_0_2 | 420 | 66.14% | 75.05% | 78.02% | 80.54% | 81.67% | 72.9% | 68.8% | 63.3% | 71.0% | 61.9% | 48.1% | 81.3% | 16325 | 4.2% | — | 0.5135 |
 | gk_0_05 | 420 | 65.76% | 74.66% | 77.03% | 78.63% | 79.29% | 74.5% | 68.6% | 64.0% | 73.1% | 61.7% | 46.4% | 81.4% | 16423 | 4.4% | — | 0.5175 |
@@ -101,9 +111,12 @@ Generated with `bench.eval.headline_table.headline_table(..., columns=CANONICAL_
 | pless_effk | 242 | 64.26% | 71.63% | 73.98% | 75.73% | 76.45% | 70.7% | 66.5% | 61.6% | 69.0% | 59.5% | 48.8% | 80.7% | 16812 | 3.7% | — | 0.5300 |
 | top_p_0_7† | 242 | 64.30% | 72.94% | 75.61% | 77.26% | 77.69% | 71.9% | 65.7% | 60.7% | 69.4% | 56.6% | 42.6% | 82.5% | 16467 | 3.8% | — | 0.4931 |
 | top_p_0_85 | 242 | 64.63% | 72.64% | 74.88% | 76.09% | 76.45% | 73.6% | 65.7% | 62.8% | 70.7% | 57.4% | 46.3% | 83.1% | 16352 | 3.8% | — | 0.5146 |
+| gk_0_45 | 242 | 63.35% | 71.47% | 74.00% | 75.98% | 76.86% | 70.2% | 65.7% | 60.3% | 69.0% | 58.3% | 45.0% | 80.0% | 16266 | 3.7% | — | 0.5283 |
 | ministral_recipe | 242 | 63.88% | 71.57% | 73.89% | 75.90% | 76.86% | 70.2% | 66.9% | 61.6% | 67.4% | 57.4% | 44.6% | 81.9% | 16479 | 3.6% | — | 0.5084 |
+| gk_0_35 | 242 | 63.22% | 71.65% | 74.22% | 76.31% | 77.27% | 70.2% | 65.3% | 62.0% | 68.6% | 57.9% | 49.2% | 78.8% | 16799 | 3.6% | — | 0.5380 |
 | gk_0_4 | 242 | 62.52% | 70.88% | 73.47% | 75.32% | 76.03% | 70.2% | 64.5% | 59.5% | 69.4% | 58.3% | 46.3% | 78.3% | 16491 | 3.9% | — | 0.5336 |
 | top_p_0_95 | 242 | 63.47% | 71.95% | 74.95% | 77.44% | 78.51% | 69.8% | 65.7% | 60.3% | 68.6% | 59.1% | 47.5% | 80.2% | 16702 | 3.3% | — | 0.5298 |
+| gk_0_5 | 242 | 62.77% | 71.70% | 74.28% | 76.14% | 76.86% | 71.1% | 66.1% | 60.7% | 69.4% | 59.1% | 45.5% | 80.3% | 16192 | 3.4% | — | 0.5257 |
 | top_p_0_75 | 242 | 64.01% | 72.37% | 74.71% | 76.01% | 76.45% | 73.1% | 66.1% | 60.7% | 70.7% | 56.2% | 43.8% | 83.4% | 16416 | 4.1% | — | 0.4991 |
 | gk_0_2 | 242 | 62.85% | 70.50% | 72.98% | 75.07% | 76.03% | 69.0% | 64.9% | 60.7% | 67.8% | 59.1% | 48.3% | 77.5% | 16898 | 3.5% | — | 0.5404 |
 | gk_0_05 | 242 | 62.81% | 70.52% | 72.44% | 73.77% | 74.38% | 70.2% | 65.7% | 61.2% | 69.4% | 58.7% | 46.7% | 77.4% | 16978 | 3.4% | — | 0.5461 |
@@ -125,9 +138,12 @@ Generated with `bench.eval.headline_table.headline_table(..., columns=CANONICAL_
 | pless_effk | 178 | 70.96% | 80.97% | 84.10% | 86.38% | 87.08% | 78.1% | 73.0% | 69.1% | 75.3% | 61.2% | 50.0% | 88.1% | 15234 | 4.8% | — | 0.4645 |
 | top_p_0_7 | 178 | 70.84% | 81.61% | 84.82% | 87.30% | 88.20% | 79.2% | 74.2% | 69.1% | 74.2% | 60.1% | 47.2% | 86.0% | 15274 | 4.3% | — | 0.4520 |
 | top_p_0_85 | 178 | 70.06% | 79.91% | 82.78% | 84.99% | 85.96% | 78.7% | 73.6% | 67.4% | 74.2% | 60.1% | 44.9% | 87.2% | 14962 | 4.9% | — | 0.4615 |
+| gk_0_45 | 178 | 71.63% | 81.37% | 84.04% | 86.13% | 87.08% | 80.3% | 75.3% | 69.1% | 78.1% | 64.6% | 49.4% | 88.8% | 14734 | 4.7% | — | 0.4731 |
 | ministral_recipe | 178 | 70.84% | 82.72% | 85.94% | 88.59% | 89.89% | 80.9% | 75.8% | 68.0% | 77.0% | 61.2% | 45.5% | 87.9% | 15097 | 4.7% | — | 0.4635 |
+| gk_0_35 | 178 | 70.73% | 81.54% | 84.35% | 86.58% | 87.64% | 80.3% | 75.8% | 69.1% | 76.4% | 65.7% | 48.9% | 86.8% | 15255 | 5.1% | — | 0.4798 |
 | gk_0_4 | 178 | 71.69% | 80.49% | 83.06% | 85.11% | 85.96% | 79.2% | 73.6% | 71.9% | 77.0% | 61.8% | 53.4% | 87.1% | 15225 | 4.4% | — | 0.4751 |
 | top_p_0_95 | 178 | 70.34% | 81.65% | 84.72% | 86.80% | 87.64% | 81.5% | 74.2% | 67.4% | 80.3% | 64.0% | 43.8% | 88.4% | 14973 | 5.7% | — | 0.4773 |
+| gk_0_5 | 178 | 71.18% | 81.59% | 84.51% | 86.69% | 87.64% | 80.9% | 73.6% | 70.2% | 78.1% | 60.1% | 48.3% | 88.8% | 14505 | 4.8% | — | 0.4728 |
 | top_p_0_75 | 178 | 69.16% | 80.46% | 83.56% | 86.07% | 87.08% | 77.5% | 74.7% | 67.4% | 73.0% | 61.2% | 41.6% | 87.2% | 15206 | 4.6% | — | 0.4526 |
 | gk_0_2 | 178 | 70.62% | 81.25% | 84.87% | 87.98% | 89.33% | 78.1% | 74.2% | 66.9% | 75.3% | 65.7% | 47.8% | 86.6% | 15545 | 5.1% | — | 0.4820 |
 | gk_0_05 | 178 | 69.78% | 80.29% | 83.27% | 85.23% | 85.96% | 80.3% | 72.5% | 68.0% | 78.1% | 65.7% | 46.1% | 86.9% | 15669 | 5.7% | — | 0.4839 |
@@ -141,11 +157,11 @@ Generated with `bench.eval.headline_table.headline_table(..., columns=CANONICAL_
 ## Provenance
 
 1. Data = GPU2 batches 1+2 only, 242 AtCoder + 178 LeetCode tasks = 420/1046; batches 0/3/4 not included.
-2. 38 metrics files generated by `python -m bench.eval --dataset livecodebench --workers 4 --skip-structural-diversity` (6.0s per-test timeout), re-evaluated locally 2026-11-07/08.
-3. results-validator verdict: PASS with one flag.
-4. FLAG: top_p_0_7 AtCoder file provenance is UNVERIFIED (could not confirm from files that it was generated with the post-fix nucleus sampler; user accepted this risk on 2026-11-08); the top_p_0_7 row is marked †.
+2. 44 metrics files (22 configs x 2 platforms) generated by `python -m bench.eval --dataset livecodebench --workers 4 --skip-structural-diversity` (6.0s per-test timeout), re-evaluated locally 2026-11-07 to 2026-11-15 (UTC dates from each file's `timestamp` field).
+3. Validation: the earlier 38-file (19-config) version of this leaderboard was checked by a results-validator on 2026-11-08 (PASS with one flag, the top_p_0_7 flag in item 4); that verdict does not cover files added since. The current 44-file (22-config) version: results-validator (2026-11-15) independently recomputed it from the raw per-task data: pooled pass@1 and pass@10 for all 22 configs, the ranking including the gk_0_35 vs gk_0_4 tie, the seed-42 percentile CIs, the paired deltas vs rank 1 and all 19 pre-existing rows against the archived 38-file CSV: all PASS. This verdict covers the 44-file version and supersedes the 38-file note above. Comparisons are uncorrected for multiplicity (21).
+4. FLAG (a caveat, not a result): top_p_0_7 AtCoder file provenance is UNVERIFIED (could not confirm from files that it was generated with the post-fix nucleus sampler; user accepted this risk on 2026-11-08); the top_p_0_7 row is marked †.
 5. Excluded: legacy partial top_nsigma (n=1.0) AtCoder file (111/242 tasks), no LeetCode counterpart.
 6. Not included in this table: Mac mlx gk_0_025 run and MSI batch-0 runs.
 7. ministral_recipe uses T=0.7, all others T=1.0.
 
-Generated by `scripts/ministral_lcb_leaderboard.py` (script git status at generation: untracked; repo HEAD at generation: ce09f99) from `results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/metrics`.
+Generated by `scripts/ministral_lcb_leaderboard.py` (script git status at generation: tracked; repo HEAD at generation: 9613200) from `/Users/karrtikiyer/projects/airesearch/pless-for-coding/results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/metrics`.

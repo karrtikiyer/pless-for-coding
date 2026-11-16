@@ -1,0 +1,26 @@
+CSV batch x platform: Counter({('atcoder', '0'): 121, ('atcoder', '1'): 121, ('atcoder', '2'): 121, ('atcoder', '3'): 120, ('atcoder', '4'): 119, ('leetcode', '0'): 90, ('leetcode', '1'): 90, ('leetcode', '2'): 88, ('leetcode', '3'): 88, ('leetcode', '4'): 88})
+expected atcoder b1+b2: 242
+== gk_0_45 line info: {'lines': 242} dups: [] 0
+records 242 missing [] 0 extra [] 0
+difficulty mismatch: 0
+source/platform Counter: Counter({('atcoder', None): 242})
+cfg Counter: Counter({('gk_0_45', 'pless_renyi', 0.45, 1.0, 1.0, 0, 'vllm', True, 10, 10): 242})
+keysets: 1
+== gk_0_4 line info: {'lines': 242} records 242 dups 0 common with 0.45: 242
+gk_0_4 keysets n= 1 ; 0.45-only keys: [] ; 0.4-only keys: []
+gk_0_4 cfg: Counter({('gk_0_4', 'pless_renyi', 0.4, 1.0, 1.0, 0, 'vllm', True, 10, 10): 242})
+== top_p line info: {'lines': 242} records 242 dups 0 common: 242
+top_p cfg: Counter({('top_p_0_95', 'top_p_0_95', None, 1.0, 1.0, 0, 'vllm', True, 10, 10): 242})
+ts missing: 0 min 2026-11-11T14:14:56.668732+00:00 max 2026-11-12T08:20:57.762336+00:00
+ts types sample: 2026-11-11T14:14:56.668732+00:
+before 2026-11-11T14:11: 0
+per-hour: [('2026-11-11T14', 12), ('2026-11-11T15', 17), ('2026-11-11T16', 15), ('2026-11-11T17', 23), ('2026-11-11T18', 22), ('2026-11-11T19', 20), ('2026-11-11T20', 17), ('2026-11-11T21', 12), ('2026-11-11T22', 13), ('2026-11-11T23', 13), ('2026-11-12T00', 15), ('2026-11-12T01', 12), ('2026-11-12T02', 12), ('2026-11-12T03', 15), ('2026-11-12T04', 5), ('2026-11-12T05', 6), ('2026-11-12T06', 6), ('2026-11-12T07', 6), ('2026-11-12T08', 1)]
+gk_0_45 all: tasks=242 samples=2420 term[/THINK]=0.7996 </think>=2 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38748.5 maxlen=154330
+gk_0_45 common3: tasks=242 samples=2420 term[/THINK]=0.7996 </think>=2 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38748.5 maxlen=154330
+gk_0_4 common3: tasks=242 samples=2420 term[/THINK]=0.7831 </think>=6 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41096.5 maxlen=168346
+top_p_0_95 common3: tasks=242 samples=2420 term[/THINK]=0.8017 </think>=1 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=40860.0 maxlen=167387
+per-record term distribution 0.45: [(0, 12), (1, 4), (2, 3), (3, 7), (4, 7), (5, 9), (6, 6), (7, 13), (8, 18), (9, 70), (10, 93)]
+prompt hash mismatch vs gk_0_4: 0 []  vs top_p: 0
+metrics keys: ['model', 'method', 'temperature', 'top_p', 'top_k', 'dataset', 'num_tasks', 'num_samples_per_task', 'pass_at_k', 'cover_at_t', 'cover_at_t_distinct', 'structural_diversity', 'codebleu_diversity', 'syntax_match_diversity', 'dataflow_match_diversity', 'ngram_match_diversity', 'weighted_ngram_match_diversity', 'self_codebleu_hashseed', 'termination_pct', 'mean_token_size']
+metrics per_task n= 242 common w/0.45: 242 sample entry keys: ['task_id', 'num_correct', 'pass_results', 'statuses', 'n_tests_total', 'n_tests_passed', 'first_failing_idx', 'extracted_codes', 'extraction_strategies', 'extraction_success', 'num_distinct_correct', 'self_codebleu_hashseed']
+metrics n Counter on common: Counter({None: 242})

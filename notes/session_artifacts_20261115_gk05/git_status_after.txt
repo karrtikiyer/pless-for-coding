@@ -1,0 +1,622 @@
+ M CLAUDE.md
+ M docs/theory/todos.md
+ M p-less
+ M paper/llm4code/figures/fig3a_passk_curves_mbpp.png
+ M paper/llm4code/figures/fig3b_lift_bars_mbpp.png
+ M paper/llm4code/figures/fig5a_renyi_passk.png
+ M paper/llm4code/figures/fig5b_renyi_truncation.png
+ M paper/llm4code/figures/fig6a_reasoning_passk_curves.png
+ M paper/llm4code/figures/fig6b_reasoning_lift_bars.png
+ M paper/llm4code/tables/table_3a_mbpp.md
+ M paper/llm4code/tables/table_3a_mbpp.tex
+ M paper/llm4code/tables/table_3b_humaneval.md
+ M paper/llm4code/tables/table_3b_humaneval.tex
+ M paper/llm4code/tables/table_4_truncation.md
+ M paper/llm4code/tables/table_4_truncation.tex
+ M paper/llm4code/tables/table_5a_apps_renyi.md
+ M paper/llm4code/tables/table_5a_apps_renyi.tex
+ M paper/llm4code/tables/table_a1_mbpp_appendix.md
+ M paper/llm4code/tables/table_a1_mbpp_appendix.tex
+ M paper/llm4code/tables/table_a2_humaneval_appendix.md
+ M paper/llm4code/tables/table_a2_humaneval_appendix.tex
+ M paper/llm4code/tables/table_a3_cf748_qwen.md
+ M paper/llm4code/tables/table_a3_cf748_qwen.tex
+ M paper/refs.bib
+ M results/pless_human_eval_results/full_precision_results/Qwen--Qwen2.5-Coder-7B-Instruct/metrics/greedy_metrics.json
+ M results/pless_human_eval_results/full_precision_results/Qwen--Qwen2.5-Coder-7B-Instruct/metrics/temp_0.2_metrics.json
+ M results/pless_human_eval_results/full_precision_results/Qwen--Qwen2.5-Coder-7B-Instruct/metrics/temp_0.7_metrics.json
+ M results/pless_human_eval_results/full_precision_results/Qwen--Qwen2.5-Coder-7B-Instruct/metrics/top_p_0.95_metrics.json
+ M results/pless_human_eval_results/full_precision_results/Qwen--Qwen3-Coder-30B-A3B-Instruct/metrics/greedy_metrics.json
+ M results/pless_human_eval_results/full_precision_results/Qwen--Qwen3-Coder-30B-A3B-Instruct/metrics/temp_0.7_metrics.json
+ M results/pless_human_eval_results/full_precision_results/Qwen--Qwen3-Coder-30B-A3B-Instruct/metrics/top_p_0.95_metrics.json
+ M results/pless_human_eval_results/full_precision_results/codellama--CodeLlama-7b-Instruct-hf/metrics/greedy_metrics.json
+ M results/pless_human_eval_results/full_precision_results/codellama--CodeLlama-7b-Instruct-hf/metrics/temp_0.2_metrics.json
+ M results/pless_human_eval_results/full_precision_results/codellama--CodeLlama-7b-Instruct-hf/metrics/temp_0.7_metrics.json
+ M results/pless_human_eval_results/full_precision_results/codellama--CodeLlama-7b-Instruct-hf/metrics/top_p_0.95_metrics.json
+ M results/pless_human_eval_results/full_precision_results/mistralai--Codestral-22B-v0.1/metrics/greedy_metrics.json
+ M results/pless_human_eval_results/full_precision_results/mistralai--Codestral-22B-v0.1/metrics/temp_0.7_metrics.json
+ M results/pless_human_eval_results/full_precision_results/mistralai--Codestral-22B-v0.1/metrics/top_p_0.95_metrics.json
+ M results/pless_mbpp_results/Qwen--Qwen2.5-Coder-7B-Instruct/metrics/pless_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/analysis/lcb_v6_stratified60_report.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/analysis/progress_report.md
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/gk_0_1_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/gk_0_1_leetcode_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/gk_0_35_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/gk_0_35_leetcode_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_default_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_default_leetcode_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_default_t1_5_atcoder_think_t1.5_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_default_t1_5_leetcode_think_t1.5_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_default_t2_0_atcoder_think_t2.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_default_t2_0_leetcode_think_t2.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_default_t2_5_atcoder_think_t2.5_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_default_t2_5_leetcode_think_t2.5_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_default_t3_0_atcoder_think_t3.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_default_t3_0_leetcode_think_t3.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_effk_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_effk_leetcode_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_gini_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_gini_leetcode_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_min2_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_min2_leetcode_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_top1half_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_top1half_leetcode_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_topmass_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_topmass_leetcode_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/qwen_recipe_atcoder_think_t0.6_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/qwen_recipe_leetcode_think_t0.6_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_nsigma_1_5_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_nsigma_1_5_leetcode_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_nsigma_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_nsigma_leetcode_think_t1.0_metrics.json
+ D results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/analysis/atcoder_gk_sweep_leaderboard.md
+ M results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/analysis/lcb_v6_stratified60_report.json
+ M results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_gini_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_top1half_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_topmass_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_nsigma_1_5_atcoder_think_t1.0_metrics.json
+ M results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_nsigma_atcoder_think_t1.0_metrics.json
+ M scripts/paper/make_llm4code_truncation_table.py
+ M tests/test_headline_table.py
+?? IMG_1099.jpg
+?? "Screenshot 2026-07-31 at 3.56.57\342\200\257PM.png"
+?? "You are not my assistant.md"
+?? bench/apps/gen_code_anthropic.py
+?? bench/entropy_probe/forking_token_analysis.py
+?? bench/entropy_probe/token_classification.py
+?? bench/eval/apps_alpha_analysis.py
+?? bench/eval/diversity_by_difficulty.py
+?? bench/eval/entropy_history.py
+?? bench/eval/gold_likelihood_probe.py
+?? bench/eval/latent_diversity_probe.py
+?? bench/squad/
+?? config.json
+?? data/MNIST/
+?? debug_1.txt
+?? docs/alpha_crosstab_findings_qwen_apps.md
+?? docs/entropy_by_token_coding.md
+?? docs/entropy_by_token_string.md
+?? docs/example_1_project_updates.md
+?? docs/example_project_updates.md
+?? docs/examples_qwen_apps_codeforces_intro_failures.md
+?? docs/experiments/ministral_gk_0_025_mlx_pooled_eval_2026_11.md
+?? docs/p2_algorithmic_diversity_atcoder_intro.md
+?? docs/p2_diversity_deepseek_n100_codeforces_intro.md
+?? docs/p2_repair_predictor_validation.md
+?? docs/p2_rte_error_patterns_deepseek_a2.md
+?? docs/p2_self_repair_smoke_deepseek.md
+?? docs/p2_timeout_distinct_algorithm_deepseek_a2.md
+?? docs/p2_timeout_variants_deepseek_a2_evidence.md
+?? docs/paperB_response_to_comments.md
+?? docs/paper_idea/
+?? docs/reference_papers/
+?? docs/research/decoding_methods_landscape.md
+?? docs/research/reasoning_model_adaptive_decoding.md
+?? docs/theory/entropy_mechanism_framework.md
+?? example.txt
+?? file.txt
+?? input.txt
+?? lit_review/
+?? log.txt
+?? my_database.db
+?? new.txt
+?? notes/
+?? obj.pkl
+?? output.txt
+?? paper/latex/main.blg
+?? paper/latex/main.pdf
+?? paper/paperB/figures/fig_ablation_strata_dots.png
+?? paper/paperB/figures/fig_mechanism.png
+?? paper/paperB/figures/fig_tokens_scatter.png
+?? paper/paperB/main.pdf
+?? paper/paperB/old_paper_from_over_leaf/
+?? paper/paperB_overleaf.zip
+?? program.py
+?? results/_backend_delta_deepseek/
+?? results/_cf_interview_748/
+?? results/_chop_restart_probe/phase1_nohup.out
+?? results/_chop_restart_probe_old/
+?? results/_deepseek_fixed_full252/
+?? results/_live_adaptive/
+?? results/_paper_data_cache/
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/metrics/
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.05_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.075_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.15_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.1_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.25_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.2_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.35_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.3_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.45_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.4_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.8_t1.0.jsonl
+?? results/_renyi_sweep_full252/Qwen--Qwen3-8B/ATCODER_interview/pless_renyi_think_t1.0_k1.6_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/metrics/
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.05_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.075_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.15_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.1_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.25_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.2_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.35_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.3_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.45_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.4_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k0.8_t1.0.jsonl
+?? results/_renyi_sweep_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_renyi_think_t1.0_k1.6_t1.0.jsonl
+?? results/_smoke_cot_decoders/
+?? results/_smoke_cot_instruct/
+?? results/_smoke_multi/
+?? results/_smoke_single/
+?? results/_top_p_sweep_full252/
+?? results/bos_check_2026_11/
+?? results/entropy_history_gate/
+?? results/entropy_probe/Qwen--Qwen2.5-Coder-7B-Instruct/
+?? results/entropy_probe/Qwen--Qwen3-8B/
+?? results/entropy_probe/_central_figure_apps/
+?? results/entropy_probe/_central_figure_v3/
+?? results/entropy_probe/analysis/
+?? results/gold_likelihood_probe/
+?? results/humaneval_regen_2026_11_diag/
+?? results/humaneval_regen_2026_11_smoke/
+?? results/humaneval_regen_2026_11_smoke2/
+?? results/humaneval_regen_2026_11_smoke2_rerun/
+?? results/humaneval_regen_2026_11_smoke3/
+?? results/humaneval_regen_2026_11_smoke3_rerun/
+?? results/humaneval_regen_2026_11_smoke_rerun/
+?? results/latent_diversity_probe/
+?? results/loop_collapse_replication/Qwen--Qwen3-8B/early/vectors/
+?? results/loop_collapse_replication/Qwen--Qwen3-8B/vectors/
+?? results/loop_collapse_replication/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/vectors/
+?? results/loop_collapse_replication_vo/
+?? results/loop_forcethink/Qwen--Qwen3-8B_n30k6/
+?? results/loop_forcethink_qwen_w1200/Qwen--Qwen3-8B/ATCODER_interview/analysis_old/
+?? results/loop_forcethink_qwen_w1200/Qwen--Qwen3-8B/ATCODER_interview/metrics_old/
+?? results/loop_forcethink_w1200_25_problems/
+?? results/pilot1_hidden/extract_config.json
+?? results/pilot1_hidden/vectors/
+?? results/pilot1_hidden/vectors_v0/
+?? results/pilot1_hidden_v0/
+?? results/pless_alpha_apps/Qwen--Qwen2.5-Coder-7B-Instruct/ATCODER_competition/
+?? results/pless_alpha_apps/Qwen--Qwen2.5-Coder-7B-Instruct/ATCODER_interview/
+?? results/pless_alpha_apps/Qwen--Qwen2.5-Coder-7B-Instruct/ATCODER_introductory/
+?? results/pless_alpha_apps/Qwen--Qwen2.5-Coder-7B-Instruct/CODEFORCES_competition/
+?? results/pless_alpha_apps/Qwen--Qwen2.5-Coder-7B-Instruct/CODEFORCES_interview/
+?? results/pless_alpha_apps/Qwen--Qwen2.5-Coder-7B-Instruct/CODEFORCES_introductory/
+?? results/pless_alpha_apps/Qwen--Qwen3-8B/
+?? results/pless_alpha_apps/_analysis/
+?? results/pless_alpha_apps/codellama--CodeLlama-7b-Instruct-hf/
+?? results/pless_alpha_apps/m-a-p--OpenCodeInterpreter-DS-1.3B/
+?? results/pless_alpha_apps_deepseek_phase_a/
+?? results/pless_alpha_entropy/
+?? results/pless_alpha_full_gsm8k/
+?? results/pless_alpha_full_humaneval/Qwen--Qwen2.5-Coder-7B-Instruct/humaneval/analysis/diversity_by_difficulty_humaneval.md
+?? results/pless_alpha_full_humaneval/Qwen--Qwen2.5-Coder-7B-Instruct/humaneval/analysis/diversity_by_difficulty_humaneval.png
+?? results/pless_alpha_full_humaneval/Qwen--Qwen3-8B/no-think/analysis/diversity_by_difficulty_humaneval.md
+?? results/pless_alpha_full_humaneval/Qwen--Qwen3-8B/no-think/analysis/diversity_by_difficulty_humaneval.png
+?? results/pless_alpha_full_humaneval/Qwen--Qwen3-8B/no-think/metrics/
+?? results/pless_alpha_full_humaneval/Qwen--Qwen3-8B/no-think/pless_alpha_a2.0_t1.0.jsonl
+?? results/pless_alpha_full_humaneval/Qwen--Qwen3-8B/no-think/pless_alpha_a2.5_t1.0.jsonl
+?? results/pless_alpha_full_humaneval/Qwen--Qwen3-8B/no-think/pless_alpha_a3.0_t1.0.jsonl
+?? results/pless_alpha_full_humaneval/Qwen--Qwen3-8B/no-think/pless_alpha_a5.0_t1.0.jsonl
+?? results/pless_alpha_full_humaneval/Qwen--Qwen3-8B/think/
+?? results/pless_alpha_full_humaneval/codellama--CodeLlama-7b-Instruct-hf/humaneval/analysis/diversity_by_difficulty_humaneval.md
+?? results/pless_alpha_full_humaneval/codellama--CodeLlama-7b-Instruct-hf/humaneval/analysis/diversity_by_difficulty_humaneval.png
+?? results/pless_alpha_full_humaneval/diversity_passk_scatter_humaneval.jpg
+?? results/pless_alpha_full_humaneval/diversity_vs_c_humaneval.jpg
+?? results/pless_alpha_full_humaneval/m-a-p--OpenCodeInterpreter-DS-1.3B/humaneval/analysis/diversity_by_difficulty_humaneval.md
+?? results/pless_alpha_full_humaneval/m-a-p--OpenCodeInterpreter-DS-1.3B/humaneval/analysis/diversity_by_difficulty_humaneval.png
+?? results/pless_alpha_full_mbpp/Qwen--Qwen2.5-Coder-7B-Instruct/
+?? results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/analysis/
+?? results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/metrics/
+?? results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/no-think/analysis/diversity_by_difficulty_mbpp.md
+?? results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/no-think/analysis/diversity_by_difficulty_mbpp.png
+?? results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/no-think/metrics/
+?? results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/no-think/pless_alpha_a2.0_t1.0.jsonl
+?? results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/no-think/pless_alpha_a2.5_t1.0.jsonl
+?? results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/no-think/pless_alpha_a3.0_t1.0.jsonl
+?? results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/no-think/pless_alpha_a5.0_t1.0.jsonl
+?? results/pless_alpha_full_mbpp/Qwen--Qwen3-8B/think/
+?? results/pless_alpha_full_mbpp/codellama--CodeLlama-7b-Instruct-hf/
+?? results/pless_alpha_full_mbpp/cross_model_cross_dataset_summary.md
+?? results/pless_alpha_full_mbpp/diversity_passk_scatter_mbpp.jpg
+?? results/pless_alpha_full_mbpp/diversity_vs_c_mbpp.jpg
+?? results/pless_alpha_full_mbpp/m-a-p--OpenCodeInterpreter-DS-1.3B/
+?? results/pless_alpha_full_mbpp/t_envelope_analysis.md
+?? results/pless_apps_results/Qwen--Qwen3-8B/ATCODER_competition/analysis/
+?? results/pless_apps_results/Qwen--Qwen3-8B/CODEFORCES_competition/
+?? results/pless_apps_results/m-a-p--OpenCodeInterpreter-DS-1.3B/
+?? results/pless_cot_efficiency/
+?? results/pless_cot_efficiency_deepseek/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/
+?? results/pless_cot_efficiency_deepseek/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_introductory/archive/
+?? results/pless_cot_efficiency_deepseek/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_introductory/metrics/
+?? results/pless_cot_efficiency_deepseek/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_introductory/pless_norm_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_deepseek/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_introductory/pless_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_deepseek/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_introductory/temp_k20_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_deepseek/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_introductory/temp_p0.95_k20_think_t0.6_t0.6.jsonl
+?? results/pless_cot_efficiency_deepseek/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_introductory/temp_p0.95_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_deepseek/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_introductory/temp_think_t0.6_t0.6.jsonl
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/analysis/cot_efficiency_apps.csv
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/analysis/cot_efficiency_apps_report.md
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/analysis/figures/
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/metrics/
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/pless_norm_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/pless_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/temp_k20_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/temp_p0.95_k20_think_t0.6_t0.6.jsonl
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/temp_p0.95_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/temp_think_t0.6_t0.6.jsonl
+?? results/pless_cot_efficiency_hf/Qwen--Qwen3-8B/ATCODER_interview/truncated_cases.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview/analysis/
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview/metrics/
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview/pless_norm_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview/pless_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview/temp_k20_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview/temp_p0.95_k20_think_t0.6_t0.6.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview/temp_p0.95_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview/temp_think_t0.6_t0.6.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/analysis/cot_efficiency_apps.csv
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/analysis/cot_efficiency_apps_report.md
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/analysis/figures/
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/metrics/
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/pless_adaptive_recon.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/pless_adaptive_recon.jsonl.ckpt.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/pless_norm_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/pless_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/temp_k20_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/temp_p0.95_k20_think_t0.6_t0.6.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/temp_p0.95_think_t1.0_t1.0.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_interview_all_252/temp_think_t0.6_t0.6.jsonl
+?? results/pless_cot_efficiency_vllm/Qwen--Qwen3-8B/ATCODER_introductory/
+?? results/pless_cot_efficiency_vllm/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/
+?? results/pless_entropy_probe_qwen3_8b/Qwen--Qwen3-8B/ATCODER_interview/pless_think_t1.0_t1.0.jsonl.entropy.jsonl
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/algosim_pass_vs_nauadc_claude.png
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/algosim_pass_vs_nauadc_claude_smoke.png
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/algosim_per_config_claude.json
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/algosim_per_config_claude_smoke.json
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/algosim_report_claude.md
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/algosim_report_claude_smoke.md
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/algosim_struct_vs_nauadc_claude.png
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/algosim_struct_vs_nauadc_claude_smoke.png
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/cot_efficiency_mbpp.csv
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/cot_efficiency_mbpp_report.md
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/analysis/figures/
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/split_temp_pure_t2.0_pless_t3.0_think_t1.0.jsonl
+?? results/pless_full_mbpp_results/Qwen--Qwen3-8B/split_temp_pure_t2.5_pless_t3.0_think_t1.0.jsonl
+?? results/pless_full_mbpp_results/analysis/codellama/codellama_full_mbpp_with_alpha.csv
+?? results/pless_full_mbpp_results/analysis/codellama/figures/all_methods_4panel.png
+?? results/pless_full_mbpp_results/analysis/small_models_2507/figures/oci_all_methods_4panel.png
+?? results/pless_full_mbpp_results/analysis/small_models_2507/oci_full_mbpp_with_alpha.csv
+?? results/pless_recovery_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/analysis/
+?? results/pless_recovery_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/metrics/
+?? results/pless_recovery_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_alpha_think_t1.0_a3.0_t1.0.jsonl
+?? results/pless_recovery_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_alpha_think_t1.0_a4.0_t1.0.jsonl
+?? results/pless_recovery_full252/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/ATCODER_interview/pless_alpha_think_t1.0_a5.0_t1.0.jsonl
+?? results/pless_recovery_sweep/Qwen--Qwen3-8B/ATCODER_interview/analysis/figures/
+?? results/pless_variants_baseRT_serve_smoketest/
+?? results/pless_variants_baseRT_smoketest/
+?? results/pless_variants_cuda/Qwen--Qwen2.5-Coder-3B-Instruct/
+?? results/pless_variants_cuda/Qwen--Qwen2.5-Coder-7B-Instruct/
+?? results/pless_variants_cuda/Qwen--Qwen3-0.6B/
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/analysis/
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_effk_think_t1.0.batch0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_effk_think_t1.0.batch1_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_effk_think_t1.0.bf16_gpu2_gpu0_s42_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_effk_think_t1.0.n10_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_gini_think_t1.0.batch0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_gini_think_t1.0.batch1_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_gini_think_t1.0.bf16_gpu2_gpu0_s42_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_gini_think_t1.0.n10_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_min2_think_t1.0.bf16_gpu2_gpu0_s42_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_top1half_think_t1.0.bf16_gpu2_gpu0_s42_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_topmass_think_t1.0.batch0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_topmass_think_t1.0.batch1_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_topmass_think_t1.0.bf16_gpu2_gpu1_s42_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/pless_topmass_think_t1.0.n10_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/temp_standard_think_t0.6.bf16_gpu2_gpu0_qwen_recipe_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/top_nsigma_0_5_think_t1.0.bf16_gpu2_gpu1_s42_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/top_nsigma_1_5_think_t1.0.bf16_gpu2_gpu1_s42_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/metrics/top_nsigma_think_t1.0.bf16_gpu2_gpu1_s42_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_effk_think_t1.0.batch0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_effk_think_t1.0.batch1.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_effk_think_t1.0.bf16_gpu2_gpu0_s42.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_effk_think_t1.0.n10.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_gini_think_t1.0.batch0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_gini_think_t1.0.batch1.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_gini_think_t1.0.bf16_gpu2_gpu0_s42.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_gini_think_t1.0.n10.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_gini_think_t1.0.sanity_gpu2.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_gini_think_t1.0.sanity_gpu2_v3.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_min2_think_t1.0.bf16_gpu2_gpu0_s42.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_top1half_think_t1.0.bf16_gpu2_gpu0_s42.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_topmass_think_t1.0.batch0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_topmass_think_t1.0.batch1.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_topmass_think_t1.0.bf16_gpu2_gpu1_s42.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/pless_topmass_think_t1.0.n10.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/temp_standard_think_t0.6.bf16_gpu2_gpu0_qwen_recipe.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/top_nsigma_0_5_think_t1.0.bf16_gpu2_gpu1_s42.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/top_nsigma_1_5_think_t1.0.bf16_gpu2_gpu1_s42.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/ATCODER_interview/top_nsigma_think_t1.0.bf16_gpu2_gpu1_s42.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/analysis/effk_vs_nofloor_ablation.md
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_effk_nofloor_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_effk_nofloor_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_gini_nofloor_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_gini_nofloor_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_topmass_nofloor_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/pless_topmass_nofloor_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_75_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_75_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_7_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_7_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_85_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_85_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_8_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_8_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_95_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_95_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_9_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_0_9_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_1_0_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/metrics/top_p_1_0_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_default_t2_5_atcoder_think_t2.5.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_default_t2_5_leetcode_think_t2.5.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_default_t3_0_atcoder_think_t3.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_default_t3_0_leetcode_think_t3.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_effk_nofloor_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_effk_nofloor_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_gini_nofloor_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_gini_nofloor_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_min2_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_min2_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_topmass_nofloor_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/pless_topmass_nofloor_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_75_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_75_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_7_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_7_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_85_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_85_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_8_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_8_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_95_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_95_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_9_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_0_9_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_1_0_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/Qwen--Qwen3-8B/LCB_v6_stratified60/top_p_1_0_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/deepseek-ai--DeepSeek-R1-Distill-Llama-8B/
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/_archive_pre_reeval_20261107/
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/_archive_pre_toppfix_20261031/
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/_archive_pre_toppfix_leetcode_20261106/
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/_invalidated_top_p_bug_20261026/
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_05_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_05_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_1_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_1_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_2_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_2_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_35_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_35_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_45_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_45_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_4_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_4_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_5_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_5_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_8_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_0_8_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_1_6_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/gk_1_6_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/metrics/
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/ministral_recipe_atcoder_think_t0.7.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/ministral_recipe_leetcode_think_t0.7.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/pless_default_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/pless_default_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/pless_effk_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/pless_effk_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/pless_effk_nofloor_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/pless_effk_nofloor_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/pless_gini_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/pless_gini_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/pless_topmass_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/pless_topmass_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_nsigma_1_5_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_nsigma_1_5_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_nsigma_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_75_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_75_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_7_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_7_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_85_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_85_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_8_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_8_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_95_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_95_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_9_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/top_p_0_9_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/analysis/effk_vs_nofloor_ablation.md
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/analysis/progress_report.md
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_025_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_025_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_0325_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_0325_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_05_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_05_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_075_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_075_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_1_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_1_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_35_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_35_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_8_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_0_8_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_1_6_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/gk_1_6_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_025_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_025_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_0325_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_0325_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_05_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_05_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_075_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_075_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_1_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_1_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_35_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_35_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_8_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_0_8_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_1_6_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/gk_1_6_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/ministral_recipe_atcoder_think_t0.7_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/ministral_recipe_leetcode_think_t0.7_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_default_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_default_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_default_t1_5_atcoder_think_t1.5_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_default_t1_5_leetcode_think_t1.5_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_default_t2_0_atcoder_think_t2.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_default_t2_0_leetcode_think_t2.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_default_t2_5_atcoder_think_t2.5_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_default_t2_5_leetcode_think_t2.5_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_default_t3_0_atcoder_think_t3.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_default_t3_0_leetcode_think_t3.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_effk_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_effk_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_effk_nofloor_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_effk_nofloor_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_gini_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_gini_nofloor_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_gini_nofloor_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_min2_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_min2_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_top1half_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_topmass_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_topmass_nofloor_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/pless_topmass_nofloor_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_nsigma_1_5_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_nsigma_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_75_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_75_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_7_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_7_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_85_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_85_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_8_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_8_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_95_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_95_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_9_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_0_9_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_1_0_atcoder_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/metrics/top_p_1_0_leetcode_think_t1.0_metrics.json
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/ministral_recipe_atcoder_think_t0.7.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/ministral_recipe_leetcode_think_t0.7.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_default_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_default_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_default_t1_5_atcoder_think_t1.5.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_default_t1_5_leetcode_think_t1.5.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_default_t2_0_atcoder_think_t2.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_default_t2_0_leetcode_think_t2.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_default_t2_5_atcoder_think_t2.5.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_default_t2_5_leetcode_think_t2.5.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_default_t3_0_atcoder_think_t3.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_default_t3_0_leetcode_think_t3.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_effk_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_effk_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_effk_nofloor_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_effk_nofloor_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_gini_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_gini_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_gini_nofloor_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_gini_nofloor_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_min2_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_min2_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_top1half_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_top1half_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_topmass_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_topmass_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_topmass_nofloor_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/pless_topmass_nofloor_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_nsigma_1_5_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_nsigma_1_5_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_nsigma_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_nsigma_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_75_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_75_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_7_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_7_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_85_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_85_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_8_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_8_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_95_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_95_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_9_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_0_9_leetcode_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_1_0_atcoder_think_t1.0.jsonl
+?? results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_stratified60/top_p_1_0_leetcode_think_t1.0.jsonl
+?? results/pless_variants_metal_smoketest/
+?? results/pless_variants_mlxlm_fullcompare/Qwen--Qwen3-8B/LCB_v6_stratified60/analysis/task_timing_notes.md
+?? results/pless_variants_mlxlm_pools/
+?? results/pless_variants_mlxlm_smoketest/
+?? results/pless_variants_omlx_smoketest/
+?? results/regen_2026_11/
+?? results/scaffold_transfer/analysis/
+?? results/scaffold_transfer/baseline_nothink/
+?? results/scaffold_transfer/claude_scaffold/
+?? results/scaffold_transfer/claude_scaffold_highalt/
+?? results/scaffold_transfer/haiku_baseline_nothink/
+?? results/scaffold_transfer/haiku_claude_scaffold_highalt/
+?? results/scaffold_transfer/scaffolds_detailed.jsonl
+?? results/scaffold_transfer/scaffolds_review.md
+?? results/signal_diagnostic/
+?? results/tmp/
+?? run_entropy_probe_pless_alpha.sh
+?? run_eval_apps_alpha_full.sh
+?? run_pless_alpha_squad.sh
+?? sample.txt
+?? scripts/ablation_effk_vs_nofloor.py
+?? scripts/auto_sync_eval_lcb_v6.py
+?? scripts/compare_prefix_caching_determinism.py
+?? scripts/fetch_lcb_full1046_batches.sh
+?? scripts/merge_lcb_full1046_batches.py
+?? scripts/reasoning_phase_entropy.py
+?? scripts/run_pless_variants_qwen25coder_7b_lcb_cuda.py
+?? scripts/sync_and_eval_lcb_v6.sh
+?? scripts/test_deepseek_system_prompt.py
+?? scripts/test_prefix_caching_determinism.py
+?? scripts/verify_deepseek_cap.py
+?? smoke_gsm8k_alpha.jsonl
+?? solve.py
+?? test.db
+?? test_input.txt
+?? test_output.txt
+?? tests/test_apps_alpha_analysis.py
+?? tests/test_diversity_by_difficulty.py
+?? tests/test_entropy_history.py
+?? tests/test_gen_code_anthropic_sampling.py
+?? tests/test_gold_likelihood_probe.py
+?? tests/test_squad.py
+?? tests/test_token_classification.py

@@ -1,0 +1,34 @@
+CSV batch x platform: Counter({('atcoder', '0'): 121, ('atcoder', '1'): 121, ('atcoder', '2'): 121, ('atcoder', '3'): 120, ('atcoder', '4'): 119, ('leetcode', '0'): 90, ('leetcode', '1'): 90, ('leetcode', '2'): 88, ('leetcode', '3'): 88, ('leetcode', '4'): 88})
+expected leetcode b1+b2: 178
+== gk_0_45 line info: {'lines': 178} dups: [] 0
+records 178 missing [] 0 extra [] 0
+difficulty mismatch: 0
+source/platform Counter: Counter({('leetcode', None): 178})
+cfg Counter: Counter({('gk_0_45', 'pless_renyi', 0.45, 1.0, 1.0, 0, 'vllm', True, 10, 10): 178})
+keysets: 1
+== gk_0_4 line info: {'lines': 178} records 178 dups 0 common with 0.45: 178
+gk_0_4 keysets n= 1 ; 0.45-only keys: [] ; 0.4-only keys: []
+gk_0_4 cfg: Counter({('gk_0_4', 'pless_renyi', 0.4, 1.0, 1.0, 0, 'vllm', True, 10, 10): 178})
+== top_p line info: {'lines': 178} records 178 dups 0 common: 178
+top_p cfg: Counter({('top_p_0_95', 'top_p_0_95', None, 1.0, 1.0, 0, 'vllm', True, 10, 10): 178})
+ts missing: 0 min 2026-11-12T08:01:53.448251+00:00 max 2026-11-12T18:49:50.885468+00:00
+ts types sample: 2026-11-12T08:01:53.448251+00:
+before 2026-11-11T14:11: 0
+per-hour: [('2026-11-12T08', 24), ('2026-11-12T09', 20), ('2026-11-12T10', 16), ('2026-11-12T11', 11), ('2026-11-12T12', 24), ('2026-11-12T13', 14), ('2026-11-12T14', 14), ('2026-11-12T15', 16), ('2026-11-12T16', 14), ('2026-11-12T17', 11), ('2026-11-12T18', 14)]
+gk_0_45 all: tasks=178 samples=1780 term[/THINK]=0.8876 </think>=0 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38502.5 maxlen=138634
+gk_0_45 common3: tasks=178 samples=1780 term[/THINK]=0.8876 </think>=0 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38502.5 maxlen=138634
+gk_0_4 common3: tasks=178 samples=1780 term[/THINK]=0.8713 </think>=0 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=40599.0 maxlen=160870
+top_p_0_95 common3: tasks=178 samples=1780 term[/THINK]=0.8843 </think>=0 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38304.5 maxlen=137615
+per-record term distribution 0.45: [(1, 2), (2, 3), (3, 5), (4, 2), (5, 3), (6, 2), (7, 8), (8, 13), (9, 38), (10, 102)]
+prompt hash mismatch vs gk_0_4: 0 []  vs top_p: 0
+metrics keys: ['model', 'method', 'temperature', 'top_p', 'top_k', 'dataset', 'num_tasks', 'num_samples_per_task', 'pass_at_k', 'cover_at_t', 'cover_at_t_distinct', 'structural_diversity', 'codebleu_diversity', 'syntax_match_diversity', 'dataflow_match_diversity', 'ngram_match_diversity', 'weighted_ngram_match_diversity', 'self_codebleu_hashseed', 'termination_pct', 'mean_token_size']
+metrics per_task n= 178 common w/0.45: 178 sample entry keys: ['task_id', 'num_correct', 'pass_results', 'statuses', 'n_tests_total', 'n_tests_passed', 'first_failing_idx', 'extracted_codes', 'extraction_strategies', 'extraction_success', 'num_distinct_correct', 'self_codebleu_hashseed']
+metrics n Counter on common: Counter({None: 178})
+expected per batch: Counter({'1': 90, '2': 88}) got per batch: Counter({'1': 90, '2': 88})
+all keysets 0.45: 1 gk_0_4: 1 top_p: 1
+ids with leading zero/non-digit in file: 0 in csv leetcode: 0
+task_id types: Counter({'str': 178})
+gk_0_4 records: 178 top_p records: 178 common3: 178
+['backend', 'contest_date', 'difficulty', 'enable_thinking', 'method', 'model', 'prompt_text', 'renyi_k', 'sampler_name', 'samples', 'samples_with_thinking', 'source', 'task_id', 'temperature', 'timestamp', 'top_k', 'top_p']
+False leetcode
+87.13483146067416 178 10

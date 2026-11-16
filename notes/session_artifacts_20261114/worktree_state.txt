@@ -1,0 +1,87 @@
+# generated 2026-11-14 21:14 IST
+## git -C /tmp/wt_topk status --short
+## log -5
+6ee2158 Ministral LCB: add gk_0_25 and gk_0_5 configs; GPU2 launcher takes GK_CONFIGS
+d29c943 Ministral LCB: add gk_0_45 config + GPU2 launcher for batches 1/2 (gk_0_45 then gk_0_35)
+00eb0f6 Qwen pooled 252+748 tables + winners analysis: 16 configs (adds G_k 0.25/0.35/0.45); keep 13-config outputs
+75005e6 docs: Qwen CF-748 G_k 0.25/0.35/0.45 in decoder comparison; merge plan vLLM correction; A69 status
+f4d5d73 make_cf748_table: add G_k=0.35 to the Qwen3 CF-748 grid
+## rev-parse HEAD
+6ee215840f4267e7d80339704423183f1c3f6264
+## fetch origin feat/pless-variants-mps
+From https://github.com/karrtikiyer/pless-for-coding
+ * branch            feat/pless-variants-mps -> FETCH_HEAD
+## log origin/feat/pless-variants-mps -3
+6ee2158 Ministral LCB: add gk_0_25 and gk_0_5 configs; GPU2 launcher takes GK_CONFIGS
+d29c943 Ministral LCB: add gk_0_45 config + GPU2 launcher for batches 1/2 (gk_0_45 then gk_0_35)
+00eb0f6 Qwen pooled 252+748 tables + winners analysis: 16 configs (adds G_k 0.25/0.35/0.45); keep 13-config outputs
+## diff origin/feat/pless-variants-mps --stat | tail -5
+## unpushed commits (HEAD not in origin)
+## is 6ee2158 ancestor of origin?
+yes
+## main repo worktree list
+/Users/karrtikiyer/projects/airesearch/pless-for-coding aa8785b [feat/humaneval-regen]
+/private/tmp/wt_topk                                    6ee2158 (detached HEAD)
+## main repo branch
+feat/humaneval-regen
+## main repo status (non-results, head 60)
+ M CLAUDE.md
+ M docs/theory/todos.md
+ ? p-less
+ M paper/llm4code/figures/fig3a_passk_curves_mbpp.png
+ M paper/llm4code/figures/fig3b_lift_bars_mbpp.png
+ M paper/llm4code/figures/fig5a_renyi_passk.png
+ M paper/llm4code/figures/fig5b_renyi_truncation.png
+ M paper/llm4code/figures/fig6a_reasoning_passk_curves.png
+ M paper/llm4code/figures/fig6b_reasoning_lift_bars.png
+ M paper/llm4code/tables/table_3a_mbpp.md
+ M paper/llm4code/tables/table_3a_mbpp.tex
+ M paper/llm4code/tables/table_3b_humaneval.md
+ M paper/llm4code/tables/table_3b_humaneval.tex
+ M paper/llm4code/tables/table_4_truncation.md
+ M paper/llm4code/tables/table_4_truncation.tex
+ M paper/llm4code/tables/table_5a_apps_renyi.md
+ M paper/llm4code/tables/table_5a_apps_renyi.tex
+ M paper/llm4code/tables/table_a1_mbpp_appendix.md
+ M paper/llm4code/tables/table_a1_mbpp_appendix.tex
+ M paper/llm4code/tables/table_a2_humaneval_appendix.md
+ M paper/llm4code/tables/table_a2_humaneval_appendix.tex
+ M paper/llm4code/tables/table_a3_cf748_qwen.md
+ M paper/llm4code/tables/table_a3_cf748_qwen.tex
+ M paper/refs.bib
+ D results/pless_variants_cuda/mistralai--Ministral-3-3B-Reasoning-2512/LCB_v6_full1046/analysis/atcoder_gk_sweep_leaderboard.md
+ M scripts/paper/make_llm4code_fig3.py
+ M scripts/paper/make_llm4code_fig6.py
+ M scripts/paper/make_llm4code_figures.py
+ M scripts/paper/make_llm4code_truncation_table.py
+ M tests/test_headline_table.py
+?? IMG_1099.jpg
+?? "Screenshot 2026-07-31 at 3.56.57\342\200\257PM.png"
+?? "You are not my assistant.md"
+?? bench/apps/gen_code_anthropic.py
+?? bench/entropy_probe/forking_token_analysis.py
+?? bench/entropy_probe/token_classification.py
+?? bench/eval/apps_alpha_analysis.py
+?? bench/eval/diversity_by_difficulty.py
+?? bench/eval/entropy_history.py
+?? bench/eval/gold_likelihood_probe.py
+?? bench/eval/latent_diversity_probe.py
+?? bench/squad/
+?? config.json
+?? data/MNIST/
+?? debug_1.txt
+?? docs/alpha_crosstab_findings_qwen_apps.md
+?? docs/entropy_by_token_coding.md
+?? docs/entropy_by_token_string.md
+?? docs/example_1_project_updates.md
+?? docs/example_project_updates.md
+?? docs/examples_qwen_apps_codeforces_intro_failures.md
+?? docs/experiments/ministral_gk_0_025_mlx_pooled_eval_2026_11.md
+?? docs/p2_algorithmic_diversity_atcoder_intro.md
+?? docs/p2_diversity_deepseek_n100_codeforces_intro.md
+?? docs/p2_repair_predictor_validation.md
+?? docs/p2_rte_error_patterns_deepseek_a2.md
+?? docs/p2_self_repair_smoke_deepseek.md
+?? docs/p2_timeout_distinct_algorithm_deepseek_a2.md
+?? docs/p2_timeout_variants_deepseek_a2_evidence.md
+?? docs/paperB_response_to_comments.md

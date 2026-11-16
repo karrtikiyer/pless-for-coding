@@ -1,0 +1,24 @@
+PLATFORM atcoder expected b1+b2: 242 Counter({'2': 121, '1': 121})
+(1) line info: {'lines': 242, 'last_byte_hex_0a': 1} dups: 0 [] task_id types: {'str': 242}
+(2) records 242 missing 0 [] extra 0 []
+    difficulty mismatch: 0 source: Counter({'atcoder': 242}) has platform key: 0
+    per batch: Counter({'2': 121, '1': 121})
+(3) cfg: Counter({('gk_0_35', 'pless_renyi', 0.35, 1.0, 1.0, 0, 'vllm', True, 10, 10): 242})
+    keysets 0.35: 1
+    ref gk_0_4: lines=242 recs=242 dups=0 keysets=1 common=242 cfg=[(('gk_0_4', 'pless_renyi', 0.4, 1.0, 1.0, 0, 'vllm', True, 10, 10), 242)]
+    ref gk_0_45: lines=242 recs=242 dups=0 keysets=1 common=242 cfg=[(('gk_0_45', 'pless_renyi', 0.45, 1.0, 1.0, 0, 'vllm', True, 10, 10), 242)]
+    ref top_p_0_95: lines=242 recs=242 dups=0 keysets=1 common=242 cfg=[(('top_p_0_95', 'top_p_0_95', None, 1.0, 1.0, 0, 'vllm', True, 10, 10), 242)]
+    keyset vs gk_0_4: 0.35-only [] 0.4-only []
+(4) ts missing: 0 min 2026-11-12T18:47:09.956795+00:00 max 2026-11-13T13:37:53.102589+00:00 before 2026-11-12T18:44: 0
+    per-hour: [('2026-11-12T18', 6), ('2026-11-12T19', 11), ('2026-11-12T20', 15), ('2026-11-12T21', 18), ('2026-11-12T22', 22), ('2026-11-12T23', 19), ('2026-11-13T00', 20), ('2026-11-13T01', 16), ('2026-11-13T02', 11), ('2026-11-13T03', 12), ('2026-11-13T04', 12), ('2026-11-13T05', 16), ('2026-11-13T06', 10), ('2026-11-13T07', 16), ('2026-11-13T08', 13), ('2026-11-13T09', 7), ('2026-11-13T10', 4), ('2026-11-13T11', 7), ('2026-11-13T12', 5), ('2026-11-13T13', 2)]
+(5)
+    gk_0_35 all: tasks=242 samples=2420 term[/THINK]=0.7880 </think>=8 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41821.5 maxlen=161185
+    gk_0_35 common(0.35,0.4,0.45): tasks=242 samples=2420 term[/THINK]=0.7880 </think>=8 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41821.5 maxlen=161185
+    gk_0_4 common(0.35,0.4,0.45): tasks=242 samples=2420 term[/THINK]=0.7831 </think>=6 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41096.5 maxlen=168346
+    gk_0_45 common(0.35,0.4,0.45): tasks=242 samples=2420 term[/THINK]=0.7996 </think>=2 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38748.5 maxlen=154330
+    gk_0_35 common4: tasks=242 samples=2420 term[/THINK]=0.7880 </think>=8 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41821.5 maxlen=161185
+    gk_0_4 common4: tasks=242 samples=2420 term[/THINK]=0.7831 </think>=6 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41096.5 maxlen=168346
+    gk_0_45 common4: tasks=242 samples=2420 term[/THINK]=0.7996 </think>=2 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38748.5 maxlen=154330
+    top_p_0_95 common4: tasks=242 samples=2420 term[/THINK]=0.8017 </think>=1 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=40860.0 maxlen=167387
+(6) prompt hash mismatch vs gk_0_4: 0 of 242 [] ; vs gk_0_45: 0
+(7) ids 0.35 vs 0.45: equal= True 0.35-only 0 [] 0.45-only 0 []

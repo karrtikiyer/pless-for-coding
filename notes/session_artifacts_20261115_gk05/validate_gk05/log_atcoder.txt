@@ -1,0 +1,30 @@
+PLATFORM atcoder expected b1+b2: 242 Counter({'1': 121, '2': 121})
+sha256 file: abac302800445cbcfa6a4294261db3599a9bf4f329fbe67dfb7c717f92f4fcd6
+leetcode-style id oddities (non-digit/leading zero): n/a
+(1) line info: {'lines': 242, 'last_byte_hex_0a': 1} dups: 0 [] task_id types: {'str': 242}
+(2) records 242 missing 0 [] extra 0 []
+    difficulty mismatch: 0 source: Counter({'atcoder': 242}) has platform key: 0
+    per batch: Counter({'1': 121, '2': 121})
+(3) cfg: Counter({('gk_0_5', 'pless_renyi', 0.5, 1.0, 1.0, 0, 'vllm', True, 10, 10): 242})
+    keysets 0.5: 1
+    ref gk_0_4: lines=242 recs=242 dups=0 keysets=1 common=242 cfg=[(('gk_0_4', 'pless_renyi', 0.4, 1.0, 1.0, 0, 'vllm', True, 10, 10), 242)]
+    ref gk_0_35: lines=242 recs=242 dups=0 keysets=1 common=242 cfg=[(('gk_0_35', 'pless_renyi', 0.35, 1.0, 1.0, 0, 'vllm', True, 10, 10), 242)]
+    ref gk_0_45: lines=242 recs=242 dups=0 keysets=1 common=242 cfg=[(('gk_0_45', 'pless_renyi', 0.45, 1.0, 1.0, 0, 'vllm', True, 10, 10), 242)]
+    ref top_p_0_95: lines=242 recs=242 dups=0 keysets=1 common=242 cfg=[(('top_p_0_95', 'top_p_0_95', None, 1.0, 1.0, 0, 'vllm', True, 10, 10), 242)]
+    keyset vs gk_0_4: 0.5-only [] 0.4-only []
+(4) ts missing: 0 min 2026-11-14T08:29:04.506684+00:00 max 2026-11-15T02:42:36.840025+00:00 before 2026-11-14T08:26: 0
+    per-hour: [('2026-11-14T08', 7), ('2026-11-14T09', 17), ('2026-11-14T10', 15), ('2026-11-14T11', 21), ('2026-11-14T12', 19), ('2026-11-14T13', 23), ('2026-11-14T14', 16), ('2026-11-14T15', 14), ('2026-11-14T16', 11), ('2026-11-14T17', 14), ('2026-11-14T18', 17), ('2026-11-14T19', 11), ('2026-11-14T20', 10), ('2026-11-14T21', 19), ('2026-11-14T22', 7), ('2026-11-14T23', 5), ('2026-11-15T00', 6), ('2026-11-15T01', 6), ('2026-11-15T02', 4)]
+(5)
+    gk_0_5 all: tasks=242 samples=2420 term[/THINK]=0.8029 </think>=5 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=37994.0 maxlen=147581
+    gk_0_5 common(0.5,0.4,0.35,0.45): tasks=242 samples=2420 term[/THINK]=0.8029 </think>=5 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=37994.0 maxlen=147581
+    gk_0_4 common(0.5,0.4,0.35,0.45): tasks=242 samples=2420 term[/THINK]=0.7831 </think>=6 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41096.5 maxlen=168346
+    gk_0_35 common(0.5,0.4,0.35,0.45): tasks=242 samples=2420 term[/THINK]=0.7880 </think>=8 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41821.5 maxlen=161185
+    gk_0_45 common(0.5,0.4,0.35,0.45): tasks=242 samples=2420 term[/THINK]=0.7996 </think>=2 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38748.5 maxlen=154330
+    gk_0_5 common5: tasks=242 samples=2420 term[/THINK]=0.8029 </think>=5 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=37994.0 maxlen=147581
+    gk_0_4 common5: tasks=242 samples=2420 term[/THINK]=0.7831 </think>=6 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41096.5 maxlen=168346
+    gk_0_35 common5: tasks=242 samples=2420 term[/THINK]=0.7880 </think>=8 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=41821.5 maxlen=161185
+    gk_0_45 common5: tasks=242 samples=2420 term[/THINK]=0.7996 </think>=2 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=38748.5 maxlen=154330
+    top_p_0_95 common5: tasks=242 samples=2420 term[/THINK]=0.8017 </think>=1 empty_swt=0 empty_samples=0 dup_within=0 recs_with_dup=0 medlen=40860.0 maxlen=167387
+(6) prompt hash mismatch vs gk_0_4: 0 of 242 [] ; vs gk_0_45: 0 ; vs gk_0_35: 0
+(7) ids 0.5 vs 0.35: equal= True 0.5-only 0 [] 0.35-only 0 []
+(7) ids 0.5 vs 0.45: equal= True 0.5-only 0 [] 0.45-only 0 []
