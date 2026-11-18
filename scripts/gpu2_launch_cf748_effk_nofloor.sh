@@ -48,6 +48,12 @@
 #   SPLIT_DIR IDS_EVEN IDS_ODD RESULTS_ROOT SMOKE_RESULTS_ROOT GPU_MEM_UTIL MAX_MODEL_LEN GPU_FREE_MIB
 #   LOG_DIR LAUNCH_PATH STAGGER_SECONDS LAUNCH_CHECK_SECONDS GIT_BIN NVIDIA_SMI_BIN PGREP_BIN TIMEOUT_BIN
 #   SETSID_BIN FLOCK_BIN NVSMI_TIMEOUT_SECONDS
+# MODEL (default Qwen/Qwen3-8B; every default path / lock / log name is unchanged for it). Any other MODEL
+#   (e.g. deepseek-ai/DeepSeek-R1-Distill-Llama-8B) gets a model slug (lower-cased basename) in the default
+#   RESULTS_ROOT / SMOKE_RESULTS_ROOT, the launcher log + lock and the per-GPU wrapper log names, so it cannot
+#   collide with a Qwen launch; it REQUIRES MAX_MODEL_LEN (passed through to the run script / vLLM). The
+#   runner is still run_cf748_apps_qwen3.sh (the pless_effk_nofloor arm is model-neutral; its TOKENIZER is
+#   only used by the eval step, which SKIP_EVAL=1 skips).
 # Test hooks: GPU2_LAUNCHER_DETACHED=1 (stay in foreground), PGREP_SCOPE (regex prefix for every
 #   pgrep pattern; empty = production patterns).
 set -uo pipefail
@@ -70,8 +76,17 @@ IDS_FILE="${IDS_FILE:-$REPO/data/cf_interview_748_ids.txt}"
 SPLIT_DIR="${SPLIT_DIR:-$REPO/data/cf748_split}"
 IDS_EVEN="${IDS_EVEN:-$SPLIT_DIR/cf748_even_ids.txt}"
 IDS_ODD="${IDS_ODD:-$SPLIT_DIR/cf748_odd_ids.txt}"
-RESULTS_ROOT="${RESULTS_ROOT:-$REPO/results/_cf748_effk_nofloor_split}"
-SMOKE_RESULTS_ROOT="${SMOKE_RESULTS_ROOT:-$REPO/results/_cf748_effk_nofloor_smoke}"
+DEFAULT_MODEL="Qwen/Qwen3-8B"
+MODEL="${MODEL:-$DEFAULT_MODEL}"
+MODEL_DIR="${MODEL//\//--}"   # same derivation as run_cf748_apps_qwen3.sh / cf748_merge_validate.py
+MODEL_TAG=""                   # empty for the default model -> paths byte-identical to the Qwen launches
+MODEL_ARG=""                   # extra cf748_merge_validate.py args (its --model default is Qwen/Qwen3-8B)
+if [[ "$MODEL" != "$DEFAULT_MODEL" ]]; then
+  MODEL_TAG="_$(printf '%s' "${MODEL##*/}" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9._-' '-')"
+  MODEL_ARG=" --model $(printf '%q' "$MODEL")"
+fi
+RESULTS_ROOT="${RESULTS_ROOT:-$REPO/results/_cf748_effk_nofloor_split${MODEL_TAG}}"
+SMOKE_RESULTS_ROOT="${SMOKE_RESULTS_ROOT:-$REPO/results/_cf748_effk_nofloor_smoke${MODEL_TAG}}"
 GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.96}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-}"
 GPU_FREE_MIB="${GPU_FREE_MIB:-2000}"
@@ -90,13 +105,12 @@ PGREP_SCOPE="${PGREP_SCOPE:-}"
 
 SEED_VALUE=42
 ARM="pless_effk_nofloor"
-MODEL="Qwen/Qwen3-8B"
 RUNNER="bench/apps/runner.py"
 RUN_SCRIPT="run_cf748_apps_qwen3.sh"
 PINNED_FILES=( "$RUNNER" "$RUN_SCRIPT" bench/generator_vllm.py bench/pless_variants_vllm.py
                scripts/cf748_split_ids.py scripts/cf748_merge_validate.py scripts/gpu2_launch_cf748_effk_nofloor.sh )
-QLOG="$LOG_DIR/gpu2_launch_cf748_effk.log"
-LOCKFILE="$LOG_DIR/gpu2_launch_cf748_effk.lock"
+QLOG="$LOG_DIR/gpu2_launch_cf748_effk${MODEL_TAG}.log"
+LOCKFILE="$LOG_DIR/gpu2_launch_cf748_effk${MODEL_TAG}.lock"
 BUSY_PATS=( "$(scoped ' -m bench\.apps')" "$(scoped 'run_cf748_apps_qwen3\.sh')"
             "$(scoped 'run_pless_variants_')" "$(scoped 'cf748_effk_launch_.*/run_gpu[01]\.sh')" )
 ENV_UNSET=( -u MULTI_ARM -u MAX_PROBLEMS -u CUDA_VISIBLE_DEVICES -u VLLM_WORKER_MULTIPROC_METHOD )
@@ -106,12 +120,18 @@ ENV_BIN="$(command -v env)"
 mkdir -p "$LOG_DIR" || { echo "cannot create $LOG_DIR" >&2; exit 2; }
 
 # ---------------------------------------------------------------- 0. config (validated before detaching)
+# MODEL reaches generated scripts (paths): only an "org/name" of [A-Za-z0-9._-] is accepted. (MODEL_TAG above
+# is already tr-sanitised, so the log/lock names used by this stop() are safe even for a rejected MODEL.)
+[[ "$MODEL" =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]] \
+  || stop "MODEL must match ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\$ (an HF 'org/name' id; got '$MODEL')"
 [[ "$DRY_RUN" == 0 || "$DRY_RUN" == 1 ]] || stop "DRY_RUN must be 0 or 1 (got '$DRY_RUN')"
 [[ "$SMOKE" == 0 || "$SMOKE" == 1 ]] || stop "SMOKE must be 0 or 1 (got '$SMOKE')"
 [[ "$SMOKE_GPU" == 0 || "$SMOKE_GPU" == 1 ]] || stop "SMOKE_GPU must be 0 or 1 (got '$SMOKE_GPU')"
 [[ "$GPU_MEM_UTIL" =~ ^[0-9]*\.?[0-9]+$ ]] && awk -v u="$GPU_MEM_UTIL" 'BEGIN{exit !(u>0 && u<=1)}' \
   || stop "GPU_MEM_UTIL must be in (0, 1] (got '$GPU_MEM_UTIL')"
 [[ -z "$MAX_MODEL_LEN" || "$MAX_MODEL_LEN" =~ ^[0-9]+$ ]] || stop "MAX_MODEL_LEN must be empty or an integer (got '$MAX_MODEL_LEN')"
+[[ "$MODEL" == "$DEFAULT_MODEL" || -n "$MAX_MODEL_LEN" ]] \
+  || stop "MODEL=$MODEL is not the default $DEFAULT_MODEL: set MAX_MODEL_LEN explicitly (prompt + MAX_TOKENS=32768 must fit)"
 [[ "$STAGGER_SECONDS" =~ ^[0-9]+$ ]] || stop "STAGGER_SECONDS must be whole seconds (got '$STAGGER_SECONDS')"
 [[ "$LAUNCH_CHECK_SECONDS" =~ ^[0-9]+$ ]] || stop "LAUNCH_CHECK_SECONDS must be whole seconds (got '$LAUNCH_CHECK_SECONDS')"
 [[ "$GPU_FREE_MIB" =~ ^[0-9]+$ ]] || stop "GPU_FREE_MIB must be an integer (got '$GPU_FREE_MIB')"
@@ -238,7 +258,7 @@ TS="$(TZ=Asia/Kolkata date +%Y%m%d_%H%M%S)"
 local START_IST; START_IST="$(ist)"
 local -a GPU_LIST=() IDF=() RES=() WLOG=() RLOG=() SNAPS=()
 if [[ "$SMOKE" == "1" ]]; then
-  LROOT="$LOG_DIR/cf748_effk_launch_${TS}_smoke"
+  LROOT="$LOG_DIR/cf748_effk_launch_${TS}${MODEL_TAG}_smoke"
   if [[ -z "$SMOKE_IDS" ]]; then
     SMOKE_IDS="$(tr -s '[:space:]' '\n' < "$IDS_FILE" | grep -v '^$' | sort -n | head -n 2 | tr '\n' ' ' | sed 's/ $//')"
   fi
@@ -250,20 +270,20 @@ if [[ "$SMOKE" == "1" ]]; then
   [[ -n "$SMOKE_IDS" ]] || stop "SMOKE_IDS is empty"
   log "SMOKE ids: $SMOKE_IDS (GPU $SMOKE_GPU)"
   GPU_LIST=( "$SMOKE_GPU" ); IDF=( "$LROOT/smoke_ids.txt" ); RES=( "$SMOKE_RESULTS_ROOT/$TS/gpu$SMOKE_GPU" )
-  WLOG=( "$LOG_DIR/cf748_effk_nofloor_gpu${SMOKE_GPU}_smoke.log" )
+  WLOG=( "$LOG_DIR/cf748_effk_nofloor${MODEL_TAG}_gpu${SMOKE_GPU}_smoke.log" )
 else
-  LROOT="$LOG_DIR/cf748_effk_launch_${TS}"
+  LROOT="$LOG_DIR/cf748_effk_launch_${TS}${MODEL_TAG}"
   GPU_LIST=( 0 1 ); IDF=( "$IDS_EVEN" "$IDS_ODD" ); RES=( "$RESULTS_ROOT/gpu0" "$RESULTS_ROOT/gpu1" )
-  WLOG=( "$LOG_DIR/cf748_effk_nofloor_gpu0.log" "$LOG_DIR/cf748_effk_nofloor_gpu1.log" )
+  WLOG=( "$LOG_DIR/cf748_effk_nofloor${MODEL_TAG}_gpu0.log" "$LOG_DIR/cf748_effk_nofloor${MODEL_TAG}_gpu1.log" )
 fi
 # Python (runner) output: with GPUS=<g> run_cf748_apps_qwen3.sh takes its parallel branch and writes
 # "$RESULTS_DIR/$MODEL_DIR/${SOURCE}_${DIFFICULTY}/cf748_gpu<g>.log" (truncated by '>' on every start;
 # the wrapper keeps a timestamped copy of the previous one). WLOG only holds the wrapper's own lines
 # plus the run script's header echoes.
 local i g out_jsonl
-for i in "${!GPU_LIST[@]}"; do RLOG[$i]="${RES[$i]}/Qwen--Qwen3-8B/CODEFORCES_interview/cf748_gpu${GPU_LIST[$i]}.log"; done
+for i in "${!GPU_LIST[@]}"; do RLOG[$i]="${RES[$i]}/$MODEL_DIR/CODEFORCES_interview/cf748_gpu${GPU_LIST[$i]}.log"; done
 for i in "${!GPU_LIST[@]}"; do
-  out_jsonl="${RES[$i]}/Qwen--Qwen3-8B/CODEFORCES_interview/${ARM}_think_t1.0_t1.0.jsonl"
+  out_jsonl="${RES[$i]}/$MODEL_DIR/CODEFORCES_interview/${ARM}_think_t1.0_t1.0.jsonl"
   if [[ -f "$out_jsonl" ]]; then
     log "existing results (RESUMED by task_id, not a gate): GPU${GPU_LIST[$i]} $out_jsonl lines=$(wc -l < "$out_jsonl" | tr -d ' ')"
   else
@@ -427,13 +447,13 @@ write_wrapper() {  # $1 path, $2 gpu, $3 command, $4 runner (python) log
 set -u
 mark() { printf '[%s] [cf748-effk gpu $2] %s\n' "\$(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S IST')" "\$*"; }
 cd $(printf '%q' "$REPO") || { mark "WRAPPER ABORT: cannot cd to repo"; exit 1; }
-mark "WRAPPER START pid=\$\$ HEAD=\$($(printf '%q' "$GIT_BIN") rev-parse HEAD 2>/dev/null) python log: $4"
+mark "WRAPPER START pid=\$\$ HEAD=\$($(printf '%q' "$GIT_BIN") rev-parse HEAD 2>/dev/null) python log: $(printf '%q' "$4")"
 # run_cf748_apps_qwen3.sh truncates its per-GPU log on start: keep the previous one.
 if [[ -s $(printf '%q' "$4") ]]; then cp $(printf '%q' "$4") $(printf '%q' "$4").\$(TZ=Asia/Kolkata date +%Y%m%d_%H%M%S).prev; fi
 $3 < /dev/null
 rc=\$?
 if (( rc == 0 )); then mark "WRAPPER DONE rc=0"
-else mark "WRAPPER FAILED rc=\$rc -- see python log $4"; fi
+else mark "WRAPPER FAILED rc=\$rc -- see python log $(printf '%q' "$4")"; fi
 exit "\$rc"
 EOF
   chmod +x "$1"
@@ -445,12 +465,12 @@ write_resume() {  # $1 path, $2 gpu, $3 wrapper, $4 wrapper log, $5 results dir,
   cat > "$1" <<EOF
 #!/usr/bin/env bash
 # Resume the CF-748 $ARM run on GPU $2 (re-runs the wrapper; the runner resumes by task_id).
-# Generated by scripts/gpu2_launch_cf748_effk_nofloor.sh at $(ist). Wrapper: $3
+# Generated by scripts/gpu2_launch_cf748_effk_nofloor.sh at $(ist). Wrapper: $(printf '%q' "$3")
 # Refuses if this GPU's wrapper or runner is already running, or if GPU $2 is busy (FORCE=1 overrides
 # only the GPU-memory check).
 set -u
 if $(printf '%q' "$PGREP_BIN") -f $(printf '%q' "$wpat") >/dev/null; then echo "a wrapper for GPU $2 is already running; refusing" >&2; exit 1; fi
-if $(printf '%q' "$PGREP_BIN") -f $(printf '%q' "$rpat") >/dev/null; then echo "a runner for $5 is already running; refusing" >&2; exit 1; fi
+if $(printf '%q' "$PGREP_BIN") -f $(printf '%q' "$rpat") >/dev/null; then echo "a runner for $(printf '%q' "$5") is already running; refusing" >&2; exit 1; fi
 gout="\$($( [[ -n "$TIMEOUT_BIN" ]] && printf '%q %s ' "$TIMEOUT_BIN" "$NVSMI_TIMEOUT_SECONDS")$(printf '%q' "$NVIDIA_SMI_BIN") --query-gpu=index,memory.used --format=csv,noheader,nounits 2>/dev/null)" || gout=""
 used="\$(printf '%s\n' "\$gout" | awk -F', *' '\$1 ~ /^ *[0-9]/ && \$1+0==$2 {print \$2+0; exit}')"
 if [[ -z "\$used" ]]; then
@@ -460,8 +480,8 @@ elif (( used >= $GPU_FREE_MIB )); then
 fi
 cd $(printf '%q' "$REPO") || exit 1
 $(launch_line "$3" "$4")
-echo "relaunched GPU $2 wrapper PID \$! (wrapper log $4)"
-echo "python output: tail -f $6"
+echo "relaunched GPU $2 wrapper PID \$! (wrapper log $(printf '%q' "$4"))"
+echo "python output: tail -f $(printf '%q' "$6")"
 EOF
   chmod +x "$1"
 }
@@ -469,7 +489,7 @@ progress_block() {  # per-GPU "records written + Completed line in the python lo
   local i j r
   printf 'prc=0\n'
   for i in "${!GPU_LIST[@]}"; do
-    j="$(printf '%q' "${RES[$i]}/Qwen--Qwen3-8B/CODEFORCES_interview/${ARM}_think_t1.0_t1.0.jsonl")"
+    j="$(printf '%q' "${RES[$i]}/$MODEL_DIR/CODEFORCES_interview/${ARM}_think_t1.0_t1.0.jsonl")"
     r="$(printf '%q' "${RLOG[$i]}")"
     cat <<EOF
 n=0; [[ -f $j ]] && n=\$(wc -l < $j | tr -d ' ')
@@ -509,7 +529,7 @@ ok = (not bad and sorted(seen) == sorted(ids) and all(len(v) == 1 and len(v[0].g
       and v[0].get("method") == "$ARM" for v in seen.values()))
 print(("SMOKE CHECK OK" if ok else "SMOKE CHECK FAILED") + ": records=%d expected_ids=%s unparseable=%d" % (len(seen), ids, bad))
 sys.exit(0 if ok else 1)
-' $(printf '%q' "${RES[0]}/Qwen--Qwen3-8B/CODEFORCES_interview/${ARM}_think_t1.0_t1.0.jsonl") $(printf '%q' "${IDF[0]}")
+' $(printf '%q' "${RES[0]}/$MODEL_DIR/CODEFORCES_interview/${ARM}_think_t1.0_t1.0.jsonl") $(printf '%q' "${IDF[0]}")
 rc=\$?
 (( rc == 0 && prc == 0 ))
 EOF
@@ -524,10 +544,10 @@ $(progress_block)
 $cp -I scripts/cf748_merge_validate.py --check-only --allow-incomplete \\
   --in-a $(printf '%q' "${RES[0]}") --in-b $(printf '%q' "${RES[1]}") \\
   --split-a $(printf '%q' "$IDS_EVEN") --split-b $(printf '%q' "$IDS_ODD") --ids-file $(printf '%q' "$IDS_FILE") \\
-  --method $ARM --temperature 1.0 --n-samples 10
+  --method $ARM --temperature 1.0 --n-samples 10${MODEL_ARG}
 rc=\$?
 echo "When complete, merge (refuses to overwrite) with:"
-echo "  $cp -I scripts/cf748_merge_validate.py --in-a $(printf '%q' "${RES[0]}") --in-b $(printf '%q' "${RES[1]}") --split-a $(printf '%q' "$IDS_EVEN") --split-b $(printf '%q' "$IDS_ODD") --ids-file $(printf '%q' "$IDS_FILE") --method $ARM --temperature 1.0 --n-samples 10 --out-results-dir <merged results dir>"
+echo "  $cp -I scripts/cf748_merge_validate.py --in-a $(printf '%q' "${RES[0]}") --in-b $(printf '%q' "${RES[1]}") --split-a $(printf '%q' "$IDS_EVEN") --split-b $(printf '%q' "$IDS_ODD") --ids-file $(printf '%q' "$IDS_FILE") --method $ARM --temperature 1.0 --n-samples 10${MODEL_ARG} --out-results-dir <merged results dir>"
 (( rc == 0 && prc == 0 ))
 EOF
   fi

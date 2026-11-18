@@ -40,14 +40,14 @@ if [[ "$1" == "-c" ]]; then exit 0; fi
 if [[ "$1" == "-m" && "$2" == "bench.apps" ]]; then
   echo "STUBRUN CVD=${CUDA_VISIBLE_DEVICES-unset} V2=${VLLM_USE_V2_MODEL_RUNNER-unset} FI=${VLLM_USE_FLASHINFER_SAMPLER-unset} MP=${VLLM_WORKER_MULTIPROC_METHOD-unset} PATH=$PATH"
   echo "STUBARGS $*"
-  ids=""; res=""; prev=""
-  for a in "$@"; do [[ "$prev" == "--task-ids-file" ]] && ids="$a"; [[ "$prev" == "--results-dir" ]] && res="$a"; prev="$a"; done
+  ids=""; res=""; model=""; prev=""
+  for a in "$@"; do [[ "$prev" == "--task-ids-file" ]] && ids="$a"; [[ "$prev" == "--results-dir" ]] && res="$a"; [[ "$prev" == "--model" ]] && model="$a"; prev="$a"; done
   sleep "${STUB_SLEEP:-0}"
   if [[ -n "${STUB_RC:-}" ]]; then echo "STUB TRACEBACK boom"; exit "$STUB_RC"; fi
-  d="$res/Qwen--Qwen3-8B/CODEFORCES_interview"; mkdir -p "$d"
+  d="$res/${model//\//--}/CODEFORCES_interview"; mkdir -p "$d"
   for t in $(cat "$ids"); do
     echo "Completed problem_id=$t"
-    printf '{"model": "Qwen/Qwen3-8B", "backend": "vllm", "method": "pless_effk_nofloor", "temperature": 1.0, "task_id": %s, "source": "CODEFORCES", "difficulty": "interview", "samples": ["a","b","c","d","e","f","g","h","i","j"]}\n' "$t" >> "$d/pless_effk_nofloor_think_t1.0_t1.0.jsonl"
+    printf '{"model": "%s", "backend": "vllm", "method": "pless_effk_nofloor", "temperature": 1.0, "task_id": %s, "source": "CODEFORCES", "difficulty": "interview", "samples": ["a","b","c","d","e","f","g","h","i","j"]}\n' "$model" "$t" >> "$d/pless_effk_nofloor_think_t1.0_t1.0.jsonl"
   done
   exit 0
 fi
@@ -89,7 +89,8 @@ def env(tmp_path: Path):
     e = {k: v for k, v in os.environ.items()
          if k not in ("DRY_RUN", "SMOKE", "SMOKE_IDS", "SEED", "ARMS", "GPUS", "CUDA_VISIBLE_DEVICES",
                       "VLLM_USE_FLASHINFER_SAMPLER", "VLLM_USE_V2_MODEL_RUNNER", "VLLM_WORKER_MULTIPROC_METHOD",
-                      "EXPECT_HEAD", "MAX_MODEL_LEN", "GPU_MEM_UTIL")}
+                      "EXPECT_HEAD", "MAX_MODEL_LEN", "GPU_MEM_UTIL", "MODEL", "RESULTS_ROOT",
+                      "SMOKE_RESULTS_ROOT")}
     e.update(REPO=str(repo), BRANCH=BRANCH, VLLM_VENV=str(venv), NVIDIA_SMI_BIN=str(stubs / "nvidia-smi"),
              EXPECT_RUNNER_SHA256=_sha(repo / "bench/apps/runner.py"), GPU2_LAUNCHER_DETACHED="1",
              PGREP_SCOPE=str(tmp_path), LAUNCH_PATH=f"{venv}/bin:/usr/bin:/bin", STAGGER_SECONDS="0",
@@ -441,3 +442,215 @@ def test_secret_env_values_never_written(env, mode):
         else _grep_tree(repo / "logs", vals)
     assert hits == [], hits
     assert not any(v in r.stdout + r.stderr for v in vals)
+
+
+# ---------------------------------------------------------------- Qwen-default golden (A76 is live)
+# The Qwen defaults (paths, lock, logs, commands, manifest, generated scripts) must stay byte-identical
+# to the launcher at d40302a. Golden captured from that UNMODIFIED launcher with CF748_EFFK_WRITE_GOLDEN=1.
+GOLDEN = Path(__file__).resolve().parent / "data/gpu2_launch_cf748_effk_qwen_golden.json"
+DS_MODEL = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+DS_DIR = "deepseek-ai--DeepSeek-R1-Distill-Llama-8B"
+DS_SLUG = "deepseek-r1-distill-llama-8b"
+
+
+def _norm(text: str, tmp: Path) -> str:
+    import re
+    text = text.replace(str(tmp), "<TMP>").replace(sys.executable, "<PY>")
+    text = re.sub(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} IST", "<IST>", text)
+    text = re.sub(r"\d{8}_\d{6}", "<TS>", text)
+    text = re.sub(r"\b[0-9a-f]{64}\b", "<SHA>", text)
+    text = re.sub(r"\b[0-9a-f]{40}\b", "<HEAD>", text)
+    text = re.sub(r"(pid[ =]|PID[ =]|PID=)\d+", r"\1<PID>", text)
+    text = re.sub(r"lock=(flock|pidfile)", "lock=<LOCK>", text)   # flock on Linux, pidfile on macOS
+    return text
+
+
+def _manifest_view(man: dict, tmp: Path) -> dict:
+    m = json.loads(json.dumps(man))
+    m.pop("launcher_env_snapshot"); m.pop("hostname")
+    for g in m["gpus"].values():
+        g.pop("env_snapshot")
+    return json.loads(_norm(json.dumps(m, sort_keys=True), tmp))
+
+
+def _tree(root: Path, tmp: Path) -> list[str]:
+    return sorted(_norm(str(p.relative_to(tmp)), tmp) for p in root.rglob("*") if p.is_file()) if root.exists() else []
+
+
+def _capture(env, **extra) -> dict:
+    """Dry run (full + smoke) logs, then a full stub launch: manifest + generated scripts + file tree."""
+    repo, tmp, out = env["repo"], env["tmp"], {}
+    qlog = repo / "logs/gpu2_launch_cf748_effk.log"
+    for name, mode in (("dry_full", {}), ("dry_smoke", {"SMOKE": "1", "SMOKE_IDS": "6 8"})):
+        r = _run(env["env"], DRY_RUN="1", **mode, **extra)
+        assert r.returncode == 0, _qlog(repo) + r.stderr
+        out[name] = _norm(qlog.read_text(), tmp).splitlines()
+        qlog.unlink()
+    r = _run(env["env"], **extra)
+    assert r.returncode == 0, _qlog(repo) + r.stderr
+    for g in (0, 1):
+        _wait(repo / f"logs/cf748_effk_nofloor_gpu{g}.log", "WRAPPER DONE rc=0")
+    L = next(repo.glob("logs/cf748_effk_launch_*"))
+    out["manifest"] = _manifest_view(json.loads((L / "manifest.json").read_text()), tmp)
+    for f in ("integrity_check.sh", "gpu0/run_gpu0.sh", "gpu0/resume_gpu0.sh", "gpu1/run_gpu1.sh",
+              "gpu1/resume_gpu1.sh"):
+        out[f] = _norm((L / f).read_text(), tmp).splitlines()
+    out["tree_logs"] = _tree(repo / "logs", tmp)
+    out["tree_results"] = _tree(repo / "results", tmp)
+    return out
+
+
+@pytest.mark.parametrize("extra", [{}, {"MODEL": "Qwen/Qwen3-8B"}], ids=["unset", "explicit"])
+def test_qwen_default_matches_golden(env, extra):
+    got = _capture(env, **extra)
+    if os.environ.get("CF748_EFFK_WRITE_GOLDEN") == "1" and not extra:
+        GOLDEN.write_text(json.dumps(got, indent=1, sort_keys=True) + "\n")
+        pytest.skip(f"wrote {GOLDEN}")
+    want = json.loads(GOLDEN.read_text())
+    assert sorted(got) == sorted(want)
+    for k in want:
+        assert got[k] == want[k], k
+
+
+# ---------------------------------------------------------------- non-default MODEL (DeepSeek)
+def _ds_qlog(repo: Path) -> Path:
+    return repo / f"logs/gpu2_launch_cf748_effk_{DS_SLUG}.log"
+
+
+def test_deepseek_requires_max_model_len(env):
+    repo = env["repo"]
+    r = _run(env["env"], DRY_RUN="1", MODEL=DS_MODEL)
+    log = _ds_qlog(repo).read_text() if _ds_qlog(repo).exists() else ""
+    assert r.returncode != 0, log + r.stdout + r.stderr
+    assert "STOP:" in log and "MAX_MODEL_LEN" in log and "nothing launched" in log, log
+    assert not (repo / "logs/gpu2_launch_cf748_effk.log").exists()      # Qwen launcher log untouched
+    _assert_nothing_launched(env)
+
+
+def test_deepseek_dry_run_tagged_paths(env):
+    repo = env["repo"]
+    pidfile_mode = not (env["env"].get("FLOCK_BIN") or shutil.which("flock"))
+    qlock = repo / "logs/gpu2_launch_cf748_effk.lock"
+    if pidfile_mode:   # a LIVE holder of the Qwen lock must not block a DeepSeek launch (separate lock)
+        (repo / "logs").mkdir(exist_ok=True)
+        qlock.write_text(f"{os.getpid()}\n")
+    r = _run(env["env"], DRY_RUN="1", MODEL=DS_MODEL, MAX_MODEL_LEN="40960")
+    log = _ds_qlog(repo).read_text()
+    assert r.returncode == 0, log + r.stderr
+    _assert_nothing_launched(env)
+    assert not (repo / "logs/gpu2_launch_cf748_effk.log").exists()
+    if pidfile_mode:
+        assert qlock.read_text() == f"{os.getpid()}\n"            # Qwen lock untouched
+        rq = _run(env["env"], DRY_RUN="1")                         # ...and it still blocks a Qwen launch
+        assert rq.returncode != 0 and "holds" in _qlog(repo), _qlog(repo)
+        qlock.unlink(); (repo / "logs/gpu2_launch_cf748_effk.log").unlink()
+    for g in (0, 1):
+        line = next(l for l in log.splitlines() if f"DRY: GPU{g} would run:" in l)
+        for want in (f"MODEL={DS_MODEL}", "MAX_MODEL_LEN=40960", "MAX_TOKENS=32768", "SEED=42",
+                     f"RESULTS_DIR={repo}/results/_cf748_effk_nofloor_split_{DS_SLUG}/gpu{g}",
+                     "run_cf748_apps_qwen3.sh"):
+            assert want in line, (want, line)
+        pl = next(l for l in log.splitlines() if f"DRY: GPU{g} python output" in l)
+        assert f"/gpu{g}/{DS_DIR}/CODEFORCES_interview/cf748_gpu{g}.log" in pl, pl
+        assert f"logs/cf748_effk_nofloor_{DS_SLUG}_gpu{g}.log" in pl, pl
+    assert "Qwen" not in log, [l for l in log.splitlines() if "Qwen" in l]
+    # smoke dry run: tagged smoke root
+    r = _run(env["env"], DRY_RUN="1", SMOKE="1", MODEL=DS_MODEL, MAX_MODEL_LEN="40960")
+    assert r.returncode == 0
+    line = next(l for l in _ds_qlog(repo).read_text().splitlines() if "would run:" in l and "SMOKE" not in l
+                and "_smoke" in l)
+    assert f"results/_cf748_effk_nofloor_smoke_{DS_SLUG}/" in line, line
+    assert f"cf748_effk_nofloor_{DS_SLUG}_gpu0_smoke.log" in _ds_qlog(repo).read_text()
+
+
+def test_deepseek_stub_launch_manifest_and_merge_check(env):
+    repo = env["repo"]
+    r = _run(env["env"], MODEL=DS_MODEL, MAX_MODEL_LEN="40960")
+    log = _ds_qlog(repo).read_text()
+    assert r.returncode == 0, log + r.stderr
+    for g in (0, 1):
+        wl = repo / f"logs/cf748_effk_nofloor_{DS_SLUG}_gpu{g}.log"
+        _wait(wl, "WRAPPER DONE rc=0")
+        assert not (repo / f"logs/cf748_effk_nofloor_gpu{g}.log").exists()   # Qwen wrapper logs untouched
+    assert not (repo / "results/_cf748_effk_nofloor_split").exists()          # Qwen results root untouched
+    L = next(repo.glob("logs/cf748_effk_launch_*"))
+    man = json.loads((L / "manifest.json").read_text())
+    assert man["model"] == DS_MODEL
+    assert man["env"]["MAX_MODEL_LEN"] == "40960" and man["env"]["MAX_TOKENS"] == "32768"
+    for g in (0, 1):
+        res = repo / f"results/_cf748_effk_nofloor_split_{DS_SLUG}/gpu{g}"
+        assert man["gpus"][str(g)]["results_dir"] == str(res)
+        assert man["gpus"][str(g)]["runner_log"] == str(res / DS_DIR / f"CODEFORCES_interview/cf748_gpu{g}.log")
+        glog = (res / DS_DIR / f"CODEFORCES_interview/cf748_gpu{g}.log").read_text()
+        assert f"--model {DS_MODEL} " in glog and "--max-model-len 40960" in glog
+        assert "--max-new-tokens 32768" in glog and "--seed 42" in glog
+    # integrity check runs cf748_merge_validate.py with --model DS (records carry the DS model name)
+    ic = subprocess.run(["bash", str(L / "integrity_check.sh")], capture_output=True, text=True, timeout=60)
+    assert ic.returncode == 0, ic.stdout + ic.stderr
+    assert "CHECK OK" in ic.stdout and "a=374 b=374 union=748" in ic.stdout
+    assert f"--model {DS_MODEL}" in (L / "integrity_check.sh").read_text()
+
+
+
+# ---------------------------------------------------------------- MODEL validation (no shell injection)
+def test_model_injection_rejected_nothing_executed(env):
+    repo, tmp = env["repo"], env["tmp"]
+    bad = f"x/y$(touch {tmp}/PWNED)"
+    for mode in ({}, {"DRY_RUN": "1"}, {"SMOKE": "1"}):
+        r = _run(env["env"], MODEL=bad, MAX_MODEL_LEN="40960", **mode)
+        assert r.returncode != 0, r.stdout + r.stderr
+        time.sleep(1)
+        assert not (tmp / "PWNED").exists() and not (repo / "PWNED").exists()
+        assert not list(repo.glob("logs/cf748_effk_launch_*"))
+        assert not (repo / "results").exists()
+    logs = "".join(p.read_text() for p in repo.glob("logs/*.log"))
+    assert "STOP:" in logs and "MODEL" in logs and "nothing launched" in logs, logs
+
+
+@pytest.mark.parametrize("bad", ["   ", "foo/", "a/b/c", " Qwen/Qwen3-8B", "Qwen/Qwen3-8B ", "/x", "a b/c"])
+def test_model_bad_shape_rejected(env, bad):
+    repo = env["repo"]
+    r = _run(env["env"], DRY_RUN="1", MODEL=bad, MAX_MODEL_LEN="40960")
+    logs = "".join(p.read_text() for p in repo.glob("logs/*.log"))
+    assert r.returncode != 0, logs + r.stdout
+    assert "STOP:" in logs and "MODEL must match" in logs, logs
+    _assert_nothing_launched(env)
+
+
+@pytest.mark.parametrize("ok", ["qwen/qwen3-8b", DS_MODEL])
+def test_model_good_shape_accepted(env, ok):
+    r = _run(env["env"], DRY_RUN="1", MODEL=ok, MAX_MODEL_LEN="40960")
+    assert r.returncode == 0, "".join(p.read_text() for p in env["repo"].glob("logs/*.log")) + r.stderr
+
+
+def test_deepseek_launch_dir_tagged(env):
+    repo = env["repo"]
+    r = _run(env["env"], SMOKE="1", MODEL=DS_MODEL, MAX_MODEL_LEN="40960")
+    assert r.returncode == 0, _ds_qlog(repo).read_text() + r.stderr
+    L = next(repo.glob("logs/cf748_effk_launch_*"))
+    assert L.name.endswith(f"_{DS_SLUG}_smoke"), L.name
+    _wait(repo / f"logs/cf748_effk_nofloor_{DS_SLUG}_gpu0_smoke.log", "WRAPPER DONE rc=0")
+    ic = subprocess.run(["bash", str(L / "integrity_check.sh")], capture_output=True, text=True, timeout=60)
+    assert ic.returncode == 0 and "SMOKE CHECK OK" in ic.stdout, ic.stdout + ic.stderr
+
+
+# ---------------------------------------------------------------- cross-model busy detection
+QWEN_PROCS = ["python -m bench.apps --model Qwen/Qwen3-8B --results-dir R",
+              "bash logs/cf748_effk_launch_20261117_120000/gpu0/run_gpu0.sh"]
+DS_PROCS = [f"python -m bench.apps --model {DS_MODEL} --results-dir R",
+            f"bash logs/cf748_effk_launch_20261117_120000_{DS_SLUG}/gpu1/run_gpu1.sh"]
+
+
+@pytest.mark.parametrize("cmd", QWEN_PROCS)
+def test_running_qwen_job_blocks_deepseek_launch(env, cmd):
+    _fake_proc(env, cmd)
+    r = _run(env["env"], DRY_RUN="1", MODEL=DS_MODEL, MAX_MODEL_LEN="40960")
+    log = _ds_qlog(env["repo"]).read_text()
+    assert r.returncode != 0 and "already running" in log, log
+    _assert_nothing_launched(env)
+
+
+@pytest.mark.parametrize("cmd", DS_PROCS)
+def test_running_deepseek_job_blocks_qwen_launch(env, cmd):
+    _fake_proc(env, cmd)
+    _stop(env, "already running", DRY_RUN="1")

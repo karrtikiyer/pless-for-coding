@@ -203,3 +203,27 @@ def test_check_only_allow_incomplete_reports_progress(fx):
 def test_allow_incomplete_never_writes(fx):
     r = _cli(fx, "--allow-incomplete", ok=False)
     assert r.returncode != 0 and "check-only" in r.stderr
+
+
+def test_deepseek_model_dir_and_model_check(tmp_path):
+    """--model deepseek-ai/DeepSeek-R1-Distill-Llama-8B -> model dir deepseek-ai--DeepSeek-R1-Distill-Llama-8B
+    for inputs and output, and the records' model field is checked against it."""
+    model = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+    sub = Path("deepseek-ai--DeepSeek-R1-Distill-Llama-8B") / "CODEFORCES_interview"
+    ids = tmp_path / "ids.txt"
+    ids.write_text("".join(f"{i}\n" for i in IDS))
+    a, b, out = tmp_path / "gpu0", tmp_path / "gpu1", tmp_path / "merged"
+    for root, part in ((a, IDS[0::2]), (b, IDS[1::2])):
+        (root / sub).mkdir(parents=True)
+        (root / sub / FNAME).write_text("".join(json.dumps(_rec(t, model=model)) + "\n" for t in part))
+    base = [sys.executable, "-I", str(SCRIPT), "--in-a", str(a), "--in-b", str(b), "--ids-file", str(ids),
+            "--expected-count", str(len(IDS)), "--n-samples", "3", "--method", METHOD, "--temperature", "1.0"]
+    r = subprocess.run(base + ["--check-only"], capture_output=True, text=True)   # default (Qwen) model dir
+    assert r.returncode != 0 and "Qwen--Qwen3-8B" in r.stderr, r.stdout + r.stderr
+    r = subprocess.run(base + ["--model", model, "--out-results-dir", str(out)], capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert [json.loads(l)["task_id"] for l in (out / sub / FNAME).read_text().splitlines()] == IDS
+    # a record carrying the wrong model name is rejected
+    (b / sub / FNAME).write_text("".join(json.dumps(_rec(t)) + "\n" for t in IDS[1::2]))
+    r = subprocess.run(base + ["--model", model, "--check-only"], capture_output=True, text=True)
+    assert r.returncode != 0 and "model" in r.stderr, r.stdout + r.stderr
