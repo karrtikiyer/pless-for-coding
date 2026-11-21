@@ -40,14 +40,21 @@ if [[ "$1" == "-c" ]]; then exit 0; fi
 if [[ "$1" == "-m" && "$2" == "bench.apps" ]]; then
   echo "STUBRUN CVD=${CUDA_VISIBLE_DEVICES-unset} V2=${VLLM_USE_V2_MODEL_RUNNER-unset} FI=${VLLM_USE_FLASHINFER_SAMPLER-unset} MP=${VLLM_WORKER_MULTIPROC_METHOD-unset} PATH=$PATH"
   echo "STUBARGS $*"
-  ids=""; res=""; model=""; prev=""
-  for a in "$@"; do [[ "$prev" == "--task-ids-file" ]] && ids="$a"; [[ "$prev" == "--results-dir" ]] && res="$a"; [[ "$prev" == "--model" ]] && model="$a"; prev="$a"; done
+  ids=""; res=""; model=""; method=""; topp=""; rk=""; prev=""
+  for a in "$@"; do [[ "$prev" == "--task-ids-file" ]] && ids="$a"; [[ "$prev" == "--results-dir" ]] && res="$a"; [[ "$prev" == "--model" ]] && model="$a"
+    [[ "$prev" == "--method" ]] && method="$a"; [[ "$prev" == "--top-p" ]] && topp="$a"; [[ "$prev" == "--renyi-k" ]] && rk="$a"; prev="$a"; done
+  # Output name = bench.apps.runner._method_key/_output_path for the three CF-748 launcher arms.
+  case "$method" in
+    temp)        fname="temp_p${topp}_think_t1.0_t1.0.jsonl"; extra=", \"top_p\": $topp, \"top_k\": 0" ;;
+    pless_renyi) fname="pless_renyi_think_t1.0_k${rk}_t1.0.jsonl"; extra=", \"renyi_k\": $rk" ;;
+    *)           method="pless_effk_nofloor"; fname="pless_effk_nofloor_think_t1.0_t1.0.jsonl"; extra="" ;;
+  esac
   sleep "${STUB_SLEEP:-0}"
   if [[ -n "${STUB_RC:-}" ]]; then echo "STUB TRACEBACK boom"; exit "$STUB_RC"; fi
   d="$res/${model//\//--}/CODEFORCES_interview"; mkdir -p "$d"
   for t in $(cat "$ids"); do
     echo "Completed problem_id=$t"
-    printf '{"model": "%s", "backend": "vllm", "method": "pless_effk_nofloor", "temperature": 1.0, "task_id": %s, "source": "CODEFORCES", "difficulty": "interview", "samples": ["a","b","c","d","e","f","g","h","i","j"]}\n' "$model" "$t" >> "$d/pless_effk_nofloor_think_t1.0_t1.0.jsonl"
+    printf '{"model": "%s", "backend": "vllm", "method": "%s", "temperature": 1.0, "task_id": %s, "source": "CODEFORCES", "difficulty": "interview", "samples": ["a","b","c","d","e","f","g","h","i","j"]%s}\n' "$model" "$method" "$t" "$extra" >> "$d/$fname"
   done
   exit 0
 fi
@@ -90,7 +97,7 @@ def env(tmp_path: Path):
          if k not in ("DRY_RUN", "SMOKE", "SMOKE_IDS", "SEED", "ARMS", "GPUS", "CUDA_VISIBLE_DEVICES",
                       "VLLM_USE_FLASHINFER_SAMPLER", "VLLM_USE_V2_MODEL_RUNNER", "VLLM_WORKER_MULTIPROC_METHOD",
                       "EXPECT_HEAD", "MAX_MODEL_LEN", "GPU_MEM_UTIL", "MODEL", "RESULTS_ROOT",
-                      "SMOKE_RESULTS_ROOT")}
+                      "SMOKE_RESULTS_ROOT", "ARM")}
     e.update(REPO=str(repo), BRANCH=BRANCH, VLLM_VENV=str(venv), NVIDIA_SMI_BIN=str(stubs / "nvidia-smi"),
              EXPECT_RUNNER_SHA256=_sha(repo / "bench/apps/runner.py"), GPU2_LAUNCHER_DETACHED="1",
              PGREP_SCOPE=str(tmp_path), LAUNCH_PATH=f"{venv}/bin:/usr/bin:/bin", STAGGER_SECONDS="0",
@@ -654,3 +661,235 @@ def test_running_qwen_job_blocks_deepseek_launch(env, cmd):
 def test_running_deepseek_job_blocks_qwen_launch(env, cmd):
     _fake_proc(env, cmd)
     _stop(env, "already running", DRY_RUN="1")
+
+
+# ---------------------------------------------------------------- ARM override (topp0.9 / renyi_k0.35)
+# The default arm (pless_effk_nofloor) stays byte-identical (golden above). Each extra arm gets an
+# "_<arm>" tag after the model tag on every default path / log / lock / launch dir, and its own
+# --method / output filename (bench.apps.runner._method_key + _output_path) in the integrity/merge commands.
+NEW_ARMS = {
+    "topp0.9": ("temp", "temp_p0.9_think_t1.0_t1.0.jsonl", "--method temp --top-p 0.9 --top-k 0 --temperature 1.0"),
+    "renyi_k0.35": ("pless_renyi", "pless_renyi_think_t1.0_k0.35_t1.0.jsonl",
+                    "--method pless_renyi --renyi-k 0.35 --temperature 1.0"),
+}
+MODELS = {"qwen": ({}, "", "Qwen--Qwen3-8B"),
+          "deepseek": ({"MODEL": DS_MODEL, "MAX_MODEL_LEN": "40960"}, f"_{DS_SLUG}", DS_DIR)}
+
+
+def _arm_qlog(repo: Path, mtag: str, arm: str) -> Path:
+    return repo / f"logs/gpu2_launch_cf748_effk{mtag}_{arm}.log"
+
+
+def _no_default_arm_artifacts(repo: Path, mtag: str) -> None:
+    """Nothing an effk launch (same model) would write was touched by an extra-arm launch."""
+    assert not (repo / f"logs/gpu2_launch_cf748_effk{mtag}.log").exists()
+    assert not (repo / f"results/_cf748_effk_nofloor_split{mtag}").exists()
+    assert not (repo / f"results/_cf748_effk_nofloor_smoke{mtag}").exists()
+    for g in (0, 1):
+        assert not (repo / f"logs/cf748_effk_nofloor{mtag}_gpu{g}.log").exists()
+
+
+@pytest.mark.parametrize("model", list(MODELS))
+@pytest.mark.parametrize("arm", list(NEW_ARMS))
+def test_new_arm_dry_run_tagged_paths(env, arm, model):
+    repo = env["repo"]
+    extra, mtag, mdir = MODELS[model]
+    method, out_file, _ = NEW_ARMS[arm]
+    r = _run(env["env"], DRY_RUN="1", ARM=arm, **extra)
+    ql = _arm_qlog(repo, mtag, arm)
+    log = ql.read_text() if ql.exists() else ""
+    assert r.returncode == 0, log + r.stdout + r.stderr + "".join(p.read_text() for p in repo.glob("logs/*.log"))
+    _assert_nothing_launched(env)
+    _no_default_arm_artifacts(repo, mtag)
+    assert f"arm={arm} seed=42" in log
+    assert f"arm={arm} -> method={method} output_file={out_file}" in log
+    for g in (0, 1):
+        res = f"{repo}/results/_cf748_effk_nofloor_split{mtag}_{arm}/gpu{g}"
+        line = next(l for l in log.splitlines() if f"DRY: GPU{g} would run:" in l)
+        for want in (f"ARMS={arm}", "SEED=42", f"RESULTS_DIR={res}", "MAX_TOKENS=32768", "N_SAMPLES=10",
+                     "GPU_MEM_UTIL=0.96", f"GPUS={g}", "run_cf748_apps_qwen3.sh"):
+            assert want in line, (want, line)
+        assert "ARMS=pless_effk_nofloor" not in line
+        wl = next(l for l in log.splitlines() if f"DRY: GPU{g} would write" in l)
+        assert f"/logs/cf748_effk_launch_" in wl and f"{mtag}_{arm}/gpu{g}/run_gpu{g}.sh" in wl, wl
+        pl = next(l for l in log.splitlines() if f"DRY: GPU{g} python output" in l)
+        assert f"{res}/{mdir}/CODEFORCES_interview/cf748_gpu{g}.log" in pl, pl
+        assert f"logs/cf748_effk_nofloor{mtag}_{arm}_gpu{g}.log" in pl, pl
+        assert f"existing results: GPU{g} none ({res}/{mdir}/CODEFORCES_interview/{out_file} absent)" in log
+    # smoke dry run: arm-tagged smoke root, smoke wrapper log
+    r = _run(env["env"], DRY_RUN="1", SMOKE="1", SMOKE_IDS="6 8", ARM=arm, **extra)
+    assert r.returncode == 0, ql.read_text()
+    slog = ql.read_text()
+    line = [l for l in slog.splitlines() if "DRY: GPU0 would run:" in l][-1]
+    assert f"results/_cf748_effk_nofloor_smoke{mtag}_{arm}/" in line and f"ARMS={arm}" in line, line
+    assert f"logs/cf748_effk_nofloor{mtag}_{arm}_gpu0_smoke.log" in slog
+    assert f"{mtag}_{arm}_smoke/gpu0/run_gpu0.sh" in slog
+    _no_default_arm_artifacts(repo, mtag)
+
+
+@pytest.mark.parametrize("model", list(MODELS))
+@pytest.mark.parametrize("arm", list(NEW_ARMS))
+def test_new_arm_stub_launch_integrity_and_merge(env, arm, model):
+    repo, tmp = env["repo"], env["tmp"]
+    extra, mtag, mdir = MODELS[model]
+    method, out_file, args = NEW_ARMS[arm]
+    r = _run(env["env"], ARM=arm, **extra)
+    log = _arm_qlog(repo, mtag, arm).read_text()
+    assert r.returncode == 0, log + r.stderr
+    for g in (0, 1):
+        _wait(repo / f"logs/cf748_effk_nofloor{mtag}_{arm}_gpu{g}.log", "WRAPPER DONE rc=0")
+    _no_default_arm_artifacts(repo, mtag)
+    ldirs = list(repo.glob("logs/cf748_effk_launch_*"))
+    assert len(ldirs) == 1 and ldirs[0].name.endswith(f"{mtag}_{arm}"), ldirs
+    L = ldirs[0]
+    man = json.loads((L / "manifest.json").read_text())
+    assert man["arm"] == arm and man["method"] == method and man["output_file"] == out_file
+    assert man["seed"] == 42 and man["env"]["SEED"] == "42" and man["env"]["ARMS"] == arm
+    for g in (0, 1):
+        res = repo / f"results/_cf748_effk_nofloor_split{mtag}_{arm}/gpu{g}"
+        assert man["gpus"][str(g)]["results_dir"] == str(res)
+        assert man["gpus"][str(g)]["runner_log"] == str(res / mdir / f"CODEFORCES_interview/cf748_gpu{g}.log")
+        glog = (res / mdir / f"CODEFORCES_interview/cf748_gpu{g}.log").read_text()
+        assert f"{args} --seed 42" in glog, glog
+        assert (res / mdir / "CODEFORCES_interview" / out_file).is_file()
+        assert str(res) in (L / f"gpu{g}/resume_gpu{g}.sh").read_text()
+    ic_text = (L / "integrity_check.sh").read_text()
+    assert f"--method {method} --temperature 1.0 --n-samples 10" in ic_text
+    assert f"--filename {out_file}" in ic_text and "pless_effk_nofloor" not in ic_text
+    ic = subprocess.run(["bash", str(L / "integrity_check.sh")], capture_output=True, text=True, timeout=60)
+    assert ic.returncode == 0, ic.stdout + ic.stderr
+    assert "CHECK OK" in ic.stdout and "a=374 b=374 union=748" in ic.stdout
+    assert "GPU0 records=374 completed_line=yes" in ic.stdout and "GPU1 records=374 completed_line=yes" in ic.stdout
+    # the printed merge command works as printed (out dir filled in)
+    merge = next(l for l in ic.stdout.splitlines() if "scripts/cf748_merge_validate.py" in l and "--out-results-dir" in l)
+    merged = tmp / "merged"
+    m = subprocess.run(["bash", "-c", "cd " + str(repo) + " && " + merge.strip().replace("<merged results dir>", str(merged))],
+                       capture_output=True, text=True, timeout=60)
+    assert m.returncode == 0 and "MERGE OK" in m.stdout, m.stdout + m.stderr
+    recs = [json.loads(l) for l in (merged / mdir / "CODEFORCES_interview" / out_file).read_text().splitlines()]
+    assert len(recs) == 748 and {x["method"] for x in recs} == {method}
+
+
+@pytest.mark.parametrize("arm", list(NEW_ARMS))
+def test_new_arm_stub_smoke(env, arm):
+    repo = env["repo"]
+    method, out_file, args = NEW_ARMS[arm]
+    r = _run(env["env"], SMOKE="1", SMOKE_IDS="6 8", ARM=arm)
+    assert r.returncode == 0, _arm_qlog(repo, "", arm).read_text() + r.stderr
+    L = next(repo.glob("logs/cf748_effk_launch_*"))
+    assert L.name.endswith(f"_{arm}_smoke"), L.name
+    _wait(repo / f"logs/cf748_effk_nofloor_{arm}_gpu0_smoke.log", "WRAPPER DONE rc=0")
+    man = json.loads((L / "manifest.json").read_text())
+    res = Path(man["gpus"]["0"]["results_dir"])
+    assert f"_cf748_effk_nofloor_smoke_{arm}" in str(res)
+    assert (res / OUT_SUB / out_file).is_file()
+    ic = subprocess.run(["bash", str(L / "integrity_check.sh")], capture_output=True, text=True, timeout=60)
+    assert ic.returncode == 0 and "SMOKE CHECK OK" in ic.stdout, ic.stdout + ic.stderr
+    assert f"method={method}" in ic.stdout and "GPU0 records=2 completed_line=yes" in ic.stdout
+    _no_default_arm_artifacts(repo, "")
+
+
+def test_new_arm_does_not_need_effk_in_runner(env):
+    """The pless_effk_nofloor/register() gate is effk-only: topp0.9 / renyi_k0.35 still launch from a runner
+    without it (they only need their own method string), while the effk arm STOPs."""
+    p = env["repo"] / "bench/apps/runner.py"
+    p.write_text(p.read_text().replace("pless_effk_nofloor", "pless_effk_xx"))
+    _git(env["repo"], "commit", "-qam", "old runner")
+    for arm in NEW_ARMS:
+        r = _run(env["env"], DRY_RUN="1", ARM=arm, EXPECT_RUNNER_SHA256=_sha(p))
+        assert r.returncode == 0, _arm_qlog(env["repo"], "", arm).read_text()
+    _stop(env, "runner lacks", DRY_RUN="1", EXPECT_RUNNER_SHA256=_sha(p))
+
+
+@pytest.mark.parametrize("arm,old,new", [
+    ("topp0.9", '"temp"', '"tmp"'),
+    ("renyi_k0.35", '"pless_renyi"', '"pless_renyi_x"'),
+])
+def test_new_arm_gate_runner_lacks_method(env, arm, old, new):
+    p = env["repo"] / "bench/apps/runner.py"
+    p.write_text(p.read_text().replace(old, new))
+    _git(env["repo"], "commit", "-qam", "old runner")
+    r = _run(env["env"], DRY_RUN="1", ARM=arm, EXPECT_RUNNER_SHA256=_sha(p))
+    log = _arm_qlog(env["repo"], "", arm).read_text()
+    assert r.returncode != 0 and "STOP:" in log and "runner lacks" in log and "nothing launched" in log, log
+    _assert_nothing_launched(env)
+
+
+@pytest.mark.parametrize("arm,old,new", [
+    ("topp0.9", "topp*)", "toppx*)"),
+    ("topp0.9", "--top-k 0 --temperature 1.0", "--top-k 20 --temperature 1.0"),
+    ("renyi_k0.35", "renyi_k*)", "renyik*)"),
+    ("renyi_k0.35", "--renyi-k ${1#renyi_k} --temperature 1.0", "--renyi-k ${1#renyi_k} --temperature 0.6"),
+])
+def test_new_arm_gate_run_script_arm_args(env, arm, old, new):
+    p = env["repo"] / "run_cf748_apps_qwen3.sh"
+    assert old in p.read_text()
+    p.write_text(p.read_text().replace(old, new))
+    _git(env["repo"], "commit", "-qam", "changed run script")
+    r = _run(env["env"], DRY_RUN="1", ARM=arm)
+    log = _arm_qlog(env["repo"], "", arm).read_text()
+    assert r.returncode != 0 and "STOP:" in log and f"lacks the {arm} arm" in log, log
+    _assert_nothing_launched(env)
+
+
+@pytest.mark.parametrize("bad", ["TOPP0.9", "topp 0.9", "", " topp0.9", "topp0.9 ", "topp0.95", "renyi_k0.4",
+                                 "pless", "temp", "pless_effk_nofloor;x", "../x"])
+def test_arm_not_in_allow_list_rejected(env, bad):
+    repo = env["repo"]
+    r = _run(env["env"], DRY_RUN="1", ARM=bad)
+    logs = "".join(p.read_text() for p in repo.glob("logs/*.log"))
+    assert r.returncode != 0, logs + r.stdout
+    assert "STOP:" in logs and "ARM must be one of" in logs and "nothing launched" in logs, logs
+    assert not (repo / "logs/gpu2_launch_cf748_effk.log").exists()
+    _assert_nothing_launched(env)
+
+
+def test_arm_injection_rejected_nothing_executed(env):
+    repo, tmp = env["repo"], env["tmp"]
+    bad = f"x$(touch {tmp}/PWNED)"
+    for mode in ({}, {"DRY_RUN": "1"}, {"SMOKE": "1"}, {"MODEL": DS_MODEL, "MAX_MODEL_LEN": "40960"}):
+        r = _run(env["env"], ARM=bad, **mode)
+        assert r.returncode != 0, r.stdout + r.stderr
+        time.sleep(1)
+        assert not (tmp / "PWNED").exists() and not (repo / "PWNED").exists()
+        assert not list(repo.glob("logs/cf748_effk_launch_*"))
+        assert not (repo / "results").exists()
+    logs = "".join(p.read_text() for p in repo.glob("logs/*.log"))
+    assert "STOP:" in logs and "ARM must be one of" in logs, logs
+    assert not (repo / "logs/gpu2_launch_cf748_effk.log").exists()
+
+
+def test_explicit_default_arm_is_default(env):
+    """ARM=pless_effk_nofloor == ARM unset: untagged log/lock/paths."""
+    r = _run(env["env"], DRY_RUN="1", ARM="pless_effk_nofloor")
+    log = _qlog(env["repo"])
+    assert r.returncode == 0, log
+    assert "results/_cf748_effk_nofloor_split/gpu0" in log and "-> method=" not in log
+    assert list((env["repo"] / "logs").glob("gpu2_launch_cf748_effk*.log")) == [env["repo"] / "logs/gpu2_launch_cf748_effk.log"]
+
+
+# cross-arm busy detection: the busy patterns are model/arm-neutral
+EFFK_PROCS = ["python -m bench.apps --model Qwen/Qwen3-8B --method pless_effk_nofloor --results-dir R",
+              "bash logs/cf748_effk_launch_20261117_120000/gpu0/run_gpu0.sh",
+              f"bash logs/cf748_effk_launch_20261117_120000_{DS_SLUG}/gpu1/run_gpu1.sh"]
+TOPP_PROCS = ["python -m bench.apps --model Qwen/Qwen3-8B --method temp --top-p 0.9 --results-dir R",
+              "bash logs/cf748_effk_launch_20261121_120000_topp0.9/gpu0/run_gpu0.sh",
+              f"bash logs/cf748_effk_launch_20261121_120000_{DS_SLUG}_renyi_k0.35/gpu1/run_gpu1.sh"]
+
+
+@pytest.mark.parametrize("cmd", EFFK_PROCS)
+@pytest.mark.parametrize("arm", list(NEW_ARMS))
+def test_running_effk_job_blocks_new_arm_launch(env, cmd, arm):
+    _fake_proc(env, cmd)
+    r = _run(env["env"], DRY_RUN="1", ARM=arm)
+    log = _arm_qlog(env["repo"], "", arm).read_text()
+    assert r.returncode != 0 and "already running" in log, log
+    _assert_nothing_launched(env)
+
+
+@pytest.mark.parametrize("cmd", TOPP_PROCS)
+def test_running_new_arm_job_blocks_effk_launch(env, cmd):
+    _fake_proc(env, cmd)
+    _stop(env, "already running", DRY_RUN="1")
+    r = _run(env["env"], DRY_RUN="1", MODEL=DS_MODEL, MAX_MODEL_LEN="40960")
+    assert r.returncode != 0 and "already running" in _ds_qlog(env["repo"]).read_text()

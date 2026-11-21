@@ -54,6 +54,15 @@
 #   collide with a Qwen launch; it REQUIRES MAX_MODEL_LEN (passed through to the run script / vLLM). The
 #   runner is still run_cf748_apps_qwen3.sh (the pless_effk_nofloor arm is model-neutral; its TOKENIZER is
 #   only used by the eval step, which SKIP_EVAL=1 skips).
+# ARM (default pless_effk_nofloor; every default path / lock / log name / manifest / generated script is
+#   unchanged for it). Allow-list: topp0.9 (run-script arm -> --method temp --top-p 0.9 --top-k 0
+#   --temperature 1.0 -> temp_p0.9_think_t1.0_t1.0.jsonl) and renyi_k0.35 (--method pless_renyi --renyi-k
+#   0.35 --temperature 1.0 -> pless_renyi_think_t1.0_k0.35_t1.0.jsonl); anything else STOPs. A non-default
+#   arm appends "_<arm>" after the model tag to the default RESULTS_ROOT / SMOKE_RESULTS_ROOT, the launcher
+#   log + lock, the launch dir and the wrapper logs; its gate checks the runner has the method and the run
+#   script has the exact arm_args line (the effk register() gate applies to the effk arm only); the
+#   integrity/merge commands get --method <method> --filename <output file>; the manifest gets method /
+#   output_file. The busy-process gate is arm/model-neutral: any CF-748 run blocks any other launch.
 # Test hooks: GPU2_LAUNCHER_DETACHED=1 (stay in foreground), PGREP_SCOPE (regex prefix for every
 #   pgrep pattern; empty = production patterns).
 set -uo pipefail
@@ -85,8 +94,25 @@ if [[ "$MODEL" != "$DEFAULT_MODEL" ]]; then
   MODEL_TAG="_$(printf '%s' "${MODEL##*/}" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9._-' '-')"
   MODEL_ARG=" --model $(printf '%q' "$MODEL")"
 fi
-RESULTS_ROOT="${RESULTS_ROOT:-$REPO/results/_cf748_effk_nofloor_split${MODEL_TAG}}"
-SMOKE_RESULTS_ROOT="${SMOKE_RESULTS_ROOT:-$REPO/results/_cf748_effk_nofloor_smoke${MODEL_TAG}}"
+DEFAULT_ARM="pless_effk_nofloor"
+ARM="${ARM-$DEFAULT_ARM}"       # unset -> default; set-but-empty is rejected below (allow-list)
+ARM_TAG=""                     # empty for the default arm -> paths byte-identical to the effk launches
+ARM_OK=1
+case "$ARM" in   # allow-list; METHOD / OUT_FILE = what bench.apps.runner (_method_key + _output_path) writes
+  pless_effk_nofloor) METHOD="pless_effk_nofloor"; OUT_FILE="pless_effk_nofloor_think_t1.0_t1.0.jsonl" ;;
+  topp0.9)            METHOD="temp";               OUT_FILE="temp_p0.9_think_t1.0_t1.0.jsonl" ;;
+  renyi_k0.35)        METHOD="pless_renyi";        OUT_FILE="pless_renyi_think_t1.0_k0.35_t1.0.jsonl" ;;
+  *)                  ARM_OK=0; METHOD=""; OUT_FILE="" ;;
+esac
+FILE_ARG=""                    # extra cf748_merge_validate.py arg (its default filename only fits plain methods)
+if (( ! ARM_OK )); then
+  ARM_TAG="_invalid-arm"       # fixed tag: a rejected ARM never reaches a path, log or lock name
+elif [[ "$ARM" != "$DEFAULT_ARM" ]]; then
+  ARM_TAG="_$(printf '%s' "$ARM" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9._-' '-')"
+  FILE_ARG=" --filename $(printf '%q' "$OUT_FILE")"
+fi
+RESULTS_ROOT="${RESULTS_ROOT:-$REPO/results/_cf748_effk_nofloor_split${MODEL_TAG}${ARM_TAG}}"
+SMOKE_RESULTS_ROOT="${SMOKE_RESULTS_ROOT:-$REPO/results/_cf748_effk_nofloor_smoke${MODEL_TAG}${ARM_TAG}}"
 GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.96}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-}"
 GPU_FREE_MIB="${GPU_FREE_MIB:-2000}"
@@ -104,13 +130,12 @@ NVSMI_TIMEOUT_SECONDS="${NVSMI_TIMEOUT_SECONDS:-60}"
 PGREP_SCOPE="${PGREP_SCOPE:-}"
 
 SEED_VALUE=42
-ARM="pless_effk_nofloor"
 RUNNER="bench/apps/runner.py"
 RUN_SCRIPT="run_cf748_apps_qwen3.sh"
 PINNED_FILES=( "$RUNNER" "$RUN_SCRIPT" bench/generator_vllm.py bench/pless_variants_vllm.py
                scripts/cf748_split_ids.py scripts/cf748_merge_validate.py scripts/gpu2_launch_cf748_effk_nofloor.sh )
-QLOG="$LOG_DIR/gpu2_launch_cf748_effk${MODEL_TAG}.log"
-LOCKFILE="$LOG_DIR/gpu2_launch_cf748_effk${MODEL_TAG}.lock"
+QLOG="$LOG_DIR/gpu2_launch_cf748_effk${MODEL_TAG}${ARM_TAG}.log"
+LOCKFILE="$LOG_DIR/gpu2_launch_cf748_effk${MODEL_TAG}${ARM_TAG}.lock"
 BUSY_PATS=( "$(scoped ' -m bench\.apps')" "$(scoped 'run_cf748_apps_qwen3\.sh')"
             "$(scoped 'run_pless_variants_')" "$(scoped 'cf748_effk_launch_.*/run_gpu[01]\.sh')" )
 ENV_UNSET=( -u MULTI_ARM -u MAX_PROBLEMS -u CUDA_VISIBLE_DEVICES -u VLLM_WORKER_MULTIPROC_METHOD )
@@ -124,6 +149,8 @@ mkdir -p "$LOG_DIR" || { echo "cannot create $LOG_DIR" >&2; exit 2; }
 # is already tr-sanitised, so the log/lock names used by this stop() are safe even for a rejected MODEL.)
 [[ "$MODEL" =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]] \
   || stop "MODEL must match ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\$ (an HF 'org/name' id; got '$MODEL')"
+# ARM selects the run script's arm (ARMS=) and reaches paths: only the allow-listed arms are accepted.
+(( ARM_OK )) || stop "ARM must be one of: pless_effk_nofloor (default) topp0.9 renyi_k0.35 (got '$ARM')"
 [[ "$DRY_RUN" == 0 || "$DRY_RUN" == 1 ]] || stop "DRY_RUN must be 0 or 1 (got '$DRY_RUN')"
 [[ "$SMOKE" == 0 || "$SMOKE" == 1 ]] || stop "SMOKE must be 0 or 1 (got '$SMOKE')"
 [[ "$SMOKE_GPU" == 0 || "$SMOKE_GPU" == 1 ]] || stop "SMOKE_GPU must be 0 or 1 (got '$SMOKE_GPU')"
@@ -167,6 +194,7 @@ fi
 
 log "==== launcher start pid=$$ REPO=$REPO BRANCH=$BRANCH DRY_RUN=$DRY_RUN SMOKE=$SMOKE arm=$ARM seed=$SEED_VALUE lock=${FLOCK_BIN:+flock}${FLOCK_BIN:-pidfile}"
 log "seed=$SEED_VALUE: the output records do NOT store the seed; the launch-dir manifest.json is the record"
+[[ "$ARM" != "$DEFAULT_ARM" ]] && log "arm=$ARM -> method=$METHOD output_file=$OUT_FILE (run script ARMS=$ARM)"
 cd "$REPO" || stop "cannot cd to REPO=$REPO"
 
 # ---------------------------------------------------------------- 3. multiprocessing start method
@@ -202,11 +230,26 @@ fi
 log "branch=$cur_branch, tracked tree clean; HEAD=$HEAD_SHA (no pull performed by this launcher)"
 [[ -f "$REPO/$RUNNER" ]] || stop "runner missing: $REPO/$RUNNER"
 [[ -f "$REPO/$RUN_SCRIPT" ]] || stop "run script missing: $REPO/$RUN_SCRIPT"
-grep -q "\"$ARM\"" "$REPO/$RUNNER" && grep -q "register()" "$REPO/$RUNNER" \
-  || stop "runner lacks '$ARM' / register() -- old code, refusing to launch"
-grep -q "^ *$ARM)" "$REPO/$RUN_SCRIPT" || stop "$RUN_SCRIPT lacks the $ARM arm -- old code, refusing to launch"
-grep -q 'SEED:+--seed' "$REPO/$RUN_SCRIPT" || stop "$RUN_SCRIPT lacks the SEED passthrough -- old code, refusing to launch"
-log "runner has $ARM + register(); $RUN_SCRIPT has the $ARM arm + SEED passthrough"
+if [[ "$ARM" == "$DEFAULT_ARM" ]]; then
+  grep -q "\"$ARM\"" "$REPO/$RUNNER" && grep -q "register()" "$REPO/$RUNNER" \
+    || stop "runner lacks '$ARM' / register() -- old code, refusing to launch"
+  grep -q "^ *$ARM)" "$REPO/$RUN_SCRIPT" || stop "$RUN_SCRIPT lacks the $ARM arm -- old code, refusing to launch"
+  grep -q 'SEED:+--seed' "$REPO/$RUN_SCRIPT" || stop "$RUN_SCRIPT lacks the SEED passthrough -- old code, refusing to launch"
+  log "runner has $ARM + register(); $RUN_SCRIPT has the $ARM arm + SEED passthrough"
+else
+  # Built-in method (no register()): the runner must know the method; the run script's arm_args case
+  # line for this arm must be exactly the expected one (glob label + the args the output name assumes).
+  local arm_line
+  case "$ARM" in
+    topp0.9)     arm_line='topp*)      echo "--method temp --top-p ${1#topp} --top-k 0 --temperature 1.0" ;;' ;;
+    renyi_k0.35) arm_line='renyi_k*)   echo "--method pless_renyi --renyi-k ${1#renyi_k} --temperature 1.0" ;;' ;;
+  esac
+  grep -q "\"$METHOD\"" "$REPO/$RUNNER" || stop "runner lacks method '$METHOD' (arm $ARM) -- refusing to launch"
+  grep -qxF "    $arm_line" "$REPO/$RUN_SCRIPT" \
+    || stop "$RUN_SCRIPT lacks the $ARM arm (expected arm_args line: $arm_line) -- refusing to launch"
+  grep -q 'SEED:+--seed' "$REPO/$RUN_SCRIPT" || stop "$RUN_SCRIPT lacks the SEED passthrough -- old code, refusing to launch"
+  log "runner has method $METHOD; $RUN_SCRIPT has the $ARM arm ($arm_line) + SEED passthrough"
+fi
 local -a SHAS=()   # parallel to PINNED_FILES (indexed: bash 3.2 has no associative arrays)
 local k
 for k in "${!PINNED_FILES[@]}"; do
@@ -258,7 +301,7 @@ TS="$(TZ=Asia/Kolkata date +%Y%m%d_%H%M%S)"
 local START_IST; START_IST="$(ist)"
 local -a GPU_LIST=() IDF=() RES=() WLOG=() RLOG=() SNAPS=()
 if [[ "$SMOKE" == "1" ]]; then
-  LROOT="$LOG_DIR/cf748_effk_launch_${TS}${MODEL_TAG}_smoke"
+  LROOT="$LOG_DIR/cf748_effk_launch_${TS}${MODEL_TAG}${ARM_TAG}_smoke"
   if [[ -z "$SMOKE_IDS" ]]; then
     SMOKE_IDS="$(tr -s '[:space:]' '\n' < "$IDS_FILE" | grep -v '^$' | sort -n | head -n 2 | tr '\n' ' ' | sed 's/ $//')"
   fi
@@ -270,11 +313,11 @@ if [[ "$SMOKE" == "1" ]]; then
   [[ -n "$SMOKE_IDS" ]] || stop "SMOKE_IDS is empty"
   log "SMOKE ids: $SMOKE_IDS (GPU $SMOKE_GPU)"
   GPU_LIST=( "$SMOKE_GPU" ); IDF=( "$LROOT/smoke_ids.txt" ); RES=( "$SMOKE_RESULTS_ROOT/$TS/gpu$SMOKE_GPU" )
-  WLOG=( "$LOG_DIR/cf748_effk_nofloor${MODEL_TAG}_gpu${SMOKE_GPU}_smoke.log" )
+  WLOG=( "$LOG_DIR/cf748_effk_nofloor${MODEL_TAG}${ARM_TAG}_gpu${SMOKE_GPU}_smoke.log" )
 else
-  LROOT="$LOG_DIR/cf748_effk_launch_${TS}${MODEL_TAG}"
+  LROOT="$LOG_DIR/cf748_effk_launch_${TS}${MODEL_TAG}${ARM_TAG}"
   GPU_LIST=( 0 1 ); IDF=( "$IDS_EVEN" "$IDS_ODD" ); RES=( "$RESULTS_ROOT/gpu0" "$RESULTS_ROOT/gpu1" )
-  WLOG=( "$LOG_DIR/cf748_effk_nofloor${MODEL_TAG}_gpu0.log" "$LOG_DIR/cf748_effk_nofloor${MODEL_TAG}_gpu1.log" )
+  WLOG=( "$LOG_DIR/cf748_effk_nofloor${MODEL_TAG}${ARM_TAG}_gpu0.log" "$LOG_DIR/cf748_effk_nofloor${MODEL_TAG}${ARM_TAG}_gpu1.log" )
 fi
 # Python (runner) output: with GPUS=<g> run_cf748_apps_qwen3.sh takes its parallel branch and writes
 # "$RESULTS_DIR/$MODEL_DIR/${SOURCE}_${DIFFICULTY}/cf748_gpu<g>.log" (truncated by '>' on every start;
@@ -283,7 +326,7 @@ fi
 local i g out_jsonl
 for i in "${!GPU_LIST[@]}"; do RLOG[$i]="${RES[$i]}/$MODEL_DIR/CODEFORCES_interview/cf748_gpu${GPU_LIST[$i]}.log"; done
 for i in "${!GPU_LIST[@]}"; do
-  out_jsonl="${RES[$i]}/$MODEL_DIR/CODEFORCES_interview/${ARM}_think_t1.0_t1.0.jsonl"
+  out_jsonl="${RES[$i]}/$MODEL_DIR/CODEFORCES_interview/$OUT_FILE"
   if [[ -f "$out_jsonl" ]]; then
     log "existing results (RESUMED by task_id, not a gate): GPU${GPU_LIST[$i]} $out_jsonl lines=$(wc -l < "$out_jsonl" | tr -d ' ')"
   else
@@ -489,7 +532,7 @@ progress_block() {  # per-GPU "records written + Completed line in the python lo
   local i j r
   printf 'prc=0\n'
   for i in "${!GPU_LIST[@]}"; do
-    j="$(printf '%q' "${RES[$i]}/$MODEL_DIR/CODEFORCES_interview/${ARM}_think_t1.0_t1.0.jsonl")"
+    j="$(printf '%q' "${RES[$i]}/$MODEL_DIR/CODEFORCES_interview/$OUT_FILE")"
     r="$(printf '%q' "${RLOG[$i]}")"
     cat <<EOF
 n=0; [[ -f $j ]] && n=\$(wc -l < $j | tr -d ' ')
@@ -526,10 +569,10 @@ for t in sorted(seen):
     print("task_id=%s records=%d n_samples=%d distinct=%d mean_chars=%.0f method=%s samples_sha=%s" % (
         t, len(seen[t]), len(s), len(set(s)), sum(map(len, s)) / max(1, len(s)), r.get("method"), h))
 ok = (not bad and sorted(seen) == sorted(ids) and all(len(v) == 1 and len(v[0].get("samples", [])) == 10
-      and v[0].get("method") == "$ARM" for v in seen.values()))
+      and v[0].get("method") == "$METHOD" for v in seen.values()))
 print(("SMOKE CHECK OK" if ok else "SMOKE CHECK FAILED") + ": records=%d expected_ids=%s unparseable=%d" % (len(seen), ids, bad))
 sys.exit(0 if ok else 1)
-' $(printf '%q' "${RES[0]}/$MODEL_DIR/CODEFORCES_interview/${ARM}_think_t1.0_t1.0.jsonl") $(printf '%q' "${IDF[0]}")
+' $(printf '%q' "${RES[0]}/$MODEL_DIR/CODEFORCES_interview/$OUT_FILE") $(printf '%q' "${IDF[0]}")
 rc=\$?
 (( rc == 0 && prc == 0 ))
 EOF
@@ -544,10 +587,10 @@ $(progress_block)
 $cp -I scripts/cf748_merge_validate.py --check-only --allow-incomplete \\
   --in-a $(printf '%q' "${RES[0]}") --in-b $(printf '%q' "${RES[1]}") \\
   --split-a $(printf '%q' "$IDS_EVEN") --split-b $(printf '%q' "$IDS_ODD") --ids-file $(printf '%q' "$IDS_FILE") \\
-  --method $ARM --temperature 1.0 --n-samples 10${MODEL_ARG}
+  --method $METHOD --temperature 1.0 --n-samples 10${MODEL_ARG}${FILE_ARG}
 rc=\$?
 echo "When complete, merge (refuses to overwrite) with:"
-echo "  $cp -I scripts/cf748_merge_validate.py --in-a $(printf '%q' "${RES[0]}") --in-b $(printf '%q' "${RES[1]}") --split-a $(printf '%q' "$IDS_EVEN") --split-b $(printf '%q' "$IDS_ODD") --ids-file $(printf '%q' "$IDS_FILE") --method $ARM --temperature 1.0 --n-samples 10${MODEL_ARG} --out-results-dir <merged results dir>"
+echo "  $cp -I scripts/cf748_merge_validate.py --in-a $(printf '%q' "${RES[0]}") --in-b $(printf '%q' "${RES[1]}") --split-a $(printf '%q' "$IDS_EVEN") --split-b $(printf '%q' "$IDS_ODD") --ids-file $(printf '%q' "$IDS_FILE") --method $METHOD --temperature 1.0 --n-samples 10${MODEL_ARG}${FILE_ARG} --out-results-dir <merged results dir>"
 (( rc == 0 && prc == 0 ))
 EOF
   fi
@@ -566,6 +609,7 @@ write_manifest() {  # $1 path. Values passed as argv (k=v); python only serialis
     "env.N_SAMPLES=10" "env.MAX_TOKENS=32768" "env.PATH=$LAUNCH_PATH"
     "launcher_env_snapshot=$(env | env_snapshot_filter)"
     "env.unset=${ENV_UNSET[*]}" "env.VLLM_WORKER_MULTIPROC_METHOD_in_launcher=${VLLM_WORKER_MULTIPROC_METHOD:-}" )
+  [[ "$ARM" != "$DEFAULT_ARM" ]] && kv+=( "method=$METHOD" "output_file=$OUT_FILE" )   # default-arm manifest unchanged
   local i
   for i in "${!PINNED_FILES[@]}"; do kv+=( "sha256.${PINNED_FILES[$i]}=${SHAS[$i]}" ); done
   for i in "${!GPU_LIST[@]}"; do

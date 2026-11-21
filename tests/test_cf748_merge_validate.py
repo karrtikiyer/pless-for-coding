@@ -227,3 +227,38 @@ def test_deepseek_model_dir_and_model_check(tmp_path):
     (b / sub / FNAME).write_text("".join(json.dumps(_rec(t)) + "\n" for t in IDS[1::2]))
     r = subprocess.run(base + ["--model", model, "--check-only"], capture_output=True, text=True)
     assert r.returncode != 0 and "model" in r.stderr, r.stdout + r.stderr
+
+
+# ---------------------------------------------------------------- built-in-method arms (launcher ARM=topp0.9 / renyi_k0.35)
+# The runner's file name for these is NOT default_filename(method, T) (it encodes top_p / renyi_k), so the
+# launcher passes --filename; the record checks stay method/temperature/model/source/difficulty/backend.
+@pytest.mark.parametrize("method,fname,fields", [
+    ("temp", "temp_p0.9_think_t1.0_t1.0.jsonl", {"top_p": 0.9, "top_k": 0}),
+    ("pless_renyi", "pless_renyi_think_t1.0_k0.35_t1.0.jsonl", {"renyi_k": 0.35}),
+])
+def test_builtin_method_arm_with_filename(tmp_path, method, fname, fields):
+    ids = tmp_path / "ids.txt"
+    ids.write_text("".join(f"{i}\n" for i in IDS))
+    sa, sb = tmp_path / "even.txt", tmp_path / "odd.txt"
+    sa.write_text("".join(f"{i}\n" for i in IDS[0::2]))
+    sb.write_text("".join(f"{i}\n" for i in IDS[1::2]))
+    a, b, out = tmp_path / "gpu0", tmp_path / "gpu1", tmp_path / "merged"
+    for root, part in ((a, IDS[0::2]), (b, IDS[1::2])):
+        (root / SUB).mkdir(parents=True)
+        (root / SUB / fname).write_text("".join(json.dumps(_rec(t, method=method, **fields)) + "\n" for t in part))
+    base = [sys.executable, "-I", str(SCRIPT), "--in-a", str(a), "--in-b", str(b), "--ids-file", str(ids),
+            "--expected-count", str(len(IDS)), "--n-samples", "3", "--method", method, "--temperature", "1.0",
+            "--split-a", str(sa), "--split-b", str(sb)]
+    # without --filename the default name (<method>_think_t1.0_t1.0.jsonl) does not exist -> refused
+    r = subprocess.run(base + ["--check-only"], capture_output=True, text=True)
+    assert r.returncode != 0 and f"{method}_think_t1.0_t1.0.jsonl" in r.stderr, r.stdout + r.stderr
+    r = subprocess.run(base + ["--filename", fname, "--check-only"], capture_output=True, text=True)
+    assert r.returncode == 0 and "CHECK OK (complete)" in r.stdout, r.stdout + r.stderr
+    r = subprocess.run(base + ["--filename", fname, "--out-results-dir", str(out)], capture_output=True, text=True)
+    assert r.returncode == 0 and "MERGE OK" in r.stdout, r.stdout + r.stderr
+    recs = [json.loads(l) for l in (out / SUB / fname).read_text().splitlines()]
+    assert [x["task_id"] for x in recs] == IDS and all(x["method"] == method for x in recs)
+    # a record of another method in the same file is still rejected (method check unchanged)
+    (b / SUB / fname).write_text("".join(json.dumps(_rec(t, method="pless_effk_nofloor")) + "\n" for t in IDS[1::2]))
+    r = subprocess.run(base + ["--filename", fname, "--check-only"], capture_output=True, text=True)
+    assert r.returncode != 0 and "method" in r.stderr, r.stdout + r.stderr
